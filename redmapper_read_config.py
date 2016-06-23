@@ -1,6 +1,6 @@
 import yaml
 
-def read_simpleconf(filename, defaults=None):
+def read_yaml(filename, defaults=None):
     """
     Docstring goes here
     """
