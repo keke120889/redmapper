@@ -2,3 +2,7 @@
 *.pyc
 *.o
 *.so
+build
+dist
+RedMaPPer.egg-info
+
