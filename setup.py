@@ -12,7 +12,7 @@ with open('LICENSE') as f:
 exec(open('redmapper/_version.py').read())
     
 setup(
-    name='RedMaPPer',
+    name='redmapper',
     version=__version__,
     description='Public, Python implementation of RedMaPPer',
     long_description=readme,

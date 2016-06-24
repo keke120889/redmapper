@@ -4,5 +4,5 @@
 *.so
 build
 dist
-RedMaPPer.egg-info
+redmapper.egg-info
 
