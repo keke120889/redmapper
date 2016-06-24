@@ -3,15 +3,17 @@
 from setuptools import setup, find_packages
 
 
-with open('README.rst') as f:
+with open('README.md') as f:
     readme = f.read()
 
 with open('LICENSE') as f:
     license = f.read()
 
+exec(open('redmapper/_version.py').read())
+    
 setup(
     name='RedMaPPer',
-    version='0.0.1',
+    version=__version__,
     description='Public, Python implementation of RedMaPPer',
     long_description=readme,
     author='Eli Rykoff, Brett Harvey',
