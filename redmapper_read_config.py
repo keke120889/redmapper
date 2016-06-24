@@ -42,4 +42,5 @@ def read_config(filename):
         filename: configuration file
     """
 
-    pass
+    defaults = None # replace with actual default dict
+    return read_yaml(filename, defaults)
