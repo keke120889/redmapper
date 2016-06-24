@@ -2,6 +2,7 @@
 
 import redmapper
 import getopt
+import sys
 
 def usage():
     print "Usage: redmapper_sample.py -c conffile"
