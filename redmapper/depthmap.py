@@ -22,8 +22,8 @@ class DepthMap():
     
     def calc_maskdepth(self,maskgals,ra,dec,mpcscale):
         # compute ra and dec based on maskgals
-        ras=ra + (maskgals['X']/(mpcscale*3600.))/np.cos(dec*np.pi/180.)
-        decs=dec + maskgals['Y']/(mpcscale*3600.)
+        ras = ra + (maskgals['X']/(mpcscale*3600.))/np.cos(dec*np.pi/180.)
+        decs = dec + maskgals['Y']/(mpcscale*3600.)
 
         theta = (90.0 - decs)*np.pi/180.
         phi = ras*np.pi/180.
@@ -32,4 +32,13 @@ class DepthMap():
         # was thinking could call get_depth...
     
 
+        dtype = [('RA','f8'),
+                 ('DEC','f8'),
+                 ('TEST','i4')]
+
+        self.arr = np.zeros(100,dtype=dtype)
+
+        self.arr['RA'][:] = np.arange(100)
+        self.arr['RA'][:] = self.arr['RA'] + 1.0
+        
         
