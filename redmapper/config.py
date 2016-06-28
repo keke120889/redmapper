@@ -10,7 +10,7 @@ def read_yaml(filename, defaults=None):
     Calling Sequence:
         outdict = read_simpleconf(filename, defaults=None)
     Inputs:
-        filename: YAML file
+        filename: YAML file name
     Optional Inputs:
         defaults: Dictionary of required/default fields/values. All fields in 
                   defaults are required to be specified. If they are set to 
@@ -29,18 +29,18 @@ def read_yaml(filename, defaults=None):
     
     return outdict
 
-def read_config(filename):
+def read_config(conffile):
 
     """
     Name:
         read_config
     Purpose:
-        Read a RedMaPPer config file in YAML format and put into dict.
+        Read a redmapper config file in YAML format and put into dict.
     Calling Sequence:
-
+        confdict = config.read_config(conffile)
     Inputs:
-        filename: configuration file
+        conffile: configuration file name
     """
 
     defaults = None # replace with actual default dict
-    return read_yaml(filename, defaults)
+    return read_yaml(conffile, defaults)
