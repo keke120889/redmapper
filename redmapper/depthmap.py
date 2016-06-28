@@ -3,7 +3,6 @@ import healpy as hp
 import numpy as np
 
 class DepthMap():
-    
     def __init__(self,filename):
         # call method to read
         self.filename = filename
@@ -25,7 +24,6 @@ class DepthMap():
         # compute ra and dec based on maskgals
         # ras = ra + (maskgals['X']/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
         # decs = dec + maskgals['Y']/(mpc_scale*3600.)
-
         # theta = (90.0 - decs)*np.pi/180.
         # phi = ras*np.pi/180.
 
