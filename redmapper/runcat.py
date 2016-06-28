@@ -10,7 +10,7 @@ def run(confdict=None, conffile=None, outbase=None,
     docstring
     '''
 
-    # Read configurations from either explicit dictionary or YAML file
+    # Read configurations from either explicit dict or YAML file
     if (confdict is None) and (conffile is None):
         raise ValueError("Must have one of confdict or conffile")
     if (confdict is not None) and (conffile is not None):
@@ -32,17 +32,4 @@ def run(confdict=None, conffile=None, outbase=None,
     zred = None # To be implemented
 
     # Read in masked galaxies
-    maskgals = fitsio.read(confdict['maskgalfile'], ext=1)
-
-    # 
-
-
-    # etc, etc.
-
-    
-    
-
-    
-    
-        
-    
+    maskgals = fitsio.read(confdict['maskgalfile'], ext=1)    
