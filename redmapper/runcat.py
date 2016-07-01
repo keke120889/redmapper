@@ -28,8 +28,5 @@ def run(confdict=None, conffile=None, outbase=None,
     # Read in the background
     bkg = None # To be implemented
 
-    # Read in red seq parameters
-    zred = None # To be implemented
-
     # Read in masked galaxies
     maskgals = fitsio.read(confdict['maskgalfile'], ext=1)    
