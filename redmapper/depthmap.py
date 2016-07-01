@@ -3,6 +3,7 @@ import healpy as hp
 import numpy as np
 
 class DepthMap():
+    
     def __init__(self,filename):
         # call method to read
         self.filename = filename
