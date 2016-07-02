@@ -13,15 +13,15 @@ class Galaxy:
 
     # populates dictionary of galaxies to distances from current galaxy
     # but returns just the keys (the galaxies themselves)
-    def get_neighbors(self, galaxy_list):
+    def get_neighbors(self, galaxy_list = None):
         if self._neighbor_dists: return self._neighbor_dists.keys()
         # else, use logic of htm_find_neighbors
         self._neighbor_dists = {} # this is dummy implementation though
         return self._neighbor_dists.keys()
 
     def distance_from(self, galaxy):
-        if self.neighbors and galaxy in self.neighbors: 
-            return self.neighbors[galaxy]
+        if self._neighbor_dists and galaxy in self._neighbor_dists: 
+            return self._neighbor_dists[galaxy]
 
 
 class Cluster:
