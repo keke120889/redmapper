@@ -29,7 +29,7 @@ def run(confdict=None, conffile=None, outbase=None,
     clusters = galaxy.read_clusters(confdict['catfile'])
     galaxies = galaxy.read_galaxies(confdict['galfile'])
 
-    # return clusters
+    return clusters, galaxies
 
     # Read in masked galaxies
     # maskgals = fitsio.read(confdict['maskgalfile'], ext=1)    
