@@ -14,17 +14,14 @@ class Galaxy:
 
     # populates dictionary of galaxies to distances from current galaxy
     # but returns just the keys (the galaxies themselves)
-    def get_neighbors(self, radius=None, htm_matcher=None):
+    def get_neighbors(self, radius=None, galaxy_list=None):
         if self._neighbor_dists and radius is None:
             return self._neighbor_dists.keys()
-        if htm_matcher is None: 
+        if galaxy_list is None: 
             raise ValueError("An HTM Matcher object must be specified.")
         if raidus is None or radius < 0 or radius > 360:
             raise ValueError("A radius in degrees must be specified.")
-        _, indices, dists = htm_matcher.match(self.ra, self.dec, 
-                                                radius, maxmatch=-1)
-        self._neighbor_dists = 
-            {htm_matcher.galaxy_list[i]:dists[i] for i in indices}
+        self._neighbor_dists = galaxy_list._match(self.ra, self.dec, radius)
         return self._neighbor_dists.keys()
 
     def distance_from(self, galaxy):
@@ -61,10 +58,25 @@ class Cluster:
     def calc_lambda(self): pass
 
 
-def read_galaxies(filename):
-    galaxies = []
-    for gal in fitsio.read(filename): galaxies.append(Galaxy(gal))
-    return galaxies
+class GalaxyList:
+
+    """ docstring """
+
+    def __init__(self, filename, depth=10):
+        self._galfile = fitsio.read(filename)
+        self._htm_matcher = eu.Matcher(self._galfile['RA'], 
+                                            self._galfile['DEC'], depth)
+        self._galaxies = [Galaxy(gal) for gal in self._galfile]
+        
+    def __getitem__(self, key): return self._galaxies[key]
+
+    def ra(self): return self._galfile['RA']
+    def dec(self): return self._galfile['DEC']
+
+    def match(self, galaxy, radius, maxmatch):
+        _, indices, dists = self._htm_matcher._match(galaxy.ra, galaxy.dec, 
+                                                        radius, maxmatch=-1)
+        return {htm_matcher.galaxy_list[i]:dists[i] for i in indices}
 
 
 def read_clusters(filename):
