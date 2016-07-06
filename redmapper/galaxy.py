@@ -1,4 +1,5 @@
 import fitsio
+import esutil as eu
 
 
 class Galaxy:
@@ -13,15 +14,23 @@ class Galaxy:
 
     # populates dictionary of galaxies to distances from current galaxy
     # but returns just the keys (the galaxies themselves)
-    def get_neighbors(self, galaxy_list = None):
-        if self._neighbor_dists: return self._neighbor_dists.keys()
-        # else, use logic of htm_find_neighbors
-        self._neighbor_dists = {} # this is dummy implementation though
+    def get_neighbors(self, radius=None, htm_matcher=None):
+        if self._neighbor_dists and radius is None:
+            return self._neighbor_dists.keys()
+        if htm_matcher is None: 
+            raise ValueError("An HTM Matcher object must be specified.")
+        if raidus is None or radius < 0 or radius > 360:
+            raise ValueError("A radius in degrees must be specified.")
+        _, indices, dists = htm_matcher.match(self.ra, self.dec, 
+                                                radius, maxmatch=-1)
+        self._neighbor_dists = 
+            {htm_matcher.galaxy_list[i]:dists[i] for i in indices}
         return self._neighbor_dists.keys()
 
     def distance_from(self, galaxy):
         if self._neighbor_dists and galaxy in self._neighbor_dists: 
             return self._neighbor_dists[galaxy]
+
 
 
 class Cluster:
