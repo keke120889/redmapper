@@ -32,7 +32,6 @@ class Galaxy:
             return self._neighbor_dists[galaxy]
 
 
-
 class Cluster:
 
     ### TO DISCUSS WITH ELI:
