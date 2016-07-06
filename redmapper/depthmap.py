@@ -2,14 +2,14 @@ import fitsio
 import healpy as hp
 import numpy as np
 
-class DepthMap():
+class DepthMap:
     
     def __init__(self,filename):
         # call method to read
         self.filename = filename
-        self.read_depthmap()
+        self._read_depthmap()
 
-    def read_depthmap(self):
+    def _read_depthmap(self):
         # read in from filename
         # self.nside = nside
         pass
