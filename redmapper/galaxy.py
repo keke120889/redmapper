@@ -21,24 +21,24 @@ class GalaxyCatalog(object):
 
     """ docstring """
 
-    def __init__(self, *ndarrays, depth=10):
-        if any([len(arr) != len(ndarrays[0]) for arr in ndarrays]):
+    def __init__(self, *arrays, depth=10):
+        if any([len(arr) != len(arrays[0]) for arr in arrays]):
             raise ValueError("Input arrays must have the same length.")
-        self._gal_ndarrays = list(ndarrays)
-        self.dtype = itertools.chain([arr.dtype for arr in self._gal_ndarrays])
+        self._gal_arrays = list(arrays)
+        self.dtype = itertools.chain([arr.dtype for arr in self._gal_arrays])
         self._htm_matcher = None
 
     @classmethod
     def fromfilename(cls, filename):
-        ndarray = fitsio.read(filename)
-        return cls(ndarray)
+        array = fitsio.read(filename)
+        return cls(array)
 
     def __getattribute__(self, attr):
         try:
             return object.__getattribute__(self, attr)
         except AttributeError:  # attr must be a fieldname
             pass
-        for arr in self._gal_ndarrays:
+        for arr in self._gal_arrays:
             if attr.upper() in arr.dtype.names:
                 return arr[attr.upper()]
         return object.__getattribute__(self, attr)
@@ -49,14 +49,14 @@ class GalaxyCatalog(object):
                                 dtype=self.dtype)
         if isinstance(key, list):
             return np.array([self[i] for i in key, dtype=self.dtype])
-        return tuple(itertools.chain([arr for arr in self._gal_ndarrays]))
+        return tuple(itertools.chain([arr for arr in self._gal_arrays]))
 
-    def __len__(self): return len(self._gal_ndarrays[0])
+    def __len__(self): return len(self._gal_arrays[0])
 
-    def add_fields(self, ndarray):
-        if len(ndarray) != len(self):
+    def add_fields(self, array):
+        if len(array) != len(self):
             raise ValueError("Input arrays must have the same length.")
-        self._gal_ndarrays.append(ndarray)
+        self._gal_arrays.append(array)
 
     def _match(self, galaxy, radius):
         if self._htm_matcher is None:
