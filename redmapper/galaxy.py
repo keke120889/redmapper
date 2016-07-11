@@ -1,6 +1,7 @@
 import fitsio
 import esutil as eu
 import numpy as np
+import itertools
 
 
 class Galaxy:
@@ -21,7 +22,9 @@ class GalaxyCatalog(object):
     """ docstring """
 
     def __init__(self, *ndarrays, depth=10):
-        self._gal_ndarrays = ndarrays # do I need to copy?? Dont think so...
+        if any([len(ndarr) != len(ndarrays[0]) for ndarr in ndarrays]):
+            raise ValueError("Input arrays must have the same length.")
+        self._gal_ndarrays = list(ndarrays) # do I need to copy?? Dont think so...
         self._htm_matcher = None
 
     @classmethod
@@ -34,15 +37,20 @@ class GalaxyCatalog(object):
             return object.__getattribute__(self, attr)
         except AttributeError:  # attr must be a fieldname
             pass
-        for ndarray in self._gal_ndarrays:
-            if attr.upper() in ndarray.dtype.names:
-                return ndarray[attr.upper()]
+        for ndarr in self._gal_ndarrays:
+            if attr.upper() in ndarr.dtype.names:
+                return ndarr[attr.upper()]
         return object.__getattribute__(self, attr)
 
     def __getitem__(self, key):
-        return self._gal_ndarrays[key]
+        return tuple(itertools.chain([ndarr for ndarr in self._gal_ndarrays]))
 
     def __len__(self): return len(self._gal_ndarrays)
+
+    def add_fields(self, ndarray):
+        if len(ndarray) != len(self):
+            raise ValueError("Input arrays must have the same length.")
+        self._gal_ndarrays.append(ndarray)
 
     def _match(self, galaxy, radius):
         if self._htm_matcher is None:
@@ -71,8 +79,8 @@ class Cluster(object):
         if radius is None or radius < 0 or radius > 360:
             raise ValueError("A radius in degrees must be specified.")
         indices, dists = galaxy_list._match(self.ra, self.dec, radius)
-        new_dtype = galcat.dtype + [('DIST', 'f8'), ('PMEM', 'f8')]
-        ndarray = galcat[]
+        ndarray = np.array(np.zeros(len(indices)), 
+                                dtype=[('DIST', 'f8'), ('PMEM', 'f8')])
 
     def calc_lambda(self): pass
 
