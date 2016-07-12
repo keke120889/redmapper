@@ -2,19 +2,13 @@ import fitsio
 import esutil as eu
 import numpy as np
 import itertools
-import galaxy
+from catalog import Catalog, DataEntry
 
 
-class Cluster(object):
+class ClusterCatalog(Catalog): singleton_class = Cluster
 
-    """ docstring """
 
-    def __init__(self, clust_tuple):
-        self._read_clust(clust_tuple)
-        self.members = self.centers = None
-
-    def _read_clust(self, clust_tuple):
-        self.index, self.ra, self.dec, self.z = clust_tuple
+class Cluster(DataEntry):
 
     def find_members(self, radius=None, galcat=None):
         if self._member_probs and radius is None:
