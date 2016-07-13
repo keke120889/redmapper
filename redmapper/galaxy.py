@@ -1,29 +1,30 @@
 import fitsio
 import esutil as eu
+from esutil.htm import Matcher
 import numpy as np
 import itertools
-from catalog import Catalog, DataEntry
+from catalog import Catalog, Entry
+
+
+class Galaxy(Entry): pass
 
 
 class GalaxyCatalog(Catalog):
 
-    singleton_class = Galaxy
+    entry_class = Galaxy
 
-    def __init__(self, depth=10, *arrays):
-        super(GalaxyCatalog, self).__init__(arrays)
+    def __init__(self, *arrays, **kwargs):
+        super(GalaxyCatalog, self).__init__(*arrays)
         self._htm_matcher = None
-        self.depth = depth
+        self.depth = 10 if 'depth' not in kwargs else kwargs['depth']
 
     @classmethod
     def from_custom_file(cls, filename): pass
 
     def match(self, galaxy, radius):
         if self._htm_matcher is None:
-            self._htm_matcher = eu.Matcher(self.ra, self.dec, self.depth)
-        _, indices, dists = self._htm_matcher._match(galaxy.ra, galaxy.dec, 
-                                                        radius, maxmatch=-1)
+            self._htm_matcher = Matcher(self.depth, self.ra, self.dec)
+        _, indices, dists = self._htm_matcher.match(galaxy.ra, galaxy.dec, 
+                                                        radius, maxmatch=0)
         return indices, dists
-
-
-class Galaxy(DataEntry): pass
 
