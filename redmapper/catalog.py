@@ -57,20 +57,20 @@ class Catalog(object):
 
 class DataEntry(Catalog):
 
-	def __init__(self, *arrays):
-		if len(arrays[0]) != 1:
-			raise ValueError("Input arrays must have length one.")
-		super(DataEntry, self).__init__(arrays)
+    def __init__(self, *arrays):
+        if len(arrays[0]) != 1:
+            raise ValueError("Input arrays must have length one.")
+        super(DataEntry, self).__init__(arrays)
 
     @classmethod
     def from_dict(cls, dict): pass
 
-	def __getattribute__(self, attr):
+    def __getattribute__(self, attr):
         return super(DataEntry, self).__getattribute__(attr)[0]
 
-	def __getitem__(self, key):
+    def __getitem__(self, key):
         raise TypeError("\'" + type(self) + 
-        					"\' object has no attribute \'__getitem__\'")
+    				            "\' object has no attribute \'__getitem__\'")
 
     def __len__(self):
         raise TypeError("object of type \'" + type(self) + "\' has no len()")
