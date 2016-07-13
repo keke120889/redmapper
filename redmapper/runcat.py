@@ -2,7 +2,7 @@ import fitsio
 import esutil
 
 import config
-import galaxy
+from cluster import ClusterCatalog
 
 
 def run(confdict=None, conffile=None, outbase=None, 
@@ -26,10 +26,9 @@ def run(confdict=None, conffile=None, outbase=None,
     bkg = None # To be implemented
 
     # Read in the input catalog
-    clusters = galaxy.read_clusters(confdict['catfile'])
-    galaxies = galaxy.read_galaxies(confdict['galfile'])
+    clusters = ClusterCatalog.from_fits_file(confdict['catfile'])
 
-    return clusters, galaxies
+    return clusters
 
     # Read in masked galaxies
     # maskgals = fitsio.read(confdict['maskgalfile'], ext=1)    
