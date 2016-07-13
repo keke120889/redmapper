@@ -9,7 +9,7 @@ class GalaxyCatalog(Catalog):
 
     singleton_class = Galaxy
 
-    def __init__(self, *arrays, depth=10):
+    def __init__(self, depth=10, *arrays):
         super(GalaxyCatalog, self).__init__(arrays)
         self._htm_matcher = None
         self.depth = depth
