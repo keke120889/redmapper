@@ -44,7 +44,7 @@ class GalaxyCatalog(Catalog):
 
         # check that the file is there and the right format
         # this will raise an exception if it's not there.
-        hdr=fitsio.read_header(filename, ext=1)
+        hdr = fitsio.read_header(filename, ext=1)
 
         try:
             pixelated = hdr['PIXELS']
