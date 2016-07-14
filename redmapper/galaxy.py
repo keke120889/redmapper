@@ -6,10 +6,16 @@ import itertools
 from catalog import Catalog, Entry
 
 
-class Galaxy(Entry): pass
+class Galaxy(Entry): 
+
+    """ docstring """
+
+    pass
 
 
 class GalaxyCatalog(Catalog):
+
+    """ docstring """
 
     entry_class = Galaxy
 
