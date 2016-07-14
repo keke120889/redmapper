@@ -4,16 +4,36 @@ import numpy as np
 import itertools
 from numpy.lib.recfunctions import merge_arrays
 
-### This should be used as an abstract base class
-class DataObject(object):
 
-    """ docstring """
+class DataObject(object):
+    """Abstract base class to encapsulate info from FITS files."""
 
     def __init__(self, *arrays):
+        """Constructs DataObject from arbitrary number of ndarrays.
+
+        Each ndarray can have an arbitrary number of fields. Field
+        names should all be capitalized and words in multi-word field 
+        names should be separated by underscores if necessary. ndarrays
+        have a 'size' property---their sizes should all be equivalent.
+
+        Args:
+            arrays (numpy.ndarray): ndarrays with equivalent sizes.
+        """
         self._ndarray = merge_arrays(arrays, flatten=True)
 
     @classmethod
     def from_fits_file(cls, filename):
+        """Constructs DataObject directly from FITS file.
+
+        Makes use of Erin Sheldon's fitsio reading routine. The fitsio
+        package wraps cfitsio for maximum efficiency.
+
+        Args:
+            filename (string): the file path and name.
+
+        Returns:
+            DataObject, properly constructed.
+        """
         array = fitsio.read(filename)
         return cls(array)
 
@@ -35,9 +55,19 @@ class DataObject(object):
             object.__setattr__(self, attr, val)
 
     @property
-    def dtype(self): return self._ndarray.dtype
+    def dtype(self): 
+        """numpy.dtype: dtype associated with the DataObject."""
+        return self._ndarray.dtype
 
     def add_fields(self, array):
+        """Adds additional fields to the DataObject.
+
+        The array should be prepopulated with values if they are known
+        to avoid unecessary copying.
+
+        Args:
+            array (numpy.ndarray): ndarray with new fields.
+        """
         self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
 
 
