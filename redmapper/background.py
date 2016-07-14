@@ -14,5 +14,5 @@ class Background(Entry):
                 setattr(self, key, data[key])
         for key in kwargs:
             setattr(self, key, kwargs[key])
-        self.scale = 1.0 if 'scale' not in kwargs else kwargs['scale']
+        if 'scale' not in kwargs: self.scale = 1.0
         
