@@ -1,21 +1,18 @@
 import fitsio
 import numpy as np
+from catalog import Entry
 
 
-class Background:
+class Background(Entry):
 
     """ docstring """
 
-    def __init__(self, filename, scale=1.0):
-        self._filename = filename
-        self._read_background(confdict)
-
-    def _read_background(self, confdict):
-        if confdict is None:
-            pass # populate dictionary
-        # then set attributes
-        bkgdict = fitsio.read(self._filename)
-        self.chisqbins = np.arange()
-
-    
-
+    def __init__(self, *initial_data, **kwargs):
+        for data in initial_data:
+            field_names = data if isinstance(data, dict) else data.dtype.names
+            for key in field_names:
+                setattr(self, key, data[key])
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
+        if 'scale' not in kwargs: self.scale = 1.0
+        

@@ -28,7 +28,8 @@ class GalaxyCatalog(Catalog):
 
     @classmethod
     def from_galfile(cls, filename, nside=None, hpix=None, border=0.0):
-        """ docstring """
+        """docstring"""
+        # do we have appropriate keywords
         if hpix is not None and nside is None:
             raise ValueError("If hpix is specified, must also specify nside")
         if border < 0.0:
@@ -40,22 +41,33 @@ class GalaxyCatalog(Catalog):
             if hpix is not None:
                 if hpix < 0 or hpix >= hp.nside2npix(nside):
                     raise ValueError("hpix out of range.")
+
         # check that the file is there and the right format
         # this will raise an exception if it's not there.
         hdr = fitsio.read_header(filename, ext=1)
-        if 'PIXELS' not in hdr:
+
+        try:
+            pixelated = hdr['PIXELS']
+        except KeyError:
+            pixelated = False # this is not a pixelated file, just fits file
+        if not pixelated:
             return super(GalaxyCatalog, self).from_fits_file(filename)
-        pixelated = hdr['PIXELS']
+
         # this is to keep us from trying to use old IDL galfiles
-        if 'FITS' not in hdr:
+        try:
+            fitsformat = hdr['FITS']
+        except KeyError:
+            fitsformat = False
+        if not fitsformat:
             raise ValueError("Input galfile must describe fits files.")
-        fitsformat = hdr['FITS']
+
         # now we can read in the galaxy table summary file...
         tab = fitsio.read(filename, ext=1)
         nside_tab = tab['NSIDE']
-        if (nside > nside_tab):
-            raise ValueError("""Requested nside (%d) must not be larger than
+        if nside > nside_tab:
+            raise ValueError("""Requested nside (%d) must not be larger than 
                                     table nside (%d).""" % (nside, nside_tab))
+        
         # which files do we want to read?
         path = os.path.dirname(os.path.abspath(filename))
         if hpix is None:
@@ -76,10 +88,12 @@ class GalaxyCatalog(Catalog):
                     inhpix = np.append(inhpix, pixint)
                 inhpix = np.unique(inhpix)
                 _, indices = eu.numpy_util.match(inhpix, tab[0]['HPIX'])
+        
         # create the catalog array to read into
         elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]]),
                                                                 ext=1, rows=0)
         cat = np.zeros(np.sum(tab[0]['NGALS'][indices]), dtype=elt.dtype)
+        
         # read the files
         ctr = 0
         for index in indices:
