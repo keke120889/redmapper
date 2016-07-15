@@ -8,18 +8,8 @@ import healpy as hp
 import os
 
 
-class Galaxy(Entry): 
-
-    """ docstring """
-
-    pass
-
-
 class GalaxyCatalog(Catalog):
-
-    """ docstring """
-
-    entry_class = Galaxy
+    """Docstring."""
 
     def __init__(self, *arrays, **kwargs):
         super(GalaxyCatalog, self).__init__(*arrays)
