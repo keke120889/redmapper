@@ -4,15 +4,10 @@ from catalog import Entry
 
 
 class Background(Entry):
+    """Docstring."""
 
-    """ docstring """
-
-    def __init__(self, *initial_data, **kwargs):
-        for data in initial_data:
-            field_names = data if isinstance(data, dict) else data.dtype.names
-            for key in field_names:
-                setattr(self, key, data[key])
-        for key in kwargs:
-            setattr(self, key, kwargs[key])
-        if 'scale' not in kwargs: self.scale = 1.0
+    def __init__(self, filename, scale=1.0):
+        arr = fitsio.read(filename, ext=1)
+        for fieldname in arr.dtype.names:
+            setattr(self, fieldname.lower(), arr[fieldname])
         
