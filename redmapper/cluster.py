@@ -6,8 +6,7 @@ from catalog import Catalog, Entry
 
 
 class Cluster(Entry):
-
-    """ docstring """
+    """Docstring."""
 
     def find_members(self, radius=None, galcat=None):
         if galcat is None:
@@ -24,8 +23,7 @@ class Cluster(Entry):
 
 
 class ClusterCatalog(Catalog): 
-
-    """ docstring """
-
+    """Dosctring."""
+    
     entry_class = Cluster
 
