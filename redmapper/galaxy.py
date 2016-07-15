@@ -83,9 +83,7 @@ class GalaxyCatalog(Catalog):
         # read the files
         ctr = 0
         for index in indices:
-            cat[ctr : ctr+tab[0]['NGALS'][index]] = 
-                    fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][index]),
-                                                                        ext=1)
+            cat[ctr : ctr+tab[0]['NGALS'][index]] = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][index]),ext=1)
             ctr += tab[0]['NGALS'][index]
         # In the IDL version this is trimmed to the precise boundary requested.
         # that's easy in simplepix.  Not sure how to do in healpix.
