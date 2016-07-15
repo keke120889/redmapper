@@ -91,7 +91,10 @@ class Catalog(DataObject):
 
     entry_class = Entry
 
-    def __len__(self): return len(self._ndarray)
+    @property
+    def size(self): return self._ndarray.size
+
+    def __len__(self): return self.size
 
     def __getitem__(self, key):
     	if isinstance(key, int):
