@@ -2,8 +2,10 @@ import numpy as np
 from . import _solver_nfw_pywrap
 
 class Solver(object):
-    def __init__(self, r0, beta, ucounts, bcounts, r, w,
-                 cpars=np.zeros(4,dtype='f8'),rsig=0.0):
+    """Docstring."""
+
+    def __init__(self, r0, beta, ucounts, bcounts, r, w, 
+                        cpars=np.zeros(4,dtype='f8'), rsig=0.0):
 
         # ensure all correct length
         self.r0 = float(r0)
