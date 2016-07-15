@@ -72,8 +72,7 @@ class DataObject(object):
 
 
 class Entry(DataObject):
-
-    """ docstring """
+    """Docstring."""
 
     def __init__(self, *arrays):
         if any([arr.size != 1 for arr in arrays]):
@@ -88,8 +87,7 @@ class Entry(DataObject):
 
 
 class Catalog(DataObject):
-
-    """ docstring """
+    """Docstring."""
 
     entry_class = Entry
 
