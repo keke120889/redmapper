@@ -4,7 +4,7 @@ from catalog import Entry
 from scipy.interpolate import RegularGridInterpolator
 
 
-class Background(Object):
+class Background(object):
     """Docstring."""
 
     def __init__(self, filename):
@@ -38,7 +38,7 @@ class Background(Object):
         return np.where(result < 0, 0, result)
 
 ## for testing only
-class IDLBackground(Object):
+class IDLBackground(object):
 
     def __init__(self, filename):
         obkg = Entry.from_fits_file(filename)
