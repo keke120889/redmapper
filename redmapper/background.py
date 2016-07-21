@@ -3,6 +3,7 @@ import numpy as np
 from catalog import Entry
 from scipy.interpolate import RegularGridInterpolator
 
+
 class Background(Entry):
     """Docstring."""
 
@@ -23,6 +24,7 @@ class Background(Entry):
         self.sigma_lng = _interp(obkg.zbins, obkg.lnchisqbins, obkg.imagbins,
                                     obkg.sigma_lng, xnew=self.zbins, 
                                     znew=self.imagbins)
+        self.n = np.sum(self.sigma_g, axis=1) * self.chisqbinsize
         
     @staticmethod
     def _interp(x, y, z, values, xnew=None, ynew=None, znew=None):
