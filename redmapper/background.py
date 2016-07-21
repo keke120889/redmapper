@@ -4,7 +4,7 @@ from catalog import Entry
 from scipy.interpolate import RegularGridInterpolator
 
 
-class Background(Entry):
+class Background(Object):
     """Docstring."""
 
     def __init__(self, filename):
