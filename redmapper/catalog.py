@@ -72,8 +72,7 @@ class DataObject(object):
 
 
 class Entry(DataObject):
-
-    """ docstring """
+    """Docstring."""
 
     def __init__(self, *arrays):
         if any([arr.size != 1 for arr in arrays]):
@@ -88,12 +87,14 @@ class Entry(DataObject):
 
 
 class Catalog(DataObject):
-
-    """ docstring """
+    """Docstring."""
 
     entry_class = Entry
 
-    def __len__(self): return len(self._ndarray)
+    @property
+    def size(self): return self._ndarray.size
+
+    def __len__(self): return self.size
 
     def __getitem__(self, key):
     	if isinstance(key, int):

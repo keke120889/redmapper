@@ -8,18 +8,8 @@ import healpy as hp
 import os
 
 
-class Galaxy(Entry): 
-
-    """ docstring """
-
-    pass
-
-
 class GalaxyCatalog(Catalog):
-
-    """ docstring """
-
-    entry_class = Galaxy
+    """Docstring."""
 
     def __init__(self, *arrays, **kwargs):
         super(GalaxyCatalog, self).__init__(*arrays)
@@ -45,19 +35,10 @@ class GalaxyCatalog(Catalog):
         # check that the file is there and the right format
         # this will raise an exception if it's not there.
         hdr = fitsio.read_header(filename, ext=1)
-
-        try:
-            pixelated = hdr['PIXELS']
-        except KeyError:
-            pixelated = False # this is not a pixelated file, just fits file
+        pixelated, fitsformat = hdr.get("PIXELS", 0), hdr.get("FITS", 0)
         if not pixelated:
             return super(GalaxyCatalog, self).from_fits_file(filename)
-
         # this is to keep us from trying to use old IDL galfiles
-        try:
-            fitsformat = hdr['FITS']
-        except KeyError:
-            fitsformat = False
         if not fitsformat:
             raise ValueError("Input galfile must describe fits files.")
 
@@ -97,7 +78,7 @@ class GalaxyCatalog(Catalog):
         # read the files
         ctr = 0
         for index in indices:
-            cat[ctr : ctr+tab[0]['NGALS'][index]] = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][index]),ext=1)
+            cat[ctr : ctr+tab[0]['NGALS'][index]] = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][index]), ext=1)
             ctr += tab[0]['NGALS'][index]
         # In the IDL version this is trimmed to the precise boundary requested.
         # that's easy in simplepix.  Not sure how to do in healpix.
