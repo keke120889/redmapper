@@ -41,7 +41,7 @@ class Solver(object):
                                                  self.rsig)
 
     def solve_nfw(self):
-        return self._solver.solf_nfw()
+        return self._solver.solve_nfw()
 
         
 
