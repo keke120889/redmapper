@@ -1,0 +1,14 @@
+galfile: ./data/pixelized/dr8_catalog_test_master_table.fit
+
+catfile: None
+zredfile: None
+zrange: [0.05,0.60]
+specfile: ./data/dr8_test_spec.fit
+outbase: dr8_testing
+parfile: ./data/dr8_pars.fit
+chisq_max: 20.0
+bkgfile: ./data/dr8_bkg.fit
+zlambdafile: None
+wcenfile: None
+lval_reference: 0.2
+mask_mode: 0
