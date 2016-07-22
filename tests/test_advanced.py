@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from .context import sample
+#from .context import sample
 
-import unittest
-
-
-class AdvancedTestSuite(unittest.TestCase):
-    """Advanced test cases."""
-
-    def test_thoughts(self):
-        sample.hmm()
+#import unittest
 
 
-if __name__ == '__main__':
-    unittest.main()
+#class AdvancedTestSuite(unittest.TestCase):
+#    """Advanced test cases."""
+
+#    def test_thoughts(self):
+#        sample.hmm()
+
+
+#if __name__ == '__main__':
+#    unittest.main()
