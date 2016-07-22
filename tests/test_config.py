@@ -19,4 +19,3 @@ class ReadConfigTestCase(unittest.TestCase):
 
 if __name__=='__main__':
     unittest.main()
-#    test_read_config()
