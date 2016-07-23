@@ -34,7 +34,7 @@ class DataObject(object):
         Returns:
             DataObject, properly constructed.
         """
-        array = fitsio.read(filename)
+        array = fitsio.read(filename, ext=1)
         return cls(array)
 
     def __getattribute__(self, attr):
@@ -83,7 +83,13 @@ class Entry(DataObject):
     def from_dict(cls, dict): pass
 
     def __getattribute__(self, attr):
-        return super(Entry, self).__getattribute__(attr)
+        try:
+            return object.__getattribute__(self, attr)
+        except AttributeError:  # attr must be a fieldname
+            pass
+        if attr.upper() in self._ndarray.dtype.names:
+            return self._ndarray[attr.upper()][0]
+        return object.__getattribute__(self, attr)
 
 
 class Catalog(DataObject):
