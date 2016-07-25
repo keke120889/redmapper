@@ -31,8 +31,6 @@ class Background(object):
                                     (len(y), len(x), len(z))), 0, 1)
         return np.where(result < 0, 0, result)
 
-
-
     def __init__(self, filename):
         obkg = Entry.from_fits_file(filename)
         self.zbinsize, self.chisqbinsize, self.imagbinsize = 0.001, 0.5, 0.01
