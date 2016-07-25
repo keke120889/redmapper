@@ -7,7 +7,12 @@ class Solver(object):
     def __init__(self, r0, beta, ucounts, bcounts, r, w, 
                         cpars=np.zeros(4,dtype='f8'), rsig=0.0):
 
-        # ensure all correct length
+        # ensure all correct length, etc.
+
+        # we'll do that here in Python, and save the c code.
+        # Though of course that makes the c code more fragile,
+        # but it should always be accessed through here.
+        
         self.r0 = float(r0)
         self.beta = float(beta)
 
@@ -36,7 +41,7 @@ class Solver(object):
                                                  self.rsig)
 
     def solve_nfw(self):
-        return self._solver.solf_nfw()
+        return self._solver.solve_nfw()
 
         
 

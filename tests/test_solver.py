@@ -1,0 +1,33 @@
+import unittest
+import numpy.testing as testing
+import numpy as np
+import fitsio
+
+import redmapper
+
+class SolverNFWTestCase(unittest.TestCase):
+    def runTest(self):
+        file_name = 'test_solver_data.fit'
+        file_path = 'data'
+        
+        data=fitsio.read('%s/%s' % (file_path,file_name),ext=1)
+
+        # check some common errors...
+        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'][0:10],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'][0:10],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'][0:10],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'][0:10],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'][0:1],rsig=data[0]['RSIG'])
+
+
+        # and test the results
+        solver=redmapper.solver_nfw.Solver(data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        
+        lam,p,wt=solver.solve_nfw()
+
+        testing.assert_almost_equal(lam,data[0]['LAMBDA'])
+        testing.assert_array_almost_equal(p,data[0]['PVALS'])
+        testing.assert_array_almost_equal(wt,data[0]['WTVALS'])
+
+if __name__=='__main__':
+    unittest.main()

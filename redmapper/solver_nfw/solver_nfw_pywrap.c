@@ -68,7 +68,7 @@ SolverObject_init(struct SolverObject* self, PyObject *args)
     self->solver->rsig = rsig;
 
     if (PyArray_DIM(cpars_obj, 0) != CPAR_NTERMS) {
-	PyErr_SetString(PyExc_RuntimeError, "cpars with wrong number of terms");
+	PyErr_SetString(PyExc_ValueError, "cpars with wrong number of terms");
 	return -1;
     }    
     
