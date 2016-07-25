@@ -2,65 +2,30 @@ import fitsio
 import numpy as np
 from catalog import Entry
 import scipy.ndimage as ndi
-from scipy.interpolate import RegularGridInterpolator
+# from scipy.interpolate import RegularGridInterpolator
 
 
 class Background(object):
-    """Docstring."""
 
-    @staticmethod
-    def _interp(x, y, z, values, xnew=None, ynew=None, znew=None):
-        if xnew is None: xnew = x
-        if ynew is None: ynew = y
-        if znew is None: znew = z
-        xpts, ypts, zpts = np.meshgrid(xnew, ynew, znew)
-        coord = np.vstack((xpts.flatten(), ypts.flatten(), zpts.flatten())).T
-        interp_fn = RegularGridInterpolator((x, y, z), values, bounds_error=False, fill_value=None)
-        result = np.swapaxes(np.reshape(interp_fn(coord), 
-                                    (len(ynew), len(xnew), len(znew))), 0, 1)
-        return np.where(result < 0, 0, result)
+    # def _interp(data)
 
-    @staticmethod
-    def _interp2(x, y, z, values, dx, dy, dz):
-        scaling, offset = np.array([dx, dy, dz]), np.array([x[0], y[0], z[0]])
-        coord = np.vstack((arr.flatten() for arr in np.meshgrid(x, y, z)))
-        idx = (coord.T - offset).T / scaling[(slice(None),) + 
-                                                (None,)*(coord.ndim-1)]
-        new_values = ndi.map_coordinates(values, idx, mode='nearest')
-        result = np.swapaxes(np.reshape(new_values, 
-                                    (len(y), len(x), len(z))), 0, 1)
-        return np.where(result < 0, 0, result)
+    # def _interp_axis(data, axis, oldx, newx):
+    #     axes = (ax for ax in range(len(data.shape)) if ax != axis) + (axis,)
+    #     data, new_data = np.transpose(data, axes)
+    #     for datum in np.transpose(data, axes).reshape(y*z, len(oldx)):
+    #         new_data[]
+    #     return np.reshape()
 
-    def __init__(self, filename):
-        obkg = Entry.from_fits_file(filename)
-        self.zbinsize, self.chisqbinsize, self.imagbinsize = 0.001, 0.5, 0.01
-        
-        self.lnchisqbins = obkg.lnchisqbins
-        self.zbins = np.arange(obkg.zrange[0], obkg.zrange[1], self.zbinsize)
-        self.chisqbins = np.arange(obkg.chisqrange[0], obkg.chisqrange[1], 
-                                                            self.chisqbinsize)
-        self.imagbins = np.arange(obkg.imagrange[0], obkg.imagrange[1], 
-                                                            self.imagbinsize)
-        self.obkg = obkg
-        
-        self.sigma_g = Background._interp(obkg.imagbins, obkg.chisqbins, 
-                                obkg.zbins, obkg.sigma_g, xnew=self.imagbins, 
-                                ynew=self.chisqbins, znew=self.zbins)
-        self.sigma_lng = Background._interp(obkg.imagbins, obkg.lnchisqbins, 
-                                obkg.zbins, obkg.sigma_lng, 
-                                xnew=self.imagbins, znew=self.zbins)
-
-        # self.sigma_g = Background._interp2(self.imagbins, self.chisqbins,
-        #                         self.zbins, obkg.sigma_g, obkg.imagbinsize,
-        #                         obkg.chisqbinsize, obkg.zbinsize)
-        # self.sigma_lng = Background._interp2(self.imagbins, self.lnchisqbins,
-        #                         self.zbins, obkg.sigma_lng, obkg.imagbinsize,
-        #                         obkg.lnchisqbinsize, obkg.zbinsize)
-        # self.n = np.sum(self.sigma_g, axis=1) * self.chisqbinsize
-
-
-## for testing only
-class IDLBackground(object):
+    # def __init__(self, filename):
+    #     obkg = Entry.from_fits_file(filename)
+    #     self.zbinsize, self.chisqbinsize, self.imagbinsize = 0.001, 0.5, 0.01
+    #     self.lnchisqbins = obkg.lnchisqbins
+    #     self.zbins = np.arange(obkg.zrange[0], obkg.zrange[1], self.zbinsize)
+    #     self.chisqbins = np.arange(obkg.chisqrange[0], obkg.chisqrange[1], 
+    #                                                         self.chisqbinsize)
+    #     self.imagbins = np.arange(obkg.imagrange[0], obkg.imagrange[1], 
+    #                                                         self.imagbinsize)
+    #     self.obkg = obkg
 
     def __init__(self, filename):
         obkg = Entry.from_fits_file(filename)
@@ -126,4 +91,64 @@ class IDLBackground(object):
         self.sigma_g = sigma_g_new
         self.sigma_lng = sigma_lng_new
         self.n = n_new
+
+
+# # Alternate method of interpolation
+# class AltAltBackground(object):
+#     """Docstring."""
+
+#     # @staticmethod
+#     # def _interp(x, y, z, values, xnew=None, ynew=None, znew=None):
+#     #     if xnew is None: xnew = x
+#     #     if ynew is None: ynew = y
+#     #     if znew is None: znew = z
+#     #     xpts, ypts, zpts = np.meshgrid(xnew, ynew, znew)
+#     #     coord = np.vstack((xpts.flatten(), ypts.flatten(), zpts.flatten())).T
+#     #     interp_fn = RegularGridInterpolator((x, y, z), values, 
+#     #                                         bounds_error=False, 
+#     #                                         fill_value=None)
+#     #     result = np.swapaxes(np.reshape(interp_fn(coord), 
+#     #                                 (len(ynew), len(xnew), len(znew))), 0, 1)
+#     #     return np.where(result < 0, 0, result)
+
+#     @staticmethod
+#     def _interp2(x, y, z, values, dx, dy, dz):
+#         scaling, offset = np.array([dx, dy, dz]), np.array([x[0], y[0], z[0]])
+#         coord = np.vstack((arr.flatten() for arr in np.meshgrid(x, y, z)))
+#         idx = (coord.T - offset).T / scaling[(slice(None),) + 
+#                                                 (None,)*(coord.ndim-1)]
+#         new_values = ndi.map_coordinates(values, idx, mode='nearest')
+#         result = np.swapaxes(np.reshape(new_values, 
+#                                     (len(y), len(x), len(z))), 0, 1)
+#         return np.where(result < 0, 0, result)
+
+#     def __init__(self, filename):
+#         obkg = Entry.from_fits_file(filename)
+#         self.zbinsize, self.chisqbinsize, self.imagbinsize = 0.001, 0.5, 0.01
+        
+#         self.lnchisqbins = obkg.lnchisqbins
+#         self.zbins = np.arange(obkg.zrange[0], obkg.zrange[1], self.zbinsize)
+#         self.chisqbins = np.arange(obkg.chisqrange[0], obkg.chisqrange[1], 
+#                                                             self.chisqbinsize)
+#         self.imagbins = np.arange(obkg.imagrange[0], obkg.imagrange[1], 
+#                                                             self.imagbinsize)
+#         self.obkg = obkg
+        
+#         # self.sigma_g = AltBackground._interp(obkg.imagbins, obkg.chisqbins, 
+#         #                                   obkg.zbins, obkg.sigma_g, 
+#         #                                   xnew=self.imagbins, 
+#         #                                   ynew=self.chisqbins, 
+#         #                                   znew=self.zbins)
+#         # self.sigma_lng = AltBackground._interp(obkg.imagbins, obkg.lnchisqbins, 
+#         #                                     obkg.zbins, obkg.sigma_lng, 
+#         #                                     xnew=self.imagbins, 
+#         #                                     znew=self.zbins)
+
+#         self.sigma_g = AltBackground._interp2(self.imagbins, self.chisqbins,
+#                                 self.zbins, obkg.sigma_g, obkg.imagbinsize,
+#                                 obkg.chisqbinsize, obkg.zbinsize)
+#         self.sigma_lng = AltBackground._interp2(self.imagbins, self.lnchisqbins,
+#                                 self.zbins, obkg.sigma_lng, obkg.imagbinsize,
+#                                 obkg.lnchisqbinsize, obkg.zbinsize)
+#         self.n = np.sum(self.sigma_g, axis=1) * self.chisqbinsize
 
