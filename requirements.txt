@@ -1,5 +1,8 @@
-nose
 sphinx
+nose
 pyyaml
 fitsio
 esutil
+numpy
+healpy
+
