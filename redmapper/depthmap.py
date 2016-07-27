@@ -2,9 +2,10 @@ import fitsio
 import healpy as hp
 import numpy as np
 
-class DepthMap:
+
+class DepthMap(object):
     
-    def __init__(self,filename):
+    def __init__(self, filename):
         # call method to read
         self.filename = filename
         self._read_depthmap()
@@ -14,7 +15,7 @@ class DepthMap:
         # self.nside = nside
         pass
 
-    def get_depth(self, ra=None, dec=None, theta=None, phi=None, ip_ring=None):
+    def get_depth(self, ra=None, dec=None, theta=None, phi=None, ipring=None):
         # require ra/dec or theta/phi and check
 
         # return depth info

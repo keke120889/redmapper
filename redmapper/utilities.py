@@ -30,6 +30,9 @@ class MStar(object):
         return self._f(z)
 
 
+## Useful constants ##
+TOTAL_SQDEG = 4 * 180**2 / np.pi
+
 
 #############################################################
 ## cubic spline interpolation, based on Eddie Schlafly's code, from NumRec
