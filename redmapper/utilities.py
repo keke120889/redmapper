@@ -2,6 +2,33 @@
 
 import numpy as np
 from scipy.linalg import solve_banded
+from pkg_resources import resource_filename
+import scipy.interpolate as interpolate
+import fitsio
+
+######################################
+## mstar LUT code
+######################################
+
+class MStar(object):
+    def __init__(self, survey, band):
+        self.survey = survey
+        self.band = band
+
+        self.mstar_file = resource_filename(__name__,'data/mstar/mstar_%s_%s.fit' % (self.survey, self.band))
+
+        try:
+            self._mstar_arr = fitsio.read(self.mstar_file,ext=1)
+        except:
+            raise IOError("Could not find mstar file mstar_%s_%s.fit" % (self.survey, self.band))
+
+        #self._spl = CubicSpline(self._mstar_arr['Z'],self._mstar_arr['MSTAR'])
+        self._f = interpolate.interp1d(self._mstar_arr['Z'],self._mstar_arr['MSTAR'],kind='cubic')
+    def __call__(self, z):
+        # may want to check the type ... if it's a scalar, return scalar?  TBD
+        
+        return self._f(z)
+
 
 
 #############################################################
@@ -9,7 +36,7 @@ from scipy.linalg import solve_banded
 ##   http://faun.rc.fas.harvard.edu/eschlafly/apored/cubicspline.py
 #############################################################
 
-class CubicSpline:
+class CubicSpline(object):
     def __init__(self, x, y, yp=None):
         npts = len(x)
         mat = np.zeros((3, npts))
