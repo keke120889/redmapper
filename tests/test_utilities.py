@@ -20,6 +20,20 @@ class SplineTestCase(unittest.TestCase):
         testing.assert_almost_equal(vals,np.array([14.648017,19.792828,19.973761,20.301322],dtype=np.float64),decimal=6)
         
 
+class MStarTestCase(unittest.TestCase):
+    def runTest(self):
+        # make sure invalid raises proper exception
+        self.assertRaises(IOError,redmapper.utilities.MStar,'blah','junk')
+                          
+        # make an SDSS test...
+        ms = redmapper.utilities.MStar('sdss','i03')
+
+        mstar = ms([0.1,0.2,0.3,0.4,0.5])
+        # test against IDL...
+        testing.assert_almost_equal(mstar,np.array([16.2375,17.8500,18.8281,19.5878,20.1751]),decimal=4)
+        # and against regressions...
+        testing.assert_almost_equal(mstar,np.array([ 16.23748776,  17.85000035,  18.82812871,  19.58783337,  20.17514801]))
+        
 
 # copy this for a new utility test
 class UtilityTemplateTestCase(unittest.TestCase):

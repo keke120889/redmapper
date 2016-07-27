@@ -6,6 +6,12 @@ from pkg_resources import resource_filename
 import scipy.interpolate as interpolate
 import fitsio
 
+###################################
+## Useful constants ##
+###################################
+TOTAL_SQDEG = 4 * 180**2 / np.pi
+
+
 ######################################
 ## mstar LUT code
 ######################################
@@ -30,8 +36,6 @@ class MStar(object):
         return self._f(z)
 
 
-## Useful constants ##
-TOTAL_SQDEG = 4 * 180**2 / np.pi
 
 
 #############################################################
