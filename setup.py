@@ -2,6 +2,7 @@
 
 from setuptools import setup, find_packages, Extension
 import numpy
+import glob
 
 with open('README.md') as f:
     readme = f.read()
@@ -25,6 +26,9 @@ solver_nfw_module = Extension('redmapper.solver_nfw._solver_nfw_pywrap',
                               include_dirs=include_dirs)
 ext_modules.append(solver_nfw_module)
 
+# data files
+initcolorfiles = glob.glob('data/initcolors/*.fit')
+mstarfiles = glob.glob('data/mstar/*.fit')
     
 setup(
     name='redmapper',
@@ -37,6 +41,8 @@ setup(
     license=license,
     ext_modules=ext_modules,
     install_requires=['numpy'],
-    packages=find_packages(exclude=('tests', 'docs'))
+    packages=find_packages(exclude=('tests', 'docs')),
+    data_files=[('redmapper/data/initcolors', initcolorfiles),
+                ('redmapper/data/mstar', mstarfiles)]
 )
 
