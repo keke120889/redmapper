@@ -3,6 +3,9 @@
 import numpy as np
 from scipy.linalg import solve_banded
 
+## Useful constants ##
+TOTAL_SQDEG = 4 * 180**2 / np.pi
+
 
 #############################################################
 ## cubic spline interpolation, based on Eddie Schlafly's code, from NumRec
