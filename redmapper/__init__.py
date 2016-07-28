@@ -6,4 +6,4 @@ import config
 import runcat
 import solver_nfw
 import utilities
-
+import redsequence
