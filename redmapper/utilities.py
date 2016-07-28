@@ -18,8 +18,8 @@ TOTAL_SQDEG = 4 * 180**2 / np.pi
 
 class MStar(object):
     def __init__(self, survey, band):
-        self.survey = survey
-        self.band = band
+        self.survey = survey.strip()
+        self.band = band.strip()
 
         self.mstar_file = resource_filename(__name__,'data/mstar/mstar_%s_%s.fit' % (self.survey, self.band))
 
