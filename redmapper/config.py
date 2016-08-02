@@ -29,18 +29,10 @@ def read_yaml(filename, defaults=None):
     
     return outdict
 
-def read_config(conffile):
 
-    """
-    Name:
-        read_config
-    Purpose:
-        Read a redmapper config file in YAML format and put into dict.
-    Calling Sequence:
-        confdict = config.read_config(conffile)
-    Inputs:
-        conffile: configuration file name
-    """
+class Configuration(object):
 
-    defaults = None # replace with actual default dict
-    return read_yaml(conffile, defaults)
+    def __init__(self, conffile):
+        confdict = read_yaml(conffile)
+        for key in confdict:
+            setattr(self, key, confidct[key])
