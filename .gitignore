@@ -5,4 +5,5 @@
 build
 dist
 redmapper.egg-info
+.DS_Store
 
