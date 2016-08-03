@@ -26,11 +26,16 @@ class RedSequenceColorTestCase(unittest.TestCase):
         testing.assert_equal(zredstr.nmag,5)
         
         # check the z range...
-        testing.assert_almost_equal([zredstr.z.min(),zredstr.z.max()],np.array([0.01,0.665]))
+        testing.assert_almost_equal([zredstr.z[0],zredstr.z[zredstr.z.size-2]],np.array([0.01,0.665]))
 
-        # and the number of zs
-        testing.assert_equal(zredstr.z.size,132)
+        # and the number of zs (+1 for overflow bin)
+        testing.assert_equal(zredstr.z.size,132+1)
 
+        # check lookup tables...
+        testing.assert_equal(zredstr.zindex([0.0,0.2,0.502,0.7]),[0, 38, 98, 132])
+        testing.assert_equal(zredstr.refmagindex([11.0,15.19,19.195,50.0]),[0, 319, 720, 930])
+        testing.assert_equal(zredstr.lumrefmagindex([11.0,15.19,19.195,50.0]),[0, 319, 720, 1153])
+        
         indices=np.array([0,20,50,100])
         
         # spot check of pivotmags ... IDL & python
@@ -71,10 +76,10 @@ class RedSequenceColorTestCase(unittest.TestCase):
         testing.assert_almost_equal(zredstr.covmat[3,0,indices],np.array([ -0.000291,  0.000251,  0.000707,  0.000006]),decimal=5)
 
         # lupcorr...here we want to test all colors...
-        testing.assert_almost_equal(zredstr.lupcorr[indices,0,800],np.array([ -0.026939, -0.060606, -0.127144, -0.510393]),decimal=5)
-        testing.assert_almost_equal(zredstr.lupcorr[indices,1,800],np.array([ -0.000332, -0.000689, -0.002615, -0.007729]),decimal=5)
-        testing.assert_almost_equal(zredstr.lupcorr[indices,2,800],np.array([  0.000050,  0.000025, -0.000057, -0.000425]),decimal=5)
-        testing.assert_almost_equal(zredstr.lupcorr[indices,3,800],np.array([  0.003216,  0.002966,  0.002853,  0.002245]),decimal=5)
+        testing.assert_almost_equal(zredstr.lupcorr[800,indices,0],np.array([ -0.026939, -0.060606, -0.127144, -0.510393]),decimal=5)
+        testing.assert_almost_equal(zredstr.lupcorr[800,indices,1],np.array([ -0.000332, -0.000689, -0.002615, -0.007729]),decimal=5)
+        testing.assert_almost_equal(zredstr.lupcorr[800,indices,2],np.array([  0.000050,  0.000025, -0.000057, -0.000425]),decimal=5)
+        testing.assert_almost_equal(zredstr.lupcorr[800,indices,3],np.array([  0.003216,  0.002966,  0.002853,  0.002245]),decimal=5)
 
         # corr stuff
         testing.assert_almost_equal(zredstr.corr[indices],np.array([ -0.001188,  0.004373,  0.006569,  0.008507]),decimal=5)
@@ -93,8 +98,8 @@ class RedSequenceColorTestCase(unittest.TestCase):
         testing.assert_almost_equal(zredstr._mstar[indices],np.array([ 11.111773, 16.461048, 18.476456, 20.232077]),decimal=5)
 
         # lumnorm
-        testing.assert_almost_equal(zredstr.lumnorm[indices,400],np.array([  3.589124,  0.105102,  0.000006,  0.000000]),decimal=5)
-        testing.assert_almost_equal(zredstr.lumnorm[indices,800],np.array([  7.577478,  2.958363,  1.152083,  0.163357]),decimal=5)
+        testing.assert_almost_equal(zredstr.lumnorm[400,indices],np.array([  3.589124,  0.105102,  0.000006,  0.000000]),decimal=5)
+        testing.assert_almost_equal(zredstr.lumnorm[800,indices],np.array([  7.577478,  2.958363,  1.152083,  0.163357]),decimal=5)
 
 
 
