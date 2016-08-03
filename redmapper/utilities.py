@@ -7,9 +7,13 @@ import scipy.interpolate as interpolate
 import fitsio
 
 ###################################
-## Useful constants ##
+## Useful constants/conversions ##
 ###################################
 TOTAL_SQDEG = 4 * 180**2 / np.pi
+SEC_PER_DEG = 3600
+
+def astro_to_sphere(ra, dec):
+    return np.radians(90.0-dec), np.radians(ra)
 
 
 ######################################
