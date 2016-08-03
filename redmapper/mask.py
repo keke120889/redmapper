@@ -23,7 +23,9 @@ class HPMask(Mask):
 		if confstr.pixnum > 0:
 			hpix_area = TOTAL_SQDEG/(12 * hdr.nside**2)
 			border = confstr.border + 2*np.sqrt(hpix_area)
-			# more fn calls to be implemented
+			# more to come
+			ra, dec = sphere_to_astro(*hp.pix2ang(nside, hpix_ring))
+			# more to come
 			muse = None
 		else:
 			muse = np.arange(nlim)
@@ -40,10 +42,13 @@ class HPMask(Mask):
 							bsmaskind = None, bfmaskind = None):
 		ras = clusters.ra + maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(clusters.dec))
 		decs = clusters.dec + maskgals.y/(mpcscale*SEC_PER_DEG)
-		theta, pi = astro_to_sphere(ras, dec)
-		# fn calls, var assignments to be implemented
-		radmask = np.zeros(ras.size)
-		if self.fracgood_float == 0:
-			gd = None
-			# conftinue implementation
+		theta, phi = astro_to_sphere(ras, dec)
+		ipring = hp.ang2pix(self.nside, theta, phi)
+		ipring_off = np.clip(ipring - maskstr.offset, 0, maskstr.npix-1)
+		if self.fracgood_float == 0: 
+			gd, = np.where(self.fracgood[ipring_off] > 0)	
+		else:
+			gd, = np.where(self.fracgood[ipring_off] > np.random.rand(ras.size))
+		radmask[gd] = 1
+		return radmask
 
