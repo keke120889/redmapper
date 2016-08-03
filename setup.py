@@ -26,6 +26,17 @@ solver_nfw_module = Extension('redmapper.solver_nfw._solver_nfw_pywrap',
                               include_dirs=include_dirs)
 ext_modules.append(solver_nfw_module)
 
+# chisq_dist
+chisq_dist_sources=['redmapper/chisq_dist/chisq_dist.c',
+                    'redmapper/chisq_dist/chisq_dist_pywrap.c']
+chisq_dist_module = Extension('redmapper.chisq_dist._chisq_dist_pywrap',
+                              extra_compile_args=['-std=gnu99'],
+                              libraries=['gslcblas','gsl'],
+                              sources=chisq_dist_sources,
+                              include_dirs=include_dirs)
+ext_modules.append(chisq_dist_module)
+                              
+
 # data files
 initcolorfiles = glob.glob('data/initcolors/*.fit')
 mstarfiles = glob.glob('data/mstar/*.fit')
