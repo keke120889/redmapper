@@ -58,7 +58,7 @@ class GalaxyCatalog(Catalog):
             # first we need all the pixels that are contained in the big pixel
             theta, phi = hp.pix2ang(nside_tab, tab[0]['HPIX'])
             ipring_big = hp.ang2pix(nside, theta, phi)
-            indices = np.where(ipring_big == hpix)
+            indices, = np.where(ipring_big == hpix)
             if border > 0.0:
                 # now we need to find the extra boundary...
                 boundaries = hp.boundaries(nside, hpix, step=nside_tab/nside)
