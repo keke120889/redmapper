@@ -19,14 +19,49 @@ class HPMask(Mask):
 		maskinfo, hdr = fitsio.read(confstr.maskfile, ext=1, header=True)
 		maskinfo = Entry(maskinfo)
 		nlim, nside, nest = maskinfo.hpix.size, hdr['NSIDE'], hdr['NEST']
-		hpix_ring = maskinfo.hpix if nest != 1 else None # replace none w/ fn call
-		if confstr.pixnum > 0:
+		hpix_ring = maskinfo.hpix if nest != 1 else hp.nest2ring(nside,maskinfo.hpix) # replace none w/ fn call
+		if confstr.hpix > 0:
 			hpix_area = TOTAL_SQDEG/(12 * hdr.nside**2)
 			border = confstr.border + 2*np.sqrt(hpix_area)
+
+			# which hpix_ring pixels are within confstr.hpix (at confstr.nside)?
+			# with some border allowance
+			
+			#theta,phi=hp.pix2ang(nside,hpix_ring)
+			#vec=hp.ang2vec(theta,phi)
+
+			# if we ignore the border...
+			theta,phi=hp.pix2ang(nside,hpix_ring)
+			hpix_coarse=hp.ang2pix(confstr.nside,theta,phi)
+
+			muse,=np.where(hpix_coarse == confstr.hpix)
+
+			## or...
+
+			theta,phi=hp.pix2ang(nside,hpix_ring)
+			ipring_big=hp.ang2pix(confstr.nside,theta,phi)
+			indices,=np.where(ipring_big == hpix)
+			if border > 0.0:
+				# find the extra boundary around the big pixel,
+				# at steps equal to the size of the small (mask) pixels
+				boundaries=hp.boundaries(confstr.nside,confstr.hpix,step=nside/confstr.nside)
+				# see galaxy.py
+			# to do query_disc
+				# theta,phi is of the center of the big pixel
+			vec=hp.ang2vec(theta,phi)
+
+			# set radius to diagonal radius of pixel + border + cushion
+			pixint=hp.query_disc(nside,vec[:],radius*np.pi/180.,inclusive=False)
+				
+			muse,=esutil.numpy_util.match(hpix_ring,pixint)
+			
+			
+
+			
 			# more to come
-			ra, dec = sphere_to_astro(*hp.pix2ang(nside, hpix_ring))
+			#ra, dec = sphere_to_astro(*hp.pix2ang(nside, hpix_ring))
 			# more to come
-			muse = None
+			#muse = None
 		else:
 			muse = np.arange(nlim)
 		offset, ntot = min(hpix_ring)-1, max(hpix_ring)-min(hpix_ring)+3
