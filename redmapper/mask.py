@@ -75,17 +75,41 @@ class HPMask(Mask):
             self.fracgood_float = 0
             self.fracgood[hpix_ring-offset] = 1
 
-    def calc_radmask(self, maskgals, clusters, mpcscale, 
-                            bsmaskind = None, bfmaskind = None):
-        ras = clusters.ra + maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(clusters.dec))
-        decs = clusters.dec + maskgals.y/(mpcscale*SEC_PER_DEG)
-        theta, phi = astro_to_sphere(ras, dec)
+
+    def calc_radecmask(self, ra, dec):
+        # error checking that ra, dec same length, etc.
+
+        theta,phi = astro_to_sphere(ra, dec)
         ipring = hp.ang2pix(self.nside, theta, phi)
         ipring_off = np.clip(ipring - maskstr.offset, 0, maskstr.npix-1)
         if self.fracgood_float == 0: 
             gd, = np.where(self.fracgood[ipring_off] > 0)   
         else:
             gd, = np.where(self.fracgood[ipring_off] > np.random.rand(ras.size))
-        radmask[gd] = 1
+
+        radmask=np.zeros(ra.size,dtype=np.bool_)
+        radmask[gd] = True
+
         return radmask
+            
+    def calc_radmask(self, maskgals, clusters, mpcscale, 
+                            bsmaskind = None, bfmaskind = None):
+        ras = clusters.ra + maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(clusters.dec))
+        decs = clusters.dec + maskgals.y/(mpcscale*SEC_PER_DEG)
+
+        # maskgals should be self.maskgals, I think
+
+        self.maskgals['MASKED'] = self.calc_radecmask(ras,decs)
+        
+        #return self.calc_radecmask(ras,decs)
+        
+        #theta, phi = astro_to_sphere(ras, dec)
+        #ipring = hp.ang2pix(self.nside, theta, phi)
+        #ipring_off = np.clip(ipring - maskstr.offset, 0, maskstr.npix-1)
+        #if self.fracgood_float == 0: 
+        #    gd, = np.where(self.fracgood[ipring_off] > 0)   
+        #else:
+        #    gd, = np.where(self.fracgood[ipring_off] > np.random.rand(ras.size))
+        #radmask[gd] = 1
+        #return radmask
 
