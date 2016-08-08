@@ -4,17 +4,20 @@ import numpy as np
 from catalog import Entry
 from utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere
 
-_PIXRES = 8
 
 class Mask(object):
     """Docstring."""
-    def __init__(self): pass
-    def calc_radmask(self, *args, **kwargs): pass
+    
+    def __init__(self, confstr):
+        try:
+            self.read_maskgals(confstr.maskgalfile)
+        except ValueError:
+            self.gen_maskgals()
 
+    def calc_radmask(self, *args, **kwargs): pass
     def read_maskgals(self, maskgalfile):
-        # if maskgalfile doesn't exist
-        # self.gen_maskgals(self, maskgalfile)
-        pass
+        self.maskgals = Catalog.from_fits_file(maskgalfile)
+    def gen_maskgals(self): pass
 
 
 class HPMask(Mask):
@@ -44,15 +47,15 @@ class HPMask(Mask):
         except ValueError:
             self.fracgood_float = 0
             self.fracgood[hpix_ring-offset] = 1
-
+        super(HPMask, self)/__init__(self, confstr)
 
     def compute_radmask(self, ra, dec):
         theta, phi = astro_to_sphere(ra, dec)
         ipring = hp.ang2pix(self.nside, theta, phi)
-        ipring = np.clip(ipring - maskstr.offset, 0, maskstr.npix-1)
+        ipring_offset = np.clip(ipring - maskstr.offset, 0, maskstr.npix-1)
         ref = 0 if self.fracgood_float == 0 else np.random.rand(ras.size)     
         radmask = np.zeros(ra.size, dtype=np.bool_)
-        radmask[np.where(self.fracgood[ipring] > ref)] = True
+        radmask[np.where(self.fracgood[ipring_offset] > ref)] = True
         return radmask
             
     def set_radmask(self, clusters, mpcscale):
