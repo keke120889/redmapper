@@ -11,6 +11,11 @@ class Mask(object):
     def __init__(self): pass
     def calc_radmask(self, *args, **kwargs): pass
 
+    def read_maskgals(self, maskgalfile):
+        # if maskgalfile doesn't exist
+        # self.gen_maskgals(self, maskgalfile)
+        pass
+
 
 class HPMask(Mask):
     """Docstring."""
