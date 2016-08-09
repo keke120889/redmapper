@@ -3,6 +3,7 @@ import esutil as eu
 import numpy as np
 import itertools
 from catalog import Catalog, Entry
+from utilities import chisq_pdf
 
 
 class Cluster(Entry):
@@ -19,11 +20,13 @@ class Cluster(Entry):
                                     dtype=[('DIST', 'f8'), ('PMEM', 'f8')])
         self.members.add_fields(new_fields)
 
-    def calc_lambda(self): pass
+    def calc_lambda(self, zredstr, color):
+        chisq = None
+        cwt = chisq_pdf(chisq, color.size)
+
 
 
 class ClusterCatalog(Catalog): 
     """Dosctring."""
-    
     entry_class = Cluster
 
