@@ -35,7 +35,7 @@ class RedSequenceColorPar(object):
                     zbinsize=hdr['ZBINCOAR']
             except:
                 raise ValueError("Missing field from parameter header.")
-                    
+
         
         try:
             lowzmode=hdr['LOWZMODE']
@@ -83,7 +83,7 @@ class RedSequenceColorPar(object):
         else:
             refmagrange=np.array([12.0,limmag],dtype='f4')
             lumrefmagrange=np.array([12.0,ms(zrange[1])-2.5*np.log10(0.1)])
-        self.refmagbins=np.arange(refmagrange[0],refmagrange[1],refmagbinsize,dtype='f8')
+        self.refmagbins = np.arange(refmagrange[0], refmagrange[1], refmagbinsize, dtype='f8')
         self.lumrefmagbins=np.arange(lumrefmagrange[0],lumrefmagrange[1],refmagbinsize,dtype='f8')
 
         # and for fast look-ups...
@@ -245,6 +245,7 @@ class RedSequenceColorPar(object):
         self.refmaginteger = np.round(self.refmagbins*self.refmagbinscale).astype(np.int64)
         self.lumrefmagbins[self.lumrefmagbins.size-1] = 1000.0
         self.lumrefmaginteger = np.round(self.lumrefmagbins*self.refmagbinscale).astype(np.int64)
+        self.ncol = ncol
 
         # make this into a catalog
         #super(RedSequenceColorPar, self).__init__(zredstr)
@@ -286,8 +287,14 @@ class RedSequenceColorPar(object):
         else:
             return lumrefmagind
 
-    def calculate_chisq(self):
-        pass
+    def calculate_chisq(self, galaxies, z):
+        zind = zredstr.zindex(z)
+        magind = zredstr.refmagindex(galaxies.refmag)
+        galcolor = galaxies.mag[:, :(self.ncol-1)] - galaxies.mag[:, 1:]
+        chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],galaxies.refmag,galaxies.mag_err,galcolor,refmagerr=galaxies.refmag_err,lupcorr=zredstr.lupcorr[magind,zind,:])
+        chisq = chisq_dist.compute_chisq(chisq_mode=True)
+        lkhd = chisq_dist.compute_chisq(chisq_mode=False)
+        return chisq
 
     def calculate_zred(self,blah):
         # I think this can be housed here.  Not urgent.
