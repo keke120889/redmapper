@@ -290,7 +290,7 @@ class RedSequenceColorPar(object):
     def calculate_chisq(self, galaxies, z, calc_lkhd=False):
         zind = self.zindex(z)
         magind = self.refmagindex(galaxies.refmag)
-        galcolor = galaxies.mag[:, :self.ncol] - galaxies.mag[:, 1:]
+        galcolor = galaxies.mag[:,:self.ncol] - galaxies.mag[:,1:]
         chisq_dist = redmapper.chisq_dist.ChisqDist(self.covmat[:,:,zind],self.c[zind,:],self.slope[zind,:],self.pivotmag[zind],galaxies.refmag,galaxies.mag_err,galcolor,refmagerr=galaxies.refmag_err,lupcorr=self.lupcorr[magind,zind,:])
 
         if calc_lkhd :
