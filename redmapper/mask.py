@@ -47,7 +47,7 @@ class HPMask(Mask):
         except ValueError:
             self.fracgood_float = 0
             self.fracgood[hpix_ring-offset] = 1
-        super(HPMask, self)/__init__(self, confstr)
+        super(HPMask, self).__init__(self, confstr)
 
     def compute_radmask(self, ra, dec):
         theta, phi = astro_to_sphere(ra, dec)
