@@ -288,12 +288,11 @@ class RedSequenceColorPar(object):
             return lumrefmagind
 
     def calculate_chisq(self, galaxies, z):
-        zind = zredstr.zindex(z)
-        magind = zredstr.refmagindex(galaxies.refmag)
-        galcolor = galaxies.mag[:, :(self.ncol-1)] - galaxies.mag[:, 1:]
-        chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],galaxies.refmag,galaxies.mag_err,galcolor,refmagerr=galaxies.refmag_err,lupcorr=zredstr.lupcorr[magind,zind,:])
+        zind = self.zindex(z)
+        magind = self.refmagindex(galaxies.refmag)
+        galcolor = galaxies.mag[:, :self.ncol] - galaxies.mag[:, 1:]
+        chisq_dist = redmapper.chisq_dist.ChisqDist(self.covmat[:,:,zind],self.c[zind,:],self.slope[zind,:],self.pivotmag[zind],galaxies.refmag,galaxies.mag_err,galcolor,refmagerr=galaxies.refmag_err,lupcorr=self.lupcorr[magind,zind,:])
         chisq = chisq_dist.compute_chisq(chisq_mode=True)
-        lkhd = chisq_dist.compute_chisq(chisq_mode=False)
         return chisq
 
     def calculate_zred(self,blah):
