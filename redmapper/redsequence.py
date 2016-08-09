@@ -300,7 +300,8 @@ class RedSequenceColorPar(object):
                                                     galcolor, 
                                                     refmagerr=galaxies.refmag_err, 
                                                     lupcorr=self.lupcorr[magind,zind,:])
-        if calc_lkhd: return chisq_dist.compute_chisq(chisq_mode=False)
+        if calc_lkhd: 
+            return chisq_dist.compute_chisq(chisq_mode=False)
         return chisq_dist.compute_chisq(chisq_mode=True)
 
     def calculate_zred(self,blah):
