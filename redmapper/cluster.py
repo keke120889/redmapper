@@ -20,10 +20,9 @@ class Cluster(Entry):
                                     dtype=[('DIST', 'f8'), ('PMEM', 'f8')])
         self.members.add_fields(new_fields)
 
-    def calc_lambda(self, zredstr, color):
-        chisq = None
-        cwt = chisq_pdf(chisq, color.size)
-
+    def calc_lambda(self, zredstr):
+        chisq = zredstr.calculate_chisq(self.members, self.z)
+        cwt = chisq_pdf(chisq, zredstr.ncol)
 
 
 class ClusterCatalog(Catalog): 
