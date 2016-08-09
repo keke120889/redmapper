@@ -2,6 +2,7 @@ import fitsio
 import esutil as eu
 import numpy as np
 import itertools
+from solver_nfw.solver_nfw_lib import Solver
 from catalog import Catalog, Entry
 from utilities import chisq_pdf
 
@@ -20,9 +21,19 @@ class Cluster(Entry):
                                     dtype=[('DIST', 'f8'), ('PMEM', 'f8')])
         self.members.add_fields(new_fields)
 
-    def calc_lambda(self, zredstr):
+    def calc_richness(self, zredstr, bkg, r0, beta):
         chisq = zredstr.calculate_chisq(self.members, self.z)
-        cwt = chisq_pdf(chisq, zredstr.ncol)
+        rho = chisq_pdf(chisq, zredstr.ncol) # chisq dist with ncol DOF
+        sigma = 0 # two dimensional cluster galaxy density profile (NFW)
+        phi = 0 # cluster luminosity function
+        ucounts = (2*np.pi*sigma) * phi * rho
+        bcounts = 0
+
+        r = 0
+        w = 0
+
+        richness_obj = Solver(r0, beta, ucounts, bcounts, r, w)
+        return richness_obj.solve_nfw()
 
 
 class ClusterCatalog(Catalog): 
