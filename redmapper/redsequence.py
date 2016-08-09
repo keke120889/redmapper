@@ -286,7 +286,7 @@ class RedSequenceColorPar(object):
         else:
             return lumrefmagind
 
-    def calc_chisq(self):
+    def calculate_chisq(self):
         pass
 
     def calculate_zred(self,blah):
