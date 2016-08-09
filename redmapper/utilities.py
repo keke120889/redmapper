@@ -15,6 +15,10 @@ SEC_PER_DEG = 3600
 def astro_to_sphere(ra, dec):
     return np.radians(90.0-dec), np.radians(ra)
 
+def chisq_pdf(data, k):
+    normalization = 1./(2**(k/2.) * np.gamma(k/2.))
+    return normalization * data**((k/2.)-1) * np.exp(-data/2.)
+
 
 ######################################
 ## mstar LUT code
