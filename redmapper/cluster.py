@@ -21,14 +21,17 @@ class Cluster(Entry):
                                     dtype=[('DIST', 'f8'), ('PMEM', 'f8')])
         self.members.add_fields(new_fields)
 
+    def _calc_bkg_density(self, z, r, chisq, refmag, bkg, h0=100.0, allow=False):
+        pass
+
     def calc_richness(self, zredstr, bkg, r0, beta, mpc_scale):
         r = self.members.dist * mpc_scale
         chisq = zredstr.calculate_chisq(self.members, self.z)
         rho = chisq_pdf(chisq, zredstr.ncol) # chisq dist with ncol DOF
         sigma = 0 # two dimensional cluster galaxy density profile (NFW)
         phi = 0 # cluster luminosity function
-        ucounts = (2*np.pi*sigma) * phi * rho
-        bcounts = 0
+        ucounts = (2*np.pi*r*sigma) * phi * rho
+        bcounts = self._calc_bkg_density(self.z, r, chisq, bkg)
         
         w = 0
 
