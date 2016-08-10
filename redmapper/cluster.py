@@ -22,23 +22,24 @@ class Cluster(Entry):
         self.members.add_fields(new_fields)
         self.members.dist = dists
 
-    def _calc_bkg_density(self, bkg):
+    def _calc_bkg_density(self, bkg, cosmo):
+        mpc_per_deg = np.radians(1) * cosmo.Dl(0, self.z)
         sigma_g = bkg.sigma_g_lookup(self.z, self.members.chisq, 
                                                     self.members.refmag)
+        return 2 * np.pi * self.members.r * (sigma_g/mpc_per_deg**2)
 
-    def calc_richness(self, zredstr, bkg, r0, beta, mpc_scale):
-        self.members.r = self.members.dist * mpc_scale
+    def calc_richness(self, zredstr, bkg, r0, beta, cosmo):
+        self.members.r = np.radians(self.members.dist) * cosmo.Dl(0, self.z)
         self.members.chisq = zredstr.calculate_chisq(self.members, self.z)
         rho = chisq_pdf(self.members.chisq, zredstr.ncol)
         nfw = 0 # two dimensional cluster galaxy density profile (NFW)
         phi = 0 # cluster luminosity function
         ucounts = (2*np.pi*self.members.r) * nfw * phi * rho
-        bcounts = self._calc_bkg_density(bkg)
+        bcounts = self._calc_bkg_density(bkg, cosmo)
         
         w = 0
 
         richness_obj = Solver(r0, beta, ucounts, bcounts, r, w)
-        return richness_obj.solve_nfw()
 
 
 class ClusterCatalog(Catalog): 
