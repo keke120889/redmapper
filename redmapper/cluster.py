@@ -23,7 +23,7 @@ class Cluster(Entry):
         self.members.dist = dists
 
     def _calc_bkg_density(self, bkg, cosmo):
-        mpc_per_deg = np.radians(1) * cosmo.Dl(0, self.z)
+        mpc_per_deg = np.radians(1.) * cosmo.Dl(0, self.z)
         sigma_g = bkg.sigma_g_lookup(self.z, self.members.chisq, 
                                                     self.members.refmag)
         return 2 * np.pi * self.members.r * (sigma_g/mpc_per_deg**2)
