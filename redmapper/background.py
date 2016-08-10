@@ -18,35 +18,35 @@ class Background(object):
 
     # def __init__(self, filename):
     #     obkg = Entry.from_fits_file(filename)
-    #     self.zbinsize, self.chisqbinsize, self.imagbinsize = 0.001, 0.5, 0.01
+    #     self.zbinsize, self.chisqbinsize, self.refmagbinsize = 0.001, 0.5, 0.01
     #     self.lnchisqbins = obkg.lnchisqbins
     #     self.zbins = np.arange(obkg.zrange[0], obkg.zrange[1], self.zbinsize)
     #     self.chisqbins = np.arange(obkg.chisqrange[0], obkg.chisqrange[1], 
     #                                                         self.chisqbinsize)
-    #     self.imagbins = np.arange(obkg.imagrange[0], obkg.imagrange[1], 
-    #                                                         self.imagbinsize)
+    #     self.refmagbins = np.arange(obkg.refmagrange[0], obkg.refmagrange[1], 
+    #                                                         self.refmagbinsize)
     #     self.obkg = obkg
 
     def __init__(self, filename):
         obkg = Entry.from_fits_file(filename)
-        self.zbinsize, self.chisqbinsize, self.imagbinsize = 0.001, 0.5, 0.01
+        self.zbinsize, self.chisqbinsize, self.refmagbinsize = 0.001, 0.5, 0.01
 
-        imagbins = np.arange(obkg.imagrange[0], obkg.imagrange[1], self.imagbinsize)
-        nimagbins = imagbins.size
+        refmagbins = np.arange(obkg.refmagrange[0], obkg.refmagrange[1], self.refmagbinsize)
+        nrefmagbins = refmagbins.size
 
         nchisqbins = obkg.chisqbins.size
         nlnchisqbins = obkg.lnchisqbins.size
 
         nzbins = obkg.zbins.size
 
-        sigma_g_new = np.zeros((nimagbins, nchisqbins, nzbins))
-        sigma_lng_new = np.zeros((nimagbins, nchisqbins, nzbins))
+        sigma_g_new = np.zeros((nrefmagbins, nchisqbins, nzbins))
+        sigma_lng_new = np.zeros((nrefmagbins, nchisqbins, nzbins))
 
         for i in range(nzbins):
             for j in range(nchisqbins):
-                sigma_g_new[:,j,i] = np.interp(imagbins, obkg.imagbins, obkg.sigma_g[:,j,i])
+                sigma_g_new[:,j,i] = np.interp(refmagbins, obkg.refmagbins, obkg.sigma_g[:,j,i])
                 sigma_g_new[:,j,i] = np.where(sigma_g_new[:,j,i] < 0, 0, sigma_g_new[:,j,i])
-                sigma_lng_new[:,j,i] = np.interp(imagbins, obkg.imagbins, obkg.sigma_lng[:,j,i])
+                sigma_lng_new[:,j,i] = np.interp(refmagbins, obkg.refmagbins, obkg.sigma_lng[:,j,i])
                 sigma_lng_new[:,j,i] = np.where(sigma_lng_new[:,j,i] < 0, 0, sigma_lng_new[:,j,i])
 
         sigma_g = sigma_g_new.copy()
@@ -55,10 +55,10 @@ class Background(object):
         chisqbins = np.arange(obkg.chisqrange[0], obkg.chisqrange[1], self.chisqbinsize)
         nchisqbins = chisqbins.size
 
-        sigma_g_new = np.zeros((nimagbins, nchisqbins, nzbins))
+        sigma_g_new = np.zeros((nrefmagbins, nchisqbins, nzbins))
 
         for i in range(nzbins):
-            for j in range(nimagbins):
+            for j in range(nrefmagbins):
                 sigma_g_new[j,:,i] = np.interp(chisqbins, obkg.chisqbins, sigma_g[j,:,i])
                 sigma_g_new[j,:,i] = np.where(sigma_g_new[j,:,i] < 0, 0, sigma_g_new[j,:,i])
 
@@ -67,24 +67,24 @@ class Background(object):
         zbins = np.arange(obkg.zrange[0], obkg.zrange[1], self.zbinsize)
         nzbins = zbins.size
 
-        sigma_g_new = np.zeros((nimagbins, nchisqbins, nzbins))
-        sigma_lng_new = np.zeros((nimagbins, nlnchisqbins, nzbins))
+        sigma_g_new = np.zeros((nrefmagbins, nchisqbins, nzbins))
+        sigma_lng_new = np.zeros((nrefmagbins, nlnchisqbins, nzbins))
 
         for i in range(nchisqbins):
-            for j in range(nimagbins):
+            for j in range(nrefmagbins):
                 sigma_g_new[j,i,:] = np.interp(zbins, obkg.zbins, sigma_g[j,i,:])
                 sigma_g_new[j,i,:] = np.where(sigma_g_new[j,i,:] < 0, 0, sigma_g_new[j,i,:])
 
         for i in range(nlnchisqbins):
-            for j in range(nimagbins):
+            for j in range(nrefmagbins):
                 sigma_lng_new[j,i,:] = np.interp(zbins, obkg.zbins, sigma_lng[j,i,:])
                 sigma_lng_new[j,i,:] = np.where(sigma_lng_new[j,i,:] < 0, 0, sigma_lng_new[j,i,:])
 
-        n_new = np.zeros((nimagbins, nzbins))
+        n_new = np.zeros((nrefmagbins, nzbins))
         for i in range(nzbins):
             n_new[:,i] = np.sum(sigma_g_new[:,:,i], axis=1) * self.chisqbinsize
 
-        self.imagbins = imagbins
+        self.refmagbins = refmagbins
         self.chisqbins = chisqbins
         self.lnchisqbins = obkg.lnchisqbins
         self.zbins = zbins
@@ -124,31 +124,31 @@ class Background(object):
 
 #     def __init__(self, filename):
 #         obkg = Entry.from_fits_file(filename)
-#         self.zbinsize, self.chisqbinsize, self.imagbinsize = 0.001, 0.5, 0.01
+#         self.zbinsize, self.chisqbinsize, self.refmagbinsize = 0.001, 0.5, 0.01
         
 #         self.lnchisqbins = obkg.lnchisqbins
 #         self.zbins = np.arange(obkg.zrange[0], obkg.zrange[1], self.zbinsize)
 #         self.chisqbins = np.arange(obkg.chisqrange[0], obkg.chisqrange[1], 
 #                                                             self.chisqbinsize)
-#         self.imagbins = np.arange(obkg.imagrange[0], obkg.imagrange[1], 
-#                                                             self.imagbinsize)
+#         self.refmagbins = np.arange(obkg.refmagrange[0], obkg.refmagrange[1], 
+#                                                             self.refmagbinsize)
 #         self.obkg = obkg
         
-#         # self.sigma_g = AltBackground._interp(obkg.imagbins, obkg.chisqbins, 
+#         # self.sigma_g = AltBackground._interp(obkg.refmagbins, obkg.chisqbins, 
 #         #                                   obkg.zbins, obkg.sigma_g, 
-#         #                                   xnew=self.imagbins, 
+#         #                                   xnew=self.refmagbins, 
 #         #                                   ynew=self.chisqbins, 
 #         #                                   znew=self.zbins)
-#         # self.sigma_lng = AltBackground._interp(obkg.imagbins, obkg.lnchisqbins, 
+#         # self.sigma_lng = AltBackground._interp(obkg.refmagbins, obkg.lnchisqbins, 
 #         #                                     obkg.zbins, obkg.sigma_lng, 
-#         #                                     xnew=self.imagbins, 
+#         #                                     xnew=self.refmagbins, 
 #         #                                     znew=self.zbins)
 
-#         self.sigma_g = AltBackground._interp2(self.imagbins, self.chisqbins,
-#                                 self.zbins, obkg.sigma_g, obkg.imagbinsize,
+#         self.sigma_g = AltBackground._interp2(self.refmagbins, self.chisqbins,
+#                                 self.zbins, obkg.sigma_g, obkg.refmagbinsize,
 #                                 obkg.chisqbinsize, obkg.zbinsize)
-#         self.sigma_lng = AltBackground._interp2(self.imagbins, self.lnchisqbins,
-#                                 self.zbins, obkg.sigma_lng, obkg.imagbinsize,
+#         self.sigma_lng = AltBackground._interp2(self.refmagbins, self.lnchisqbins,
+#                                 self.zbins, obkg.sigma_lng, obkg.refmagbinsize,
 #                                 obkg.lnchisqbinsize, obkg.zbinsize)
 #         self.n = np.sum(self.sigma_g, axis=1) * self.chisqbinsize
 
