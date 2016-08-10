@@ -277,7 +277,7 @@ class RedSequenceColorPar(object):
         refmagind = np.searchsorted(self.refmaginteger,np.round(np.atleast_1d(refmag)*self.refmagbinscale).astype(np.int64))
         if (refmagind.size == 1):
             return np.asscalar(refmagind)
-        else :
+        else:
             return refmagind
 
     def lumrefmagindex(self,lumrefmag):
