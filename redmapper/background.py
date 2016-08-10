@@ -92,21 +92,18 @@ class Background(object):
         self.sigma_lng = sigma_lng_new
         self.n = n_new
 
-    def sigma_g_lookup(self, z, chisq, refmag, h0=100.0, allow0=False):
-        nchisqbins, chisqbinsize = self.chisqbins.size, self.chisqbins[1]-self.chisqbins[0]
-        nrefmagbins, refmagbinsize = self.refmagbins.size, self.refmagbins[1]-self.refmagbins[0]
-        nzbins, zbinsize = self.zbins.size, self.zbins[1]-self.zbins[0]
-        chisqindex = int((chisq-self.chisqbins[0]) * nchisqbins
-                            / (self.chisqbins[-1]+chisqbinsize-self.chisqbins[0]))
-        refmagindex = int((refmag-self.refmagbins[0]) * nrefmagbins
-                            / (self.refmagbins[-1]+refmagbinsize-self.refmagbins[0]))
+    def sigma_g_lookup(self, z, chisq, refmag, allow0=False):
+        nchisqbins, nrefmagbins = self.chisqbins.size, self.refmagbins.size
+        chisqindex = np.searchsorted(self.chisqbins, chisq)
+        refmagindex = np.searchsorted(self.refmagbins, refmag)
+        ind = np.clip(np.round((z-self.zbins[0])/zbinsize), 0, nzbins-1)
 
         badchisq  = np.where(chisqindex < 0 or chisqindex >= nchisqbins)
-        badrefmag = np.where(imagindex < 0 or imagindex >= nimagbins)
+        badrefmag = np.where(refmagindex < 0 or refmagindex >= nrefmagbins)
         chisqindex[badchisq] = refmagindex[badrefmag] = 0
 
-        ind = np.clip(np.round((z-self.zbins)/zbinsize), 0, nzbins-1)
-        lookup_vals = self.sigma_g[refmagindex, chisqindex, np.full_like(chisqindex, ind)]
+        zindex = np.full_like(ind, chisqindex.size)
+        lookup_vals = self.sigma_g[refmagindex, chisqindex, zindex]
         lookup_vals[badchisq] = lookup_vals[badrefmag] = np.inf
 
         if not allow0:
