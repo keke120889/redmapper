@@ -22,7 +22,18 @@ class Cluster(Entry):
         self.members.add_fields(new_fields)
 
     def _calc_bkg_density(self, z, r, chisq, refmag, bkg, h0=100.0, allow=False):
-        pass
+        nchisqbins, chisqbinsize = bkg.chisqbins.size, bkg.chisqbins[1]-bkg.chisqbins[0]
+        nrefmagbins, refmagbinsize = bkg.refmagbins.size, bkg.refmagbins[1]-bkg.refmagbins[0]
+        chisqindex = int((chisq-bkg.chisqbins[0]) * nchisqbins
+                            / (bkg.chisqbins[-1]+chisqbinsize-bkg.chisqbins[0]))
+        refmagindex = int((refmag-bkg.refmagbins[0]) * nrefmagbins
+                            / (bkg.refmagbins[-1]+refmagbinsize-bkg.refmagbins[0]))
+
+        chisqindex[np.where(chisqindex < 0 or chisqindex >= nchisqbins)] = 0
+        imagindex[np.where(imagindex < 0 or imagindex >= nimagbins)] = 0
+
+        
+
 
     def calc_richness(self, zredstr, bkg, r0, beta, mpc_scale):
         r = self.members.dist * mpc_scale
@@ -31,7 +42,7 @@ class Cluster(Entry):
         sigma = 0 # two dimensional cluster galaxy density profile (NFW)
         phi = 0 # cluster luminosity function
         ucounts = (2*np.pi*r*sigma) * phi * rho
-        bcounts = self._calc_bkg_density(self.z, r, chisq, bkg)
+        bcounts = self._calc_bkg_density(self.z, r, chisq, self.members.refmag, bkg)
         
         w = 0
 
