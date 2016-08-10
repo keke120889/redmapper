@@ -59,15 +59,8 @@ class DataObject(object):
         """numpy.dtype: dtype associated with the DataObject."""
         return self._ndarray.dtype
 
-    def add_fields(self, array):
-        """Adds additional fields to the DataObject.
-
-        The array should be prepopulated with values if they are known
-        to avoid unecessary copying.
-
-        Args:
-            array (numpy.ndarray): ndarray with new fields.
-        """
+    def add_fields(self, newdtype):
+        array = np.empty(self._ndarray.size, newdtype)
         self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
 
 
