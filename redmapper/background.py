@@ -92,6 +92,26 @@ class Background(object):
         self.sigma_lng = sigma_lng_new
         self.n = n_new
 
+    def sigma_g_lookup(self, z, chisq, refmag, h0=100.0, allow0=False):
+        nchisqbins, chisqbinsize = self.chisqbins.size, self.chisqbins[1]-self.chisqbins[0]
+        nrefmagbins, refmagbinsize = self.refmagbins.size, self.refmagbins[1]-self.refmagbins[0]
+        nzbins, zbinsize = self.zbins.size, self.zbins[1]-self.zbins[0]
+        chisqindex = int((chisq-self.chisqbins[0]) * nchisqbins
+                            / (self.chisqbins[-1]+chisqbinsize-self.chisqbins[0]))
+        refmagindex = int((refmag-self.refmagbins[0]) * nrefmagbins
+                            / (self.refmagbins[-1]+refmagbinsize-self.refmagbins[0]))
+
+        badchisq  = np.where(chisqindex < 0 or chisqindex >= nchisqbins)
+        badrefmag = np.where(imagindex < 0 or imagindex >= nimagbins)
+        chisqindex[badchisq] = refmagindex[badrefmag] = 0
+
+        ind = np.clip(np.round((z-self.zbins)/zbinsize), 0, nzbins-1)
+        lookup_vals = self.sigma_g[refmagindex, chisqindex, np.full_like(chisqindex, ind)]
+        lookup_vals[badchisq] = lookup_vals[badrefmag] = np.inf
+
+        if not allow0:
+            lookup_vals[np.where(lookup_vals == 0 and chisq > 5.0)] = np.inf
+        return lookup_vals
 
 # # Alternate method of interpolation
 # class AltAltBackground(object):
