@@ -98,8 +98,8 @@ class Background(object):
         refmagindex = np.searchsorted(self.refmagbins, refmag)
         ind = np.clip(np.round((z-self.zbins[0])/zbinsize), 0, nzbins-1)
 
-        badchisq  = np.where(chisqindex < 0 or chisqindex >= nchisqbins)
-        badrefmag = np.where(refmagindex < 0 or refmagindex >= nrefmagbins)
+        badchisq  = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
+        badrefmag = np.where((refmagindex < 0) | (refmagindex >= nrefmagbins))
         chisqindex[badchisq] = refmagindex[badrefmag] = 0
 
         zindex = np.full_like(ind, chisqindex.size)
@@ -107,7 +107,7 @@ class Background(object):
         lookup_vals[badchisq] = lookup_vals[badrefmag] = np.inf
 
         if not allow0:
-            lookup_vals[np.where(lookup_vals == 0 and chisq > 5.0)] = np.inf
+            lookup_vals[np.where((lookup_vals == 0) & (chisq > 5.0))] = np.inf
         return lookup_vals
 
 # # Alternate method of interpolation

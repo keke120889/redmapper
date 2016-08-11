@@ -27,9 +27,10 @@ class Cluster(Entry):
         x, corex = self.members.r/rscale, corer/rscale
         sigx = np.zeros(self.members.r.size)
 
-        low, mid = *np.where(x < corex), *np.where(x >= corex and x < 1.0)
-        high, = np.where(x >= 1.0 and x < 10.0/rscale)
-        other, = np.where(x > 0.999 and x < 1.001)
+        low, = np.where(x < corex)
+        mid, = np.where((x >= corex) & (x < 1.0))
+        high, = np.where((x >= 1.0) & (x < 10.0/rscale))
+        other, = np.where((x > 0.999) & (x < 1.001))
 
         if low.size > 0:
             arg = np.sqrt((1. - corex)/(1. + corex))
