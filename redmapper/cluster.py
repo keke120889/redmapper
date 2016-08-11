@@ -60,8 +60,9 @@ class Cluster(Entry):
 
         return sigx
 
-    def _calc_luminosity(self, zredstr):
-        pass
+    def _calc_luminosity(self, zredstr, normmag):
+        zind = np.clip(zredstr.zindex(self.z), 0, zredstr.size-1)
+        iind = np.clip(zredstr.lumrefmagindex(normmag), 0, zredstr.lumrefmagbins.size-1)
 
     def _calc_bkg_density(self, bkg, cosmo):
         mpc_scale = np.radians(1.) * cosmo.Dl(0, self.z)
@@ -69,12 +70,15 @@ class Cluster(Entry):
                                                     self.members.refmag)
         return 2 * np.pi * self.members.r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, zredstr, bkg, cosmo, r0=1.0, beta=0.2):
+    def calc_richness(self, zredstr, bkg, cosmo, confstr, r0=1.0, beta=0.2):
+        mstar, alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
+        maxmag = mstar - 2.5*np.alog10(confstr.lval_reference)
+
         self.members.r = np.radians(self.members.dist) * cosmo.Dl(0, self.z)
         self.members.chisq = zredstr.calculate_chisq(self.members, self.z)
         rho = chisq_pdf(self.members.chisq, zredstr.ncol)
         nfw = self._calc_radial_profile()
-        phi = self._calc_luminosity(zredstr)
+        phi = self._calc_luminosity(zredstr, maxmag)
         ucounts = (2*np.pi*self.members.r) * nfw * phi * rho
         bcounts = self._calc_bkg_density(bkg, cosmo)
         
