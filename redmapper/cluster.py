@@ -63,7 +63,12 @@ class Cluster(Entry):
 
     def _calc_luminosity(self, zredstr, normmag):
         zind = np.clip(zredstr.zindex(self.z), 0, zredstr.size-1)
-        iind = np.clip(zredstr.lumrefmagindex(normmag), 0, zredstr.lumrefmagbins.size-1)
+        refind = np.clip(zredstr.lumrefmagindex(normmag), 0, zredstr.lumrefmagbins.size-1)
+        normalization = zredstr.lumnorm[refind, zind]
+        mstar, alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
+        phi_term_a = 10. ** (0.4 * (alpha +1.) * (mstar-self.members.refmag))
+        phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.members.refmag)))
+        return phi_term_a * phi_term_b / normalization
 
     def _calc_bkg_density(self, bkg, cosmo):
         mpc_scale = np.radians(1.) * cosmo.Dl(0, self.z)
