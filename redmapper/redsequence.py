@@ -3,7 +3,7 @@ import esutil as eu
 import numpy as np
 from scipy import interpolate
 
-from chisq_dist.chisq_dist_lib import ChisqDist
+from chisq_dist import ChisqDist
 from catalog import Catalog
 from utilities import CubicSpline
 from utilities import MStar
