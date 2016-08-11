@@ -22,8 +22,46 @@ class Cluster(Entry):
         self.members.add_fields(new_fields)
         self.members.dist = dists
 
-    def _calc_radial_profile(self, rscale=0.15): pass
-    def _calc_luminosity(self, zredstr): pass
+    def _calc_radial_profile(self, rscale=0.15): 
+        corer = 0.1
+        x, corex = self.members.r/rscale, corer/rscale
+        sigx = np.zeros(self.members.r.size)
+
+        low, mid = *np.where(x < corex), *np.where(x >= corex and x < 1.0)
+        high, = np.where(x >= 1.0 and x < 10.0/rscale)
+        other, = np.where(x > 0.999 and x < 1.001)
+
+        if low.size > 0:
+            arg = np.sqrt((1. - corex)/(1. + corex))
+            pre = 2./(sqrt(1. - corex**2))
+            front = 1./(corex**2 - 1)
+            sigx[low] = front * (1. - pre*0.5*np.alog((1.+arg)/(1.-arg)))
+
+        if mid.size > 0:
+            arg = np.sqrt((1. - x[mid])/(1. + x[mid]))
+            pre = 2./(np.sqrt(1. - x[mid]**2))
+            front = 1./(x[mid]**2 - 1.)
+            sigx[mid] = front * (1. - pre*0.5*np.alog((1.+arg)/(1.-arg)))
+
+        if high.size > 0:
+            arg = np.sqrt((x[high] - 1.)/(x[high] + 1.))
+            pre = 2./(np.sqrt(x[high]**2 - 1.))
+            front = 1./(x[high]**2 - 1)
+            sigx[high] = front * (1. - pre*np.atan(arg))
+
+        if other.size > 0:
+            xlo, xhi = 0.999, 1.001
+            arglo, arghi = np.sqrt((1-xlo)/(1+xlo)), np.sqrt((xhi-1)/(xhi+1))
+            prelo, prehi = 2./np.sqrt(1.-xlo**2), 2./np.sqrt(xhi**2 - 1)
+            frontlo, fronthi = 1./(xlo**2 - 1), 1./(xhi**2 - 1)
+            testlo = frontlo * (1 - prelo*0.5*np.alog((1+arglo)/(1-arglo)))
+            testhi = fronthi * (1 - prehi*np.atan(arghi))
+            sigx[other] = (testlo + testhi)/2.
+
+        return sigx
+
+    def _calc_luminosity(self, zredstr):
+        pass
 
     def _calc_bkg_density(self, bkg, cosmo):
         mpc_scale = np.radians(1.) * cosmo.Dl(0, self.z)
