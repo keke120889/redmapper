@@ -2,7 +2,7 @@ import fitsio
 import esutil as eu
 import numpy as np
 import itertools
-from solver_nfw.solver_nfw_lib import Solver
+from solver_nfw import Solver
 from catalog import Catalog, Entry
 from utilities import chisq_pdf
 
