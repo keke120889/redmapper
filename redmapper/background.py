@@ -93,16 +93,17 @@ class Background(object):
         self.n = n_new
 
     def sigma_g_lookup(self, z, chisq, refmag, allow0=False):
+        zbinsize = self.zbins[1] - self.zbins[0]
         nchisqbins, nrefmagbins = self.chisqbins.size, self.refmagbins.size
         chisqindex = np.searchsorted(self.chisqbins, chisq)
         refmagindex = np.searchsorted(self.refmagbins, refmag)
-        ind = np.clip(np.round((z-self.zbins[0])/zbinsize), 0, nzbins-1)
+        i = np.clip(np.round((z-self.zbins[0])/zbinsize), 0, self.zbins.size-1)
 
-        badchisq  = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
-        badrefmag = np.where((refmagindex < 0) | (refmagindex >= nrefmagbins))
+        badchisq  = np.where((chisqindex <= 0) | (chisqindex >= nchisqbins))
+        badrefmag = np.where((refmagindex <= 0) | (refmagindex >= nrefmagbins))
         chisqindex[badchisq] = refmagindex[badrefmag] = 0
 
-        zindex = np.full_like(ind, chisqindex.size)
+        zindex = np.full_like(chisqindex, i)
         lookup_vals = self.sigma_g[refmagindex, chisqindex, zindex]
         lookup_vals[badchisq] = lookup_vals[badrefmag] = np.inf
 
