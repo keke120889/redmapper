@@ -35,4 +35,4 @@ class Configuration(object):
     def __init__(self, conffile):
         confdict = read_yaml(conffile)
         for key in confdict:
-            setattr(self, key, confidct[key])
+            setattr(self, key, confdict[key])
