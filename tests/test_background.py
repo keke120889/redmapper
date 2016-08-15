@@ -3,36 +3,30 @@ import numpy.testing as testing
 import numpy as np
 import fitsio
 
-import redmapper
+from redmapper.background import Background
 
 class BackgroundTestCase(unittest.TestCase):
 
-    def test_io(self): pass
-
-
-    def test_sigma_g(self):
-        inputs = [()]
-        idl_outputs = [0.32197464, 6.4165196, 0.0032830855, 1.4605126,
-                       0.0098356586, 0.79848081, 0.011284498, 9.3293247]
-        for out in idl_outputs:
-            idx = tuple(np.random.randint(i) for i in self.bkg.sigma_g.shape)
-            testing.assert_almost_equal(self.bkg.sigma_g[idx], out, decimal=5)
-
-    def test_lookup(self): pass
-
-    def setUpClass(cls):
+    def runTest(self):
+        file_name, file_path = 'test_bkg.fit', 'data'
         # test that we fail if we try a non-existent file
-        self.assertRaises(IOError, redmapper.background.Background, 
-                    'nonexistent.fit')
+        self.assertRaises(IOError, Background, 'nonexistent.fit')
         # test that we fail if we read a non-fits file
-        self.assertRaises(IOError, redmapper.background.Background, 
-                    '%s/testconfig.yaml' % (self.file_path))
+        self.assertRaises(IOError, Background,
+                          '%s/testconfig.yaml' % (file_path))
         # test that we fail if we try a file without the right header info
-        self.assertRaises(AttributeError, redmapper.background.Background, 
-                    '%s/test_dr8_pars.fit' % (self.file_path))
-        self.file_name, self.file_path = 'test_bkg.fit', 'data'
-        self.bkg = redmapper.background.Background('%s/%s' % (self.file_path, 
-                                                              self.file_name))
+        self.assertRaises(AttributeError, Background, 
+                          '%s/test_dr8_pars.fit' % (file_path))
+        bkg = Background('%s/%s' % (file_path, file_name))
+
+
+        inputs = [(172,15,64), (323,3,103), (9,19,21), (242,4,87),
+                  (70,12,58), (193,6,39), (87,14,88), (337,5,25), (333,8,9)]
+        py_outputs = np.array([bkg.sigma_g[idx] for idx in inputs])
+        idl_outputs = np.array([0.32197464, 6.4165196, 0.0032830855, 
+                                1.4605126, 0.0098356586, 0.79848081, 
+                                0.011284498, 9.3293247, 8.7064905])
+        testing.assert_almost_equal(py_outputs, idl_outputs, decimal=1)
 
 
 if __name__=='__main__':
