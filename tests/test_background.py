@@ -34,6 +34,7 @@ class BackgroundTestCase(unittest.TestCase):
                           9.16647519, 8.24240144, -1., 1.19503491])
         refmag = np.array([1000., 15.05129281, 16.81049236, 18.07566359,
                         19.88279, 15.56617587, 18.55626717, 15.00271158])
+
         py_outputs = bkg.sigma_g_lookup(z, chisq, refmag)
         idl_outputs = np.array([0.0, 0.0012997627, 0.56412143, 6.4126010, 
                                 42.555183, 0.012194233, np.inf, 0.0])
