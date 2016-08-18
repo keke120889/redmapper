@@ -66,9 +66,10 @@ class Cluster(Entry):
         refind = np.clip(zredstr.lumrefmagindex(normmag), 0, 
                          zredstr.lumrefmagbins.size-1)
         normalization = zredstr.lumnorm[refind, zind]
+        mstar = zredstr.mstar(self.z)
         phi_term_a = 10. ** (0.4 * (zredstr.alpha +1.) 
-                                 * (zredstr.mstar(self.z)-self.members.refmag))
-        phi_term_b = np.exp(-10. ** (0.4 * (self.mstar-self.members.refmag)))
+                                 * (mstar-self.members.refmag))
+        phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.members.refmag)))
         return phi_term_a * phi_term_b / normalization
 
     def _calc_bkg_density(self, bkg, cosmo):
