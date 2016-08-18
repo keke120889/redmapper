@@ -6,6 +6,7 @@ import fitsio
 from esutil.cosmology import Cosmo
 from redmapper.catalog import Entry
 from redmapper.cluster import Cluster
+from redmapper.config import Configuration
 from redmapper.galaxy import GalaxyCatalog
 from redmapper.background import Background
 from redmapper.redsequence import RedSequenceColorPar
@@ -34,26 +35,27 @@ class ClusterFiltersTestCase(unittest.TestCase):
 
     def test_lum_filter(self):
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
-        zred_file_name = 'test_dr8_pars.fit'
-        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_file_name)
-        maxmag = 1
+        zred_filename, conf_filename = 'test_dr8_pars.fit', 'testconfig.yaml'
+        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
+        confstr = Configuration(self.file_path + '/' + conf_filename)
+        maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         py_lum = self.cluster._calc_luminosity(zredstr, maxmag)
         idl_lum = np.array([])
         testing.assert_almost_equal(py_lum, idl_lum)
 
     def test_bkg_filter(self):
         test_indices = np.array([29, 16, 27,  5, 38, 35, 25, 43])
-        bkg_file_name = 'test_bkg.fit'
-        bkg = BackgroundStub(self.file_path + '/' + bkg_file_name)
+        bkg_filename = 'test_bkg.fit'
+        bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
         py_bkg = self.cluster._calc_bkg_density(bkg, Cosmo())
         idl_bkg = np.array([])
         testing.assert_almost_equal(py_bkg, idl_bkg)
 
     def setUp(self):
         self.cluster = Cluster(np.empty(1))
-        self.file_path, file_name = 'data', 'test_cluster_members.fit'
+        self.file_path, filename = 'data', 'test_cluster_members.fit'
         self.cluster.members = GalaxyCatalog.from_fits_file(self.file_path 
-                                                            + '/' + file_name)
+                                                            + '/' + filename)
         self.cluster.z = self.cluster.members.z[0]
 
         
