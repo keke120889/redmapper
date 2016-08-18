@@ -34,7 +34,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
     def test_lum_filter(self):
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
         zred_file_name = 'test_dr8_pars.fit'
-        zredstr = RedSequenceColorPar(file_path + '/' + zred_file_name)
+        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_file_name)
         py_lum = self._calc_luminosity(zredstr, maxmag)
         idl_lum = np.array([])
         testing.assert_almost_equal(py_lum, idl_lum)
@@ -50,7 +50,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
     def setUp(self):
         self.cluster = Cluster(np.empty(1))
         self.file_path, file_name = 'data', 'test_cluster_members.fit'
-        self.cluster.members = GalaxyCatalog.from_fits_file(file_path 
+        self.cluster.members = GalaxyCatalog.from_fits_file(self.file_path 
                                                             + '/' + file_name)
         self.cluster.z = cluster.members.z[0]
 
