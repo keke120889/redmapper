@@ -78,7 +78,7 @@ class Cluster(Entry):
 
     def calc_richness(self, zredstr, bkg, cosmo, confstr, r0=1.0, beta=0.2):
         mstar, alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
-        maxmag = mstar - 2.5*np.alog10(confstr.lval_reference)
+        maxmag = mstar - 2.5*np.log10(confstr.lval_reference)
 
         self.members.r = np.radians(self.members.dist) * cosmo.Dl(0, self.z)
         self.members.chisq = zredstr.calculate_chisq(self.members, self.z)
