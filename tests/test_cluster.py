@@ -26,7 +26,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
 
     def test_nfw_filter(self):
         test_indices = np.array([46, 38,  1,  1, 11, 24, 25, 16])
-        py_nfw = self._calc_radial_profile()[test_indices]
+        py_nfw = self.cluster._calc_radial_profile()[test_indices]
         idl_nfw = np.array([0.29360449, 0.14824243, 0.14721203, 0.14721203, 
                             0.23459411, 0.31615007, 0.29307860, 0.29737136])
         testing.assert_almost_equal(py_nfw, idl_nfw)
@@ -35,7 +35,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
         zred_file_name = 'test_dr8_pars.fit'
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_file_name)
-        py_lum = self._calc_luminosity(zredstr, maxmag)
+        py_lum = self.cluster_calc_luminosity(zredstr, maxmag)
         idl_lum = np.array([])
         testing.assert_almost_equal(py_lum, idl_lum)
 
@@ -43,7 +43,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         test_indices = np.array([29, 16, 27,  5, 38, 35, 25, 44])
         bkg_file_name = 'test_bkg.fit'
         bkg = BackgroundStub(self.file_path + '/' + bkg_file_name)
-        py_bkg = self._calc_bkg_density(bkg, Cosmo())
+        py_bkg = self.cluster._calc_bkg_density(bkg, Cosmo())
         idl_bkg = np.array([])
         testing.assert_almost_equal(py_bkg, idl_bkg)
 
