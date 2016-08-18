@@ -66,8 +66,8 @@ class Cluster(Entry):
         refind = np.clip(zredstr.lumrefmagindex(normmag), 0, 
                          zredstr.lumrefmagbins.size-1)
         normalization = zredstr.lumnorm[refind, zind]
-        phi_term_a = 10. ** (0.4 * (self.alpha +1.) 
-                                 * (self.mstar-self.members.refmag))
+        phi_term_a = 10. ** (0.4 * (zredstr.alpha +1.) 
+                                 * (zredstr.mstar(self.z)-self.members.refmag))
         phi_term_b = np.exp(-10. ** (0.4 * (self.mstar-self.members.refmag)))
         return phi_term_a * phi_term_b / normalization
 
@@ -78,8 +78,7 @@ class Cluster(Entry):
         return 2 * np.pi * self.members.r * (sigma_g/mpc_scale**2)
 
     def calc_richness(self, zredstr, bkg, cosmo, confstr, r0=1.0, beta=0.2):
-        self.mstar, self.alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
-        maxmag = self.mstar - 2.5*np.log10(confstr.lval_reference)
+        maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
 
         self.members.r = np.radians(self.members.dist) * cosmo.Dl(0, self.z)
         self.members.chisq = zredstr.calculate_chisq(self.members, self.z)
