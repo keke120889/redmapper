@@ -62,7 +62,7 @@ class Cluster(Entry):
         return sigx
 
     def _calc_luminosity(self, zredstr, normmag):
-        zind = np.clip(zredstr.zindex(self.z), 0, zredstr.size-1)
+        zind = np.clip(zredstr.zindex(self.z), 0, zredstr.zbins.size-1)
         refind = np.clip(zredstr.lumrefmagindex(normmag), 0, zredstr.lumrefmagbins.size-1)
         normalization = zredstr.lumnorm[refind, zind]
         mstar, alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
