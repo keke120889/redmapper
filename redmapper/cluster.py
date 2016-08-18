@@ -67,7 +67,7 @@ class Cluster(Entry):
                          zredstr.lumrefmagbins.size-1)
         normalization = zredstr.lumnorm[refind, zind]
         mstar = zredstr.mstar(self.z)
-        phi_term_a = 10. ** (0.4 * (zredstr.alpha +1.) 
+        phi_term_a = 10. ** (0.4 * (zredstr.alpha+1.) 
                                  * (mstar-self.members.refmag))
         phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.members.refmag)))
         return phi_term_a * phi_term_b / normalization
