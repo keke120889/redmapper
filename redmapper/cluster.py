@@ -34,7 +34,7 @@ class Cluster(Entry):
 
         if low.size > 0:
             arg = np.sqrt((1. - corex)/(1. + corex))
-            pre = 2./(sqrt(1. - corex**2))
+            pre = 2./(np.sqrt(1. - corex**2))
             front = 1./(corex**2 - 1)
             sigx[low] = front * (1. - pre*0.5*np.alog((1.+arg)/(1.-arg)))
 
