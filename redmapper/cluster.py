@@ -63,11 +63,12 @@ class Cluster(Entry):
 
     def _calc_luminosity(self, zredstr, normmag):
         zind = np.clip(zredstr.zindex(self.z), 0, zredstr.z.size-1)
-        refind = np.clip(zredstr.lumrefmagindex(normmag), 0, zredstr.lumrefmagbins.size-1)
+        refind = np.clip(zredstr.lumrefmagindex(normmag), 0, 
+                         zredstr.lumrefmagbins.size-1)
         normalization = zredstr.lumnorm[refind, zind]
-        mstar, alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
-        phi_term_a = 10. ** (0.4 * (alpha +1.) * (mstar-self.members.refmag))
-        phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.members.refmag)))
+        phi_term_a = 10. ** (0.4 * (self.alpha +1.) 
+                                 * (self.mstar-self.members.refmag))
+        phi_term_b = np.exp(-10. ** (0.4 * (self.mstar-self.members.refmag)))
         return phi_term_a * phi_term_b / normalization
 
     def _calc_bkg_density(self, bkg, cosmo):
@@ -77,8 +78,8 @@ class Cluster(Entry):
         return 2 * np.pi * self.members.r * (sigma_g/mpc_scale**2)
 
     def calc_richness(self, zredstr, bkg, cosmo, confstr, r0=1.0, beta=0.2):
-        mstar, alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
-        maxmag = mstar - 2.5*np.log10(confstr.lval_reference)
+        self.mstar, self.alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
+        maxmag = self.mstar - 2.5*np.log10(confstr.lval_reference)
 
         self.members.r = np.radians(self.members.dist) * cosmo.Dl(0, self.z)
         self.members.chisq = zredstr.calculate_chisq(self.members, self.z)
