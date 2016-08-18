@@ -48,7 +48,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_bkg, idl_bkg)
 
     def setUp(self):
-        self.cluster = Cluster(np.empty(0))
+        self.cluster = Cluster(np.empty(1))
         self.file_path, file_name = 'data', 'test_cluster_members.fit'
         self.cluster.members = GalaxyCatalog.from_fits_file(file_path 
                                                             + '/' + file_name)
