@@ -4,6 +4,7 @@ import numpy as np
 import fitsio
 
 from esutil.cosmology import Cosmo
+from redmapper.catalog import Entry
 from redmapper.cluster import Cluster
 from redmapper.galaxy import GalaxyCatalog
 from redmapper.background import Background
@@ -35,7 +36,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
         zred_file_name = 'test_dr8_pars.fit'
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_file_name)
-        py_lum = self.cluster_calc_luminosity(zredstr, maxmag)
+        maxmag = 0
+        py_lum = self.cluster._calc_luminosity(zredstr, maxmag)
         idl_lum = np.array([])
         testing.assert_almost_equal(py_lum, idl_lum)
 
