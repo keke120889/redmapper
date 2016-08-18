@@ -36,7 +36,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
         zred_file_name = 'test_dr8_pars.fit'
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_file_name)
-        maxmag = 0
+        maxmag = 1
         py_lum = self.cluster._calc_luminosity(zredstr, maxmag)
         idl_lum = np.array([])
         testing.assert_almost_equal(py_lum, idl_lum)
