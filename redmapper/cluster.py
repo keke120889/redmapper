@@ -48,7 +48,7 @@ class Cluster(Entry):
             arg = np.sqrt((x[high] - 1.)/(x[high] + 1.))
             pre = 2./(np.sqrt(x[high]**2 - 1.))
             front = 1./(x[high]**2 - 1)
-            sigx[high] = front * (1. - pre*np.atan(arg))
+            sigx[high] = front * (1. - pre*np.arctan(arg))
 
         if other.size > 0:
             xlo, xhi = 0.999, 1.001
@@ -56,13 +56,13 @@ class Cluster(Entry):
             prelo, prehi = 2./np.sqrt(1.-xlo**2), 2./np.sqrt(xhi**2 - 1)
             frontlo, fronthi = 1./(xlo**2 - 1), 1./(xhi**2 - 1)
             testlo = frontlo * (1 - prelo*0.5*np.log((1+arglo)/(1-arglo)))
-            testhi = fronthi * (1 - prehi*np.atan(arghi))
+            testhi = fronthi * (1 - prehi*np.arctan(arghi))
             sigx[other] = (testlo + testhi)/2.
 
         return sigx
 
     def _calc_luminosity(self, zredstr, normmag):
-        zind = np.clip(zredstr.zindex(self.z), 0, zredstr.zbins.size-1)
+        zind = np.clip(zredstr.zindex(self.z), 0, zredstr.z.size-1)
         refind = np.clip(zredstr.lumrefmagindex(normmag), 0, zredstr.lumrefmagbins.size-1)
         normalization = zredstr.lumnorm[refind, zind]
         mstar, alpha = zredstr.mstar(self.z), zredstr.alpha(self.z)
