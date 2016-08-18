@@ -36,13 +36,13 @@ class Cluster(Entry):
             arg = np.sqrt((1. - corex)/(1. + corex))
             pre = 2./(np.sqrt(1. - corex**2))
             front = 1./(corex**2 - 1)
-            sigx[low] = front * (1. - pre*0.5*np.alog((1.+arg)/(1.-arg)))
+            sigx[low] = front * (1. - pre*0.5*np.log((1.+arg)/(1.-arg)))
 
         if mid.size > 0:
             arg = np.sqrt((1. - x[mid])/(1. + x[mid]))
             pre = 2./(np.sqrt(1. - x[mid]**2))
             front = 1./(x[mid]**2 - 1.)
-            sigx[mid] = front * (1. - pre*0.5*np.alog((1.+arg)/(1.-arg)))
+            sigx[mid] = front * (1. - pre*0.5*np.log((1.+arg)/(1.-arg)))
 
         if high.size > 0:
             arg = np.sqrt((x[high] - 1.)/(x[high] + 1.))
@@ -55,7 +55,7 @@ class Cluster(Entry):
             arglo, arghi = np.sqrt((1-xlo)/(1+xlo)), np.sqrt((xhi-1)/(xhi+1))
             prelo, prehi = 2./np.sqrt(1.-xlo**2), 2./np.sqrt(xhi**2 - 1)
             frontlo, fronthi = 1./(xlo**2 - 1), 1./(xhi**2 - 1)
-            testlo = frontlo * (1 - prelo*0.5*np.alog((1+arglo)/(1-arglo)))
+            testlo = frontlo * (1 - prelo*0.5*np.log((1+arglo)/(1-arglo)))
             testhi = fronthi * (1 - prehi*np.atan(arghi))
             sigx[other] = (testlo + testhi)/2.
 
