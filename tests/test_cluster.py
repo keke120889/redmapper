@@ -42,7 +42,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_lum, idl_lum)
 
     def test_bkg_filter(self):
-        test_indices = np.array([29, 16, 27,  5, 38, 35, 25, 44])
+        test_indices = np.array([29, 16, 27,  5, 38, 35, 25, 43])
         bkg_file_name = 'test_bkg.fit'
         bkg = BackgroundStub(self.file_path + '/' + bkg_file_name)
         py_bkg = self.cluster._calc_bkg_density(bkg, Cosmo())
