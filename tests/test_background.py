@@ -39,7 +39,7 @@ class BackgroundTestCase(unittest.TestCase):
         idl_outputs = np.array([np.inf, 0.0012997627, 0.56412143, 6.4126010, 
                                 39.3480, 0.012194233, np.inf, 0.0])
         # idl_ouputs[4] = 42.555183
-        testing.assert_almost_equal(py_outputs, idl_outputs, decimal=5)
+        testing.assert_almost_equal(py_outputs, idl_outputs, decimal=4)
 
 
 if __name__=='__main__':
