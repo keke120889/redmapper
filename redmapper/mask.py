@@ -43,8 +43,8 @@ class HPMask(Mask):
         
         try:
             self.fracgood_float = 1
-            self.fracgood[hpix_ring-offset] = instr[muse].fracgood
-        except ValueError:
+            self.fracgood[hpix_ring-offset] = maskinfo[muse].fracgood
+        except AttributeError:
             self.fracgood_float = 0
             self.fracgood[hpix_ring-offset] = 1
         super(HPMask, self).__init__(self, confstr)
