@@ -40,15 +40,18 @@ class ClusterFiltersTestCase(unittest.TestCase):
         confstr = Configuration(self.file_path + '/' + conf_filename)
         mstar = zredstr.mstar(self.cluster.z)
         maxmag = mstar - 2.5*np.log10(confstr.lval_reference)
-        py_lum = self.cluster._calc_luminosity(zredstr, maxmag)
-        idl_lum = np.array([])
-        testing.assert_almost_equal(py_lum, idl_lum)
+        py_lum = self.cluster._calc_luminosity(zredstr, maxmag)[test_indices]
+        idl_lum = np.array([0.31916670697573657, 0.51969466754529969, 
+                            0.51241260597284388, 0.57421062800753153, 
+                            0.49051831959728859, 0.54419366768592525, 
+                            0.62145426389341463, 0.51969466754529969])
+        testing.assert_almost_equal(py_lum, idl_lum, decimal=1)
 
     def test_bkg_filter(self):
         test_indices = np.array([29, 16, 27,  5, 38, 35, 25, 43])
         bkg_filename = 'test_bkg.fit'
         bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
-        py_bkg = self.cluster._calc_bkg_density(bkg, Cosmo())
+        py_bkg = self.cluster._calc_bkg_density(bkg, Cosmo())[test_indices]
         idl_bkg = np.array([])
         testing.assert_almost_equal(py_bkg, idl_bkg)
 
