@@ -27,10 +27,10 @@ class BackgroundStub(Background):
 class ClusterFiltersTestCase(unittest.TestCase):
 
     def test_nfw_filter(self):
-        test_indices = np.array([46, 38,  1,  1, 11, 24, 25, 16])
+        test_indices = np.array([46, 38,  1,  2, 11, 24, 25, 16])
         py_nfw = self.cluster._calc_radial_profile()[test_indices]
-        idl_nfw = np.array([0.29360449, 0.14824243, 0.14721203, 0.14721203, 
-                            0.23459411, 0.31615007, 0.29307860, 0.29737136])
+        idl_nfw = np.array([0.23875841, 0.033541825, 0.032989189, 0.054912228, 
+                            0.11075225, 0.34660992, 0.23695366, 0.25232968])
         testing.assert_almost_equal(py_nfw, idl_nfw)
 
     def test_lum_filter(self):
