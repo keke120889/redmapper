@@ -107,7 +107,8 @@ class Background(object):
 
         zindex = np.full_like(chisqindex, ind)
         lookup_vals = self.sigma_g[refmagindex, chisqindex, zindex]
-        lookup_vals[badchisq] = lookup_vals[badrefmag] = np.inf
+        lookup_vals[badchisq] = np.inf
+        lookup_vals[badrefmag] = np.inf
 
         if not allow0:
             lookup_vals[np.where((lookup_vals == 0) & (chisq > 5.0))] = np.inf
