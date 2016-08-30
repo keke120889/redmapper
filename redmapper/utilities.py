@@ -29,7 +29,10 @@ class MStar(object):
         self.survey = survey.strip()
         self.band = band.strip()
 
-        self.mstar_file = resource_filename(__name__,'data/mstar/mstar_%s_%s.fit' % (self.survey, self.band))
+        try:
+            self.mstar_file = resource_filename(__name__,'data/mstar/mstar_%s_%s.fit' % (self.survey, self.band))
+        except:
+            raise IOError("Could not find mstar resource mstar_%s_%s.fit" % (self.survey, self.band))
 
         try:
             self._mstar_arr = fitsio.read(self.mstar_file,ext=1)
