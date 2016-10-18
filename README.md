@@ -12,6 +12,21 @@ make
 python setup.py install
 ```
 
+If you want to keep the root directory clean then run
+```
+cd redmapper
+python setup.py clean
+```
+
+Tests
+-----
+Once installed, feel free to run the nosetests with
+```
+make test
+```
+This will fail at the moment unless you have data files
+provided by Eli.
+
 Dependencies
 ------------
 Note: this list is ongoing. A list of dependencies includes

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from setuptools import setup, find_packages, Extension
+from setuptools import setup, find_packages, Extension, Command
 import numpy,os,glob
 
 with open('README.md') as f:
@@ -40,7 +40,17 @@ ext_modules.append(chisq_dist_module)
 # data files
 initcolorfiles = glob.glob('data/initcolors/*.fit')
 mstarfiles = glob.glob('data/mstar/*.fit')
-    
+
+class CleanCommand(Command):
+    """Custom clean command to tidy up the project root."""
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        os.system('rm -vrf ./build ./dist ./*.pyc ./*.tgz ./*.egg-info')
+
 setup(
     name='redmapper',
     version=__version__,
@@ -54,6 +64,7 @@ setup(
     install_requires=['numpy'],
     packages=find_packages(exclude=('tests', 'docs')),
     data_files=[('redmapper/data/initcolors', initcolorfiles),
-                ('redmapper/data/mstar', mstarfiles)]
+                ('redmapper/data/mstar', mstarfiles)],
+    cmdclass={'clean': CleanCommand}
 )
 
