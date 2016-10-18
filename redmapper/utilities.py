@@ -23,7 +23,6 @@ def chisq_pdf(data, k):
 ######################################
 ## mstar LUT code
 ######################################
-
 class MStar(object):
     def __init__(self, survey, band):
         self.survey = survey.strip()
@@ -47,13 +46,10 @@ class MStar(object):
         return self._f(z)
 
 
-
-
 #############################################################
 ## cubic spline interpolation, based on Eddie Schlafly's code, from NumRec
 ##   http://faun.rc.fas.harvard.edu/eschlafly/apored/cubicspline.py
 #############################################################
-
 class CubicSpline(object):
     def __init__(self, x, y, yp=None):
         npts = len(x)

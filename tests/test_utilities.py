@@ -33,13 +33,20 @@ class MStarTestCase(unittest.TestCase):
         testing.assert_almost_equal(mstar,np.array([16.2375,17.8500,18.8281,19.5878,20.1751]),decimal=4)
         # and against regressions...
         testing.assert_almost_equal(mstar,np.array([ 16.23748776,  17.85000035,  18.82812871,  19.58783337,  20.17514801]))
+
         
+class FunctionsTestCase(unittest.TestCase):
+    def runTest(self):
+        ra,dec = 40.1234, 55.9876
+        testing.assert_almost_equal(redmapper.utilities.astro_to_sphere(ra,dec),np.array([ 0.5936,  0.7003]),decimal=4)
+        #Need a test for chisq_pdf
+        #TO DO
 
 # copy this for a new utility test
 class UtilityTemplateTestCase(unittest.TestCase):
     def runTest(self):
         pass
-    
-    
+
+
 if __name__=='__main__':
     unittest.main()
