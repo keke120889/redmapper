@@ -22,10 +22,9 @@ Tests
 -----
 Once installed, feel free to run the nosetests with
 ```
-make test
+cd redmapper/tests
 ```
-This will fail at the moment unless you have data files
-provided by Eli.
+where the tests can be run individually.
 
 Dependencies
 ------------
