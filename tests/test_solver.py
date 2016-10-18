@@ -19,7 +19,6 @@ class SolverNFWTestCase(unittest.TestCase):
         testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'][0:10],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
         testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'][0:1],rsig=data[0]['RSIG'])
 
-
         # and test the results
         solver=redmapper.solver_nfw.Solver(data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
         
