@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages, Extension
-import numpy
-import glob
+import numpy,os,glob
 
 with open('README.md') as f:
     readme = f.read()
@@ -30,7 +29,8 @@ ext_modules.append(solver_nfw_module)
 chisq_dist_sources=['redmapper/chisq_dist/chisq_dist.c',
                     'redmapper/chisq_dist/chisq_dist_pywrap.c']
 chisq_dist_module = Extension('redmapper.chisq_dist._chisq_dist_pywrap',
-                              extra_compile_args=['-std=gnu99'],
+                              extra_compile_args=['-std=gnu99',os.path.expandvars('-I${GSLI}')],
+                              extra_link_args=[os.path.expandvars('-L${GSLL}')],
                               libraries=['gslcblas','gsl'],
                               sources=chisq_dist_sources,
                               include_dirs=include_dirs)
