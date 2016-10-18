@@ -33,17 +33,17 @@ class MStar(object):
             self.mstar_file = resource_filename(__name__,'data/mstar/mstar_%s_%s.fit' % (self.survey, self.band))
         except:
             raise IOError("Could not find mstar resource mstar_%s_%s.fit" % (self.survey, self.band))
-
         try:
             self._mstar_arr = fitsio.read(self.mstar_file,ext=1)
         except:
             raise IOError("Could not find mstar file mstar_%s_%s.fit" % (self.survey, self.band))
 
-        #self._spl = CubicSpline(self._mstar_arr['Z'],self._mstar_arr['MSTAR'])
-        self._f = interpolate.interp1d(self._mstar_arr['Z'],self._mstar_arr['MSTAR'],kind='cubic')
+        # Tom - why not use CubicSpline here? That's why it exists...
+        self._f = CubicSpline(self._mstar_arr['Z'],self._mstar_arr['MSTAR'])
+        #self._f = interpolate.interp1d(self._mstar_arr['Z'],self._mstar_arr['MSTAR'],kind='cubic')
+
     def __call__(self, z):
         # may want to check the type ... if it's a scalar, return scalar?  TBD
-        
         return self._f(z)
 
 

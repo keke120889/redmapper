@@ -21,7 +21,7 @@ class ReadConfigTestCase(unittest.TestCase):
         self.assertEqual(confdict.chisq_max,20.0)
         self.assertEqual(confdict.lval_reference,0.2)
         self.assertEqual(confdict.mask_mode,0)
-        # all other values in teh confdict are None
+        # all other values in the confdict are None
 
 if __name__=='__main__':
     unittest.main()
