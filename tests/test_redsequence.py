@@ -8,7 +8,7 @@ import redmapper
 class RedSequenceColorTestCase(unittest.TestCase):
     def runTest(self):
         file_name = 'test_dr8_pars.fit'
-        file_path = 'data'
+        file_path = 'data_for_tests'
 
         # test that we fail if we try a non-existent file
         self.assertRaises(IOError,redmapper.redsequence.RedSequenceColorPar,'nonexistent.fit')

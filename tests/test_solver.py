@@ -22,6 +22,12 @@ class SolverNFWTestCase(unittest.TestCase):
         # and test the results
         solver=redmapper.solver_nfw.Solver(data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
         
+        """
+        solve_nfw() spits out:
+        lambda,
+        p_mem,
+        wt = p_mem*theta^L*theta^R
+        """
         lam,p,wt=solver.solve_nfw()
 
         testing.assert_almost_equal(lam,data[0]['LAMBDA'])
