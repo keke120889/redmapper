@@ -59,7 +59,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
 
     def setUp(self):
         self.cluster = Cluster(np.empty(1))
-        self.file_path, filename = 'data', 'test_cluster_members.fit'
+        self.file_path, filename = 'data_for_tests', 'test_cluster_members.fit'
         self.cluster.members = GalaxyCatalog.from_fits_file(self.file_path 
                                                             + '/' + filename)
         self.cluster.z = self.cluster.members.z[0]

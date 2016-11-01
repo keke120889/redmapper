@@ -1,4 +1,4 @@
-import esutil
+import esutil, fitsio
 import healpy as hp
 import numpy as np
 from catalog import Entry

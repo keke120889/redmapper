@@ -29,7 +29,7 @@ def run(confdict=None, conffile=None, outbase=None,
     pars = None # To be implemented
 
     # Read in masked galaxies
-     maskgals = None #fitsio.read(confdict['maskgalfile'], ext=1) # To be implemented
+    maskgals = fitsio.read(confdict['maskgalfile'], ext=1) # To be implemented
 
     # Read in the input catalog from the catfile
     #NOTE from Tom - I think that this is the old "galfile" in IDL

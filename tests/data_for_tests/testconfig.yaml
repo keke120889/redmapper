@@ -5,10 +5,11 @@ zredfile: None
 bkgfile: ./data_for_tests/dr8_bkg.fit
 parfile: ./data_for_tests/dr8_pars.fit
 specfile: ./data_for_tests/dr8_test_spec.fit
+maskgalfile: ./data_for_tests/dr8_mask.fit
+wcenfile: None
 zlambdafile: None
 outbase: dr8_testing
 chisq_max: 20.0
 zrange: [0.05,0.60]
-wcenfile: None
 lval_reference: 0.2
 mask_mode: 0
