@@ -8,7 +8,7 @@ from redmapper.config import Configuration
 
 class MaskTestCase(unittest.TestCase):
     def test_length(self):
-        print self.mask.mside, self.mask.offset, self.mask.npix
+        print self.mask.nside, self.mask.offset, self.mask.npix
 
     def setUp(self):
         """
