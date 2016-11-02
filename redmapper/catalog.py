@@ -65,7 +65,12 @@ class DataObject(object):
 
 
 class Entry(DataObject):
-    """Docstring."""
+    """Entries are extensions of DataObjects.
+    
+    The __init__ method simply calls the 
+    constructor for DataObject after it has verified that
+    there is only a single entry being passed in.
+    """
 
     def __init__(self, *arrays):
         if any([arr.size != 1 for arr in arrays]):
@@ -86,7 +91,11 @@ class Entry(DataObject):
 
 
 class Catalog(DataObject):
-    """Docstring."""
+    """Catalogs are extensions of DataObjects.
+
+    Catalogs are composed of may Entry objects.
+    Tom - I am not sure that this object is complete. TODO
+    """
 
     entry_class = Entry
 
