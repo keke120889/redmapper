@@ -5,6 +5,7 @@ zredfile: None
 bkgfile: ./data_for_tests/dr8_bkg.fit
 parfile: ./data_for_tests/test_dr8_pars.fit
 specfile: ./data_for_tests/dr8_test_spec.fit
+maskgalfile: ./data_for_tests/maskgals.fit
 maskfile: ./data_for_tests/test_dr8_mask.fit
 wcenfile: None
 zlambdafile: None
