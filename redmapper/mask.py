@@ -11,7 +11,8 @@ class Mask(object):
     def __init__(self, confstr):
         try:
             self.read_maskgals(confstr.maskgalfile)
-        except ValueError:
+        except:
+            # this could throw a ValueError or AttributeError
             self.gen_maskgals()
 
     def calc_radmask(self, *args, **kwargs): pass
@@ -23,14 +24,13 @@ class Mask(object):
 class HPMask(Mask):
     """HPMask is a HealPix mask and extends the Mask class.
     
-    The __init__ function fails at the moment, because 
-    calling Entry(maskinfo) doesn't work when maskinfo
-    is an array of healpix pixels.
+
     """
 
     def __init__(self, confstr):
         maskinfo, hdr = fitsio.read(confstr.maskfile, ext=1, header=True)
-        maskinfo = Entry(maskinfo)
+        # maskinfo converted to a catalog (array of Entrys)
+        maskinfo = Catalog(maskinfo)
         nlim, nside, nest = maskinfo.hpix.size, hdr['NSIDE'], hdr['NEST']
         hpix_ring = maskinfo.hpix if nest != 1 else hp.nest2ring(nside, maskinfo.hpix)
         muse = np.arange(nlim)
@@ -45,14 +45,17 @@ class HPMask(Mask):
         
         offset, ntot = min(hpix_ring)-1, max(hpix_ring)-min(hpix_ring)+3
         self.nside, self.offset, self.npix = nside, offset, ntot
-        
+
+        ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
+        self.fracgood = np.zeros(ntot,dtype='f4')
+
         try:
             self.fracgood_float = 1
             self.fracgood[hpix_ring-offset] = maskinfo[muse].fracgood
         except AttributeError:
             self.fracgood_float = 0
             self.fracgood[hpix_ring-offset] = 1
-        super(HPMask, self).__init__(self, confstr)
+        super(HPMask, self).__init__(confstr)
 
     def compute_radmask(self, ra, dec):
         theta, phi = astro_to_sphere(ra, dec)
