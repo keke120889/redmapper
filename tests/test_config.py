@@ -14,7 +14,7 @@ class ReadConfigTestCase(unittest.TestCase):
 
         self.assertEqual(confdict.galfile,'./data_for_tests/pixelized/dr8_catalog_test_master_table.fit')
         self.assertEqual(confdict.specfile,'./data_for_tests/dr8_test_spec.fit')
-        self.assertEqual(confdict.parfile,'./data_for_tests/dr8_pars.fit')
+        self.assertEqual(confdict.parfile,'./data_for_tests/test_dr8_pars.fit')
         self.assertEqual(confdict.bkgfile,'./data_for_tests/dr8_bkg.fit')
         self.assertEqual(confdict.zrange,[0.05,0.60])
         self.assertEqual(confdict.outbase,"dr8_testing")

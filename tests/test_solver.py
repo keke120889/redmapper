@@ -8,7 +8,7 @@ import redmapper
 class SolverNFWTestCase(unittest.TestCase):
     def runTest(self):
         file_name = 'test_solver_data.fit'
-        file_path = 'data'
+        file_path = 'data_for_tests'
         
         data=fitsio.read('%s/%s' % (file_path,file_name),ext=1)
 

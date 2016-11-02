@@ -8,7 +8,7 @@ from redmapper.background import Background
 class BackgroundTestCase(unittest.TestCase):
 
     def runTest(self):
-        file_name, file_path = 'test_bkg.fit', 'data'
+        file_name, file_path = 'test_bkg.fit', 'data_for_tests'
         # test that we fail if we try a non-existent file
         self.assertRaises(IOError, Background, 'nonexistent.fit')
         # test that we fail if we read a non-fits file

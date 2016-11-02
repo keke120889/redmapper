@@ -7,7 +7,7 @@ import redmapper
 
 class ChisqColorTestCase(unittest.TestCase):
     def runTest(self):
-        file_path = 'data'
+        file_path = 'data_for_tests'
 
         file_mode0 = 'testgals_chisq_mode0.fit'
         file_mode1 = 'testgals_chisq_mode1.fit'
