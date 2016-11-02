@@ -6,6 +6,14 @@ import scipy.ndimage as ndi
 
 
 class Background(object):
+    """
+    Name:
+        Background
+    Purpose:
+        An object used to hold the background. This also
+        contains the functionality to interpolate between
+        known background points.
+    """
 
     # def _interp(data)
 
@@ -28,20 +36,32 @@ class Background(object):
     #     self.obkg = obkg
 
     def __init__(self, filename):
+        """
+        docstring for the constructor
+        """
+        # Get the raw object background from the fits file
         obkg = Entry.from_fits_file(filename)
+        # Set the bin size in redshift, chisq and refmag spaces
         self.zbinsize, self.chisqbinsize, self.refmagbinsize = 0.001, 0.5, 0.01
 
+        # Create the refmag bins
         refmagbins = np.arange(obkg.refmagrange[0], obkg.refmagrange[1], self.refmagbinsize)
         nrefmagbins = refmagbins.size
 
+        # Create the chisq bins
         nchisqbins = obkg.chisqbins.size
         nlnchisqbins = obkg.lnchisqbins.size
 
+        # Read out the number of redshift bins from the object background
         nzbins = obkg.zbins.size
 
+        # Set up some arrays to populate
         sigma_g_new = np.zeros((nrefmagbins, nchisqbins, nzbins))
         sigma_lng_new = np.zeros((nrefmagbins, nchisqbins, nzbins))
 
+        # Do linear interpolation to get the sigma_g value
+        # between the raw background points.
+        # If any values are less than 0 then turn them into 0.
         for i in range(nzbins):
             for j in range(nchisqbins):
                 sigma_g_new[:,j,i] = np.interp(refmagbins, obkg.refmagbins, obkg.sigma_g[:,j,i])
@@ -57,6 +77,7 @@ class Background(object):
 
         sigma_g_new = np.zeros((nrefmagbins, nchisqbins, nzbins))
 
+        # Now do the interpolation in chisq space
         for i in range(nzbins):
             for j in range(nrefmagbins):
                 sigma_g_new[j,:,i] = np.interp(chisqbins, obkg.chisqbins, sigma_g[j,:,i])
@@ -70,6 +91,7 @@ class Background(object):
         sigma_g_new = np.zeros((nrefmagbins, nchisqbins, nzbins))
         sigma_lng_new = np.zeros((nrefmagbins, nlnchisqbins, nzbins))
 
+        # Now do the interpolation in redshift space
         for i in range(nchisqbins):
             for j in range(nrefmagbins):
                 sigma_g_new[j,i,:] = np.interp(zbins, obkg.zbins, sigma_g[j,i,:])
@@ -84,6 +106,8 @@ class Background(object):
         for i in range(nzbins):
             n_new[:,i] = np.sum(sigma_g_new[:,:,i], axis=1) * self.chisqbinsize
 
+        # Save all meaningful fields
+        # to be attributes of the background object.
         self.refmagbins = refmagbins
         self.chisqbins = chisqbins
         self.lnchisqbins = obkg.lnchisqbins
@@ -93,14 +117,27 @@ class Background(object):
         self.n = n_new
 
     def sigma_g_lookup(self, z, chisq, refmag, allow0=False):
+        """
+        Name:
+            sigma_g_lookup
+        Purpose:
+            return the value of sigma_g at points in redshift, chisq and refmag space
+        Inputs:
+            z: redshift
+            chisq: chisquared value
+            refmag: reference magnitude
+        Optional Inputs:
+            allow0 (boolean): if we allow sigma_g to be zero 
+                and the chisq is very high. Set to False by default.
+        Outputs:
+            lookup_vals: the looked-up values of sigma_g
+        """
         zmin = self.zbins[0]
         chisqindex = np.searchsorted(self.chisqbins, chisq) - 1
         refmagindex = np.searchsorted(self.refmagbins, refmag) - 1
-        ind = np.clip(np.round((z-zmin)/(self.zbins[1]-zmin)),
-                      0, self.zbins.size-1)
+        ind = np.clip(np.round((z-zmin)/(self.zbins[1]-zmin)),0, self.zbins.size-1)
 
-        badchisq  = np.where((chisq < self.chisqbins[0]) 
-                             | (chisq > self.chisqbins[-1]))
+        badchisq  = np.where((chisq < self.chisqbins[0])| (chisq > self.chisqbins[-1]))
         badrefmag = np.where((refmag <= self.refmagbins[0]) 
                              | (refmag >= self.refmagbins[-1]))
         chisqindex[badchisq] = refmagindex[badrefmag] = 0
