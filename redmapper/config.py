@@ -38,6 +38,12 @@ def read_yaml(filename, defaults=None):
 class Configuration(object):
 
     def __init__(self, conffile):
-        confdict = read_yaml(conffile)
+        defaults = {'hpix':0,
+                    'nside':0}
+
+        confdict = read_yaml(conffile,defaults=defaults)
+
+
         for key in confdict:
             setattr(self, key, confdict[key])
+
