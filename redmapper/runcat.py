@@ -14,7 +14,7 @@ def run(confdict=None, conffile=None, outbase=None,
     Purpose:
         Run the redmapper cluster finding algorithm.
     Calling sequence:
-        TBD
+        TODO
     Inputs:
         confdict: A configuration dictionary containing information
                   about how this run of RM works. Note that
@@ -24,8 +24,8 @@ def run(confdict=None, conffile=None, outbase=None,
                   one of confdict or conffile is required.
     Optional Inputs:
         outbase: Directory location of where to put outputs.
-        savemembers: TBD
-        mask = TBD
+        savemembers: TODO
+        mask = TODO
     """
 
     # Read configurations from either explicit dict or YAML file
@@ -41,16 +41,16 @@ def run(confdict=None, conffile=None, outbase=None,
     if outbase is None: outbase = confdict['outbase']
 
     # Read in the background from the bkgfile
-    bkg = None # To be implemented
+    bkg = None # TODO
 
     # Read in the pars from the parfile
-    pars = None # To be implemented
+    pars = None # TODO
 
     # Read in masked galaxies
-    maskgals = None #fitsio.read(confdict['maskgalfile'], ext=1) # To be implemented
+    maskgals = None #fitsio.read(confdict['maskgalfile'], ext=1) # TODO
 
     # Read in the mask
-    maskfile = confdict['maskfile'] #To be implemented
+    maskfile = confdict['maskfile'] #TODO
 
     # Read in the input catalog from the catfile
     #NOTE from Tom - I think that this is the old "galfile" in IDL

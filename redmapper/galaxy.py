@@ -31,15 +31,14 @@ class GalaxyCatalog(Catalog):
             do the actual reading in of the data fields in some galaxy
             catalog file
         Calling Squence:
-            TBD
+            TODO
         Inputs:
-            cls: TBD
             filename: a name of a galaxy catalog file
         Optional Inputs:
-            nside: TBD
-            hpix: TBD
+            nside: TODO
+            hpix: TODO
         Outputs:
-            TBD
+            TODO
         """
         # do we have appropriate keywords
         if hpix is not None and nside is None:
