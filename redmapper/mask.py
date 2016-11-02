@@ -1,7 +1,7 @@
 import esutil, fitsio
 import healpy as hp
 import numpy as np
-from catalog import Entry
+from catalog import Catalog,Entry
 from utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere
 
 
@@ -21,7 +21,12 @@ class Mask(object):
 
 
 class HPMask(Mask):
-    """Docstring."""
+    """HPMask is a HealPix mask and extends the Mask class.
+    
+    The __init__ function fails at the moment, because 
+    calling Entry(maskinfo) doesn't work when maskinfo
+    is an array of healpix pixels.
+    """
 
     def __init__(self, confstr):
         maskinfo, hdr = fitsio.read(confstr.maskfile, ext=1, header=True)
