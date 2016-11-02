@@ -8,23 +8,28 @@ def read_yaml(filename, defaults=None):
     Purpose:
         Read in a YAML file with key/value pairs and put into dict.
     Calling Sequence:
-        outdict = read_simpleconf(filename, defaults=None)
+        outdict = read_yaml(filename, defaults=None)
     Inputs:
         filename: YAML file name
     Optional Inputs:
         defaults: Dictionary of required/default fields/values. All fields in 
                   defaults are required to be specified. If they are set to 
                   None, they must be specified by filename.
+    Outputs:
+        outdict: a dictionary of the key/value pairs in the YAML file.
     """
-	
+    
+    # The output dictionary
     outdict = defaults if defaults is not None else {}
     
+    # Open the yaml file and find key/value pairs
     with open(filename) as f: yaml_data = yaml.load(f)
     for tag in outdict:
         if outdict[tag] is None:
             raise ValueError('A value for the required tag \"' 
                                 + tag + '\" must be specified.')
     
+    # Add the pairs to the dictionary
     for tag in yaml_data: outdict[tag] = yaml_data[tag]
     
     return outdict

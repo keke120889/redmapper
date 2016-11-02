@@ -8,7 +8,25 @@ from cluster import ClusterCatalog
 def run(confdict=None, conffile=None, outbase=None, 
                         savemembers=False, mask=False):
     
-    """ docstring """
+    """
+    Name:
+        run
+    Purpose:
+        Run the redmapper cluster finding algorithm.
+    Calling sequence:
+        TBD
+    Inputs:
+        confdict: A configuration dictionary containing information
+                  about how this run of RM works. Note that
+                  one of confdict or conffile is required.
+        conffile: A configuration file containing information
+                  aboud how this run of RM works. Note that
+                  one of confdict or conffile is required.
+    Optional Inputs:
+        outbase: Directory location of where to put outputs.
+        savemembers: TBD
+        mask = TBD
+    """
 
     # Read configurations from either explicit dict or YAML file
     if (confdict is None) and (conffile is None):
@@ -29,7 +47,10 @@ def run(confdict=None, conffile=None, outbase=None,
     pars = None # To be implemented
 
     # Read in masked galaxies
-    maskgals = fitsio.read(confdict['maskgalfile'], ext=1) # To be implemented
+    maskgals = None #fitsio.read(confdict['maskgalfile'], ext=1) # To be implemented
+
+    # Read in the mask
+    maskfile = confdict['maskfile'] #To be implemented
 
     # Read in the input catalog from the catfile
     #NOTE from Tom - I think that this is the old "galfile" in IDL

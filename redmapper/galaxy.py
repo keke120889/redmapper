@@ -9,7 +9,13 @@ import os
 
 
 class GalaxyCatalog(Catalog):
-    """Docstring."""
+    """
+    Name:
+        GalaxyCatalog
+    Purpose:
+        An object for holding galaxy catalogs, including all of
+        the attributes that a galaxy would have.
+    """
 
     def __init__(self, *arrays, **kwargs):
         super(GalaxyCatalog, self).__init__(*arrays)
@@ -18,7 +24,23 @@ class GalaxyCatalog(Catalog):
 
     @classmethod
     def from_galfile(cls, filename, nside=None, hpix=None, border=0.0):
-        """docstring"""
+        """
+        Name:
+            from_galfile
+        Purpose:
+            do the actual reading in of the data fields in some galaxy
+            catalog file
+        Calling Squence:
+            TBD
+        Inputs:
+            cls: TBD
+            filename: a name of a galaxy catalog file
+        Optional Inputs:
+            nside: TBD
+            hpix: TBD
+        Outputs:
+            TBD
+        """
         # do we have appropriate keywords
         if hpix is not None and nside is None:
             raise ValueError("If hpix is specified, must also specify nside")
@@ -71,8 +93,7 @@ class GalaxyCatalog(Catalog):
                 _, indices = eu.numpy_util.match(inhpix, tab[0]['HPIX'])
         
         # create the catalog array to read into
-        elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]]),
-                                                                ext=1, rows=0)
+        elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]]),ext=1, rows=0)
         cat = np.zeros(np.sum(tab[0]['NGALS'][indices]), dtype=elt.dtype)
         
         # read the files

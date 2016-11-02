@@ -3,9 +3,9 @@ galfile: ./data_for_tests/pixelized/dr8_catalog_test_master_table.fit
 catfile: None
 zredfile: None
 bkgfile: ./data_for_tests/dr8_bkg.fit
-parfile: ./data_for_tests/dr8_pars.fit
+parfile: ./data_for_tests/test_dr8_pars.fit
 specfile: ./data_for_tests/dr8_test_spec.fit
-maskgalfile: ./data_for_tests/dr8_mask.fit
+maskfile: ./data_for_tests/test_dr8_mask.fit
 wcenfile: None
 zlambdafile: None
 outbase: dr8_testing
