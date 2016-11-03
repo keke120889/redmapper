@@ -95,6 +95,8 @@ class Catalog(DataObject):
 
     Catalogs are composed of may Entry objects.
     Tom - I am not sure that this object is complete. TODO
+    Eli - It might be.  The tricks here are so you can access
+           these with "catalog.key" rather than "catalog['KEY']"
     """
 
     entry_class = Entry
@@ -105,8 +107,8 @@ class Catalog(DataObject):
     def __len__(self): return self.size
 
     def __getitem__(self, key):
-    	if isinstance(key, int):
-    		return self.entry_class(self._ndarray.__getitem__(key))
+        if isinstance(key, int):
+            return self.entry_class(self._ndarray.__getitem__(key))
         return type(self)(self._ndarray.__getitem__(key))
 
     def __setitem__(self, key, val):
