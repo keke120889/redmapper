@@ -13,6 +13,11 @@ class Background(object):
         An object used to hold the background. This also
         contains the functionality to interpolate between
         known background points.
+
+    parameters
+    ----------
+    filename: string
+       background filename
     """
 
     # def _interp(data)
@@ -36,9 +41,9 @@ class Background(object):
     #     self.obkg = obkg
 
     def __init__(self, filename):
-        """
-        docstring for the constructor
-        """
+        #"""
+        #docstring for the constructor
+        #"""
         # Get the raw object background from the fits file
         obkg = Entry.from_fits_file(filename)
         # Set the bin size in redshift, chisq and refmag spaces
