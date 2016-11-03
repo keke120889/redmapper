@@ -48,6 +48,8 @@ class HPMask(Mask):
     """
 
     def __init__(self, confstr):
+        # record for posterity
+        self.maskfile = confstr.maskfile
         maskinfo, hdr = fitsio.read(confstr.maskfile, ext=1, header=True)
         # maskinfo converted to a catalog (array of Entrys)
         maskinfo = Catalog(maskinfo)
@@ -64,10 +66,10 @@ class HPMask(Mask):
                                         np.radians(radius), inclusive=False)
             muse, = esutil.numpy_util.match(hpix_ring, pixint)
 
-        offset, ntot = min(hpix_ring)-1, max(hpix_ring)-min(hpix_ring)+3
+        offset, ntot = np.min(hpix_ring)-1, np.max(hpix_ring)-np.min(hpix_ring)+3
         self.nside, self.offset, self.npix = nside, offset, ntot
 
-        ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
+        #ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
         self.fracgood = np.zeros(ntot,dtype='f4')
 
         # check if we have a fracgood in the input maskinfo
