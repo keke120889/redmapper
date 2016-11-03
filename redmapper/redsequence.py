@@ -9,6 +9,24 @@ from utilities import CubicSpline
 from utilities import MStar
 
 class RedSequenceColorPar(object):
+    """
+    Class which contains a red-sequence parametrization
+
+    parameters
+    ----------
+    filename: string
+        red sequence parameter file
+    zbinsize: float, optional
+        interpolation bin size in redshift
+    minsig: float, optional
+        minimum intrinsic scatter.  Default 0.01
+    fine: bool, optional
+        finest binning, set in filename header.  Default False
+    zrange: float*2, optional
+        redshift range [zlo,zhi].  Default from filename header
+        (maximum range)
+
+    """
     def __init__(self, filename, zbinsize=None, minsig=0.01, fine=False, zrange=None):
 
         pars,hdr=fitsio.read(filename,ext=1,header=True)
@@ -17,7 +35,7 @@ class RedSequenceColorPar(object):
             limmag = hdr['LIMMAG']
             if (zrange is None):
                 zrange = np.array([hdr['ZRANGE0'],hdr['ZRANGE1']])
-                    
+
             alpha = hdr['ALPHA']
             mstar_survey = hdr['MSTARSUR']
             mstar_band = hdr['MSTARBAN']
@@ -37,7 +55,7 @@ class RedSequenceColorPar(object):
             except:
                 raise ValueError("Missing field from parameter header.")
 
-        
+
         try:
             lowzmode=hdr['LOWZMODE']
         except:
@@ -76,7 +94,7 @@ class RedSequenceColorPar(object):
         self.zbinscale=int(1./zbinsize)
 
         ms=MStar(mstar_survey,mstar_band)
-        
+
         refmagbinsize=0.01
         if (lowzmode):
             refmagrange=np.array([10.0,limmag],dtype='f4')
@@ -90,7 +108,7 @@ class RedSequenceColorPar(object):
         # and for fast look-ups...
         self.refmagbins = np.append(self.refmagbins,self.refmagbins[self.refmagbins.size-1])
         self.lumrefmagbins = np.append(self.lumrefmagbins,self.lumrefmagbins[self.lumrefmagbins.size-1])
-        
+
         self.refmagbinsize = refmagbinsize
         self.refmagbinscale = int(1./refmagbinsize)
         self.refmaginteger = (self.refmagbins*self.refmagbinscale).astype(np.int64)
@@ -128,7 +146,7 @@ class RedSequenceColorPar(object):
         # sigma/covmat
         self.sigma = np.zeros((ncol,ncol,nz),dtype=np.float64)
         self.covmat = np.zeros((ncol,ncol,nz),dtype=np.float64)
-            
+
         # diagonals
         for j in xrange(ncol):
             spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,j,:])
@@ -169,7 +187,6 @@ class RedSequenceColorPar(object):
         spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR2_SLOPE'])
         self.corr2_slope = spl(self.z)
 
-        
         if 'CORR_R' in pars.dtype.names:
             # protect against stupidity
             if (pars[0]['CORR_R'][0] <= 0.0) :
@@ -196,7 +213,6 @@ class RedSequenceColorPar(object):
 
         # mstar
         # create LUT
-        #ms = MStar(mstar_survey,mstar_band)
         self._mstar = ms(self.z)
 
         # luminosity function integrations
@@ -205,11 +221,8 @@ class RedSequenceColorPar(object):
         for i in xrange(nz):
             f=10.**(0.4*(self.alpha+1.0)*(self._mstar[i]-self.lumrefmagbins))*np.exp(-10.**(0.4*(self._mstar[i]-self.lumrefmagbins)))
             self.lumnorm[:,i] = refmagbinsize*np.cumsum(f)
-            
 
         # lupcorr (annoying!)
-        #self.lupcorr = np.zeros((ncol,nz,self.refmagbins.size))
-        #self.lupcorr = np.zeros((ncol,self.refmagbins.size,nz))
         self.lupcorr = np.zeros((self.refmagbins.size,nz,ncol),dtype='f8')
         if (do_lupcorr):
             bnmgy = bvalues*1e9
@@ -235,8 +248,6 @@ class RedSequenceColorPar(object):
                 magcol = mags[:,0:ncol] - mags[:,1:ncol+1]
                 lupcol = lups[:,0:ncol] - lups[:,1:ncol+1]
 
-                #self.lupcorr[i,:,:] = lupcol - magcol
-                #self.lupcorr[:,:,i] = lupcol - magcol
                 self.lupcorr[:,i,:] = lupcol - magcol
 
         # set top overflow bins to very large number
@@ -248,17 +259,42 @@ class RedSequenceColorPar(object):
         self.lumrefmaginteger = np.round(self.lumrefmagbins*self.refmagbinscale).astype(np.int64)
         self.ncol = ncol
 
-        # make this into a catalog
+        # don't make this into a catalog
         #super(RedSequenceColorPar, self).__init__(zredstr)
 
 
     def mstar(self,z):
+        """
+        M_star lookup
+
+        parameters
+        ----------
+        z: array of floats
+           redshift
+
+        returns
+        -------
+        mstar: array of floats
+
+        """
         # lookup and return mstar...awesome.
-        #ind = np.searchsorted(self.z,z)
         zind = self.zindex(z)
         return self._mstar[zind]
 
     def zindex(self,z):
+        """
+        redshift index lookup
+
+        parameters
+        ----------
+        z: array of floats
+
+        returns
+        -------
+        indices: array of integers
+            redshift indices
+
+        """
         # return the z index/indices with rounding.
 
         zind = np.searchsorted(self.zinteger,np.round(np.atleast_1d(z)*self.zbinscale).astype(np.int64))
@@ -266,12 +302,24 @@ class RedSequenceColorPar(object):
             return np.asscalar(zind)
         else:
             return zind
-        
+
         # and check for top overflows.  Minimum is always 0
         #test,=np.where(zind == self.z.size)
         #if (test.size > 0): zind[test] = self.z.size-1
 
     def refmagindex(self,refmag):
+        """
+        reference magnitude index lookup
+
+        parameters
+        ----------
+        refmag: array of floats
+
+        returns
+        -------
+        indices: array of integers
+            refmag indices
+        """
         # return the refmag index/indices with rounding
 
         refmagind = np.searchsorted(self.refmaginteger,np.round(np.atleast_1d(refmag)*self.refmagbinscale).astype(np.int64))
@@ -281,6 +329,19 @@ class RedSequenceColorPar(object):
             return refmagind
 
     def lumrefmagindex(self,lumrefmag):
+        """
+        luminosity reference magnitude index lookup
+
+        parameters
+        ----------
+        lumrefmag: array of floats
+
+        returns
+        -------
+        indices: array of integers
+            lumrefmag indices
+
+        """
 
         lumrefmagind = np.searchsorted(self.lumrefmaginteger,np.round(np.atleast_1d(lumrefmag)*self.refmagbinscale).astype(np.int64))
         if (lumrefmagind.size == 1):
@@ -289,6 +350,22 @@ class RedSequenceColorPar(object):
             return lumrefmagind
 
     def calculate_chisq(self, galaxies, z, calc_lkhd=False):
+        """
+        compute chisq for a set of galaxies at redshift z
+
+        parameters
+        ----------
+        galaxies: GalaxyCatalog
+            galaxies which need chisq values
+        z: redshift
+            redshift to compute chisq
+        calc_lkhd: bool, optional
+            compute likelihood rather than chisq (default False)
+
+        returns
+        -------
+        chisqs: array of floats
+        """
         zind = self.zindex(z)
         magind = self.refmagindex(galaxies.refmag)
         galcolor = galaxies.mag[:,:self.ncol] - galaxies.mag[:,1:]
@@ -302,6 +379,9 @@ class RedSequenceColorPar(object):
         return chisq_dist.compute_chisq(chisq_mode=True)
 
     def calculate_zred(self,blah):
+        """
+        Calculate zred.  Not written yet.
+        """
         # I think this can be housed here.  Not urgent.
         pass
 
