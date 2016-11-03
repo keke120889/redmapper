@@ -66,7 +66,7 @@ class DataObject(object):
 
 class Entry(DataObject):
     """Entries are extensions of DataObjects.
-    
+
     The __init__ method simply calls the 
     constructor for DataObject after it has verified that
     there is only a single entry being passed in.
