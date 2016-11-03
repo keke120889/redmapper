@@ -35,10 +35,12 @@ class GalaxyCatalog(Catalog):
         Inputs:
             filename: a name of a galaxy catalog file
         Optional Inputs:
-            nside: TODO
-            hpix: TODO
+            nside: integer
+                healpix nside of sub-pixel
+            hpix: integer
+                healpix pixel (ring order) of sub-pixel
         Outputs:
-            TODO
+            A galaxy catalog object
         """
         # do we have appropriate keywords
         if hpix is not None and nside is None:
@@ -69,7 +71,7 @@ class GalaxyCatalog(Catalog):
         if nside > nside_tab:
             raise ValueError("""Requested nside (%d) must not be larger than 
                                     table nside (%d).""" % (nside, nside_tab))
-        
+
         # which files do we want to read?
         path = os.path.dirname(os.path.abspath(filename))
         if hpix is None:
@@ -90,11 +92,11 @@ class GalaxyCatalog(Catalog):
                     inhpix = np.append(inhpix, pixint)
                 inhpix = np.unique(inhpix)
                 _, indices = eu.numpy_util.match(inhpix, tab[0]['HPIX'])
-        
+
         # create the catalog array to read into
         elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]]),ext=1, rows=0)
         cat = np.zeros(np.sum(tab[0]['NGALS'][indices]), dtype=elt.dtype)
-        
+
         # read the files
         ctr = 0
         for index in indices:
@@ -105,6 +107,27 @@ class GalaxyCatalog(Catalog):
         return cls(cat)
 
     def match(self, galaxy, radius):
+        """
+        match a galaxy to the catalog
+
+        parameters
+        ----------
+        galaxy: Galaxy object
+        radius: float
+           radius in degrees
+
+        returns
+        -------
+        (indices, dists)
+        indices: array of integers
+            indices in galaxy catalog of matches
+        dists: array of floats
+            match distance for each match
+        """
+
+        # probably need a multi-match one as well?  depends on speed/overhead
+        # also, I think we want to change to smatch
+
         if self._htm_matcher is None:
             self._htm_matcher = Matcher(self.depth, self.ra, self.dec)
         _, indices, dists = self._htm_matcher.match(galaxy.ra, galaxy.dec, 
