@@ -33,6 +33,7 @@ class Mask(object):
         self.maskgals = Catalog.from_fits_file(maskgalfile)
     def gen_maskgals(self):
         # this needs to be written to generate maskgals if not from file
+        # Tom-where would we generate them from?
         pass
 
 
