@@ -6,6 +6,11 @@ import redmapper
 
 class SplineTestCase(unittest.TestCase):
     def runTest(self):
+        """
+        This tests the functionality of the redmapper.utilities
+        spline against the spline output values from a spline
+        implemented in IDL found in RM 6.3.1 DR8.
+        """
         # create test data
         # these numbers are from redMaPPer 6.3.1, DR8
         xx = np.array([0.05,0.15,0.25,0.35,0.45,0.60],dtype=np.float64)
@@ -22,6 +27,10 @@ class SplineTestCase(unittest.TestCase):
 
 class MStarTestCase(unittest.TestCase):
     def runTest(self):
+        """
+        This tests the MStar function found in the utilities
+        class at two different decimal levels.
+        """
         # make sure invalid raises proper exception
         self.assertRaises(IOError,redmapper.utilities.MStar,'blah','junk')
                           
@@ -37,6 +46,11 @@ class MStarTestCase(unittest.TestCase):
         
 class FunctionsTestCase(unittest.TestCase):
     def runTest(self):
+        """
+        This tests the conversion between astronomical coordintates
+        (RA,DEC) to spherical coordinates (theta,phi). This is
+        implemented in the utilities.astro_to_sphere() function.
+        """
         ra,dec = 40.1234, 55.9876
         testing.assert_almost_equal(redmapper.utilities.astro_to_sphere(ra,dec),np.array([ 0.5936,  0.7003]),decimal=4)
         #Need a test for chisq_pdf

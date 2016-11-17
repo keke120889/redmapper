@@ -12,9 +12,7 @@ class MaskTestCase(unittest.TestCase):
 
     def setUp(self):
         """
-        Tom - this is probably wrong at the moment. I cannot construct
-        the HPMask because Entry() doesn't work when taking
-        in a healpix array.
+        TODO
         """
         self.file_path = "data_for_tests"
         conf_filename = "testconfig.yaml"

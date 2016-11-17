@@ -7,6 +7,10 @@ import redmapper
 class ReadConfigTestCase(unittest.TestCase):
     
     def runTest(self):
+        """
+        All we can test from the config file are that the fields are what we
+        expect them to be.
+        """
         file_name = 'testconfig.yaml'
         file_path = 'data_for_tests'
 

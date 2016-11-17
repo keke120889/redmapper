@@ -7,6 +7,16 @@ import redmapper
 
 class SolverNFWTestCase(unittest.TestCase):
     def runTest(self):
+        """
+        The first party of this tests to see if the solver routine 
+        spits out any errors that it can raise internally. 
+        We sequencially check the ucounts, bcounts,
+        r, w, and cpars values.
+
+        The second part checks some results. It compares the lam, p_mem, and wt
+        values given by the solver to the values contained in the data file,
+        which are precomputed solver outputs (from IDL).
+        """
         file_name = 'test_solver_data.fit'
         file_path = 'data_for_tests'
         

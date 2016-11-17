@@ -7,6 +7,27 @@ import redmapper
 
 class ChisqColorTestCase(unittest.TestCase):
     def runTest(self):
+        """
+        This contains three versions of a similar test.
+        This file tests the chisq and likelihood values
+        computed in the chisq_dist.compute_chisq() function
+        for three different test cases. Each tests compares
+        the output of this function to the output of
+        the same function in the IDL version, which is
+        contained in the file_mode%d.fit files, or the
+        mode%ddata variables.
+
+        First, it tests to see if the output is correct
+        for a single redshift given many galaxies with colors.
+
+        Second, it tests to see if the output is correct
+        for a single galaxy that could be at many redshifts.
+
+        Third, it tests to see if the output is correct
+        for many galaxies at many redshifts.
+
+        For more details see section 4.1 of Rykoff 2014.
+        """
         file_path = 'data_for_tests'
 
         file_mode0 = 'testgals_chisq_mode0.fit'
@@ -67,7 +88,7 @@ class ChisqColorTestCase(unittest.TestCase):
         chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode2data['REFMAG'],mode2data['MODEL_MAGERR'],galcolor,refmagerr=mode2data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
 
         # there are just too many floating point rounding errors compared to the IDL
-        #  version.  So this is a really loose check.
+        # version.  So this is a really loose check.
 
         # will want to write python double-precision regression check as well.
         

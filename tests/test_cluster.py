@@ -25,8 +25,16 @@ class BackgroundStub(Background):
 
 
 class ClusterFiltersTestCase(unittest.TestCase):
+    """
+    This file tests multiple features of the cluster object.
+    """
 
     def test_nfw_filter(self):
+        """
+        This test compres the NFW profiles calculated using the
+        cluster._calc_radial_profile() function for specific galaxies (indices)
+        in the cluster catalog to the outputs calculated in the IDL version.
+        """
         test_indices = np.array([46, 38,  1,  2, 11, 24, 25, 16])
         py_nfw = self.cluster._calc_radial_profile()[test_indices]
         idl_nfw = np.array([0.23875841, 0.033541825, 0.032989189, 0.054912228, 
@@ -34,8 +42,15 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_nfw, idl_nfw)
 
     def test_lum_filter(self):
+        """
+        This tests the luminosity calculation found in the
+        cluster._calc_luminosity() function for specific galaxies (indices)
+        in the cluster catalog. It compares the output to precomputed
+        outputs from the IDL code.
+        """
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
-        zred_filename, conf_filename = 'test_dr8_pars.fit', 'testconfig.yaml'
+        zred_filename = 'test_dr8_pars.fit'
+        conf_filename = 'testconfig.yaml'
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
         confstr = Configuration(self.file_path + '/' + conf_filename)
         mstar = zredstr.mstar(self.cluster.z)
@@ -48,6 +63,12 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_lum, idl_lum)
 
     def test_bkg_filter(self):
+        """
+        This tests the background density calculation from the
+        cluster_calc_bkg_density() function. This compares the
+        output calculate from this function to the precomputed
+        output from the IDL code.
+        """
         test_indices = np.array([29, 16, 27,  5, 38, 35, 25, 43])
         bkg_filename = 'test_bkg.fit'
         bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
@@ -58,10 +79,13 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_bkg, idl_bkg)
 
     def setUp(self):
+        """
+        This sets up the cluster objct from the cluster_members file.
+        """
         self.cluster = Cluster(np.empty(1))
-        self.file_path, filename = 'data_for_tests', 'test_cluster_members.fit'
-        self.cluster.members = GalaxyCatalog.from_fits_file(self.file_path 
-                                                            + '/' + filename)
+        self.file_path = 'data_for_tests'
+        filename = 'test_cluster_members.fit'
+        self.cluster.members = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
         self.cluster.z = self.cluster.members.z[0]
 
         

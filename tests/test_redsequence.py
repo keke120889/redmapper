@@ -7,6 +7,36 @@ import redmapper
 
 class RedSequenceColorTestCase(unittest.TestCase):
     def runTest(self):
+        """
+        This tests many aspects of the redsequence module
+        found in redmapper. The first section simply contains
+        tests to check for any raised errors that can occur if
+        the necessary data files aren't there, or if hte header
+        for the background isn't formatted correctly.
+
+        Next the zredstr is created, which is a parameterization
+        of the redsequence. The next battery of tests are simple checks
+        to see if the attributes are what we expect them to be,
+        including nmag, z edges, and the number of redshifts.
+
+        Next the outputs of the lookup tables are checked, including
+        the zindex, refmagindex, and lumrefmagindex are checked. These functions
+        return indices that these values would have in the look up tables.
+
+        Next the pivotmags are checked against the IDL outputs.
+
+        Next the c and slope spline outputs are checked 
+        against the IDL outputs.
+
+        Next there are four tests blocks where the sigma and covariance 
+        matrix elements are tested against the IDL outputs.
+
+        Next the lupcorr and corrections 1 and 2 are tested against 
+        IDL outputs.
+
+        Finally the volume factor, mstar, and lumnorm attributes of
+        the zredstr are tested against known values from IDL.
+        """
         file_name = 'test_dr8_pars.fit'
         file_path = 'data_for_tests'
 
@@ -40,7 +70,7 @@ class RedSequenceColorTestCase(unittest.TestCase):
         
         # spot check of pivotmags ... IDL & python
         testing.assert_almost_equal(zredstr.pivotmag[indices],np.array([14.648015, 17.199219, 19.013103, 19.877018]),decimal=5)
-        testing.assert_almost_equal(zredstr.pivotmag[indices],np.array([ 14.64801598,  17.19921907,  19.01310458,  19.87701651]))
+        testing.assert_almost_equal(zredstr.pivotmag[indices],np.array([ 14.64801598,  17.19921907,  19.01310458,  19.87701651])) #Redundant
 
         # spot check of c
         testing.assert_almost_equal(zredstr.c[indices,0],np.array([1.779668,  1.877657,  1.762201,  2.060556]),decimal=5)

@@ -8,12 +8,22 @@ from redmapper.background import Background
 class BackgroundTestCase(unittest.TestCase):
 
     def runTest(self):
+        """
+        Part one of this file checks that the background file
+        exists and is formatted correctly.
+
+        Then we load the background file and pull out some sources
+        in the background, and compare the IDL outputs to thoe
+        of the sigma_g attribute of the background. The initialization
+        of the sigma_g values as well as the 'lookup' or spline used
+        over these valus is also tested. Note that the background
+        is characterized by sigma_g as functions of (z,chisq,refmag).
+        """
         file_name, file_path = 'test_bkg.fit', 'data_for_tests'
         # test that we fail if we try a non-existent file
         self.assertRaises(IOError, Background, 'nonexistent.fit')
         # test that we fail if we read a non-fits file
-        self.assertRaises(IOError, Background,
-                          '%s/testconfig.yaml' % (file_path))
+        self.assertRaises(IOError, Background,'%s/testconfig.yaml' % (file_path))
         # test that we fail if we try a file without the right header info
         self.assertRaises(AttributeError, Background, 
                           '%s/test_dr8_pars.fit' % (file_path))
