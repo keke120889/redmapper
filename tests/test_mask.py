@@ -3,7 +3,7 @@ import numpy.testing as testing
 import numpy as np
 import fitsio
 
-from redmapper.mask import HPMask
+from redmapper.mask import Mask,HPMask
 from redmapper.config import Configuration
 
 class MaskTestCase(unittest.TestCase):
@@ -13,27 +13,42 @@ class MaskTestCase(unittest.TestCase):
         module is still in developement, so too are
         these unit tests.
 
-        First test to see if nside, offset, and npix are 
+        First test the red_maskgals() and gen_maskgals() functions.
+        Note: the gen_maskgals() function isn't written yet, so it
+        can't be tested. TODO
+
+        Next create a HPMask, check that it has maskgals and then
+        test to see if nside, offset, and npix are 
         the values that we expect them to be. These are 
         variables that tell us about how healpix is formatted.
 
         Next test the fracgood array and its features, including
         the fracgood_float and various fracgood entries.
 
-        Next test to see if the mask has maskgals.
-
         Next test the compute_radmask() function which
         finds if an array of (RA,DEC) pairs are in or out
         of the mask. TODO
 
         Next test the set_radmask() function. TODO
+
         """
         file_path = "data_for_tests"
         conf_filename = "testconfig.yaml"
         confstr = Configuration(file_path + "/" + conf_filename)
+
+        # Test the read_maskgals() and the gen_maskgals() functions
+        # of the Mask superclass.
+        mask = Mask(confstr)
+        mask.read_maskgals(confstr.maskgalfile)
+        testing.assert_equal(hasattr(mask,'maskgals'),True)
+        # Clear the maskgals attribute and then run gen_maskgals()
+        #delattr(mask,'maskgals')
+        #mask.gen_maskgals()
+        testing.assert_equal(hasattr(mask,'maskgals'),True)
         
-        # Healpix mask
+        # Healpix mask and see if it has maskgals
         mask = HPMask(confstr)
+        testing.assert_equal(hasattr(mask,'maskgals'),True)
 
         # First test the healpix configuration
         testing.assert_equal(mask.nside,2048)
@@ -51,9 +66,6 @@ class MaskTestCase(unittest.TestCase):
         print mask.fracgood.shape
         print mask.fracgood_float
 
-        # See if the mask has maskgals
-        testing.assert_equal(hasattr(mask,'maskgals'),True)
-
         # Next test the compute_radmask() function
         #RAs  = np.array([some values])
         #DECs = np.array([some values])
@@ -67,6 +79,7 @@ class MaskTestCase(unittest.TestCase):
         #See if the mask.maskgals['MASKED'] attribute exists
         #See that the maskgals shape has the same shape as the 
         #cluster RA and DECs.
+
 
         # Other masks below... TODO
 
