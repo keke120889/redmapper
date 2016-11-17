@@ -67,7 +67,9 @@ class HPMask(Mask):
             muse, = esutil.numpy_util.match(hpix_ring, pixint)
 
         offset, ntot = np.min(hpix_ring)-1, np.max(hpix_ring)-np.min(hpix_ring)+3
-        self.nside, self.offset, self.npix = nside, offset, ntot
+        self.nside = nside 
+        self.offset = offset
+        self.npix = ntot
 
         #ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
         self.fracgood = np.zeros(ntot,dtype='f4')
