@@ -76,6 +76,7 @@ class MaskTestCase(unittest.TestCase):
         #See if the mask.maskgals['MASKED'] attribute exists
         #See that the maskgals shape has the same shape as the 
         #cluster RA and DECs.
+        # actually, maskgals size will be 6000 always (which is the default config value at least).  It's independent of the cluster itself -- just a list of random points.
 
 
         # Other masks below... TODO
