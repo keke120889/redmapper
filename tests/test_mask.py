@@ -63,8 +63,9 @@ class MaskTestCase(unittest.TestCase):
         testing.assert_equal(mask.fracgood[indices],true_fracgoods)
 
         # Next test the compute_radmask() function
-        #RAs  = np.array([some values])
-        #DECs = np.array([some values])
+        RAs  = np.array([0.0])
+        DECs = np.array([0.0])
+        print mask.compute_radmask(RAs,DECs)
         #booleans = np.array([known boolean values for RA/DECs])
         #testing.assert_equal(mask.compute_radmask(RAs,DECs),booleans)
 
