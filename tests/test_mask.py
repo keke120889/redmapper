@@ -56,15 +56,11 @@ class MaskTestCase(unittest.TestCase):
         testing.assert_equal(mask.npix,548292)
 
         # Next test that the fracgood is working properly
-        # indices = [] #some set of pixels #TODO
-        # fracgoods = np.array([]) #known fracgoods at indices #TODO
+        indices = [396440, 445445, 99547, 354028, 516163] #Random indices
+        true_fracgoods = np.array([0,0,0.828125,0.796875,0.828125]) #known fracgoods at indices
         testing.assert_equal(mask.fracgood_float,1)
         testing.assert_equal(mask.fracgood.shape[0],548292)
-        #testing.assert_equal(mask.fracgood[indices],fracgoods)
-
-        # Tom - I believe the fracgood only has 0s and 1s, yes?
-        print mask.fracgood.shape
-        print mask.fracgood_float
+        testing.assert_equal(mask.fracgood[indices],true_fracgoods)
 
         # Next test the compute_radmask() function
         #RAs  = np.array([some values])
