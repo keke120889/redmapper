@@ -104,11 +104,11 @@ class HPMask(Mask):
         if (_ra.size != _dec.size):
             raise ValueError("ra, dec must be same length")
 
-        theta, phi = astro_to_sphere(ra, dec)
+        theta, phi = astro_to_sphere(_ra, _dec)
         ipring = hp.ang2pix(self.nside, theta, phi)
-        ipring_offset = np.clip(ipring - maskstr.offset, 0, maskstr.npix-1)
-        ref = 0 if self.fracgood_float == 0 else np.random.rand(ras.size)
-        radmask = np.zeros(ra.size, dtype=np.bool_)
+        ipring_offset = np.clip(ipring - self.offset, 0, self.npix-1)
+        ref = 0 if self.fracgood_float == 0 else np.random.rand(_ra.size)
+        radmask = np.zeros(_ra.size, dtype=np.bool_)
         radmask[np.where(self.fracgood[ipring_offset] > ref)] = True
         return radmask
 
