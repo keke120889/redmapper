@@ -63,11 +63,11 @@ class MaskTestCase(unittest.TestCase):
         testing.assert_equal(mask.fracgood[indices],true_fracgoods)
 
         # Next test the compute_radmask() function
-        RAs  = np.array([0.0])
-        DECs = np.array([0.0])
-        print mask.compute_radmask(RAs,DECs)
-        #booleans = np.array([known boolean values for RA/DECs])
-        #testing.assert_equal(mask.compute_radmask(RAs,DECs),booleans)
+        # Note: RA and DECs are in degrees here
+        RAs  = np.array([0.0,293.9,134.9,164.1,281.1,107.5])
+        DECs = np.array([0.0,67.6,159.0,132.4,178.7,35.5]) - 90.0
+        booleans = np.array([False,False,False,False,False,False])#known boolean values for RA/DECs
+        testing.assert_equal(mask.compute_radmask(RAs,DECs),booleans)
 
         # Next test the set_radmask() function
         #cluster = make a cluster
@@ -76,7 +76,9 @@ class MaskTestCase(unittest.TestCase):
         #See if the mask.maskgals['MASKED'] attribute exists
         #See that the maskgals shape has the same shape as the 
         #cluster RA and DECs.
-        # actually, maskgals size will be 6000 always (which is the default config value at least).  It's independent of the cluster itself -- just a list of random points.
+        # actually, maskgals size will be 6000 always 
+        #(which is the default config value at least).  
+        #It's independent of the cluster itself -- just a list of random points.
 
 
         # Other masks below... TODO
