@@ -16,6 +16,7 @@ SEC_PER_DEG = 3600
 def astro_to_sphere(ra, dec):
     return np.radians(90.0-dec), np.radians(ra)
 
+#Equation 7 in Rykoff et al. 2014
 def chisq_pdf(data, k):
     normalization = 1./(2**(k/2.) * special.gamma(k/2.))
     return normalization * data**((k/2.)-1) * np.exp(-data/2.)
