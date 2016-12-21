@@ -1,6 +1,7 @@
 # miscellaneous utilities and functions
 
 import numpy as np
+from scipy import special
 from scipy.linalg import solve_banded
 from pkg_resources import resource_filename
 import scipy.interpolate as interpolate
@@ -16,7 +17,7 @@ def astro_to_sphere(ra, dec):
     return np.radians(90.0-dec), np.radians(ra)
 
 def chisq_pdf(data, k):
-    normalization = 1./(2**(k/2.) * np.gamma(k/2.))
+    normalization = 1./(2**(k/2.) * special.gamma(k/2.))
     return normalization * data**((k/2.)-1) * np.exp(-data/2.)
 
 
