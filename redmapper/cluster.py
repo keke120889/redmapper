@@ -11,7 +11,7 @@ class Cluster(Entry):
     """
 
     Class for a single galaxy cluster, with methods to perform
-     computations on individual clusters
+    computations on individual clusters
 
     parameters
     ----------
@@ -177,8 +177,20 @@ class Cluster(Entry):
         try:
             w = theta_i * self.members.wvals
         except AttributeError:
-            w = theta_i
-        richness_obj = Solver(r0, beta, ucounts, bcounts, r, w)
+            """
+            Error here: w needs to be least the length of ucounts
+            Original line with the error is commented out, temporary line used below
+            """
+            #w = theta_i
+            w = np.ones_like(ucounts) * theta_i
+        """
+        Errors here: 
+        r is not defined
+        Original line with the error is commented out, temporary line used below
+        """
+        #richness_obj = Solver(r0, beta, ucounts, bcounts, r, w)
+        richness_obj = Solver(r0, beta, ucounts, bcounts, self.members.r, w)
+        return richness_obj
 
 
 class ClusterCatalog(Catalog): 
