@@ -78,9 +78,42 @@ class ClusterFiltersTestCase(unittest.TestCase):
                             np.inf, 0.21078853798218194, np.inf])
         testing.assert_almost_equal(py_bkg, idl_bkg)
 
+    def test_calc_richness(self):
+        """
+        This tests the calc_richness() function from cluster.py.
+        The purpose of this function is to calculate the richness,
+        sometimes referred to as lambda_chisq, of the cluster
+        for a single iteration during the redmapper algorithm.
+
+        THIS TEST IS STILL IN DEVELOPEMENT!!!
+
+        NOTE: the calc_richness() function call
+        requires that the members have a 'dist' attribute to them.
+        This MUST be calculated before here, and so should
+        either be implemented in the setUp() function
+        or should be a column in the test_cluster_members.fit file.
+
+        """
+        print "In test calc_richness()"
+        zred_filename = 'test_dr8_pars.fit'
+        bkg_filename = 'test_bkg.fit'
+        conf_filename = 'testconfig.yaml'
+        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
+        bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
+        cosmo = Cosmo()
+        confstr = Configuration(self.file_path + '/' + conf_filename)
+
+        #print "self.cluster.members: ",self.cluster.members.z
+        #print "\tdir(self.cluster.members): ",dir(self.cluster)
+        #print self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
+        #print "\t Function call completed"
+        
+
     def setUp(self):
         """
         This sets up the cluster objct from the cluster_members file.
+        NOTE: this is called before every individual unit test above
+        which is probably not necessary.
         """
         self.cluster = Cluster(np.empty(1))
         self.file_path = 'data_for_tests'
