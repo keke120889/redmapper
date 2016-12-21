@@ -2,7 +2,32 @@ import numpy as np
 from . import _solver_nfw_pywrap
 
 class Solver(object):
-    """Docstring."""
+    """
+
+    Class for the NFW solver object, which will eventually
+    use root finding to solve for lambda given the colors,
+    the formula for R_lambda, the thetas for the edges,
+    and the colors.
+    
+    parameters
+    ----------
+    r0: float
+        Radius -- richness scaling amplitude
+    beta: float, optional
+        Radius -- richness scaling index (default = 0.2)
+    ucounts: float array
+        u(x) for the cluster
+    bcounts: float array
+        b(x) for the cluster
+    r: float array
+        TBD
+    w: float array
+        TBD
+    cpars: float array, optional
+        TBD
+    rsig: float, optional
+        TBD (default = 0.0)    
+    """
 
     def __init__(self, r0, beta, ucounts, bcounts, r, w, 
                         cpars=np.zeros(4,dtype='f8'), rsig=0.0):
@@ -41,6 +66,17 @@ class Solver(object):
                                                  self.rsig)
 
     def solve_nfw(self):
+        """
+        solves for the nfw profile
+
+        parameters
+        ----------
+        None
+
+        returns
+        -------
+        TBD
+        """
         return self._solver.solve_nfw()
 
         
