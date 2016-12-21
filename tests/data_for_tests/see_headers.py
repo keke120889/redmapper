@@ -8,6 +8,7 @@ tests themselves.
 import fitsio
 
 filename = "test_cluster_members.fit"
+#filename = "testgals_chisq_mode0.fit"
 data,h = fitsio.read(filename,header=True)
 out = data.dtype.names
 for i in range(len(out)):
