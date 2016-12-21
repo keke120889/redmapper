@@ -190,6 +190,11 @@ class Cluster(Entry):
         """
         #richness_obj = Solver(r0, beta, ucounts, bcounts, r, w)
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.members.r, w)
+
+        #Call the solving routine--- WHAT DOES IT DO THOUGH?!?!?!
+        #apparently it is three items: lam_obj, p_obj, wt_obj
+        solved_nfw = richness_obj.solve_nfw()
+        print "\n",solved_nfw,"\n"
         return richness_obj
 
 

@@ -94,7 +94,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         or should be a column in the test_cluster_members.fit file.
 
         """
-        print "In test calc_richness()"
         zred_filename = 'test_dr8_pars.fit'
         bkg_filename = 'test_bkg.fit'
         conf_filename = 'testconfig.yaml'
@@ -103,10 +102,11 @@ class ClusterFiltersTestCase(unittest.TestCase):
         cosmo = Cosmo()
         confstr = Configuration(self.file_path + '/' + conf_filename)
 
-        #print "self.cluster.members: ",self.cluster.members.z
-        #print "\tdir(self.cluster.members): ",dir(self.cluster)
-        #print self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
-        #print "\t Function call completed"
+        #NOTE: self.cluster.members doesn't contain 'dist' attribute
+        print "\tdir(self.cluster.members): ",dir(self.cluster.members)
+
+        richness_obj = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
+        print "\tdir(richness_obj): ",richness_obj,dir(richness_obj)
         
 
     def setUp(self):
@@ -120,6 +120,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         filename = 'test_cluster_members.fit'
         self.cluster.members = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
         self.cluster.z = self.cluster.members.z[0]
+        #THE NEXT LINE IS GARBAGE
+        self.cluster.members.dist = self.cluster.members.r
 
         
 class ClusterMembersTestCase(unittest.TestCase):
