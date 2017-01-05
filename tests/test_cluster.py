@@ -117,7 +117,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         """
         self.cluster = Cluster(np.empty(1))
         self.file_path = 'data_for_tests'
-        filename = 'test_cluster_members.fit'
+        filename = 'pixelized_dr8_test/dr8_test_galaxies_0008421.fit'
         self.cluster.members = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
         self.cluster.z = self.cluster.members.z[0]
         #THE NEXT LINE IS GARBAGE
