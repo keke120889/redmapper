@@ -1,4 +1,4 @@
-galfile: ./data_for_tests/pixelized_dr8_catalog/dr8_catalog_test_master_table.fit
+galfile: ./data_for_tests/pixelized_dr8_catalog/dr8_test_galaxies_master_table.fit
 
 catfile: None
 zredfile: None
