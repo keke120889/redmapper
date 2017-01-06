@@ -7,7 +7,7 @@
 
 int solver_nfw(double r0, double beta, long ngal,
 	       double *ucounts, double *bcounts, double *r, double *w,
-	       double *lambda, double *p, double *wt, double tol,
+	       double *lambda, double *p, double *wt, double *rlambda, double tol,
 	       double *cpars, double rsig)
 {
   double lamlo,lamhi,mid,outlo,outmid,rc;
@@ -21,22 +21,22 @@ int solver_nfw(double r0, double beta, long ngal,
   while (fabs(lamhi-lamlo) > 2*tol) {
     mid=(lamhi+lamlo)/2.0;
     if (outlo < 0.0) {
-      nfw_weights(lamlo,r0,beta,ngal,ucounts,bcounts,r,w,p,wt,&rc,rsig);
+      nfw_weights(lamlo,r0,beta,ngal,ucounts,bcounts,r,w,p,wt,rlambda,rsig);
       outlo=0.0;
       for (i=0;i<ngal;i++) {
 	outlo+=wt[i];
       }
-      cval = cpars[0] + cpars[1]*rc + cpars[2]*rc*rc + cpars[3]*rc*rc*rc;
+      cval = cpars[0] + cpars[1]*(*rlambda) + cpars[2]*(*rlambda)*(*rlambda) + cpars[3]*(*rlambda)*(*rlambda)*(*rlambda);
       //if (cval < 0.0) { cval = 0.0; }
       
       outlo += lamlo*cval;
     }
-    nfw_weights(mid,r0,beta,ngal,ucounts,bcounts,r,w,p,wt,&rc,rsig);
+    nfw_weights(mid,r0,beta,ngal,ucounts,bcounts,r,w,p,wt,rlambda,rsig);
     outmid=0.0;
     for (i=0;i<ngal;i++) {
       outmid+=wt[i];
     }
-    cval = cpars[0] + cpars[1]*rc + cpars[2]*rc*rc + cpars[3]*rc*rc*rc;
+    cval = cpars[0] + cpars[1]*(*rlambda) + cpars[2]*(*rlambda)*(*rlambda) + cpars[3]*(*rlambda)*(*rlambda)*(*rlambda);
     //if (cval < 0.0) { cval = 0.0; }
     
     outmid += mid*cval;

@@ -24,6 +24,7 @@ struct solver {
     double rsig;
     
     double *lambda;
+    double *rlambda;
 };
 
 int nfw_weights(double inlambda, double r0, double beta, long ngal,
@@ -32,7 +33,7 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
 
 int solver_nfw(double r0, double beta, long ngal,
 	       double *ucounts, double *bcounts, double *r, double *w,
-	       double *lambda, double *p, double *wt, double tol,
+	       double *lambda, double *p, double *wt, double *rlambda, double tol,
 	       double *cpars, double rsig);
 
 
