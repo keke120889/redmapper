@@ -13,5 +13,6 @@ filename = "pixelized_dr8_test/dr8_test_galaxies_master_table.fit"
 #filename = "pixelized_dr8_test/dr8_test_galaxies_0008421.fit"
 data,h = fitsio.read(filename,header=True)
 out = data.dtype.names
+print filename
 for i in range(len(out)):
     print out[i]

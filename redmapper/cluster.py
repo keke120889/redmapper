@@ -6,6 +6,7 @@ from solver_nfw import Solver
 from catalog import Catalog, Entry
 from utilities import chisq_pdf
 
+#also changing self.members to self.neighbors
 
 class Cluster(Entry):
     """
@@ -18,7 +19,8 @@ class Cluster(Entry):
     (TBD)
 
     """
-    def find_members(self, radius, galcat):
+    #TOM - changing this to find_neighbors from find_members
+    def find_neighbors(self, radius, galcat):
         """
         parameters
         ----------
@@ -34,12 +36,13 @@ class Cluster(Entry):
             raise ValueError("A GalaxyCatalog object must be specified.")
         if radius is None or radius < 0 or radius > 180:
             raise ValueError("A radius in degrees must be specified.")
-        indices, dists = galcat.match(self, radius) # pass in a Galaxy?
-        self.members = galcat[indices]
+        indices, dists = galcat.match(self, radius) # self refers to the cluster
+        self.neighbors = galcat[indices]
+        #Dist is arcmin???, R is Mpc/h
         new_fields = [('DIST', 'f8'), ('R', 'f8'), ('PMEM', 'f8'), 
                         ('CHISQ', 'f8')]
-        self.members.add_fields(new_fields)
-        self.members.dist = dists
+        self.neighbors.add_fields(new_fields)
+        self.neighbors.dist = dists
 
     def _calc_radial_profile(self, rscale=0.15):
         """
@@ -56,8 +59,8 @@ class Cluster(Entry):
            sigma(x)
         """
         corer = 0.1
-        x, corex = self.members.r/rscale, corer/rscale
-        sigx = np.zeros(self.members.r.size)
+        x, corex = self.neighbors.r/rscale, corer/rscale
+        sigx = np.zeros(self.neighbors.r.size)
 
         low, = np.where(x < corex)
         mid, = np.where((x >= corex) & (x < 1.0))
@@ -115,8 +118,8 @@ class Cluster(Entry):
         normalization = zredstr.lumnorm[refind, zind]
         mstar = zredstr.mstar(self.z)
         phi_term_a = 10. ** (0.4 * (zredstr.alpha+1.) 
-                                 * (mstar-self.members.refmag))
-        phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.members.refmag)))
+                                 * (mstar-self.neighbors.refmag))
+        phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag)))
         return phi_term_a * phi_term_b / normalization
 
     def _calc_bkg_density(self, bkg, cosmo):
@@ -137,9 +140,9 @@ class Cluster(Entry):
             b(x) for the cluster
         """
         mpc_scale = np.radians(1.) * cosmo.Dl(0, self.z) / (1 + self.z)**2
-        sigma_g = bkg.sigma_g_lookup(self.z, self.members.chisq, 
-                                                    self.members.refmag)
-        return 2 * np.pi * self.members.r * (sigma_g/mpc_scale**2)
+        sigma_g = bkg.sigma_g_lookup(self.z, self.neighbors.chisq, 
+                                                    self.neighbors.refmag)
+        return 2 * np.pi * self.neighbors.r * (sigma_g/mpc_scale**2)
 
     def calc_richness(self, zredstr, bkg, cosmo, confstr, r0=1.0, beta=0.2):
         """
@@ -166,16 +169,18 @@ class Cluster(Entry):
 
         """
         maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
-        self.members.r = np.radians(self.members.dist) * cosmo.Dl(0, self.z)
-        self.members.chisq = zredstr.calculate_chisq(self.members, self.z)
-        rho = chisq_pdf(self.members.chisq, zredstr.ncol)
+        self.neighbors.r = np.radians(self.neighbors.dist) * cosmo.Dl(0, self.z)
+        self.neighbors.chisq = zredstr.calculate_chisq(self.neighbors, self.z)
+        rho = chisq_pdf(self.neighbors.chisq, zredstr.ncol)
         nfw = self._calc_radial_profile()
-        phi = self._calc_luminosity(zredstr, maxmag)
-        ucounts = (2*np.pi*self.members.r) * nfw * phi * rho
+        phi = self._calc_luminosity(zredstr, maxmag) #phi is lumwt in the IDL code
+        ucounts = (2*np.pi*self.neighbors.r) * nfw * phi * rho
         bcounts = self._calc_bkg_density(bkg, cosmo)
-        theta_i = 0
+        #Need to compute theta_i
+        #look in calclambda idl code
+        theta_i = np.ones((len(self.neighbors)))
         try:
-            w = theta_i * self.members.wvals
+            w = theta_i * self.neighbors.wvals
         except AttributeError:
             """
             Error here: w needs to be least the length of ucounts
@@ -189,11 +194,12 @@ class Cluster(Entry):
         Original line with the error is commented out, temporary line used below
         """
         #richness_obj = Solver(r0, beta, ucounts, bcounts, r, w)
-        richness_obj = Solver(r0, beta, ucounts, bcounts, self.members.r, w)
+        richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
 
         #Call the solving routine--- WHAT DOES IT DO THOUGH?!?!?!
         #apparently it is three items: lam_obj, p_obj, wt_obj
         solved_nfw = richness_obj.solve_nfw()
+        #Record lambda, record p_obj onto the neighbors, 
         print "\n",solved_nfw,"\n"
         return richness_obj
 
