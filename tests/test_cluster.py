@@ -126,11 +126,10 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster.z   = 0.228654
         self.file_path = 'data_for_tests'
         filename = 'pixelized_dr8_test/dr8_test_galaxies_master_table.fit'
-        print "Reading in the galaxy catalog"
         #SEG FAULT CREATED IN THE NEXT FEW LINES
         self.galcat = GalaxyCatalog.from_galfile(self.file_path + '/' + filename)
-        print "galaxy catalog read in"
         self.cluster.find_neighbors(0.1395,self.galcat) #Using default radius in degrees
+        print "find_neighbors call completex"
         print len(self.cluster.neighbors.dist)
         import sys
         print "Exiting for now"

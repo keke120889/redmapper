@@ -129,6 +129,7 @@ class GalaxyCatalog(Catalog):
         # also, I think we want to change to smatch
 
         if self._htm_matcher is None:
+            dummy_object = eu.htm.HTM(self.depth)
             self._htm_matcher = Matcher(self.depth, self.ra, self.dec)
         _, indices, dists = self._htm_matcher.match(galaxy.ra, galaxy.dec, 
                                                         radius, maxmatch=0)
