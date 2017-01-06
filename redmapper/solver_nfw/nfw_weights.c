@@ -11,6 +11,10 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
 {
   double nfwnorm,logrc;
   int i;
+  double rsig_const;
+
+  // pre-compute rsig_const
+  rsig_const = 1./(sqrt(2)*rsig);
 
   // calculate rc
   *rc=r0*pow((inlambda/100.),beta);
@@ -46,7 +50,7 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
 	wt[i] = 0.0;
       } else {
 	// need to calculate r correction...
-	wt[i] = p[i]*w[i]*(0.5+0.5*erf((*rc - r[i])/(sqrt(2)*rsig)));
+	wt[i] = p[i]*w[i]*(0.5+0.5*erf((*rc - r[i])*rsig_const));
       }
     }
   }
