@@ -16,7 +16,7 @@ class ReadConfigTestCase(unittest.TestCase):
 
         confdict = redmapper.config.Configuration('%s/%s' % (file_path, file_name))
 
-        self.assertEqual(confdict.galfile,'./data_for_tests/pixelized/dr8_catalog_test_master_table.fit')
+        self.assertEqual(confdict.galfile,'./data_for_tests/pixelized_dr8_test/dr8_test_galaxies_master_table.fit')
         self.assertEqual(confdict.specfile,'./data_for_tests/dr8_test_spec.fit')
         self.assertEqual(confdict.parfile,'./data_for_tests/test_dr8_pars.fit')
         self.assertEqual(confdict.bkgfile,'./data_for_tests/dr8_bkg.fit')
