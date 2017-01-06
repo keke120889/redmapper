@@ -87,6 +87,7 @@ PyObject* SolverObject_solver_nfw(const struct SolverObject* self, PyObject *arg
     PyObject* rlam_obj = NULL;
     PyObject* p_obj = NULL;
     PyObject* wt_obj = NULL;
+    PyObject* thetar_obj = NULL;
 
     dims[0] = 1;
     lam_obj = PyArray_ZEROS(0, dims, NPY_DOUBLE, 0);
@@ -95,6 +96,7 @@ PyObject* SolverObject_solver_nfw(const struct SolverObject* self, PyObject *arg
     dims[0] = self->solver->ngal;
     p_obj = PyArray_ZEROS(1, dims, NPY_DOUBLE, 0);
     wt_obj = PyArray_ZEROS(1, dims, NPY_DOUBLE, 0);
+    thetar_obj = PyArray_ZEROS(1, dims, NPY_DOUBLE, 0);
     
     // do the work
 
@@ -103,20 +105,23 @@ PyObject* SolverObject_solver_nfw(const struct SolverObject* self, PyObject *arg
     self->solver->wt = (double *) PyArray_DATA((PyArrayObject*)wt_obj);
     self->solver->lambda = (double *) PyArray_DATA((PyArrayObject*)lam_obj);
     self->solver->rlambda = (double *) PyArray_DATA((PyArrayObject*)rlam_obj);
+    self->solver->theta_r = (double *) PyArray_DATA((PyArrayObject*)thetar_obj);
 
     solver_nfw(self->solver->r0, self->solver->beta, self->solver->ngal,
 	       self->solver->ucounts, self->solver->bcounts, self->solver->r,
-	       self->solver->w, self->solver->lambda, self->solver->p, self->solver->wt, self->solver->rlambda,
+	       self->solver->w, self->solver->lambda, self->solver->p, self->solver->wt,
+               self->solver->rlambda, self->solver->theta_r,
 	       TOL_DEFAULT, self->solver->cpars, self->solver->rsig);
 
     // this needs to return the tuple.
 
-    PyObject* retval = PyTuple_New(4);
+    PyObject* retval = PyTuple_New(5);
     PyTuple_SET_ITEM(retval, 0, lam_obj);
     PyTuple_SET_ITEM(retval, 1, p_obj);
     PyTuple_SET_ITEM(retval, 2, wt_obj);
     PyTuple_SET_ITEM(retval, 3, rlam_obj);
-    
+    PyTuple_SET_ITEM(retval, 4, thetar_obj);
+
     return retval;
 }
 

@@ -38,12 +38,13 @@ class SolverNFWTestCase(unittest.TestCase):
         p_mem,
         wt = p_mem*theta^L*theta^R
         """
-        lam,p,wt,rlambda=solver.solve_nfw()
+        lam,p,wt,rlambda,theta_r=solver.solve_nfw()
 
         testing.assert_almost_equal(lam,data[0]['LAMBDA'])
         testing.assert_array_almost_equal(p,data[0]['PVALS'])
         testing.assert_array_almost_equal(wt,data[0]['WTVALS'])
-        testing.assert_almost_equal(rlambda,(data[0]['LAMBDA']/100.)**0.2,4)
+        testing.assert_almost_equal(rlambda,data[0]['R0']*(data[0]['LAMBDA']/100.)**data[0]['BETA'],4)
+        # need new test data with theta_r
 
 if __name__=='__main__':
     unittest.main()
