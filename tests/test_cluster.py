@@ -40,7 +40,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.file_path = 'data_for_tests'
         filename = 'pixelized_dr8_test/dr8_test_galaxies_master_table.fit'
         self.galcat = GalaxyCatalog.from_galfile(self.file_path + '/' + filename)
-        self.cluster.find_neighbors(0.1395,self.galcat) #Using default radius in degrees
+        self.cluster.find_neighbors(0.1395,self.galcat) 
+        #Using default radius in degrees
 
         """
         This test compres the NFW profiles calculated using the
@@ -51,6 +52,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         py_nfw = self.cluster._calc_radial_profile()[test_indices]
         idl_nfw = np.array([0.23875841, 0.033541825, 0.032989189, 0.054912228, 
                             0.11075225, 0.34660992, 0.23695366, 0.25232968])
+        print "py_nfw :",py_nfw
+        print "idl_nfw:",idl_nfw
         #testing.assert_almost_equal(py_nfw, idl_nfw)
 
         """
@@ -122,12 +125,12 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #richness_obj = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
         #print "\tdir(richness_obj): ",richness_obj,dir(richness_obj)
         
-class ClusterMembersTestCase(unittest.TestCase):
+#class ClusterMembersTestCase(unittest.TestCase):
 
     #This next test MUST be done before the calc_richness test can be completed.
-    def test_member_finding(self): pass #Do this with a radius that is R_lambda of a 
+    #def test_member_finding(self): pass #Do this with a radius that is R_lambda of a 
     #lambda=300 cluster, so 8.37 arminutes or 0.1395 degrees
-    def test_richness(self): pass
+    #def test_richness(self): pass
 
 if __name__=='__main__':
     unittest.main()
