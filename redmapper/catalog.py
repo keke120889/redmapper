@@ -63,6 +63,18 @@ class DataObject(object):
         array = np.empty(self._ndarray.size, newdtype)
         self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
 
+    def __repr__(self):
+        # return the representation of the underlying array
+        return repr(self._ndarray)
+
+    def __str__(self):
+        # return the string of the underlying array
+        return str(self._ndarray)
+
+    def __dir__(self):
+        # lower case list of all the available variables
+        return [x.lower() for x in self._ndarray.dtype.names]
+
 
 class Entry(DataObject):
     """Entries are extensions of DataObjects.
