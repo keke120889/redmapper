@@ -196,12 +196,12 @@ class Cluster(Entry):
         #richness_obj = Solver(r0, beta, ucounts, bcounts, r, w)
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
 
-        #Call the solving routine--- WHAT DOES IT DO THOUGH?!?!?!
-        #apparently it is three items: lam_obj, p_obj, wt_obj
+        #Call the solving routine
+        #apparently it is three items: lam_obj, p_obj, theta_r
         solved_nfw = richness_obj.solve_nfw()
         #Record lambda, record p_obj onto the neighbors, 
-        print "\n",solved_nfw,"\n"
-        return richness_obj
+        #print "\n",solved_nfw,"\n"
+        return solved_nfw[0]
 
 
 class ClusterCatalog(Catalog): 

@@ -72,7 +72,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_bkg, idl_bkg)
 
         """
-        MIGHT MOVE THIS TO THE ClusterNeighborsTestCase CLASS
         This tests the calc_richness() function from cluster.py.
         The purpose of this function is to calculate the richness,
         sometimes referred to as lambda_chisq, of the cluster
@@ -82,24 +81,22 @@ class ClusterFiltersTestCase(unittest.TestCase):
 
         NOTE: the calc_richness() function call
         requires that the neighbors have a 'dist' attribute to them.
-        This MUST be calculated before here, and so should
-        either be implemented in the setUp() function
-        or should be a column in the test_cluster_members.fit file.
-
         """
-        self.cluster = Cluster(np.empty(1))
-        self.cluster.ra  = 142.12752
-        self.cluster.dec = 65.103898
+        #self.cluster = Cluster(np.empty(1))
+        #print self.cluster.ra,self.cluster.dec,
+        #self.cluster.ra  = 142.12752
+        #self.cluster.dec = 65.103898
         self.cluster.z   = 0.228654
-        self.file_path = 'data_for_tests'
-        filename = 'pixelized_dr8_test/dr8_test_galaxies_master_table.fit'
-        self.galcat = GalaxyCatalog.from_galfile(self.file_path +'/'+filename)
-        self.cluster.find_neighbors(0.1395,self.galcat)#0.1395;radius in degrees
+        self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/cosmo.Dl(0,self.cluster.z))
+        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
+        #self.file_path = 'data_for_tests'
+        #filename = 'pixelized_dr8_test/dr8_test_galaxies_master_table.fit'
+        #self.galcat = GalaxyCatalog.from_galfile(self.file_path +'/'+filename)
+        #self.cluster.find_neighbors(0.1395,self.galcat)#0.1395;radius in degrees
 
-        #NOTE: self.cluster.neighbors doesn't contain 'dist' attribute
-        #print "\tdir(self.cluster.neighbors): ",dir(self.cluster.neighbors)
-        #richness_obj = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
-        #print "\tdir(richness_obj): ",richness_obj,dir(richness_obj)
+        richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
+        print richness
+        #Should be about 24, we are getting about 10.9
         
 class ClusterMembersTestCase(unittest.TestCase):
 
