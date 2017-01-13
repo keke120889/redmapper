@@ -29,39 +29,24 @@ class ClusterFiltersTestCase(unittest.TestCase):
     """
     def runTest(self):
         """
-        This sets up the cluster objct from the cluster_neighbors file.
-        NOTE: this is called before every individual unit test above
-        which is probably not necessary.
+        First test the filters:
+        nfw, lum, and bkg
         """
         self.cluster = Cluster(np.empty(1))
-        self.cluster.ra  = 142.12752
-        self.cluster.dec = 65.103898
-        self.cluster.z   = 0.228654
         self.file_path = 'data_for_tests'
-        filename = 'pixelized_dr8_test/dr8_test_galaxies_master_table.fit'
-        self.galcat = GalaxyCatalog.from_galfile(self.file_path + '/' + filename)
-        self.cluster.find_neighbors(0.1395,self.galcat) 
-        #Using default radius in degrees
+        filename = 'test_cluster_members.fit'
+        self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
+        self.cluster.z = self.cluster.neighbors.z[0]
+        cosmo = Cosmo()
 
-        """
-        This test compres the NFW profiles calculated using the
-        cluster._calc_radial_profile() function for specific galaxies (indices)
-        in the cluster catalog to the outputs calculated in the IDL version.
-        """
+        # nfw
         test_indices = np.array([46, 38,  1,  2, 11, 24, 25, 16])
         py_nfw = self.cluster._calc_radial_profile()[test_indices]
         idl_nfw = np.array([0.23875841, 0.033541825, 0.032989189, 0.054912228, 
                             0.11075225, 0.34660992, 0.23695366, 0.25232968])
-        print "py_nfw :",py_nfw
-        print "idl_nfw:",idl_nfw
-        #testing.assert_almost_equal(py_nfw, idl_nfw)
+        testing.assert_almost_equal(py_nfw, idl_nfw)
 
-        """
-        This tests the luminosity calculation found in the
-        cluster._calc_luminosity() function for specific galaxies (indices)
-        in the cluster catalog. It compares the output to precomputed
-        outputs from the IDL code.
-        """
+        # lum
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
         zred_filename = 'test_dr8_pars.fit'
         conf_filename = 'testconfig.yaml'
@@ -74,27 +59,17 @@ class ClusterFiltersTestCase(unittest.TestCase):
                             0.50794115714566024, 0.57002321121039334, 
                             0.48596850373287931, 0.53985704075616792, 
                             0.61754178397796256, 0.51525195091720710])
-        #testing.assert_almost_equal(py_lum, idl_lum)
+        testing.assert_almost_equal(py_lum, idl_lum)
 
-        """
-        This tests the background density calculation from the
-        cluster_calc_bkg_density() function. This compares the
-        output calculate from this function to the precomputed
-        output from the IDL code.
-
-        THIS BREAKS BECAUSE THE NEIGHBORS DON'T HAVE 'r' VALUES YET
-        """
-        """
+        # bkg
         test_indices = np.array([29, 16, 27,  5, 38, 35, 25, 43])
         bkg_filename = 'test_bkg.fit'
         bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
-        py_bkg = self.cluster._calc_bkg_density(bkg, Cosmo())[test_indices]
-        print "py_bkg calculated"
+        py_bkg = self.cluster._calc_bkg_density(bkg, cosmo)[test_indices]
         idl_bkg = np.array([1.3140464045388294, 0.16422314236185420, 
                             0.56610846527410053, np.inf, 0.79559933744885403, 
                             np.inf, 0.21078853798218194, np.inf])
         testing.assert_almost_equal(py_bkg, idl_bkg)
-        """
 
         """
         MIGHT MOVE THIS TO THE ClusterNeighborsTestCase CLASS
@@ -112,25 +87,26 @@ class ClusterFiltersTestCase(unittest.TestCase):
         or should be a column in the test_cluster_members.fit file.
 
         """
-        zred_filename = 'test_dr8_pars.fit'
-        bkg_filename = 'test_bkg.fit'
-        conf_filename = 'testconfig.yaml'
-        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
-        bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
-        cosmo = Cosmo()
-        confstr = Configuration(self.file_path + '/' + conf_filename)
+        self.cluster = Cluster(np.empty(1))
+        self.cluster.ra  = 142.12752
+        self.cluster.dec = 65.103898
+        self.cluster.z   = 0.228654
+        self.file_path = 'data_for_tests'
+        filename = 'pixelized_dr8_test/dr8_test_galaxies_master_table.fit'
+        self.galcat = GalaxyCatalog.from_galfile(self.file_path +'/'+filename)
+        self.cluster.find_neighbors(0.1395,self.galcat)#0.1395;radius in degrees
 
         #NOTE: self.cluster.neighbors doesn't contain 'dist' attribute
         #print "\tdir(self.cluster.neighbors): ",dir(self.cluster.neighbors)
         #richness_obj = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
         #print "\tdir(richness_obj): ",richness_obj,dir(richness_obj)
         
-#class ClusterMembersTestCase(unittest.TestCase):
+class ClusterMembersTestCase(unittest.TestCase):
 
     #This next test MUST be done before the calc_richness test can be completed.
-    #def test_member_finding(self): pass #Do this with a radius that is R_lambda of a 
+    def test_member_finding(self): pass #Do this with a radius that is R_lambda of a 
     #lambda=300 cluster, so 8.37 arminutes or 0.1395 degrees
-    #def test_richness(self): pass
+    def test_richness(self): pass
 
 if __name__=='__main__':
     unittest.main()
