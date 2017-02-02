@@ -32,7 +32,6 @@ class RedSequenceColorPar(object):
         pars,hdr=fitsio.read(filename,ext=1,header=True)
         try:
             limmag = hdr['LIMMAG']
-            print "in redsequence.py:",limmag
             if (zrange is None):
                 zrange = np.array([hdr['ZRANGE0'],hdr['ZRANGE1']])
             alpha = hdr['ALPHA']

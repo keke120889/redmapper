@@ -169,7 +169,6 @@ class Cluster(Entry):
         maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist) * cosmo.Dl(0, self.z)
         self.neighbors.chisq = zredstr.calculate_chisq(self.neighbors, self.z)
-        print "inside:",self.neighbors.chisq[:5]
         rho = chisq_pdf(self.neighbors.chisq, zredstr.ncol)
         nfw = self._calc_radial_profile()
         phi = self._calc_luminosity(zredstr, maxmag) #phi is lumwt in the IDL code
@@ -177,39 +176,29 @@ class Cluster(Entry):
         bcounts = self._calc_bkg_density(bkg, cosmo)
 
         #Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
-        #Some parts aren't functional yet though...
         theta_i = np.ones((len(self.neighbors))) #Default to 1 for theta_i
-        #eff_lim = maxmag < zredstr.limmag #Doesn't work, zredstr doesn't have limmag
-        #dmag = eff_lim - mag #Not sure where mag comes from... 
-        #calc = dmag < 5.0
-        #N_calc = np.count_nonzero(calc==True)
-        #if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
-        #hi = mag > limmag
-        #N_hi = np.count_nonzero(hi==True)
-        #if N_hi > 0: theta_i[hi] = 0.0
+        eff_lim = np.clip(maxmag,0,zredstr.limmag)
+        dmag = eff_lim - self.neighbors.refmag
+        calc = dmag < 5.0
+        N_calc = np.count_nonzero(calc==True)
+        if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*self.neighbors.refmag_err[calc]))
+        hi = self.neighbors.refmag > zredstr.limmag
+        N_hi = np.count_nonzero(hi==True)
+        if N_hi > 0: theta_i[hi] = 0.0
         try:
             w = theta_i * self.neighbors.wvals
         except AttributeError:
-            """
-            Error here: w needs to be least the length of ucounts
-            Original line with the error is commented out, temporary line used below
-            """
-            #w = theta_i
             w = np.ones_like(ucounts) * theta_i
-        """
-        Errors here: 
-        r is not defined
-        Original line with the error is commented out, temporary line used below
-        """
-        #richness_obj = Solver(r0, beta, ucounts, bcounts, r, w)
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
 
         #Call the solving routine
-        #apparently it is three items: lam_obj, p_obj, theta_r
-        solved_nfw = richness_obj.solve_nfw()
+        #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
+        lam,p_obj,wt_obj,rlam_obj,theta_r = richness_obj.solve_nfw()
+        print "p_obj  :",p_obj[:5]
+        print "wt_obj :",wt_obj[:5]
+        print "theta_r:",theta_r[:5]
         #Record lambda, record p_obj onto the neighbors, 
-        #print "\n",solved_nfw,"\n"
-        return solved_nfw[0]
+        return lam
 
 
 class ClusterCatalog(Catalog): 
