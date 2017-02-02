@@ -34,14 +34,23 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
     
     // and check radius and do weights
     if (rsig <= 0.0) {
-      //TOM - For the test_cluster unit test, this branch is ALWAYS being taken
       // old skool... hard cut.
       if (r[i] < *rlambda) {
-	wt[i]=p[i]*w[i];
+	wt[i]=p[i]*w[i]; //Tom - The problem is on this line. 
+	//Either w[i] or p[i] values are messed up
+	/*TOM - the following line is found on line 149 in
+	  calclambda_chisq_cluster_lambda.pro.
+	*/
+	theta_r[i] = 1.0; // added by Tom
       } else {
         wt[i]=0.0;
       }
-    } else {
+    } else { // rsig > 0.0
+      /*
+	TOM - Note: on line 152 of calclambda_chisq_cluster_lambda.pro
+	we can see that this case always results in theta_r[i] being equal
+	to the function with the erf() in it.
+      */
       // Now we have a soft cut.
       if (r[i] < (*rlambda - 5.0*rsig)) {
         // r correction value is 1.0
