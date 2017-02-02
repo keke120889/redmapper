@@ -257,6 +257,9 @@ class RedSequenceColorPar(object):
         self.lumrefmagbins[self.lumrefmagbins.size-1] = 1000.0
         self.lumrefmaginteger = np.round(self.lumrefmagbins*self.refmagbinscale).astype(np.int64)
         self.ncol = ncol
+        self.alpha = alpha
+        self.mstar_survey = mstar_survey
+        self.mstar_band = mstar_band
 
         # don't make this into a catalog
         #super(RedSequenceColorPar, self).__init__(zredstr)
