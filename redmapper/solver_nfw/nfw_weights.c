@@ -34,6 +34,7 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
     
     // and check radius and do weights
     if (rsig <= 0.0) {
+      //TOM - For the test_cluster unit test, this branch is ALWAYS being taken
       // old skool... hard cut.
       if (r[i] < *rlambda) {
 	wt[i]=p[i]*w[i];

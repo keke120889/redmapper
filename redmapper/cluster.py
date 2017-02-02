@@ -193,9 +193,15 @@ class Cluster(Entry):
 
         #Call the solving routine
         #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
-        lam,p_obj,wt_obj,rlam_obj,theta_r = richness_obj.solve_nfw()
+        lam,p_obj,wt,rlam,theta_r = richness_obj.solve_nfw()
+        self.neighbors.theta_i = theta_i
+        self.neighbors.w = w
+        self.neighbors.wt = wt
+        self.neighbors.theta_r = theta_r
+        self.richness = lam
+        self.rlambda = rlam
         print "p_obj  :",p_obj[:5]
-        print "wt_obj :",wt_obj[:5]
+        print "wt_obj :",wt[:5]
         print "theta_r:",theta_r[:5]
         #Record lambda, record p_obj onto the neighbors, 
         return lam
