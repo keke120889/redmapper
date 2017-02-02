@@ -30,9 +30,9 @@ class RedSequenceColorPar(object):
     def __init__(self, filename, zbinsize=None, minsig=0.01, fine=False, zrange=None):
 
         pars,hdr=fitsio.read(filename,ext=1,header=True)
-
         try:
             limmag = hdr['LIMMAG']
+            print "in redsequence.py:",limmag
             if (zrange is None):
                 zrange = np.array([hdr['ZRANGE0'],hdr['ZRANGE1']])
             alpha = hdr['ALPHA']
@@ -260,6 +260,7 @@ class RedSequenceColorPar(object):
         self.alpha = alpha
         self.mstar_survey = mstar_survey
         self.mstar_band = mstar_band
+        self.limmag = limmag
 
         # don't make this into a catalog
         #super(RedSequenceColorPar, self).__init__(zredstr)

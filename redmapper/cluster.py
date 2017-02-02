@@ -178,7 +178,6 @@ class Cluster(Entry):
 
         #Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
         #Some parts aren't functional yet though...
-        print "limmag:",dir(zredstr)
         theta_i = np.ones((len(self.neighbors))) #Default to 1 for theta_i
         #eff_lim = maxmag < zredstr.limmag #Doesn't work, zredstr doesn't have limmag
         #dmag = eff_lim - mag #Not sure where mag comes from... 

@@ -81,8 +81,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         """
         self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/cosmo.Dl(0,self.cluster.z))
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
-        #At the moment it looks like zredstr isn't remembering it has limmag...
-
         richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
         print "Richness = %f"%richness
         #testing.assert_almost_equal(richness,24.0,decimal=1)
