@@ -5,8 +5,7 @@ import itertools
 from solver_nfw import Solver
 from catalog import Catalog, Entry
 from utilities import chisq_pdf
-
-#also changing self.members to self.neighbors
+from scipy.special import erf
 
 class Cluster(Entry):
     """
@@ -19,7 +18,6 @@ class Cluster(Entry):
     (TBD)
 
     """
-    #TOM - changing this to find_neighbors from find_members
     def find_neighbors(self, radius, galcat):
         """
         parameters
@@ -171,14 +169,25 @@ class Cluster(Entry):
         maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist) * cosmo.Dl(0, self.z)
         self.neighbors.chisq = zredstr.calculate_chisq(self.neighbors, self.z)
+        print "inside:",self.neighbors.chisq[:5]
         rho = chisq_pdf(self.neighbors.chisq, zredstr.ncol)
         nfw = self._calc_radial_profile()
         phi = self._calc_luminosity(zredstr, maxmag) #phi is lumwt in the IDL code
         ucounts = (2*np.pi*self.neighbors.r) * nfw * phi * rho
         bcounts = self._calc_bkg_density(bkg, cosmo)
-        #Need to compute theta_i
-        #look in calclambda idl code
-        theta_i = np.ones((len(self.neighbors)))
+
+        #Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
+        #Some parts aren't functional yet though...
+        print "limmag:",dir(zredstr)
+        theta_i = np.ones((len(self.neighbors))) #Default to 1 for theta_i
+        #eff_lim = maxmag < zredstr.limmag #Doesn't work, zredstr doesn't have limmag
+        #dmag = eff_lim - mag #Not sure where mag comes from... 
+        #calc = dmag < 5.0
+        #N_calc = np.count_nonzero(calc==True)
+        #if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
+        #hi = mag > limmag
+        #N_hi = np.count_nonzero(hi==True)
+        #if N_hi > 0: theta_i[hi] = 0.0
         try:
             w = theta_i * self.neighbors.wvals
         except AttributeError:

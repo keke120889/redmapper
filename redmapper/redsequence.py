@@ -35,7 +35,6 @@ class RedSequenceColorPar(object):
             limmag = hdr['LIMMAG']
             if (zrange is None):
                 zrange = np.array([hdr['ZRANGE0'],hdr['ZRANGE1']])
-
             alpha = hdr['ALPHA']
             mstar_survey = hdr['MSTARSUR']
             mstar_band = hdr['MSTARBAN']

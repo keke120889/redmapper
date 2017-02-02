@@ -74,30 +74,23 @@ class ClusterFiltersTestCase(unittest.TestCase):
         """
         This tests the calc_richness() function from cluster.py.
         The purpose of this function is to calculate the richness,
-        sometimes referred to as lambda_chisq, of the cluster
+        also written as lambda_chisq, of the cluster
         for a single iteration during the redmapper algorithm.
 
         THIS TEST IS STILL IN DEVELOPEMENT!!!
-
-        NOTE: the calc_richness() function call
-        requires that the neighbors have a 'dist' attribute to them.
         """
-        #self.cluster = Cluster(np.empty(1))
-        #print self.cluster.ra,self.cluster.dec,
-        #self.cluster.ra  = 142.12752
-        #self.cluster.dec = 65.103898
-        self.cluster.z   = 0.228654
         self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/cosmo.Dl(0,self.cluster.z))
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
-        #self.file_path = 'data_for_tests'
-        #filename = 'pixelized_dr8_test/dr8_test_galaxies_master_table.fit'
-        #self.galcat = GalaxyCatalog.from_galfile(self.file_path +'/'+filename)
-        #self.cluster.find_neighbors(0.1395,self.galcat)#0.1395;radius in degrees
+        #At the moment it looks like zredstr isn't remembering it has limmag...
 
         richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
-        print richness
+        print "Richness = %f"%richness
+        #testing.assert_almost_equal(richness,24.0,decimal=1)
         #Should be about 24, we are getting about 10.9
-        
+
+        #End of the tests
+        return
+
 class ClusterMembersTestCase(unittest.TestCase):
 
     #This next test MUST be done before the calc_richness test can be completed.
