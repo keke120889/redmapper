@@ -37,6 +37,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         filename = 'test_cluster_members.fit'
         self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
         self.cluster.z = self.cluster.neighbors.z[0]
+        # this should explicitly set our default cosmology
         cosmo = Cosmo()
 
         # nfw
@@ -62,13 +63,13 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_lum, idl_lum)
 
         # bkg
-        test_indices = np.array([29, 16, 27,  5, 38, 35, 25, 43])
+        test_indices = np.array([29, 16, 27, 38, 25])
         bkg_filename = 'test_bkg.fit'
         bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
         py_bkg = self.cluster._calc_bkg_density(bkg, cosmo)[test_indices]
         idl_bkg = np.array([1.3140464045388294, 0.16422314236185420, 
-                            0.56610846527410053, np.inf, 0.79559933744885403, 
-                            np.inf, 0.21078853798218194, np.inf])
+                            0.56610846527410053, 0.79559933744885403, 
+                            0.21078853798218194])
         testing.assert_almost_equal(py_bkg, idl_bkg)
 
         """
@@ -81,7 +82,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         """
         self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/cosmo.Dl(0,self.cluster.z))
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
-        richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr)
+        bkg_full = Background('%s/%s' % (self.file_path, bkg_filename))
+        richness = self.cluster.calc_richness(zredstr, bkg_full, cosmo, confstr)
         print "Richness = %f"%richness
         #testing.assert_almost_equal(richness,24.0,decimal=1)
         #Should be about 24, we are getting about 10.9
