@@ -14,3 +14,5 @@ chisq_max: 20.0
 zrange: [0.05,0.60]
 lval_reference: 0.2
 mask_mode: 0
+rsig: 0.05
+
