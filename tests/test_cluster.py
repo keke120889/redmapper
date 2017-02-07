@@ -36,6 +36,10 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.file_path = 'data_for_tests'
         filename = 'test_cluster_members.fit'
         self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
+
+        hdr=fitsio.read_header(self.file_path+'/'+filename,ext=1)
+        self.cluster.z = hdr['Z_LAMBDA']
+        self.richness_compare = hdr['LAMBDA']
         self.cluster.z = self.cluster.neighbors.z[0]
         # this should explicitly set our default cosmology
         cosmo = Cosmo()
@@ -84,9 +88,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
         bkg_full = Background('%s/%s' % (self.file_path, bkg_filename))
         richness = self.cluster.calc_richness(zredstr, bkg_full, cosmo, confstr)
-        print "Richness = %f"%richness
-        #testing.assert_almost_equal(richness,24.0,decimal=1)
-        #Should be about 24, we are getting about 10.9
+        # this will just test the ~24.  Closer requires adding the mask
+        testing.assert_almost_equal(richness/10.,self.richness_compare/10.,decimal=1)
 
         #End of the tests
         return
