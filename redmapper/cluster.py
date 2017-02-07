@@ -168,6 +168,10 @@ class Cluster(Entry):
         """
         maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist) * cosmo.Dl(0, self.z)
+
+        # need to clip r at > 1e-6 or else you get a singularity
+        self.neighbors.r = self.neighbors.r.clip(min=1e-6)
+
         self.neighbors.chisq = zredstr.calculate_chisq(self.neighbors, self.z)
         rho = chisq_pdf(self.neighbors.chisq, zredstr.ncol)
         nfw = self._calc_radial_profile()
@@ -200,9 +204,6 @@ class Cluster(Entry):
         self.neighbors.theta_r = theta_r
         self.richness = lam
         self.rlambda = rlam
-        print "p_obj  :",p_obj[:5]
-        print "wt_obj :",wt[:5]
-        print "theta_r:",theta_r[:5]
         #Record lambda, record p_obj onto the neighbors, 
         return lam
 
