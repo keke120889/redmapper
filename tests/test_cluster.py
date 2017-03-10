@@ -10,7 +10,7 @@ from redmapper.config import Configuration
 from redmapper.galaxy import GalaxyCatalog
 from redmapper.background import Background
 from redmapper.redsequence import RedSequenceColorPar
-
+from redmapper.mask import HPMask
 
 class BackgroundStub(Background):
 
@@ -44,6 +44,24 @@ class ClusterFiltersTestCase(unittest.TestCase):
         # this should explicitly set our default cosmology
         cosmo = Cosmo()
 
+        #The configuration
+        #Used by the mask, background and richness calculation
+        conf_filename = 'testconfig.yaml'
+        confstr = Configuration(self.file_path + '/' + conf_filename)
+
+        #Set up the mask
+        mask = HPMask(confstr) #Create the mask
+        #TODO - Need to know the mpcscale
+        #mask.set_radmask(self.cluster,mpcscale???)
+        print "In development: printing features of the mask"
+        print "mask.maskfile",mask.maskfile
+        print "mask.fracgood.shape: ",mask.fracgood.shape
+        print "mask.fracgood_float: ",mask.fracgood_float
+        print "mask.nside: ",mask.nside
+        print "mask.offset: ",mask.offset
+        print "mask.npix: ",mask.npix
+        print "len(mask.maskgals): ",len(mask.maskgals)
+
         # nfw
         test_indices = np.array([46, 38,  1,  2, 11, 24, 25, 16])
         py_nfw = self.cluster._calc_radial_profile()[test_indices]
@@ -54,9 +72,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         # lum
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
         zred_filename = 'test_dr8_pars.fit'
-        conf_filename = 'testconfig.yaml'
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
-        confstr = Configuration(self.file_path + '/' + conf_filename)
         mstar = zredstr.mstar(self.cluster.z)
         maxmag = mstar - 2.5*np.log10(confstr.lval_reference)
         py_lum = self.cluster._calc_luminosity(zredstr, maxmag)[test_indices]
