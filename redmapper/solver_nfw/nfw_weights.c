@@ -30,7 +30,7 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
     p[i] = (inlambda*ucounts[i]*nfwnorm)/(inlambda*ucounts[i]*nfwnorm+bcounts[i]);
 
     // check for infinity/NaN
-    if (!finitef(p[i])) p[i]=0.0;
+    if (!finite(p[i])) p[i]=0.0;
     
     // and check radius and do weights
     if (rsig <= 0.0) {
