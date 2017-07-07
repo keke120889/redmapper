@@ -1,4 +1,5 @@
 galfile: ./data_for_tests/pixelized_dr8_test/dr8_test_galaxies_master_table.fit
+refmag: i
 
 catfile: None
 zredfile: None
