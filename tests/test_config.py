@@ -25,6 +25,12 @@ class ReadConfigTestCase(unittest.TestCase):
         self.assertEqual(confdict.chisq_max,20.0)
         self.assertEqual(confdict.lval_reference,0.2)
         self.assertEqual(confdict.mask_mode,0)
+        self.assertEqual(confdict.nmag,5)
+        testing.assert_almost_equal(confdict.area, 3.3571745808326572)
+        testing.assert_almost_equal(confdict.b[0], 1.39999998e-10)
+        self.assertEqual(confdict.b.size, confdict.nmag)
+        testing.assert_almost_equal(confdict.zeropoint,22.5)
+        self.assertEqual(confdict.ref_ind,3)
         # all other values in the confdict are None
 
 if __name__=='__main__':
