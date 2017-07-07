@@ -1,4 +1,5 @@
 import yaml
+import fitsio
 
 def read_yaml(filename, defaults=None):
     
@@ -43,7 +44,73 @@ class Configuration(object):
 
         confdict = read_yaml(conffile,defaults=defaults)
 
+        ## FIXME: check for required inputs
 
         for key in confdict:
             setattr(self, key, confdict[key])
 
+        # get galaxy file stats
+        gal_stats = self.galfile_stats(confdict['galfile'], confdict['refmag'])
+
+        for key in gal_stats:
+            setattr(self, key, gal_stats[key])
+
+    def galfile_stats(self, galfile, refmag):
+        """
+        """
+
+        hdr = fitsio.read_header(galfile, ext=1)
+        pixelated = hdr.get("PIXELS", 0)
+        fitsformat = hdr.get("FITS", 0)
+
+        if not fitsformat:
+            raise ValueError("Input galfile must describe fits files.")
+
+        gal_stats = {}
+
+        if not pixelated:
+            # statistics are from the header
+            gal_stats['pixelized'] = False
+
+            hdrmode = hdr.get("MODE", "").rstrip()
+
+            if hdrmode == 'SDSS':
+                gal_stats['mode'] = 0
+            elif hdrmode == 'DES':
+                gal_stats['mode'] = 1
+            else:
+                raise ValueError("Input galaxy file with unknown mode: %s" % (hdrmode))
+
+            ## FIXME: check that these are all in the header
+            gal_stats['area'] = hdr.get('AREA', -100.0)
+            gal_stats['limmag_ref'] = hdr.get('LIM_REF')
+            gal_stats['nmag'] = hdr.get('NMAG')
+            gal_stats['zeropoint'] = hdr.get('ZP')
+            gal_stats['ref_ind'] = hdr.get(refmag.upper()+'_IND')
+            gal_stats['b'] = 0
+
+        else:
+            # statistics are from the master table file
+            gal_stats['pixelized'] = True
+
+            master=fitsio.read(galfile,ext=1)
+
+            mode = master['MODE'][0].rstrip()
+            if (mode == 'SDSS'):
+                gal_stats['mode'] = 0
+            elif (mode == 'DES'):
+                gal_stats['mode'] = 1
+            else:
+                raise ValueError("Input galaxy file with unknown mode: %s" % (mode))
+
+            gal_stats['area'] = master['AREA'][0]
+            gal_stats['limmag_ref'] = master['LIM_REF'][0]
+            gal_stats['nmag'] = master['NMAG'][0]
+            if ('B' in master.dtype.names):
+                gal_stats['b'] = master['B'][0]
+            else:
+                gal_stats['b'] = 0
+            gal_stats['zeropoint'] = master['ZEROPOINT'][0]
+            gal_stats['ref_ind'] = master[refmag.upper()+'_IND'][0]
+
+        return gal_stats
