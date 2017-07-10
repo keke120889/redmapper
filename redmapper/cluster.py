@@ -142,7 +142,7 @@ class Cluster(Entry):
                                                     self.neighbors.refmag)
         return 2 * np.pi * self.neighbors.r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, zredstr, bkg, cosmo, confstr, r0=1.0, beta=0.2):
+    def calc_richness(self, zredstr, bkg, cosmo, confstr, maskgals, r0=1.0, beta=0.2):
         """
         compute richness for a cluster
 
@@ -178,21 +178,17 @@ class Cluster(Entry):
         phi = self._calc_luminosity(zredstr, maxmag) #phi is lumwt in the IDL code
         ucounts = (2*np.pi*self.neighbors.r) * nfw * phi * rho
         bcounts = self._calc_bkg_density(bkg, cosmo)
-
-        #Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
-        theta_i = np.ones((len(self.neighbors))) #Default to 1 for theta_i
-        eff_lim = np.clip(maxmag,0,zredstr.limmag)
-        dmag = eff_lim - self.neighbors.refmag
-        calc = dmag < 5.0
-        N_calc = np.count_nonzero(calc==True)
-        if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*self.neighbors.refmag_err[calc]))
-        hi = self.neighbors.refmag > zredstr.limmag
-        N_hi = np.count_nonzero(hi==True)
-        if N_hi > 0: theta_i[hi] = 0.0
+        
+        theta_i = self.calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, zredstr.limmag)
+        
+        cpars = self.calc_maskcorr(maskgals, zredstr.mstar(self.z), maxmag, confstr)
+        print cpars
+        
         try:
             w = theta_i * self.neighbors.wvals
         except AttributeError:
             w = np.ones_like(ucounts) * theta_i
+            
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
 
         #Call the solving routine
@@ -206,6 +202,63 @@ class Cluster(Entry):
         self.rlambda = rlam
         #Record lambda, record p_obj onto the neighbors, 
         return lam
+    
+    def calc_theta_i(self, mag, mag_err, maxmag, limmag):
+        """
+        Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
+        """
+ 
+        theta_i = np.ones((len(mag))) #Default to 1 for theta_i
+        eff_lim = np.clip(maxmag,0,limmag)
+        dmag = eff_lim - mag
+        calc = dmag < 5.0
+        N_calc = np.count_nonzero(calc==True)
+        if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
+        hi = mag > limmag
+        N_hi = np.count_nonzero(hi==True)
+        if N_hi > 0: theta_i[hi] = 0.0
+        return theta_i
+    
+    def calc_maskcorr(self, maskgals, mstar, maxmag, confstr):
+        """
+        """
+        #print maskgals.__dict__
+        limmag = confstr.limmag
+        mag_in = maskgals.m + mstar
+        maskgals.refmag = mag_in
+        print maskgals.limmag[0]
+        if maskgals.limmag[0] > 0.0:
+            print('here')
+            mag = maskgals.refmag_obs
+            mag_err = maskgals.refmag_obs_err #??? that's in a if statement above, but how get mag mag_err otherwise?
+            
+            self.apply_errormodels(maskgals.exptime, maskgals.limmag, mag_in, mag, mag_err, confstr, zp=maskgals.zp[0], nsig=maskgals.nsig[0])
+            maskgals.refmag_obs = mag
+            maskgals.refmag_obs_err = mag_err
+        else:
+            mag = mag_in
+            mag_err = 0.0*mag_in     #leads to divide by zero!
+            
+        if (maskgals.w[0] < 0) or (maskgals.w[0] == 0 and max(maskgals.m50) == 0):
+            tmode = 0
+            theta_i = self.calc_theta_i(mag, mag_err, maxmag, limmag)
+        elif (maskgals.w[0] == 0.0):
+            tmode = 1
+            theta_i = self.calc_theta_i(mag, mag_err, maxmag, maskgals.m50)
+        else:
+            tmode = 2
+            raise Exception('Unsupported mode!')
+
+        p_det = theta_i*maskgals.mark
+        
+        c = 1 - np.dot(p_det, maskgals.theta_r) / maskgals[0].nin
+        
+        cpars = (np.polyfit(maskgals[0].radbins, c, 3)).flatten()
+        
+        return cpars
+        
+    def apply_errormodels(exptime, limmag, mag_in, mag, mag_err, confstr, zp='zp', nsig='nsig'):
+        pass
 
 
 class ClusterCatalog(Catalog): 
