@@ -6,6 +6,7 @@ from solver_nfw import Solver
 from catalog import Catalog, Entry
 from utilities import chisq_pdf
 from scipy.special import erf
+from numpy import random
 
 class Cluster(Entry):
     """
@@ -166,6 +167,7 @@ class Cluster(Entry):
         TBD
 
         """
+
         maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist) * cosmo.Dl(0, self.z)
 
@@ -181,8 +183,8 @@ class Cluster(Entry):
         
         theta_i = self.calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, zredstr.limmag)
         
-        cpars = self.calc_maskcorr(maskgals, zredstr.mstar(self.z), maxmag, confstr)
-        print cpars
+        cpars = self.calc_maskcorr(maskgals, zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
+        
         
         try:
             w = theta_i * self.neighbors.wvals
@@ -219,20 +221,20 @@ class Cluster(Entry):
         if N_hi > 0: theta_i[hi] = 0.0
         return theta_i
     
-    def calc_maskcorr(self, maskgals, mstar, maxmag, confstr):
+    def calc_maskcorr(self, maskgals, mstar, maxmag, limmag, confstr):
         """
         """
-        #print maskgals.__dict__
-        limmag = confstr.limmag
+        
         mag_in = maskgals.m + mstar
         maskgals.refmag = mag_in
-        print maskgals.limmag[0]
-        if maskgals.limmag[0] > 0.0:
-            print('here')
+
+        if limmag > 0.0: #should this be maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
+            
             mag = maskgals.refmag_obs
             mag_err = maskgals.refmag_obs_err #??? that's in a if statement above, but how get mag mag_err otherwise?
-            
-            self.apply_errormodels(maskgals.exptime, maskgals.limmag, mag_in, mag, mag_err, confstr, zp=maskgals.zp[0], nsig=maskgals.nsig[0])
+
+            self.apply_errormodels(maskgals.exptime, maskgals.limmag, mag_in, mag, mag_err, confstr, zp=maskgals.zp[0], nsig=maskgals.nsig[0], 
+                b = confstr.b)
             maskgals.refmag_obs = mag
             maskgals.refmag_obs_err = mag_err
         else:
@@ -257,7 +259,45 @@ class Cluster(Entry):
         
         return cpars
         
-    def apply_errormodels(exptime, limmag, mag_in, mag, mag_err, confstr, zp='zp', nsig='nsig'):
+    def apply_errormodels(self, exptime, limmag, mag_in, mag, mag_err, confstr, nonoise=False, zp='zp', nsig='nsig', fluxmode='fluxmode', 
+        lnscat='lnscat', b='b', inlup='inlup', errtflux='errtflux', err_ratio='err_ratio'):
+        if zp.size == 0:
+            zp=22.5
+        if nsig.size == 0:
+            nsig=10.0
+        #if err_ratio.size == 0:            #can't find err_ratio
+        err_ratio = 1.0            
+        
+        #ignore extinction bits
+        
+        #common ccae,seed
+        #
+        #if n_elements(seed) eq 0 then seed=systime(/seconds)
+        # ---> needed??
+        
+        f1lim = 10.**((limmag - zp)/(-2.5))
+        fsky1 = (((f1lim**2) * exptime)/(nsig**2) - f1lim) > 0.001
+        
+        #if keyword_set(inlup) then begin
+        #    bnmgy = b*1d9
+        #
+        #    tflux = ext_factor*exptimes*2.0*bnmgy*sinh(-alog(b)-0.4*alog(10.0)*mag_in)
+        # ---> needed??
+        
+        tflux = exptime*10.**((mag_in - zp)/(-2.5)) #set ext_factor = 1
+        
+        #ignore inlup
+        
+        noise = err_ratio*np.sqrt(fsky1*exptime + tflux)
+        
+        if nonoise:
+            flux = tflux
+        else:
+            flux = tflux + noise*random.standard_normal(mag_in.size)
+        
+        #can't find lnscat
+        #can't find fluxmode
+        
         pass
 
 
