@@ -229,12 +229,11 @@ class Cluster(Entry):
         maskgals.refmag = mag_in
 
         if limmag > 0.0: #should this be maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
+            #ignore reuse_errormodel
             
-            mag = maskgals.refmag_obs
-            mag_err = maskgals.refmag_obs_err #??? that's in a if statement above, but how get mag mag_err otherwise?
-
-            self.apply_errormodels(maskgals.exptime, maskgals.limmag, mag_in, mag, mag_err, confstr, zp=maskgals.zp[0], nsig=maskgals.nsig[0], 
-                b = confstr.b)
+            mag, mag_err = self.apply_errormodels(maskgals.exptime, maskgals.limmag, mag_in, mag, mag_err, confstr, 
+                zp=maskgals.zp[0], nsig=maskgals.nsig[0], b = confstr.b)
+            print mag,mag.size
             maskgals.refmag_obs = mag
             maskgals.refmag_obs_err = mag_err
         else:
@@ -259,7 +258,7 @@ class Cluster(Entry):
         
         return cpars
         
-    def apply_errormodels(self, exptime, limmag, mag_in, mag, mag_err, confstr, nonoise=False, zp='zp', nsig='nsig', fluxmode='fluxmode', 
+    def apply_errormodels(self, exptime, limmag, mag_in, mag, mag_err, confstr, nonoise=False, zp='zp', nsig='nsig', fluxmode=False, 
         lnscat='lnscat', b='b', inlup='inlup', errtflux='errtflux', err_ratio='err_ratio'):
         if zp.size == 0:
             zp=22.5
@@ -285,7 +284,6 @@ class Cluster(Entry):
         # ---> needed??
         
         tflux = exptime*10.**((mag_in - zp)/(-2.5)) #set ext_factor = 1
-        
         #ignore inlup
         
         noise = err_ratio*np.sqrt(fsky1*exptime + tflux)
@@ -298,7 +296,30 @@ class Cluster(Entry):
         #can't find lnscat
         #can't find fluxmode
         
-        pass
+        if fluxmode:
+            mag = flux/exptime
+            mag_err = noise/exptime
+        else:
+            if b.size < 0:
+                bnmgy = b*1e9
+        
+                flux_new = flux/exptime
+                noise_new = noise/exptime
+        
+                mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
+                mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
+                #PROBLEMS WITH LENGTHS OF ARRAYS HERE: b.size = 5; flux_new.size=6000
+                
+            else:
+                mag = zp-2.5*np.log10(flux/exptime)
+                mag_err = (2.5/np.log(10.0))*(noise/flux)
+                
+                bad, = np.where(np.isfinite(mag) == False)
+                if bad.size > 0:
+                    mag[bad] = 99.0
+                    mag_err[bad] = 99.0
+        
+        return mag, mag_err
 
 
 class ClusterCatalog(Catalog): 
