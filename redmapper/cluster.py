@@ -7,6 +7,7 @@ from catalog import Catalog, Entry
 from utilities import chisq_pdf
 from scipy.special import erf
 from numpy import random
+from mask import HPMask
 
 class Cluster(Entry):
     """
@@ -143,7 +144,7 @@ class Cluster(Entry):
                                                     self.neighbors.refmag)
         return 2 * np.pi * self.neighbors.r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, zredstr, bkg, cosmo, confstr, maskgals, r0=1.0, beta=0.2, noerr = True):
+    def calc_richness(self, zredstr, bkg, cosmo, confstr, mask, r0=1.0, beta=0.2, noerr = True):
         """
         compute richness for a cluster
 
@@ -167,7 +168,7 @@ class Cluster(Entry):
         TBD
 
         """
-
+        
         maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist) * cosmo.Dl(0, self.z)
 
@@ -183,8 +184,9 @@ class Cluster(Entry):
         
         theta_i = self.calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, zredstr.limmag)
         
-        cpars = self.calc_maskcorr(maskgals, zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
+        cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
         #should this be handed a different limmag?
+        
         try:
             w = theta_i * self.neighbors.wvals
         except AttributeError:
@@ -207,7 +209,7 @@ class Cluster(Entry):
         dof = 1.0 #WHAT IS DOF?
         gamma = 1.0 #WHAT IS gamma?
         if not noerr:
-            lam_cerr = self.calc_maskcorr_lambdaerr(maskgals, zredstr.mstar(self.z), alpha ,maxmag ,dof, zredstr.limmag, 
+            lam_cerr = self.calc_maskcorr_lambdaerr(mask.maskgals, zredstr.mstar(self.z), alpha ,maxmag ,dof, zredstr.limmag, 
                 lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo)
         else:
             lam_cerr = 0.0
@@ -223,6 +225,17 @@ class Cluster(Entry):
     def calc_theta_i(self, mag, mag_err, maxmag, limmag):
         """
         Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
+        
+        parameters
+        ----------
+        mag:
+        mag_err:
+        maxmag:
+        limmag:
+
+        returns
+        -------
+        theta_i:
         """
  
         theta_i = np.ones((len(mag))) #Default to 1 for theta_i
@@ -236,115 +249,35 @@ class Cluster(Entry):
         if N_hi > 0: theta_i[hi] = 0.0
         return theta_i
     
-    def calc_maskcorr(self, maskgals, mstar, maxmag, limmag, confstr):
-        """
-        """
-        
-        mag_in = maskgals.m + mstar
-        maskgals.refmag = mag_in
-
-        if limmag > 0.0: #should this be maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
-            #ignore reuse_errormodel
-            
-            #where do we get these from?
-            mag = maskgals.refmag_obs
-            mag_err = maskgals.refmag_obs_err
-            
-            mag, mag_err = self.apply_errormodels(maskgals.exptime, maskgals.limmag, mag_in, mag, mag_err, confstr, 
-                zp=maskgals.zp[0], nsig=maskgals.nsig[0], b = confstr.b)
-
-            maskgals.refmag_obs = mag
-            maskgals.refmag_obs_err = mag_err
-        else:
-            mag = mag_in
-            mag_err = 0.0*mag_in     #leads to divide by zero!
-            
-        if (maskgals.w[0] < 0) or (maskgals.w[0] == 0 and max(maskgals.m50) == 0):
-            tmode = 0
-            theta_i = self.calc_theta_i(mag, mag_err, maxmag, limmag)
-        elif (maskgals.w[0] == 0.0):
-            tmode = 1
-            theta_i = self.calc_theta_i(mag, mag_err, maxmag, maskgals.m50)
-        else:
-            tmode = 2
-            raise Exception('Unsupported mode!')
-
-        p_det = theta_i*maskgals.mark
-        
-        c = 1 - np.dot(p_det, maskgals.theta_r) / maskgals[0].nin
-        
-        cpars = (np.polyfit(maskgals[0].radbins, c, 3)).flatten()
-        
-        return cpars
-        
-    def apply_errormodels(self, exptime, limmag, mag_in, mag, mag_err, confstr, nonoise=False, zp='zp', nsig='nsig', fluxmode=False, 
-        lnscat='lnscat', b='b', inlup='inlup', errtflux='errtflux', err_ratio='err_ratio'):
-        if zp.size == 0:
-            zp=22.5
-        if nsig.size == 0:
-            nsig=10.0
-        #if err_ratio.size == 0:            #can't find err_ratio
-        err_ratio = 1.0            
-        
-        #ignore extinction bits
-        
-        #common ccae,seed
-        #
-        #if n_elements(seed) eq 0 then seed=systime(/seconds)
-        # ---> needed??
-        
-        f1lim = 10.**((limmag - zp)/(-2.5))
-        fsky1 = (((f1lim**2) * exptime)/(nsig**2) - f1lim) > 0.001
-        
-        #if keyword_set(inlup) then begin
-        #    bnmgy = b*1d9
-        #
-        #    tflux = ext_factor*exptimes*2.0*bnmgy*sinh(-alog(b)-0.4*alog(10.0)*mag_in)
-        # ---> needed??
-        
-        tflux = exptime*10.**((mag_in - zp)/(-2.5)) #set ext_factor = 1
-        #ignore inlup
-        
-        noise = err_ratio*np.sqrt(fsky1*exptime + tflux)
-        
-        if nonoise:
-            flux = tflux
-        else:
-            flux = tflux + noise*random.standard_normal(mag_in.size)
-        
-        #can't find lnscat
-        #can't find fluxmode
-        
-        if fluxmode:
-            mag = flux/exptime
-            mag_err = noise/exptime
-        else:
-            #set error for now
-            error = True
-            if b.size > 0 and not error:
-                bnmgy = b*1e9
-        
-                flux_new = flux/exptime
-                noise_new = noise/exptime
-        
-                mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
-                mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
-                #PROBLEMS WITH LENGTHS OF ARRAYS HERE: b.size = 5; flux_new.size=6000
-                
-            else:
-                mag = zp-2.5*np.log10(flux/exptime)
-                mag_err = (2.5/np.log(10.0))*(noise/flux)
-                
-                bad, = np.where(np.isfinite(mag) == False)
-                if bad.size > 0:
-                    mag[bad] = 99.0
-                    mag_err[bad] = 99.0
-        
-        return mag, mag_err
         
     def calc_maskcorr_lambdaerr(self, maskgals, mstar, alpha ,maxmag ,dof, limmag, 
                 lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
-                
+        """
+        
+        parameters
+        ----------
+        maskgals :
+        mstar    :
+        alpha    :
+        maxmag   :
+        dof      :
+        limmag   :
+        lam      :
+        rlam     :
+        z        :
+        bkg      :
+        wt       :
+        cval     :
+        r0       :
+        beta     :
+        gamma    :
+        cosmo    :
+
+        returns
+        -------
+        lambda_err:
+        
+        """
         use, = np.where(maskgals.r < rlam)
         
         mark    = maskgals.mark[use]
@@ -382,7 +315,24 @@ class Cluster(Entry):
         
         return lambda_err
 
-    def calc_bcounts(self, z, r, chisq , refmag_for_bcounts, bkg, cosmo, allow0='allow0'):
+    def calc_bcounts(self, z, r, chisq, refmag_for_bcounts, bkg, cosmo, allow0='allow0'):
+        """
+        
+        parameters
+        ----------         :
+        z                  :
+        r                  :
+        chisq              :
+        refmag_for_bcounts :
+        bkg                :
+        cosmo              :
+        allow0             :
+
+        returns
+        -------
+        bcounts:
+        
+        """
         H0 = cosmo._H0
         nchisqbins  = bkg.chisqbins.size
         chisqindex  = np.around((chisq-bkg.chisqbins[0])*nchisqbins/((bkg.chisqbins[nchisqbins-1]+bkg.chisqbinsize)-bkg.chisqbins[0]))

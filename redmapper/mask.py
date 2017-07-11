@@ -3,7 +3,8 @@ import healpy as hp
 import numpy as np
 from catalog import Catalog,Entry
 from utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere
-
+from numpy import random
+from scipy.special import erf
 
 class Mask(object):
     """
@@ -133,4 +134,176 @@ class HPMask(Mask):
         ras = cluster.ra + self.maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(clusters.dec))
         decs = cluster.dec + self.maskgals.y/(mpcscale*SEC_PER_DEG)
         self.maskgals['MASKED'] = self.compute_radmask(ras,decs)
+        
+    def calc_maskcorr(self, mstar, maxmag, limmag, confstr):
+        """
+        
+        parameters
+        ----------
+        maskgals :
+        mstar    :
+        maxmag   :
+        limmag   :
+        confstr  :
 
+        returns
+        -------
+        cpars:
+        
+        """
+        
+        mag_in = self.maskgals.m + mstar
+        self.maskgals.refmag = mag_in
+
+        if limmag > 0.0: #should this be self.maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
+            #ignore reuse_errormodel
+            
+            #where do we get these from?
+            mag = self.maskgals.refmag_obs
+            mag_err = self.maskgals.refmag_obs_err
+            
+            mag, mag_err = self.apply_errormodels(self.maskgals.exptime, self.maskgals.limmag, mag_in, mag, mag_err, confstr, 
+                zp=self.maskgals.zp[0], nsig=self.maskgals.nsig[0], b = confstr.b)
+
+            self.maskgals.refmag_obs = mag
+            self.maskgals.refmag_obs_err = mag_err
+        else:
+            mag = mag_in
+            mag_err = 0.0*mag_in     #leads to divide by zero if called!
+            
+        if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and max(self.maskgals.m50) == 0):
+            tmode = 0
+            theta_i = self.calc_theta_i(mag, mag_err, maxmag, limmag)
+        elif (self.maskgals.w[0] == 0.0):
+            tmode = 1
+            theta_i = self.calc_theta_i(mag, mag_err, maxmag, self.maskgals.m50)
+        else:
+            tmode = 2
+            raise Exception('Unsupported mode!')
+
+        p_det = theta_i*self.maskgals.mark
+        
+        c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals[0].nin
+        
+        cpars = (np.polyfit(self.maskgals[0].radbins, c, 3)).flatten()
+        
+        return cpars
+        
+    def apply_errormodels(self, exptime, limmag, mag_in, mag, mag_err, confstr, nonoise=False, zp='zp', nsig='nsig', fluxmode=False, 
+        lnscat='lnscat', b='b', inlup='inlup', errtflux='errtflux', err_ratio='err_ratio'):
+        """
+        
+        parameters
+        ----------
+        exptime   :
+        limmag    :
+        mag_in    :
+        mag       :
+        mag_err   :
+        confstr   :
+        nonoise   :
+        zp:       :
+        nsig:     :
+        fluxmode  :
+        lnscat    :
+        b         :
+        inlup     :
+        errtflux  :
+        err_ratio :
+
+        returns
+        -------
+        mag       :
+        mag_err   :
+        
+        """
+        
+        if zp.size == 0:
+            zp=22.5
+        if nsig.size == 0:
+            nsig=10.0
+        #if err_ratio.size == 0:            #can't find err_ratio
+        err_ratio = 1.0            
+        
+        #ignore extinction bits
+        
+        #common ccae,seed
+        #
+        #if n_elements(seed) eq 0 then seed=systime(/seconds)
+        # ---> needed??
+        
+        f1lim = 10.**((limmag - zp)/(-2.5))
+        fsky1 = (((f1lim**2) * exptime)/(nsig**2) - f1lim) > 0.001
+        
+        #if keyword_set(inlup) then begin
+        #    bnmgy = b*1d9
+        #
+        #    tflux = ext_factor*exptimes*2.0*bnmgy*sinh(-alog(b)-0.4*alog(10.0)*mag_in)
+        # ---> needed??
+        
+        tflux = exptime*10.**((mag_in - zp)/(-2.5)) #set ext_factor = 1
+        #ignore inlup
+        
+        noise = err_ratio*np.sqrt(fsky1*exptime + tflux)
+        
+        if nonoise:
+            flux = tflux
+        else:
+            flux = tflux + noise*random.standard_normal(mag_in.size)
+        
+        #can't find lnscat
+        #can't find fluxmode
+        
+        if fluxmode:
+            mag = flux/exptime
+            mag_err = noise/exptime
+        else:
+            #set error for now
+            error = True
+            if b.size > 0 and not error:
+                bnmgy = b*1e9
+        
+                flux_new = flux/exptime
+                noise_new = noise/exptime
+        
+                mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
+                mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
+                #PROBLEMS WITH LENGTHS OF ARRAYS HERE: b.size = 5; flux_new.size=6000
+                
+            else:
+                mag = zp-2.5*np.log10(flux/exptime)
+                mag_err = (2.5/np.log(10.0))*(noise/flux)
+                
+                bad, = np.where(np.isfinite(mag) == False)
+                if bad.size > 0:
+                    mag[bad] = 99.0
+                    mag_err[bad] = 99.0
+        
+        return mag, mag_err
+        
+    def calc_theta_i(self, mag, mag_err, maxmag, limmag):
+        """
+        Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
+        
+        parameters
+        ----------
+        mag:
+        mag_err:
+        maxmag:
+        limmag:
+
+        returns
+        -------
+        theta_i:
+        """
+ 
+        theta_i = np.ones((len(mag))) #Default to 1 for theta_i
+        eff_lim = np.clip(maxmag,0,limmag)
+        dmag = eff_lim - mag
+        calc = dmag < 5.0
+        N_calc = np.count_nonzero(calc==True)
+        if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
+        hi = mag > limmag
+        N_hi = np.count_nonzero(hi==True)
+        if N_hi > 0: theta_i[hi] = 0.0
+        return theta_i
