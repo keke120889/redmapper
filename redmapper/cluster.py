@@ -143,7 +143,7 @@ class Cluster(Entry):
                                                     self.neighbors.refmag)
         return 2 * np.pi * self.neighbors.r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, zredstr, bkg, cosmo, confstr, maskgals, r0=1.0, beta=0.2):
+    def calc_richness(self, zredstr, bkg, cosmo, confstr, maskgals, r0=1.0, beta=0.2, noerr = 'noerr'):
         """
         compute richness for a cluster
 
@@ -184,18 +184,33 @@ class Cluster(Entry):
         theta_i = self.calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, zredstr.limmag)
         
         cpars = self.calc_maskcorr(maskgals, zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
-        
-        
+        #should this be handed a different limmag?
         try:
             w = theta_i * self.neighbors.wvals
         except AttributeError:
             w = np.ones_like(ucounts) * theta_i
-            
+        
+        richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w, cpars = cpars, rsig = confstr.rsig)
+        #DELETE ONCE VALUES ARE FIXED
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
 
         #Call the solving routine
         #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
         lam,p_obj,wt,rlam,theta_r = richness_obj.solve_nfw()
+        #---> does this replace remaining IDL code?
+        
+        #error
+        bar_p = np.sum(wt**2.0)/np.sum(wt) #ASSUME wtvals = wt
+        cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
+        
+        alpha = 1.0 #WHAT IS ALPHA?
+        dof = 1.0 #WHAT IS DOF?
+        gamma = 1.0 #WHAT IS gamma?
+        if not noerr:
+            lam_cerr = calc_maskcorr_lambdaerr(maskgals, zredstr.mstar(self.z), alpha ,maxmag ,dof, zredstr.limmag, 
+                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma)
+        else:
+            lam_cerr = 0.0
         self.neighbors.theta_i = theta_i
         self.neighbors.w = w
         self.neighbors.wt = wt
@@ -231,9 +246,13 @@ class Cluster(Entry):
         if limmag > 0.0: #should this be maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
             #ignore reuse_errormodel
             
+            #where do we get these from?
+            mag = maskgals.refmag_obs
+            mag_err = maskgals.refmag_obs_err
+            
             mag, mag_err = self.apply_errormodels(maskgals.exptime, maskgals.limmag, mag_in, mag, mag_err, confstr, 
                 zp=maskgals.zp[0], nsig=maskgals.nsig[0], b = confstr.b)
-            print mag,mag.size
+
             maskgals.refmag_obs = mag
             maskgals.refmag_obs_err = mag_err
         else:
@@ -300,7 +319,9 @@ class Cluster(Entry):
             mag = flux/exptime
             mag_err = noise/exptime
         else:
-            if b.size < 0:
+            #set error for now
+            error = True
+            if b.size > 0 and not error:
                 bnmgy = b*1e9
         
                 flux_new = flux/exptime
@@ -320,6 +341,46 @@ class Cluster(Entry):
                     mag_err[bad] = 99.0
         
         return mag, mag_err
+        
+    def calc_maskcorr_lambdaerr(maskgals, mstar, alpha ,maxmag ,dof, limmag, 
+                lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma):
+                
+        use = np.where(maskgals.r < rlam)
+        
+        mark=maskgals.mark[use]
+        refmag=mstar+maskgals.m[use]
+        cwt=maskgals.cwt[use]
+        nfw=maskgals.nfw[use]
+        lumwt=maskgals.lumwt[use]
+        chisqs=maskgals.chisq[use]
+        r=maskgals.r[use]
+        
+        logrc = np.log(rlam)
+        norm = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. -0.0719021*logrc**3.- 0.0158241*logrc**4.-0.000854985*logrc**5.)
+        nfw = norm*maskgals.nfw[use]
+
+        ucounts = cwt*nfw*lumwt
+
+        faint = np.where(refmag >= limmag)
+        refmag_for_bcounts = refmag
+        if nfaint > 0:
+             refmag_for_bcounts[faint] = limmag-0.01
+             
+        #bcounts=calc_bcounts(z,r,chisqs,refmag_for_bcounts,bkg)
+        #
+        #out = np.where((refmag > limmag) or (mark == 0)) # ,comp=in) - necessary?
+        #
+        #if (out.size == 0 or cval > 0.01):
+        #    lambda_err = 0.0
+        #else:
+        #
+        #    p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
+        #    varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
+        #    sigc = np.sqrt(varc0 - varc0**2.)
+        #    k = lam**2./total(lambda_p**2.)
+        #    lambda_err = k*sigc/(1.-beta*gamma)
+        #
+        #return lambda_err
 
 
 class ClusterCatalog(Catalog): 
