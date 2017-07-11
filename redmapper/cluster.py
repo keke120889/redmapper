@@ -143,7 +143,7 @@ class Cluster(Entry):
                                                     self.neighbors.refmag)
         return 2 * np.pi * self.neighbors.r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, zredstr, bkg, cosmo, confstr, maskgals, r0=1.0, beta=0.2, noerr = 'noerr'):
+    def calc_richness(self, zredstr, bkg, cosmo, confstr, maskgals, r0=1.0, beta=0.2, noerr = True):
         """
         compute richness for a cluster
 
@@ -207,8 +207,8 @@ class Cluster(Entry):
         dof = 1.0 #WHAT IS DOF?
         gamma = 1.0 #WHAT IS gamma?
         if not noerr:
-            lam_cerr = calc_maskcorr_lambdaerr(maskgals, zredstr.mstar(self.z), alpha ,maxmag ,dof, zredstr.limmag, 
-                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma)
+            lam_cerr = self.calc_maskcorr_lambdaerr(maskgals, zredstr.mstar(self.z), alpha ,maxmag ,dof, zredstr.limmag, 
+                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo)
         else:
             lam_cerr = 0.0
         self.neighbors.theta_i = theta_i
@@ -342,45 +342,84 @@ class Cluster(Entry):
         
         return mag, mag_err
         
-    def calc_maskcorr_lambdaerr(maskgals, mstar, alpha ,maxmag ,dof, limmag, 
-                lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma):
+    def calc_maskcorr_lambdaerr(self, maskgals, mstar, alpha ,maxmag ,dof, limmag, 
+                lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
                 
-        use = np.where(maskgals.r < rlam)
+        use, = np.where(maskgals.r < rlam)
         
-        mark=maskgals.mark[use]
-        refmag=mstar+maskgals.m[use]
-        cwt=maskgals.cwt[use]
-        nfw=maskgals.nfw[use]
-        lumwt=maskgals.lumwt[use]
-        chisqs=maskgals.chisq[use]
-        r=maskgals.r[use]
+        mark    = maskgals.mark[use]
+        refmag  = mstar+maskgals.m[use]
+        cwt     = maskgals.cwt[use]
+        nfw     = maskgals.nfw[use]
+        lumwt   = maskgals.lumwt[use]
+        chisq   = maskgals.chisq[use]
+        r       = maskgals.r[use]
         
-        logrc = np.log(rlam)
-        norm = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. -0.0719021*logrc**3.- 0.0158241*logrc**4.-0.000854985*logrc**5.)
-        nfw = norm*maskgals.nfw[use]
+        logrc   = np.log(rlam)
+        norm    = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. -0.0719021*logrc**3.- 0.0158241*logrc**4.-0.000854985*logrc**5.)
+        nfw     = norm*maskgals.nfw[use]
 
         ucounts = cwt*nfw*lumwt
 
-        faint = np.where(refmag >= limmag)
+        faint, = np.where(refmag >= limmag)
         refmag_for_bcounts = refmag
-        if nfaint > 0:
+        if faint.size > 0:
              refmag_for_bcounts[faint] = limmag-0.01
              
-        #bcounts=calc_bcounts(z,r,chisqs,refmag_for_bcounts,bkg)
-        #
-        #out = np.where((refmag > limmag) or (mark == 0)) # ,comp=in) - necessary?
-        #
-        #if (out.size == 0 or cval > 0.01):
-        #    lambda_err = 0.0
-        #else:
-        #
-        #    p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
-        #    varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
-        #    sigc = np.sqrt(varc0 - varc0**2.)
-        #    k = lam**2./total(lambda_p**2.)
-        #    lambda_err = k*sigc/(1.-beta*gamma)
-        #
-        #return lambda_err
+        bcounts = self.calc_bcounts(z, r, chisq , refmag_for_bcounts, bkg, cosmo)
+        
+        out = np.where((refmag > limmag) or (mark == 0)) # ,comp=in) - necessary?
+        
+        if (out.size == 0 or cval > 0.01):
+            lambda_err = 0.0
+        else:
+        
+            p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
+            varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
+            sigc = np.sqrt(varc0 - varc0**2.)
+            k = lam**2./total(lambda_p**2.)
+            lambda_err = k*sigc/(1.-beta*gamma)
+        
+        return lambda_err
+
+    def calc_bcounts(self, z, r, chisq , refmag_for_bcounts, bkg, cosmo, allow0='allow0'):
+        H0 = cosmo._H0
+        nchisqbins  = bkg.chisqbins.size
+        chisqindex  = np.around((chisq-bkg.chisqbins[0])*nchisqbins/((bkg.chisqbins[nchisqbins-1]+bkg.chisqbinsize)-bkg.chisqbins[0]))
+        nrefmagbins = bkg.refmagbins.size
+        refmagindex = np.around((self.neighbors.refmag-bkg.refmagbins[0])*nrefmagbins/((bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize)-bkg.refmagbins[0]))
+        #assume refmag = self.neighbors.refmag
+        print self.neighbors.refmag, self.neighbors.refmag.shape
+        #check for overruns
+        badchisq, = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
+        if (badchisq.size > 0): # $ important?
+          chisqindex[badchisq] = 0
+        badrefmag, = np.where((refmagindex < 0) | (refmagindex >= nrefmagbins))
+        if (badrefmag.size > 0): # $ important?
+          refmagindex[badrefmag] = 0
+        
+        #print np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0]))
+        ind = np.clip(np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0])), 0, (bkg.zbins.size-1))
+        print ind, chisqindex.size, refmagindex.size, bkg.sigma_g.shape
+        #FIXME
+        sigma_g = bkg.sigma_g[np.full(chisqindex.size, ind), chisqindex, refmagindex]
+        print sigma_g
+
+        #no matter what, these should be infinities
+        if (badchisq.size >  0):
+            sigma_g[badchisq]= float("inf")
+        if (badrefmag.size > 0):
+            sigma_g[badrefmag] = float("inf")
+        
+        
+        if not allow0:
+            badcombination = np.where((sigma_g == 0.0) & (chisq > 5.0))
+            if (badcombination.size > 0):
+                sigma_g[badcombination] = float("inf")
+        
+        bcounts=2. * np.pi * r * (sigma_g / c**2.) #WHAT IS C?
+
+        return bcounts
 
 
 class ClusterCatalog(Catalog): 
