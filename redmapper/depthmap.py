@@ -1,6 +1,7 @@
 import fitsio
 import healpy as hp
 import numpy as np
+from utilities import astro_to_sphere
 
 
 class DepthMap(object):
@@ -70,12 +71,65 @@ class DepthMap(object):
 
 
     def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):
+        """
+        UNTESTED
+        
+        parameters
+        ----------
+        maskgals:
+        ra:
+        dec:
+        mpc_scale:
+        
+        """
+        #assume depthstr = depthinfo
+        unseen = -1.63750e30
+        
         # compute ra and dec based on maskgals
-        # ras = ra + (maskgals['X']/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
-        # decs = dec + maskgals['Y']/(mpc_scale*3600.)
-        # theta = (90.0 - decs)*np.pi/180.
-        # phi = ras*np.pi/180.
-
+        ras = ra + (maskgals.x/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
+        decs = dec + maskgals.y/(mpc_scale*3600.)
+        theta = (90.0 - decs)*np.pi/180.
+        phi = ras*np.pi/180.
+        
+        maskgals.w = depthstr.w                 #does this work?
+        maskgals.eff = depthstr.eff
+        maskgals.limmag = unseen
+        maskgals[0].zp = depthstr.zp
+        maskgals[0].nsig = depthstr.nsig
+        
+        theta, phi = astro_to_sphere(ras, decs)
+        ipring = hp.ang2pix(maskgals.nside, theta, phi)
+        ipring_offset = np.clip(ipring - maskgals.offset, 0, maskgals.npix-1)
+        
+        maskgals.limmag = depthstr.limmag[ipring_offset]
+        maskgals.exptime = depthstr.exptime[ipring_offset]
+        maskgals.m50 = depthstr.m50[ipring_offset]
+        maskgals.ebv = depthstr.ebv[ipring_offset]
+        maskgals.extinction = maskgals.ebv*a_lambda
+        maskgals.limmag_dered = maskgals.limmag     #ignore extinction
+        
+        bd = where(maskgals.limmag < 0.0)
+        ok = np.delete(np.copy(maskgals.limmag), bd)
+        nok = ok.size
+        
+        if (bd.size > 0):
+            if (nok ge 3) then begin
+                # fill them in
+                maskgals.limmag[bd] = median(maskgals.limmag[ok])
+                maskgals.exptime[bd] = median(maskgals.exptime[ok])
+                maskgals.m50[bd] = median(maskgals.m50[ok])
+            elif(nok > 0):
+                # fill with mean
+                maskgals[bd].limmag = mean(maskgals[ok].limmag)
+                maskgals[bd].exptime = mean(maskgals[ok].exptime)
+                maskgals[bd].m50 = mean(maskgals[ok].m50)
+            else:
+                # very bad
+                ok = where(depthstr.limmag > 0.0)
+                maskgals.limmag = depthstr.limmag_default
+                maskgals.exptime = depthstr.exptime_default
+                maskgals.m50 = depthstr.m50_default
+        
         # etc...
         # was thinking could call get_depth...
     
@@ -88,4 +142,3 @@ class DepthMap(object):
 
         # self.arr['RA'][:] = np.arange(100)
         # self.arr['RA'][:] = self.arr['RA'] + 1.0
-        pass

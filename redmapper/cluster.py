@@ -168,7 +168,7 @@ class Cluster(Entry):
         TBD
 
         """
-        
+        print mask.maskgals.__dict__
         maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist) * cosmo.Dl(0, self.z)
 
@@ -249,7 +249,6 @@ class Cluster(Entry):
         if N_hi > 0: theta_i[hi] = 0.0
         return theta_i
     
-        
     def calc_maskcorr_lambdaerr(self, maskgals, mstar, alpha ,maxmag ,dof, limmag, 
                 lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
         """
