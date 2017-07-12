@@ -5,8 +5,6 @@ import itertools
 from solver_nfw import Solver
 from catalog import Catalog, Entry
 from utilities import chisq_pdf, calc_theta_i
-from scipy.special import erf
-from numpy import random
 from mask import HPMask
 
 class Cluster(Entry):
@@ -144,7 +142,7 @@ class Cluster(Entry):
                                                     self.neighbors.refmag)
         return 2 * np.pi * self.neighbors.r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, zredstr, bkg, cosmo, confstr, mask, r0=1.0, beta=0.2, noerr = True):
+    def calc_richness(self, zredstr, bkg, cosmo, confstr, mask, r0=1.0, beta=0.2, noerr = False):
         """
         compute richness for a cluster
 
@@ -168,7 +166,7 @@ class Cluster(Entry):
         TBD
 
         """
-        print mask.maskgals.__dict__
+        
         maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist) * cosmo.Dl(0, self.z)
 
@@ -182,7 +180,7 @@ class Cluster(Entry):
         ucounts = (2*np.pi*self.neighbors.r) * nfw * phi * rho
         bcounts = self._calc_bkg_density(bkg, cosmo)
         
-        theta_i = self.calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, zredstr.limmag)
+        theta_i = calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, zredstr.limmag)
         
         cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
         #should this be handed a different limmag?
@@ -210,7 +208,7 @@ class Cluster(Entry):
         gamma = 1.0 #WHAT IS gamma?
         if not noerr:
             lam_cerr = mask.calc_maskcorr_lambdaerr(zredstr.mstar(self.z), alpha ,maxmag ,dof, zredstr.limmag, 
-                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo)
+                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo, self.neighbors.refmag)
         else:
             lam_cerr = 0.0
         self.neighbors.theta_i = theta_i

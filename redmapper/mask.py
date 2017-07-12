@@ -173,10 +173,10 @@ class HPMask(Mask):
             
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and max(self.maskgals.m50) == 0):
             tmode = 0
-            theta_i = self.calc_theta_i(mag, mag_err, maxmag, limmag)
+            theta_i = calc_theta_i(mag, mag_err, maxmag, limmag)
         elif (self.maskgals.w[0] == 0.0):
             tmode = 1
-            theta_i = self.calc_theta_i(mag, mag_err, maxmag, self.maskgals.m50)
+            theta_i = calc_theta_i(mag, mag_err, maxmag, self.maskgals.m50)
         else:
             tmode = 2
             raise Exception('Unsupported mode!')
@@ -282,12 +282,11 @@ class HPMask(Mask):
         return mag, mag_err
         
     def calc_maskcorr_lambdaerr(self, mstar, alpha ,maxmag ,dof, limmag, 
-                lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
+                lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo, neighbors_refmag):
         """
         
         parameters
         ----------
-        maskgals :
         mstar    :
         alpha    :
         maxmag   :
@@ -303,6 +302,7 @@ class HPMask(Mask):
         beta     :
         gamma    :
         cosmo    :
+        refmag   :
 
         returns
         -------
@@ -312,7 +312,7 @@ class HPMask(Mask):
         use, = np.where(self.maskgals.r < rlam)
         
         mark    = self.maskgals.mark[use]
-        refmag  = self.mstar+maskgals.m[use]
+        refmag  = mstar + self.maskgals.m[use]
         cwt     = self.maskgals.cwt[use]
         nfw     = self.maskgals.nfw[use]
         lumwt   = self.maskgals.lumwt[use]
@@ -330,23 +330,23 @@ class HPMask(Mask):
         if faint.size > 0:
              refmag_for_bcounts[faint] = limmag-0.01
              
-        bcounts = self.calc_bcounts(z, r, chisq , refmag_for_bcounts, bkg, cosmo)
+        bcounts = self.calc_bcounts(z, r, chisq , refmag_for_bcounts, bkg, cosmo, neighbors_refmag)
         
-        out = np.where((refmag > limmag) or (mark == 0)) # ,comp=in) - necessary?
-        
-        if (out.size == 0 or cval > 0.01):
-            lambda_err = 0.0
-        else:
-        
-            p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
-            varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
-            sigc = np.sqrt(varc0 - varc0**2.)
-            k = lam**2./total(lambda_p**2.)
-            lambda_err = k*sigc/(1.-beta*gamma)
-        
-        return lambda_err
+        #out = np.where((refmag > limmag) or (mark == 0)) # ,comp=in) - necessary?
+        #
+        #if (out.size == 0 or cval > 0.01):
+        #    lambda_err = 0.0
+        #else:
+        #
+        #    p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
+        #    varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
+        #    sigc = np.sqrt(varc0 - varc0**2.)
+        #    k = lam**2./total(lambda_p**2.)
+        #    lambda_err = k*sigc/(1.-beta*gamma)
+        #
+        #return lambda_err
 
-    def calc_bcounts(self, z, r, chisq, refmag_for_bcounts, bkg, cosmo, allow0='allow0'):
+    def calc_bcounts(self, z, r, chisq, refmag_for_bcounts, bkg, cosmo, neighbors_refmag, allow0='allow0'):
         """
         
         parameters
@@ -357,6 +357,7 @@ class HPMask(Mask):
         refmag_for_bcounts :
         bkg                :
         cosmo              :
+        neigbours.refmag   :
         allow0             :
 
         returns
@@ -368,9 +369,9 @@ class HPMask(Mask):
         nchisqbins  = bkg.chisqbins.size
         chisqindex  = np.around((chisq-bkg.chisqbins[0])*nchisqbins/((bkg.chisqbins[nchisqbins-1]+bkg.chisqbinsize)-bkg.chisqbins[0]))
         nrefmagbins = bkg.refmagbins.size
-        refmagindex = np.around((self.neighbors.refmag-bkg.refmagbins[0])*nrefmagbins/((bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize)-bkg.refmagbins[0]))
+        refmagindex = np.around((neighbors_refmag-bkg.refmagbins[0])*nrefmagbins/((bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize)-bkg.refmagbins[0]))
         #assume refmag = self.neighbors.refmag
-        print self.neighbors.refmag, self.neighbors.refmag.shape
+        #print neighbors_refmag, neighbors_refmag.shape
         #check for overruns
         badchisq, = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
         if (badchisq.size > 0): # $ important?
@@ -381,23 +382,23 @@ class HPMask(Mask):
         
         #print np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0]))
         ind = np.clip(np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0])), 0, (bkg.zbins.size-1))
-        print ind, chisqindex.size, refmagindex.size, bkg.sigma_g.shape
-        #FIXME
-        sigma_g = bkg.sigma_g[np.full(chisqindex.size, ind), chisqindex, refmagindex]
-        print sigma_g
+        #print ind, chisqindex.size, refmagindex.size, bkg.sigma_g.shape
+        ##FIXME
+        #sigma_g = bkg.sigma_g[np.full(chisqindex.size, ind), chisqindex, refmagindex]
+        #print sigma_g
+        #
+        ##no matter what, these should be infinities
+        #if (badchisq.size >  0):
+        #    sigma_g[badchisq]= float("inf")
+        #if (badrefmag.size > 0):
+        #    sigma_g[badrefmag] = float("inf")
+        #
+        #
+        #if not allow0:
+        #    badcombination = np.where((sigma_g == 0.0) & (chisq > 5.0))
+        #    if (badcombination.size > 0):
+        #        sigma_g[badcombination] = float("inf")
+        #
+        #bcounts=2. * np.pi * r * (sigma_g / c**2.) #WHAT IS C?
 
-        #no matter what, these should be infinities
-        if (badchisq.size >  0):
-            sigma_g[badchisq]= float("inf")
-        if (badrefmag.size > 0):
-            sigma_g[badrefmag] = float("inf")
-        
-        
-        if not allow0:
-            badcombination = np.where((sigma_g == 0.0) & (chisq > 5.0))
-            if (badcombination.size > 0):
-                sigma_g[badcombination] = float("inf")
-        
-        bcounts=2. * np.pi * r * (sigma_g / c**2.) #WHAT IS C?
-
-        return bcounts
+        #return bcounts
