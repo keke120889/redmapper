@@ -4,7 +4,7 @@ import numpy as np
 import itertools
 from solver_nfw import Solver
 from catalog import Catalog, Entry
-from utilities import chisq_pdf
+from utilities import chisq_pdf, calc_theta_i
 from scipy.special import erf
 from numpy import random
 from mask import HPMask
@@ -221,33 +221,6 @@ class Cluster(Entry):
         self.rlambda = rlam
         #Record lambda, record p_obj onto the neighbors, 
         return lam
-    
-    def calc_theta_i(self, mag, mag_err, maxmag, limmag):
-        """
-        Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
-        
-        parameters
-        ----------
-        mag:
-        mag_err:
-        maxmag:
-        limmag:
-
-        returns
-        -------
-        theta_i:
-        """
- 
-        theta_i = np.ones((len(mag))) #Default to 1 for theta_i
-        eff_lim = np.clip(maxmag,0,limmag)
-        dmag = eff_lim - mag
-        calc = dmag < 5.0
-        N_calc = np.count_nonzero(calc==True)
-        if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
-        hi = mag > limmag
-        N_hi = np.count_nonzero(hi==True)
-        if N_hi > 0: theta_i[hi] = 0.0
-        return theta_i
     
     def calc_maskcorr_lambdaerr(self, maskgals, mstar, alpha ,maxmag ,dof, limmag, 
                 lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):

@@ -85,7 +85,7 @@ class CubicSpline(object):
         y2 = solve_banded((1,1), mat, bb)
         self.x, self.y, self.y2 = (x, y, y2)
 
-    def splint(self,x):
+    def splint(self,x):                                     
         npts = len(self.x)
         lo = np.searchsorted(self.x, x)-1
         lo = np.clip(lo, 0, npts-2)
@@ -99,3 +99,30 @@ class CubicSpline(object):
         
     def __call__(self, x):
         return self.splint(x)
+        
+    def calc_theta_i(self, mag, mag_err, maxmag, limmag):
+        """
+        Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
+        
+        parameters
+        ----------
+        mag:
+        mag_err:
+        maxmag:
+        limmag:
+
+        returns
+        -------
+        theta_i:
+        """
+ 
+        theta_i = np.ones((len(mag)))
+        eff_lim = np.clip(maxmag,0,limmag)
+        dmag = eff_lim - mag
+        calc = dmag < 5.0
+        N_calc = np.count_nonzero(calc==True)
+        if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
+        hi = mag > limmag
+        N_hi = np.count_nonzero(hi==True)
+        if N_hi > 0: theta_i[hi] = 0.0
+        return theta_i

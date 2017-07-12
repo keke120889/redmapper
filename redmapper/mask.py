@@ -2,7 +2,7 @@ import esutil, fitsio
 import healpy as hp
 import numpy as np
 from catalog import Catalog,Entry
-from utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere
+from utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i
 from numpy import random
 from scipy.special import erf
 
@@ -280,30 +280,3 @@ class HPMask(Mask):
                     mag_err[bad] = 99.0
         
         return mag, mag_err
-        
-    def calc_theta_i(self, mag, mag_err, maxmag, limmag):
-        """
-        Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
-        
-        parameters
-        ----------
-        mag:
-        mag_err:
-        maxmag:
-        limmag:
-
-        returns
-        -------
-        theta_i:
-        """
- 
-        theta_i = np.ones((len(mag))) #Default to 1 for theta_i
-        eff_lim = np.clip(maxmag,0,limmag)
-        dmag = eff_lim - mag
-        calc = dmag < 5.0
-        N_calc = np.count_nonzero(calc==True)
-        if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
-        hi = mag > limmag
-        N_hi = np.count_nonzero(hi==True)
-        if N_hi > 0: theta_i[hi] = 0.0
-        return theta_i
