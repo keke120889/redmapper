@@ -105,7 +105,6 @@ class DepthMap(object):
         maskgals.exptime = depthstr.exptime[ipring_offset]
         maskgals.m50 = depthstr.m50[ipring_offset]
         maskgals.ebv = depthstr.ebv[ipring_offset]
-        maskgals.extinction = maskgals.ebv*a_lambda
         maskgals.limmag_dered = maskgals.limmag     #ignore extinction
         
         bd = where(maskgals.limmag < 0.0)

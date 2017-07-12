@@ -144,7 +144,8 @@ class HPMask(Mask):
         mstar    :
         maxmag   :
         limmag   :
-        confstr  :
+        confstr  : Configuration object
+                    containing configuration info
 
         returns
         -------
@@ -164,7 +165,8 @@ class HPMask(Mask):
             
             mag, mag_err = self.apply_errormodels(self.maskgals.exptime, self.maskgals.limmag, mag_in, mag, mag_err, confstr, 
                 zp=self.maskgals.zp[0], nsig=self.maskgals.nsig[0], b = confstr.b)
-
+                #changes mag, mag_err in IDL - make it return them here?!
+                
             self.maskgals.refmag_obs = mag
             self.maskgals.refmag_obs_err = mag_err
         else:
@@ -200,7 +202,8 @@ class HPMask(Mask):
         mag_in    :
         mag       :
         mag_err   :
-        confstr   :
+        confstr   : Configuration object
+            containing configuration info
         nonoise   :
         zp:       :
         nsig:     :
@@ -217,6 +220,8 @@ class HPMask(Mask):
         mag_err   :
         
         """
+        
+        #print exptime.shape, limmag.shape, mag_in.shape, mag.shape, mag_err.shape, nonoise, zp, nsig, b
         
         if zp.size == 0:
             zp=22.5
@@ -258,18 +263,18 @@ class HPMask(Mask):
             mag = flux/exptime
             mag_err = noise/exptime
         else:
-            #set error for now
+            #set error for now - delete completely after fixed
             error = True
             if b.size > 0 and not error:
-                bnmgy = b*1e9
-        
+                bnmgy = b[0]*1e9            #TAKE b[0] unntil problem fixed
+                
                 flux_new = flux/exptime
                 noise_new = noise/exptime
-        
-                mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
+                
+                mag = 2.5*np.log10(1.0/b[0]) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
+                #TAKE b[0] unntil problem fixed
                 mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
                 #PROBLEMS WITH LENGTHS OF ARRAYS HERE: b.size = 5; flux_new.size=6000
-                
             else:
                 mag = zp-2.5*np.log10(flux/exptime)
                 mag_err = (2.5/np.log(10.0))*(noise/flux)
@@ -278,11 +283,10 @@ class HPMask(Mask):
                 if bad.size > 0:
                     mag[bad] = 99.0
                     mag_err[bad] = 99.0
-        
         return mag, mag_err
         
     def calc_maskcorr_lambdaerr(self, mstar, alpha ,maxmag ,dof, limmag, 
-                lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo, neighbors_refmag):
+                lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
         """
         
         parameters
@@ -295,7 +299,8 @@ class HPMask(Mask):
         lam      :
         rlam     :
         z        :
-        bkg      :
+        bkg      : Background object
+                   background lookup table
         wt       :
         cval     :
         r0       :
@@ -326,11 +331,11 @@ class HPMask(Mask):
         ucounts = cwt*nfw*lumwt
 
         faint, = np.where(refmag >= limmag)
-        refmag_for_bcounts = refmag
+        refmag_for_bcounts = np.copy(refmag)
         if faint.size > 0:
              refmag_for_bcounts[faint] = limmag-0.01
              
-        bcounts = self.calc_bcounts(z, r, chisq , refmag_for_bcounts, bkg, cosmo, neighbors_refmag)
+        bcounts = self.calc_bcounts(z, r, chisq , refmag_for_bcounts, bkg, cosmo)
         
         #out = np.where((refmag > limmag) or (mark == 0)) # ,comp=in) - necessary?
         #
@@ -346,7 +351,7 @@ class HPMask(Mask):
         #
         #return lambda_err
 
-    def calc_bcounts(self, z, r, chisq, refmag_for_bcounts, bkg, cosmo, neighbors_refmag, allow0='allow0'):
+    def calc_bcounts(self, z, r, chisq, refmag, bkg, cosmo, allow0='allow0'):
         """
         
         parameters
@@ -355,7 +360,8 @@ class HPMask(Mask):
         r                  :
         chisq              :
         refmag_for_bcounts :
-        bkg                :
+        bkg                : Background object
+                             background lookup table
         cosmo              :
         neigbours.refmag   :
         allow0             :
@@ -367,11 +373,12 @@ class HPMask(Mask):
         """
         H0 = cosmo._H0
         nchisqbins  = bkg.chisqbins.size
-        chisqindex  = np.around((chisq-bkg.chisqbins[0])*nchisqbins/((bkg.chisqbins[nchisqbins-1]+bkg.chisqbinsize)-bkg.chisqbins[0]))
+        chisqindex  = np.around((chisq-bkg.chisqbins[0])*nchisqbins/
+            (bkg.chisqbins[nchisqbins-1]+bkg.chisqbinsize-bkg.chisqbins[0])) 
         nrefmagbins = bkg.refmagbins.size
-        refmagindex = np.around((neighbors_refmag-bkg.refmagbins[0])*nrefmagbins/((bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize)-bkg.refmagbins[0]))
-        #assume refmag = self.neighbors.refmag
-        #print neighbors_refmag, neighbors_refmag.shape
+        refmagindex = np.around((refmag-bkg.refmagbins[0])*nrefmagbins/
+            (bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize-bkg.refmagbins[0]))
+        
         #check for overruns
         badchisq, = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
         if (badchisq.size > 0): # $ important?
@@ -380,10 +387,9 @@ class HPMask(Mask):
         if (badrefmag.size > 0): # $ important?
           refmagindex[badrefmag] = 0
         
-        #print np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0]))
         ind = np.clip(np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0])), 0, (bkg.zbins.size-1))
-        #print ind, chisqindex.size, refmagindex.size, bkg.sigma_g.shape
-        ##FIXME
+        
+        #FIXME
         #sigma_g = bkg.sigma_g[np.full(chisqindex.size, ind), chisqindex, refmagindex]
         #print sigma_g
         #

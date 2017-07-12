@@ -155,7 +155,7 @@ class Cluster(Entry):
         cosmo: Cosmology object
             From esutil
         confstr: Configuration object
-            config info
+            containing configuration info
         r0: float, optional
             Radius -- richness scaling amplitude (default = 1.0 Mpc)
         beta: float, optional
@@ -200,7 +200,7 @@ class Cluster(Entry):
         #---> does this replace remaining IDL code?
         
         #error
-        bar_p = np.sum(wt**2.0)/np.sum(wt) #ASSUME wtvals = wt
+        bar_p = np.sum(wt**2.0)/np.sum(wt)                          #ASSUME wtvals = wt
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
         alpha = 1.0 #WHAT IS ALPHA?
@@ -208,7 +208,7 @@ class Cluster(Entry):
         gamma = 1.0 #WHAT IS gamma?
         if not noerr:
             lam_cerr = mask.calc_maskcorr_lambdaerr(zredstr.mstar(self.z), alpha ,maxmag ,dof, zredstr.limmag, 
-                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo, self.neighbors.refmag)
+                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo)
         else:
             lam_cerr = 0.0
         self.neighbors.theta_i = theta_i
