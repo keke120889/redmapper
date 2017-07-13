@@ -196,11 +196,11 @@ class Cluster(Entry):
 
         #Call the solving routine
         #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
-        lam,p_obj,wt,rlam,theta_r = richness_obj.solve_nfw()
+        lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
         #---> does this replace remaining IDL code?
         
         #error
-        bar_p = np.sum(wt**2.0)/np.sum(wt)                          #ASSUME wtvals = wt
+        bar_p = np.sum(wt**2.0)/np.sum(wt)                  #ASSUME wtvals = wt
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
         alpha = 1.0 #WHAT IS ALPHA?
@@ -211,6 +211,27 @@ class Cluster(Entry):
                 lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo)
         else:
             lam_cerr = 0.0
+            
+        #scaleval = np.absolute(lam/np.sum(wt))
+        #
+        #lam_unscaled = lam/scaleval
+        #if (lam < 0.0):
+        #    elambda = -1.0
+        #else: # $ important
+        #   elambda = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
+        #
+        #
+        ## calculate pcol -- color only.  Don't need to worry about nfw norm!
+        #ucounts = cwt*lumwt
+        #r = 1.0 #WHAT IS r? 1 for now
+        #bcounts = (bcounts/(2.*np.pi*r))*np.pi*rlam**2.
+        #
+        #refmag_total_dered = 1.0 #WHAT IS refmag_total_dered? 1 for now
+        #bcounts_raw=calclambda_chisq_bcounts(self.z,r,chisqs,refmag_total_dered,bkg)
+        #pcol = ucounts * lam/(ucounts * lam + bcounts_raw)
+        #bad = where((r > rlam) or (refmag_total_dered > maxmag) or (refmag_total_dered > confstr.limmag) or (np.isfinite(pcol) == False))
+        #if (bad.size > 0):
+        #    pcol[bad] = 0.0
             
         self.neighbors.theta_i = theta_i
         self.neighbors.w = w

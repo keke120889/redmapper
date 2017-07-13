@@ -155,7 +155,7 @@ class HPMask(Mask):
         
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
-
+        
         if limmag > 0.0: #should this be self.maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
             #ignore reuse_errormodel
             
@@ -191,8 +191,8 @@ class HPMask(Mask):
         
         return cpars
         
-    def apply_errormodels(self, exptime, limmag, mag_in, mag, mag_err, confstr, nonoise=False, zp='zp', nsig='nsig', fluxmode=False, 
-        lnscat='lnscat', b='b', inlup='inlup', errtflux='errtflux', err_ratio='err_ratio'):
+    def apply_errormodels(self, exptime, limmag, mag_in, mag, mag_err, confstr, zp=np.array([]), nsig=np.array([]), 
+        err_ratio=np.array([]), lnscat=np.array([]), fluxmode=False, nonoise=False, inlup=False, b='b', errtflux='errtflux'):
         """
         
         parameters
@@ -221,32 +221,26 @@ class HPMask(Mask):
         
         """
         
-        #print exptime.shape, limmag.shape, mag_in.shape, mag.shape, mag_err.shape, nonoise, zp, nsig, b
-        
         if zp.size == 0:
             zp=22.5
         if nsig.size == 0:
             nsig=10.0
-        #if err_ratio.size == 0:            #can't find err_ratio
-        err_ratio = 1.0            
+        if err_ratio.size == 0:            #can't find err_ratio
+            err_ratio = 1.0            
         
         #ignore extinction bits
-        
-        #common ccae,seed
-        #
-        #if n_elements(seed) eq 0 then seed=systime(/seconds)
-        # ---> needed??
+        ext_factor = 1.0    #???
         
         f1lim = 10.**((limmag - zp)/(-2.5))
         fsky1 = (((f1lim**2) * exptime)/(nsig**2) - f1lim) > 0.001
         
-        #if keyword_set(inlup) then begin
-        #    bnmgy = b*1d9
-        #
-        #    tflux = ext_factor*exptimes*2.0*bnmgy*sinh(-alog(b)-0.4*alog(10.0)*mag_in)
-        # ---> needed??
+        if inlup:
+            bnmgy = b*1e9       #1d9 - number of decimal points or 1e9????
+            
+            tflux = ext_factor*exptimes*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
+         #---> needed??
         
-        tflux = exptime*10.**((mag_in - zp)/(-2.5)) #set ext_factor = 1
+        tflux = ext_factor*exptime*10.**((mag_in - zp)/(-2.5))
         #ignore inlup
         
         noise = err_ratio*np.sqrt(fsky1*exptime + tflux)
@@ -257,6 +251,11 @@ class HPMask(Mask):
             flux = tflux + noise*random.standard_normal(mag_in.size)
         
         #can't find lnscat
+        if lnscat.size > 0:
+            # perturb the error *now* -- this is our uncertainty on the error
+            noise = np.exp(np.log(noise) + lnscat*randomn(seed,n_elements(mag_in)))
+        
+        
         #can't find fluxmode
         
         if fluxmode:
@@ -266,7 +265,8 @@ class HPMask(Mask):
             #set error for now - delete completely after fixed
             error = True
             if b.size > 0 and not error:
-                bnmgy = b[0]*1e9            #TAKE b[0] unntil problem fixed
+                bnmgy = b[0]*1e9        #1d9 - number of decimal points or 1e9????    
+                #TAKE b[0] unntil problem fixed
                 
                 flux_new = flux/exptime
                 noise_new = noise/exptime
