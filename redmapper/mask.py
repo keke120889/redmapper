@@ -339,10 +339,9 @@ class HPMask(Mask):
         
         out, = np.where(np.logical_or((refmag > limmag), (mark == 0)) == True)
         
-        if (out.size == 0 or cval > 0.01):
+        if (out.size == 0 or cval < 0.01):
             lambda_err = 0.0
         else:
-        
             p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
             varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
             sigc = np.sqrt(varc0 - varc0**2.)

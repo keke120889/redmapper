@@ -1,7 +1,9 @@
 import fitsio
 import healpy as hp
 import numpy as np
+
 from utilities import astro_to_sphere
+from catalog import Catalog, Entry
 
 
 class DepthMap(object):
@@ -18,7 +20,7 @@ class DepthMap(object):
         # record for posterity
         self.depthfile = confstr.depthfile
 
-        depthinfo, hdr = fitsio.read(filename, ext=1, header=True)
+        depthinfo, hdr = fitsio.read(self.depthfile, ext=1, header=True)
         # convert into catalog for convenience...
         depthinfo = Catalog(depthinfo)
 
@@ -82,7 +84,7 @@ class DepthMap(object):
         mpc_scale:
         
         """
-        #assume depthstr = depthinfo
+        
         unseen = -1.63750e30
         
         # compute ra and dec based on maskgals
@@ -112,12 +114,12 @@ class DepthMap(object):
         nok = ok.size
         
         if (bd.size > 0):
-            if (nok ge 3) then begin
+            if (nok >= 3):
                 # fill them in
                 maskgals.limmag[bd] = median(maskgals.limmag[ok])
                 maskgals.exptime[bd] = median(maskgals.exptime[ok])
                 maskgals.m50[bd] = median(maskgals.m50[ok])
-            elif(nok > 0):
+            elif (nok > 0):
                 # fill with mean
                 maskgals[bd].limmag = mean(maskgals[ok].limmag)
                 maskgals[bd].exptime = mean(maskgals[ok].exptime)

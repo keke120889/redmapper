@@ -211,6 +211,7 @@ class Cluster(Entry):
                 lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo)
         else:
             lam_cerr = 0.0
+            
         self.neighbors.theta_i = theta_i
         self.neighbors.w = w
         self.neighbors.wt = wt
