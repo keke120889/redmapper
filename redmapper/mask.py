@@ -337,19 +337,19 @@ class HPMask(Mask):
              
         bcounts = self.calc_bcounts(z, r, chisq , refmag_for_bcounts, bkg, cosmo)
         
-        #out = np.where((refmag > limmag) or (mark == 0)) # ,comp=in) - necessary?
-        #
-        #if (out.size == 0 or cval > 0.01):
-        #    lambda_err = 0.0
-        #else:
-        #
-        #    p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
-        #    varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
-        #    sigc = np.sqrt(varc0 - varc0**2.)
-        #    k = lam**2./total(lambda_p**2.)
-        #    lambda_err = k*sigc/(1.-beta*gamma)
-        #
-        #return lambda_err
+        out, = np.where(np.logical_or((refmag > limmag), (mark == 0)) == True)
+        
+        if (out.size == 0 or cval > 0.01):
+            lambda_err = 0.0
+        else:
+        
+            p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
+            varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
+            sigc = np.sqrt(varc0 - varc0**2.)
+            k = lam**2./total(lambda_p**2.)
+            lambda_err = k*sigc/(1.-beta*gamma)
+        
+        return lambda_err
 
     def calc_bcounts(self, z, r, chisq, refmag, bkg, cosmo, allow0='allow0'):
         """
@@ -380,31 +380,29 @@ class HPMask(Mask):
             (bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize-bkg.refmagbins[0]))
         
         #check for overruns
-        badchisq, = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
+        badchisq, = np.where(np.logical_or((chisqindex < 0), (chisqindex >= nchisqbins)) == True)
         if (badchisq.size > 0): # $ important?
           chisqindex[badchisq] = 0
-        badrefmag, = np.where((refmagindex < 0) | (refmagindex >= nrefmagbins))
+        badrefmag, = np.where(np.logical_or((refmagindex < 0), (refmagindex >= nrefmagbins)) == True)
         if (badrefmag.size > 0): # $ important?
           refmagindex[badrefmag] = 0
         
         ind = np.clip(np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0])), 0, (bkg.zbins.size-1))
+    
+        sigma_g = bkg.sigma_g_lookup(np.full(chisqindex.size, ind), chisqindex, refmagindex)
         
-        #FIXME
-        #sigma_g = bkg.sigma_g[np.full(chisqindex.size, ind), chisqindex, refmagindex]
-        #print sigma_g
-        #
-        ##no matter what, these should be infinities
-        #if (badchisq.size >  0):
-        #    sigma_g[badchisq]= float("inf")
-        #if (badrefmag.size > 0):
-        #    sigma_g[badrefmag] = float("inf")
-        #
-        #
-        #if not allow0:
-        #    badcombination = np.where((sigma_g == 0.0) & (chisq > 5.0))
-        #    if (badcombination.size > 0):
-        #        sigma_g[badcombination] = float("inf")
-        #
-        #bcounts=2. * np.pi * r * (sigma_g / c**2.) #WHAT IS C?
+        #no matter what, these should be infinities
+        if (badchisq.size >  0):
+            sigma_g[badchisq]= np.inf
+        if (badrefmag.size > 0):
+            sigma_g[badrefmag] = np.inf
+        
+        
+        if not allow0:
+            badcombination = np.where((sigma_g == 0.0) & (chisq > 5.0))
+            if (badcombination.size > 0):
+                sigma_g[badcombination] = np.inf
+        
+        bcounts=2. * np.pi * r * (sigma_g ) # / c**2.) #WHAT IS C?
 
         #return bcounts
