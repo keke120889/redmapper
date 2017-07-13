@@ -229,7 +229,7 @@ class Cluster(Entry):
         #refmag_total_dered = 1.0 #WHAT IS refmag_total_dered? 1 for now
         #bcounts_raw=calclambda_chisq_bcounts(self.z,r,chisqs,refmag_total_dered,bkg)
         #pcol = ucounts * lam/(ucounts * lam + bcounts_raw)
-        #bad = where((r > rlam) or (refmag_total_dered > maxmag) or (refmag_total_dered > confstr.limmag) or (np.isfinite(pcol) == False))
+        #bad = where((r > rlam) | (refmag_total_dered > maxmag) | (refmag_total_dered > confstr.limmag) | (np.isfinite(pcol) == False))
         #if (bad.size > 0):
         #    pcol[bad] = 0.0
             

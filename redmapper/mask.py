@@ -137,6 +137,7 @@ class HPMask(Mask):
         
     def calc_maskcorr(self, mstar, maxmag, limmag, confstr):
         """
+        Obtain mask correction c parameters.
         
         parameters
         ----------
@@ -157,32 +158,29 @@ class HPMask(Mask):
         self.maskgals.refmag = mag_in
         
         if limmag > 0.0: #should this be self.maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
+        
             #ignore reuse_errormodel
             
-            #where do we get these from?
-            mag = self.maskgals.refmag_obs
-            mag_err = self.maskgals.refmag_obs_err
-            
-            mag, mag_err = self.apply_errormodels(self.maskgals.exptime, self.maskgals.limmag, mag_in, mag, mag_err, confstr, 
+            mag, mag_err = self.apply_errormodels(self.maskgals.exptime, self.maskgals.limmag, mag_in, confstr, 
                 zp=self.maskgals.zp[0], nsig=self.maskgals.nsig[0], b = confstr.b)
                 #changes mag, mag_err in IDL - make it return them here?!
-                
+            
             self.maskgals.refmag_obs = mag
             self.maskgals.refmag_obs_err = mag_err
         else:
             mag = mag_in
-            mag_err = 0.0*mag_in     #leads to divide by zero if called!
-            
-        if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and max(self.maskgals.m50) == 0):
+            mag_err = 0*mag_in     #leads to divide by zero if called!
+        
+        if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and np.amax(self.maskgals.m50) == 0):
             tmode = 0
             theta_i = calc_theta_i(mag, mag_err, maxmag, limmag)
-        elif (self.maskgals.w[0] == 0.0):
+        elif (self.maskgals.w[0] == 0):
             tmode = 1
             theta_i = calc_theta_i(mag, mag_err, maxmag, self.maskgals.m50)
         else:
             tmode = 2
             raise Exception('Unsupported mode!')
-
+        
         p_det = theta_i*self.maskgals.mark
         
         c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals[0].nin
@@ -191,7 +189,7 @@ class HPMask(Mask):
         
         return cpars
         
-    def apply_errormodels(self, exptime, limmag, mag_in, mag, mag_err, confstr, zp=np.array([]), nsig=np.array([]), 
+    def apply_errormodels(self, exptime, limmag, mag_in, confstr, zp=np.array([]), nsig=np.array([]), 
         err_ratio=np.array([]), lnscat=np.array([]), fluxmode=False, nonoise=False, inlup=False, b='b', errtflux='errtflux'):
         """
         
@@ -228,20 +226,19 @@ class HPMask(Mask):
         if err_ratio.size == 0:            #can't find err_ratio
             err_ratio = 1.0            
         
-        #ignore extinction bits
-        ext_factor = 1.0    #???
+        #ignore extinction bits: ext_factor = 1.0
         
         f1lim = 10.**((limmag - zp)/(-2.5))
-        fsky1 = (((f1lim**2) * exptime)/(nsig**2) - f1lim) > 0.001
+        fsky1 = (((f1lim**2.) * exptime)/(nsig**2.) - f1lim) > 0.001
         
-        if inlup:
+        if inlup:   #ignore inlup ?
             bnmgy = b*1e9       #1d9 - number of decimal points or 1e9????
             
-            tflux = ext_factor*exptimes*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
+            tflux = exptimes*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
          #---> needed??
+        else:
+            tflux = exptime*10.**((mag_in - zp)/(-2.5))
         
-        tflux = ext_factor*exptime*10.**((mag_in - zp)/(-2.5))
-        #ignore inlup
         
         noise = err_ratio*np.sqrt(fsky1*exptime + tflux)
         
@@ -253,11 +250,9 @@ class HPMask(Mask):
         #can't find lnscat
         if lnscat.size > 0:
             # perturb the error *now* -- this is our uncertainty on the error
-            noise = np.exp(np.log(noise) + lnscat*randomn(seed,n_elements(mag_in)))
-        
+            noise = np.exp(np.log(noise) + lnscat*random.standard_normal(mag_in.size))
         
         #can't find fluxmode
-        
         if fluxmode:
             mag = flux/exptime
             mag_err = noise/exptime
@@ -337,7 +332,7 @@ class HPMask(Mask):
              
         bcounts = self.calc_bcounts(z, r, chisq , refmag_for_bcounts, bkg, cosmo)
         
-        out, = np.where(np.logical_or((refmag > limmag), (mark == 0)) == True)
+        out, = np.where((refmag > limmag) | (mark == 0))
         
         if (out.size == 0 or cval < 0.01):
             lambda_err = 0.0
@@ -379,10 +374,10 @@ class HPMask(Mask):
             (bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize-bkg.refmagbins[0]))
         
         #check for overruns
-        badchisq, = np.where(np.logical_or((chisqindex < 0), (chisqindex >= nchisqbins)) == True)
+        badchisq, = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
         if (badchisq.size > 0): # $ important?
           chisqindex[badchisq] = 0
-        badrefmag, = np.where(np.logical_or((refmagindex < 0), (refmagindex >= nrefmagbins)) == True)
+        badrefmag, = np.where((refmagindex < 0) | (refmagindex >= nrefmagbins))
         if (badrefmag.size > 0): # $ important?
           refmagindex[badrefmag] = 0
         
