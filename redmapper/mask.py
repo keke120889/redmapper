@@ -162,7 +162,7 @@ class HPMask(Mask):
             #ignore reuse_errormodel
             
             mag, mag_err = self.apply_errormodels(self.maskgals.exptime, self.maskgals.limmag, mag_in, confstr, 
-                zp=self.maskgals.zp[0], nsig=self.maskgals.nsig[0], b = confstr.b)
+                confstr.b, zp=self.maskgals.zp[0], nsig=self.maskgals.nsig[0])
                 #changes mag, mag_err in IDL - make it return them here?!
             
             self.maskgals.refmag_obs = mag
@@ -189,8 +189,8 @@ class HPMask(Mask):
         
         return cpars
         
-    def apply_errormodels(self, exptime, limmag, mag_in, confstr, zp=22.5, nsig=10.0, 
-        err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False, b='b', errtflux='errtflux'):
+    def apply_errormodels(self, exptime, limmag, mag_in, confstr, b, zp=22.5, nsig=10.0, 
+        err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False, errtflux='errtflux'):
         """
         
         parameters
@@ -227,11 +227,10 @@ class HPMask(Mask):
         if inlup:   #ignore inlup ?
             bnmgy = b*1e9       #1d9 - number of decimal points or 1e9????
             
-            tflux = exptimes*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
+            tflux = exptime*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
          #---> needed??
         else:
             tflux = exptime*10.**((mag_in - zp)/(-2.5))
-        
         
         noise = err_ratio*np.sqrt(fsky1*exptime + tflux)
         
@@ -240,7 +239,6 @@ class HPMask(Mask):
         else:
             flux = tflux + noise*random.standard_normal(mag_in.size)
         
-        #can't find fluxmode
         if fluxmode:
             mag = flux/exptime
             mag_err = noise/exptime
@@ -263,9 +261,8 @@ class HPMask(Mask):
                 mag_err = (2.5/np.log(10.0))*(noise/flux)
                 
                 bad, = np.where(np.isfinite(mag) == False)
-                if bad.size > 0:
-                    mag[bad] = 99.0
-                    mag_err[bad] = 99.0
+                mag[bad] = 99.0
+                mag_err[bad] = 99.0
         return mag, mag_err
         
     def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr ,maxmag ,dof, limmag, 
@@ -316,8 +313,7 @@ class HPMask(Mask):
 
         faint, = np.where(refmag >= limmag)
         refmag_for_bcounts = np.copy(refmag)
-        if faint.size > 0:
-             refmag_for_bcounts[faint] = limmag-0.01
+        refmag_for_bcounts[faint] = limmag-0.01
 
         bcounts = cluster._calc_bkg_density(bkg, r, chisq , refmag_for_bcounts, cosmo)
         
@@ -373,7 +369,7 @@ class HPMask(Mask):
     #    
     #    ind = np.clip(np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0])), 0, (bkg.zbins.size-1))
     #
-    #    sigma_g = bkg.sigma_g_lookup(np.full(chisqindex.size, ind), chisqindex, refmagindex)
+    #    sigma_g = bkg.sigma_g[refmagindex, chisqindex, np.full_like(chisqindex, ind)]
     #    #no matter what, these should be infinities
     #    if (badchisq.size >  0):
     #        sigma_g[badchisq]= np.inf

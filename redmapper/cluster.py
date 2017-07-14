@@ -177,9 +177,11 @@ class Cluster(Entry):
         nfw = self._calc_radial_profile()
         phi = self._calc_luminosity(zredstr, maxmag) #phi is lumwt in the IDL code
         ucounts = (2*np.pi*self.neighbors.r) * nfw * phi * rho
-        bcounts = self._calc_bkg_density(bkg, self.neighbors.r, self.neighbors.chisq, self.neighbors.refmag, cosmo)
+        bcounts = self._calc_bkg_density(bkg, self.neighbors.r, self.neighbors.chisq, 
+            self.neighbors.refmag, cosmo)
         
-        theta_i = calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, zredstr.limmag)
+        theta_i = calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, 
+            maxmag, zredstr.limmag)
         #refmag_total_dered = self.neighbors.refmag ?
         cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
         #should this be handed a different limmag?
@@ -189,7 +191,8 @@ class Cluster(Entry):
         except AttributeError:
             w = np.ones_like(ucounts) * theta_i
         
-        richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w, cpars = cpars, rsig = confstr.rsig)
+        richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w, 
+            cpars = cpars, rsig = confstr.rsig)
         #DELETE ONCE VALUES ARE FIXED
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
 
@@ -205,8 +208,9 @@ class Cluster(Entry):
         dof = 1.0 #WHAT IS DOF?
         dldr_gamma = 0.6 #WHAT IS dldr_gamma? - from redmapper_read_config - only connection i could find
         if not noerr:
-            lam_cerr = mask.calc_maskcorr_lambdaerr(self, zredstr.mstar(self.z), zredstr ,maxmag ,dof, zredstr.limmag, 
-                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, dldr_gamma, cosmo)
+            lam_cerr = mask.calc_maskcorr_lambdaerr(self, zredstr.mstar(self.z), 
+                zredstr ,maxmag ,zredstr.ncol, zredstr.limmag, lam, rlam ,self.z ,bkg, 
+                wt, cval, r0, beta, dldr_gamma, cosmo)
         else:
             lam_cerr = 0.0
         
@@ -215,20 +219,21 @@ class Cluster(Entry):
         lam_unscaled = lam/scaleval
         if (lam < 0.0):
             elambda = -1.0
-        else: # $ important
+            raise ValueError('Richness < 0!')
+        else: # $ important ?
            elambda = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
         
         
         # calculate pcol -- color only.  Don't need to worry about nfw norm!
-        #ucounts = cwt*lumwt
-        bcounts = (bcounts/(2.*np.pi*self.neighbors.r))*np.pi*rlam**2.
+        ucounts = rho*phi
+        
+        #bcounts_ = (bcounts/(2.*np.pi*self.neighbors.r))*np.pi*rlam**2.
         #IDL :divide and multiply by pi ??
         
-        #bcounts_raw = mask.calc_bcounts(self.z, self.neighbors.r, self.neighbors.chisq, self.neighbors.refmag, bkg, cosmo)
-        #pcol = ucounts * lam/(ucounts * lam + bcounts_raw)
-        #bad = where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) | (self.neighbors.refmag > confstr.limmag) | (np.isfinite(pcol) == False))
-        #if (bad.size > 0):
-        #    pcol[bad] = 0.0
+        pcol = ucounts * lam/(ucounts * lam + bcounts)
+        bad = np.where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) | 
+            (self.neighbors.refmag > zredstr.limmag)| (np.isfinite(pcol) == False))
+        pcol[bad] = 0.0
             
         self.neighbors.theta_i = theta_i
         self.neighbors.w = w
