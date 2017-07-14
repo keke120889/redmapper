@@ -203,12 +203,11 @@ class Cluster(Entry):
         bar_p = np.sum(wt**2.0)/np.sum(wt)                  #ASSUME wtvals = wt
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
-        alpha = 1.0 #WHAT IS ALPHA?
         dof = 1.0 #WHAT IS DOF?
-        gamma = 1.0 #WHAT IS gamma?
+        dldr_gamma = 0.6 #WHAT IS gamma? - from redmapper_read_config - only connection i could find
         if not noerr:
-            lam_cerr = mask.calc_maskcorr_lambdaerr(zredstr.mstar(self.z), alpha ,maxmag ,dof, zredstr.limmag, 
-                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, gamma, cosmo)
+            lam_cerr = mask.calc_maskcorr_lambdaerr(zredstr.mstar(self.z), zredstr ,maxmag ,dof, zredstr.limmag, 
+                lam, rlam ,self.z ,bkg, wt, cval, r0, beta, dldr_gamma, cosmo)
         else:
             lam_cerr = 0.0
             

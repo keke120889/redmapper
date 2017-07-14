@@ -190,7 +190,7 @@ class HPMask(Mask):
         return cpars
         
     def apply_errormodels(self, exptime, limmag, mag_in, confstr, zp=np.array([]), nsig=np.array([]), 
-        err_ratio=np.array([]), lnscat=np.array([]), fluxmode=False, nonoise=False, inlup=False, b='b', errtflux='errtflux'):
+        err_ratio=np.array([]), fluxmode=False, nonoise=False, inlup=False, b='b', errtflux='errtflux'):
         """
         
         parameters
@@ -247,11 +247,6 @@ class HPMask(Mask):
         else:
             flux = tflux + noise*random.standard_normal(mag_in.size)
         
-        #can't find lnscat
-        if lnscat.size > 0:
-            # perturb the error *now* -- this is our uncertainty on the error
-            noise = np.exp(np.log(noise) + lnscat*random.standard_normal(mag_in.size))
-        
         #can't find fluxmode
         if fluxmode:
             mag = flux/exptime
@@ -280,14 +275,14 @@ class HPMask(Mask):
                     mag_err[bad] = 99.0
         return mag, mag_err
         
-    def calc_maskcorr_lambdaerr(self, mstar, alpha ,maxmag ,dof, limmag, 
+    def calc_maskcorr_lambdaerr(self, mstar, zredstr ,maxmag ,dof, limmag, 
                 lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
         """
         
         parameters
         ----------
         mstar    :
-        alpha    :
+        zredstr  :
         maxmag   :
         dof      :
         limmag   :
@@ -309,6 +304,7 @@ class HPMask(Mask):
         lambda_err:
         
         """
+        
         use, = np.where(self.maskgals.r < rlam)
         
         mark    = self.maskgals.mark[use]
@@ -342,7 +338,6 @@ class HPMask(Mask):
             sigc = np.sqrt(varc0 - varc0**2.)
             k = lam**2./total(lambda_p**2.)
             lambda_err = k*sigc/(1.-beta*gamma)
-        
         return lambda_err
 
     def calc_bcounts(self, z, r, chisq, refmag, bkg, cosmo, allow0='allow0'):
