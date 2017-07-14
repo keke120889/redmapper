@@ -189,8 +189,8 @@ class HPMask(Mask):
         
         return cpars
         
-    def apply_errormodels(self, exptime, limmag, mag_in, confstr, zp=np.array([]), nsig=np.array([]), 
-        err_ratio=np.array([]), fluxmode=False, nonoise=False, inlup=False, b='b', errtflux='errtflux'):
+    def apply_errormodels(self, exptime, limmag, mag_in, confstr, zp=22.5, nsig=10.0, 
+        err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False, b='b', errtflux='errtflux'):
         """
         
         parameters
@@ -217,14 +217,7 @@ class HPMask(Mask):
         mag       :
         mag_err   :
         
-        """
-        
-        if zp.size == 0:
-            zp=22.5
-        if nsig.size == 0:
-            nsig=10.0
-        if err_ratio.size == 0:            #can't find err_ratio
-            err_ratio = 1.0            
+        """           
         
         #ignore extinction bits: ext_factor = 1.0
         
@@ -275,7 +268,7 @@ class HPMask(Mask):
                     mag_err[bad] = 99.0
         return mag, mag_err
         
-    def calc_maskcorr_lambdaerr(self, mstar, zredstr ,maxmag ,dof, limmag, 
+    def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr ,maxmag ,dof, limmag, 
                 lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
         """
         
@@ -325,8 +318,8 @@ class HPMask(Mask):
         refmag_for_bcounts = np.copy(refmag)
         if faint.size > 0:
              refmag_for_bcounts[faint] = limmag-0.01
-             
-        bcounts = self.calc_bcounts(z, r, chisq , refmag_for_bcounts, bkg, cosmo)
+
+        bcounts = cluster._calc_bkg_density(bkg, r, chisq , refmag_for_bcounts, cosmo)
         
         out, = np.where((refmag > limmag) | (mark == 0))
         
@@ -339,59 +332,61 @@ class HPMask(Mask):
             k = lam**2./total(lambda_p**2.)
             lambda_err = k*sigc/(1.-beta*gamma)
         return lambda_err
-
-    def calc_bcounts(self, z, r, chisq, refmag, bkg, cosmo, allow0='allow0'):
-        """
         
-        parameters
-        ----------         :
-        z                  :
-        r                  :
-        chisq              :
-        refmag_for_bcounts :
-        bkg                : Background object
-                             background lookup table
-        cosmo              :
-        neigbours.refmag   :
-        allow0             :
-
-        returns
-        -------
-        bcounts:
-        
-        """
-        H0 = cosmo._H0
-        nchisqbins  = bkg.chisqbins.size
-        chisqindex  = np.around((chisq-bkg.chisqbins[0])*nchisqbins/
-            (bkg.chisqbins[nchisqbins-1]+bkg.chisqbinsize-bkg.chisqbins[0])) 
-        nrefmagbins = bkg.refmagbins.size
-        refmagindex = np.around((refmag-bkg.refmagbins[0])*nrefmagbins/
-            (bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize-bkg.refmagbins[0]))
-        
-        #check for overruns
-        badchisq, = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
-        if (badchisq.size > 0): # $ important?
-          chisqindex[badchisq] = 0
-        badrefmag, = np.where((refmagindex < 0) | (refmagindex >= nrefmagbins))
-        if (badrefmag.size > 0): # $ important?
-          refmagindex[badrefmag] = 0
-        
-        ind = np.clip(np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0])), 0, (bkg.zbins.size-1))
+    #UNNECESSARY COPY OF calclambda_chisq_bcounts - exists already in cluster.py
     
-        sigma_g = bkg.sigma_g_lookup(np.full(chisqindex.size, ind), chisqindex, refmagindex)
-        
-        #no matter what, these should be infinities
-        if (badchisq.size >  0):
-            sigma_g[badchisq]= np.inf
-        if (badrefmag.size > 0):
-            sigma_g[badrefmag] = np.inf
-        
-        
-        if not allow0:
-            badcombination = np.where((sigma_g == 0.0) & (chisq > 5.0))
-            if (badcombination.size > 0):
-                sigma_g[badcombination] = np.inf
-        
-        bcounts=2. * np.pi * r * (sigma_g ) # / c**2.) #WHAT IS C?
-
-        #return bcounts
+    #def calc_bcounts(self, z, r, chisq, refmag, bkg, cosmo, allow0='allow0'):
+    #    """
+    #    
+    #    parameters
+    #    ----------         :
+    #    z                  :
+    #    r                  :
+    #    chisq              :
+    #    refmag_for_bcounts :
+    #    bkg                : Background object
+    #                         background lookup table
+    #    cosmo              :
+    #    neigbours.refmag   :
+    #    allow0             :
+    #
+    #    returns
+    #    -------
+    #    bcounts:
+    #    
+    #    """
+    #    H0 = cosmo._H0
+    #    nchisqbins  = bkg.chisqbins.size
+    #    chisqindex  = np.around((chisq-bkg.chisqbins[0])*nchisqbins/
+    #        (bkg.chisqbins[nchisqbins-1]+bkg.chisqbinsize-bkg.chisqbins[0])) 
+    #    nrefmagbins = bkg.refmagbins.size
+    #    refmagindex = np.around((refmag-bkg.refmagbins[0])*nrefmagbins/
+    #        (bkg.refmagbins[nrefmagbins-1]+bkg.refmagbinsize-bkg.refmagbins[0]))
+    #    
+    #    #check for overruns
+    #    badchisq, = np.where((chisqindex < 0) | (chisqindex >= nchisqbins))
+    #    if (badchisq.size > 0): # $ important?
+    #      chisqindex[badchisq] = 0
+    #    badrefmag, = np.where((refmagindex < 0) | (refmagindex >= nrefmagbins))
+    #    if (badrefmag.size > 0): # $ important?
+    #      refmagindex[badrefmag] = 0
+    #    
+    #    ind = np.clip(np.around((z-bkg.zbins[0])/(bkg.zbins[1]-bkg.zbins[0])), 0, (bkg.zbins.size-1))
+    #
+    #    sigma_g = bkg.sigma_g_lookup(np.full(chisqindex.size, ind), chisqindex, refmagindex)
+    #    #no matter what, these should be infinities
+    #    if (badchisq.size >  0):
+    #        sigma_g[badchisq]= np.inf
+    #    if (badrefmag.size > 0):
+    #        sigma_g[badrefmag] = np.inf
+    #        
+    #    mpc_scale = np.radians(1.) * cosmo.Dl(0, z) / (1 + z)**2
+    #    
+    #    if not allow0:
+    #        badcombination = np.where((sigma_g == 0.0) & (chisq > 5.0))
+    #        if (badcombination.size > 0):
+    #            sigma_g[badcombination] = np.inf
+    #    
+    #    bcounts = 2. * np.pi * r * (sigma_g / mpc_scale**2. ) # / c**2.) #WHAT IS C?
+    #    print bcounts
+    #    #return bcounts

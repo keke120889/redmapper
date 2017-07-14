@@ -120,7 +120,7 @@ class Cluster(Entry):
         phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag)))
         return phi_term_a * phi_term_b / normalization
 
-    def _calc_bkg_density(self, bkg, cosmo):
+    def _calc_bkg_density(self, bkg, r, chisq, refmag, cosmo):
         """
         Internal method to compute background filter
 
@@ -138,9 +138,8 @@ class Cluster(Entry):
             b(x) for the cluster
         """
         mpc_scale = np.radians(1.) * cosmo.Dl(0, self.z) / (1 + self.z)**2
-        sigma_g = bkg.sigma_g_lookup(self.z, self.neighbors.chisq, 
-                                                    self.neighbors.refmag)
-        return 2 * np.pi * self.neighbors.r * (sigma_g/mpc_scale**2)
+        sigma_g = bkg.sigma_g_lookup(self.z, chisq, refmag)
+        return 2 * np.pi * r * (sigma_g/mpc_scale**2)
 
     def calc_richness(self, zredstr, bkg, cosmo, confstr, mask, r0=1.0, beta=0.2, noerr = False):
         """
@@ -178,10 +177,10 @@ class Cluster(Entry):
         nfw = self._calc_radial_profile()
         phi = self._calc_luminosity(zredstr, maxmag) #phi is lumwt in the IDL code
         ucounts = (2*np.pi*self.neighbors.r) * nfw * phi * rho
-        bcounts = self._calc_bkg_density(bkg, cosmo)
+        bcounts = self._calc_bkg_density(bkg, self.neighbors.r, self.neighbors.chisq, self.neighbors.refmag, cosmo)
         
         theta_i = calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, zredstr.limmag)
-        
+        #refmag_total_dered = self.neighbors.refmag ?
         cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
         #should this be handed a different limmag?
         
@@ -204,31 +203,30 @@ class Cluster(Entry):
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
         dof = 1.0 #WHAT IS DOF?
-        dldr_gamma = 0.6 #WHAT IS gamma? - from redmapper_read_config - only connection i could find
+        dldr_gamma = 0.6 #WHAT IS dldr_gamma? - from redmapper_read_config - only connection i could find
         if not noerr:
-            lam_cerr = mask.calc_maskcorr_lambdaerr(zredstr.mstar(self.z), zredstr ,maxmag ,dof, zredstr.limmag, 
+            lam_cerr = mask.calc_maskcorr_lambdaerr(self, zredstr.mstar(self.z), zredstr ,maxmag ,dof, zredstr.limmag, 
                 lam, rlam ,self.z ,bkg, wt, cval, r0, beta, dldr_gamma, cosmo)
         else:
             lam_cerr = 0.0
-            
-        #scaleval = np.absolute(lam/np.sum(wt))
-        #
-        #lam_unscaled = lam/scaleval
-        #if (lam < 0.0):
-        #    elambda = -1.0
-        #else: # $ important
-        #   elambda = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
-        #
-        #
-        ## calculate pcol -- color only.  Don't need to worry about nfw norm!
+        
+        scaleval = np.absolute(lam/np.sum(wt))
+        
+        lam_unscaled = lam/scaleval
+        if (lam < 0.0):
+            elambda = -1.0
+        else: # $ important
+           elambda = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
+        
+        
+        # calculate pcol -- color only.  Don't need to worry about nfw norm!
         #ucounts = cwt*lumwt
-        #r = 1.0 #WHAT IS r? 1 for now
-        #bcounts = (bcounts/(2.*np.pi*r))*np.pi*rlam**2.
-        #
-        #refmag_total_dered = 1.0 #WHAT IS refmag_total_dered? 1 for now
-        #bcounts_raw=calclambda_chisq_bcounts(self.z,r,chisqs,refmag_total_dered,bkg)
+        bcounts = (bcounts/(2.*np.pi*self.neighbors.r))*np.pi*rlam**2.
+        #IDL :divide and multiply by pi ??
+        
+        #bcounts_raw = mask.calc_bcounts(self.z, self.neighbors.r, self.neighbors.chisq, self.neighbors.refmag, bkg, cosmo)
         #pcol = ucounts * lam/(ucounts * lam + bcounts_raw)
-        #bad = where((r > rlam) | (refmag_total_dered > maxmag) | (refmag_total_dered > confstr.limmag) | (np.isfinite(pcol) == False))
+        #bad = where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) | (self.neighbors.refmag > confstr.limmag) | (np.isfinite(pcol) == False))
         #if (bad.size > 0):
         #    pcol[bad] = 0.0
             

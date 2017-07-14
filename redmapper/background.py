@@ -46,6 +46,7 @@ class Background(object):
         #"""
         # Get the raw object background from the fits file
         obkg = Entry.from_fits_file(filename)
+        
         # Set the bin size in redshift, chisq and refmag spaces
         self.zbinsize, self.chisqbinsize, self.refmagbinsize = 0.001, 0.5, 0.01
 
@@ -145,7 +146,8 @@ class Background(object):
         badchisq  = np.where((chisq < self.chisqbins[0])| (chisq > self.chisqbins[-1]))
         badrefmag = np.where((refmag <= self.refmagbins[0]) 
                              | (refmag >= self.refmagbins[-1]))
-        chisqindex[badchisq] = refmagindex[badrefmag] = 0
+        chisqindex[badchisq] = 0
+        refmagindex[badrefmag] = 0
 
         zindex = np.full_like(chisqindex, ind)
         lookup_vals = self.sigma_g[refmagindex, chisqindex, zindex]
