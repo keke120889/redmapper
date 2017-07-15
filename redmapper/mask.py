@@ -156,12 +156,13 @@ class HPMask(Mask):
         
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
-        
+        print mag_in, self.maskgals.m, mstar, limmag, maxmag
         if limmag > 0.0: #should this be self.maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
         
             #ignore reuse_errormodel
             
-            mag, mag_err = self.apply_errormodels(self.maskgals.exptime, self.maskgals.limmag, mag_in, confstr, 
+            mag, mag_err = self.apply_errormodels(self.maskgals.exptime, 
+                self.maskgals.limmag, mag_in, confstr, 
                 confstr.b, zp=self.maskgals.zp[0], nsig=self.maskgals.nsig[0])
                 #changes mag, mag_err in IDL - make it return them here?!
             
@@ -171,7 +172,8 @@ class HPMask(Mask):
             mag = mag_in
             mag_err = 0*mag_in     #leads to divide by zero if called!
         
-        if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and np.amax(self.maskgals.m50) == 0):
+        if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
+            np.amax(self.maskgals.m50) == 0):
             tmode = 0
             theta_i = calc_theta_i(mag, mag_err, maxmag, limmag)
         elif (self.maskgals.w[0] == 0):
@@ -189,8 +191,9 @@ class HPMask(Mask):
         
         return cpars
         
-    def apply_errormodels(self, exptime, limmag, mag_in, confstr, b, zp=22.5, nsig=10.0, 
-        err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False, errtflux='errtflux'):
+    def apply_errormodels(self, exptime, limmag, mag_in, confstr, b, zp=22.5, 
+        nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False, 
+        errtflux='errtflux'):
         """
         
         parameters
@@ -254,7 +257,8 @@ class HPMask(Mask):
                 
                 mag = 2.5*np.log10(1.0/b[0]) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
                 #TAKE b[0] unntil problem fixed
-                mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
+                mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)
+                    *np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
                 #PROBLEMS WITH LENGTHS OF ARRAYS HERE: b.size = 5; flux_new.size=6000
             else:
                 mag = zp-2.5*np.log10(flux/exptime)
@@ -265,8 +269,8 @@ class HPMask(Mask):
                 mag_err[bad] = 99.0
         return mag, mag_err
         
-    def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr ,maxmag ,dof, limmag, 
-                lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
+    def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr ,maxmag ,dof, 
+        limmag, lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
         """
         
         parameters
@@ -306,20 +310,21 @@ class HPMask(Mask):
         r       = self.maskgals.r[use]
         
         logrc   = np.log(rlam)
-        norm    = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. -0.0719021*logrc**3.- 0.0158241*logrc**4.-0.000854985*logrc**5.)
-        nfw     = norm*self.maskgals.nfw[use]
-
+        norm    = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. - 
+            0.0719021*logrc**3. - 0.0158241*logrc**4.-0.000854985*logrc**5.)
+        nfw     = norm*nfw
+        
         ucounts = cwt*nfw*lumwt
 
         faint, = np.where(refmag >= limmag)
         refmag_for_bcounts = np.copy(refmag)
         refmag_for_bcounts[faint] = limmag-0.01
-
+        
         bcounts = cluster._calc_bkg_density(bkg, r, chisq , refmag_for_bcounts, cosmo)
         
         out, = np.where((refmag > limmag) | (mark == 0))
         
-        if (out.size == 0 or cval < 0.01):
+        if out.size == 0 or cval < 0.01:
             lambda_err = 0.0
         else:
             p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
@@ -327,6 +332,7 @@ class HPMask(Mask):
             sigc = np.sqrt(varc0 - varc0**2.)
             k = lam**2./total(lambda_p**2.)
             lambda_err = k*sigc/(1.-beta*gamma)
+        
         return lambda_err
         
     #UNNECESSARY COPY OF calclambda_chisq_bcounts - exists already in cluster.py

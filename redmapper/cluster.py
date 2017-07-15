@@ -141,7 +141,8 @@ class Cluster(Entry):
         sigma_g = bkg.sigma_g_lookup(self.z, chisq, refmag)
         return 2 * np.pi * r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, zredstr, bkg, cosmo, confstr, mask, r0=1.0, beta=0.2, noerr = False):
+    def calc_richness(self, zredstr, bkg, cosmo, confstr, mask, r0=1.0, beta=0.2, 
+        noerr = False):
         """
         compute richness for a cluster
 
@@ -193,9 +194,10 @@ class Cluster(Entry):
         
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w, 
             cpars = cpars, rsig = confstr.rsig)
+        lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
+        
         #DELETE ONCE VALUES ARE FIXED
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
-
         #Call the solving routine
         #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
         lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
@@ -205,7 +207,6 @@ class Cluster(Entry):
         bar_p = np.sum(wt**2.0)/np.sum(wt)                  #ASSUME wtvals = wt
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
-        dof = 1.0 #WHAT IS DOF?
         dldr_gamma = 0.6 #WHAT IS dldr_gamma? - from redmapper_read_config - only connection i could find
         if not noerr:
             lam_cerr = mask.calc_maskcorr_lambdaerr(self, zredstr.mstar(self.z), 
@@ -228,8 +229,7 @@ class Cluster(Entry):
         ucounts = rho*phi
         
         #bcounts_ = (bcounts/(2.*np.pi*self.neighbors.r))*np.pi*rlam**2.
-        #IDL :divide and multiply by pi ??
-        
+        # --> needed?
         pcol = ucounts * lam/(ucounts * lam + bcounts)
         bad = np.where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) | 
             (self.neighbors.refmag > zredstr.limmag)| (np.isfinite(pcol) == False))
