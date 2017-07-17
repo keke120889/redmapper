@@ -156,7 +156,7 @@ class HPMask(Mask):
         
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
-        self.maskgals.limmag[0] = 5
+        
         if self.maskgals.limmag[0] > 0.0:
         
             #ignore reuse_errormodel
@@ -173,16 +173,13 @@ class HPMask(Mask):
             mag_err = 0*mag_in
             raise ValueError('Survey limiting magnitude <= 0!')
             #Raise error here ase this would lead to divide by zero if called.
-        print mag, mag_err
+        
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
             np.amax(self.maskgals.m50) == 0):
-            tmode = 0
             theta_i = calc_theta_i(mag, mag_err, maxmag, limmag)
         elif (self.maskgals.w[0] == 0):
-            tmode = 1
             theta_i = calc_theta_i(mag, mag_err, maxmag, self.maskgals.m50)
         else:
-            tmode = 2
             raise Exception('Unsupported mode!')
         
         p_det = theta_i*self.maskgals.mark
@@ -221,9 +218,10 @@ class HPMask(Mask):
         mag       :
         mag_err   :
         
-        """           
+        """
         f1lim = 10.**((limmag - zp)/(-2.5))
-        fsky1 = (((f1lim**2.) * exptime)/(nsig**2.) - f1lim) > 0.001
+        fsky1 = (((f1lim**2.) * exptime)/(nsig**2.) - f1lim)
+        fsky1 = np.clip(fsky1, None, 0.001)
         
         if inlup:
             bnmgy = b*1e9
@@ -237,7 +235,7 @@ class HPMask(Mask):
             flux = tflux
         else:
             flux = tflux + noise*random.standard_normal(mag_in.size)
-        
+
         if fluxmode:
             mag = flux/exptime
             mag_err = noise/exptime

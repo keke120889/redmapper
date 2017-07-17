@@ -25,11 +25,14 @@ class DepthMap(object):
         # convert into catalog for convenience...
         depthinfo = Catalog(depthinfo)
         
-        nlim = depthinfo.hpix.size
-        nside = hdr['NSIDE']
-        nest = hdr['NEST']
-        self.nsig = hdr['NSIG']
-        self.zp = hdr['ZP']
+        nlim        = depthinfo.hpix.size
+        nside       = hdr['NSIDE']
+        nest        = hdr['NEST']
+        self.nsig   = hdr['NSIG']
+        self.zp     = hdr['ZP']
+        self.nband  = hdr['NBAND']
+        self.w      = hdr['W']
+        self.eff    = hdr['EFF']
         
         if nest != 1:
             hpix_ring = depthinfo.hpix
@@ -102,7 +105,7 @@ class DepthMap(object):
         
         maskgals.eff = 0 #depthstr.eff
         maskgals.limmag = unseen
-        maskgals.zp[0] = 0 #self.zp
+        maskgals.zp[0] = self.zp
         maskgals.nsig[0] = self.nsig
         
         theta, phi = astro_to_sphere(ras, decs)

@@ -125,5 +125,6 @@ def calc_theta_i(mag, mag_err, maxmag, limmag):
     if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
     hi = mag > limmag
     N_hi = np.count_nonzero(hi==True)
-    if N_hi > 0: theta_i[hi] = 0.0
+    if N_hi > 0:
+        theta_i[hi] = 0.0
     return theta_i
