@@ -183,9 +183,9 @@ class Cluster(Entry):
         
         theta_i = calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, 
             maxmag, zredstr.limmag)
-        #refmag_total_dered = self.neighbors.refmag ?
+
         cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
-        #should this be handed a different limmag?
+        
         
         try:
             w = theta_i * self.neighbors.wvals
@@ -194,17 +194,18 @@ class Cluster(Entry):
         
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w, 
             cpars = cpars, rsig = confstr.rsig)
-        lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
-        
-        #DELETE ONCE VALUES ARE FIXED
-        richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
         #Call the solving routine
         #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
         lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
-        #---> does this replace remaining IDL code?
+        
+        #DELETE ONCE VALUES ARE FIXED
+        #richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
+        #Call the solving routine
+        #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
+        #lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
         
         #error
-        bar_p = np.sum(wt**2.0)/np.sum(wt)                  #ASSUME wtvals = wt
+        bar_p = np.sum(wt**2.0)/np.sum(wt)
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
         if not noerr:
