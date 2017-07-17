@@ -259,8 +259,8 @@ class HPMask(Mask):
                 mag_err[bad] = 99.0
         return mag, mag_err
         
-    def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr ,maxmag ,dof, 
-        limmag, lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
+    def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr, maxmag,
+         lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
         """
         
         parameters
@@ -289,6 +289,8 @@ class HPMask(Mask):
         lambda_err:
         
         """
+        dof = zredstr.ncol
+        limmag = zredstr.limmag
         
         use, = np.where(self.maskgals.r < rlam)
         

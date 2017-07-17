@@ -200,8 +200,6 @@ class Cluster(Entry):
         
         #DELETE ONCE VALUES ARE FIXED
         #richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
-        #Call the solving routine
-        #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
         #lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
         
         #error
@@ -210,14 +208,15 @@ class Cluster(Entry):
         
         if not noerr:
             lam_cerr = mask.calc_maskcorr_lambdaerr(self, zredstr.mstar(self.z), 
-                zredstr ,maxmag ,zredstr.ncol, zredstr.limmag, lam, rlam ,self.z ,bkg, 
-                wt, cval, r0, beta, confstr.dldr_gamma, cosmo)
+                zredstr ,maxmag, lam, rlam ,self.z ,bkg, wt, cval, r0, beta, 
+                confstr.dldr_gamma, cosmo)
         else:
             lam_cerr = 0.0
         
         scaleval = np.absolute(lam/np.sum(wt))
         
         lam_unscaled = lam/scaleval
+        
         if (lam < 0.0):
             elam = -1.0
             raise ValueError('Richness < 0!')
@@ -233,7 +232,6 @@ class Cluster(Entry):
         bad = np.where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) | 
             (self.neighbors.refmag > zredstr.limmag)| (np.isfinite(pcol) == False))
         pcol[bad] = 0.0
-        
         
         self.neighbors.theta_i  = theta_i
         self.neighbors.w        = w
