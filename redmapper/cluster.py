@@ -219,11 +219,10 @@ class Cluster(Entry):
         
         lam_unscaled = lam/scaleval
         if (lam < 0.0):
-            elambda = -1.0
+            elam = -1.0
             raise ValueError('Richness < 0!')
         else: # $ important ?
-           elambda = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
-        
+           elam = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
         
         # calculate pcol -- color only.  Don't need to worry about nfw norm!
         ucounts = rho*phi
@@ -234,13 +233,16 @@ class Cluster(Entry):
         bad = np.where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) | 
             (self.neighbors.refmag > zredstr.limmag)| (np.isfinite(pcol) == False))
         pcol[bad] = 0.0
-            
-        self.neighbors.theta_i = theta_i
-        self.neighbors.w = w
-        self.neighbors.wt = wt
-        self.neighbors.theta_r = theta_r
-        self.richness = lam
-        self.rlambda = rlam
+        
+        
+        self.neighbors.theta_i  = theta_i
+        self.neighbors.w        = w
+        self.neighbors.wt       = wt
+        self.neighbors.theta_r  = theta_r
+        self.neighbors.p        = pcol      #????
+        self.richness           = lam
+        self.rlambda            = rlam
+        self.elambda            = elam
         #Record lambda, record p_obj onto the neighbors, 
         return lam
 

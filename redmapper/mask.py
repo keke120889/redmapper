@@ -144,7 +144,7 @@ class HPMask(Mask):
         maskgals :
         mstar    :
         maxmag   :
-        limmag   :
+        limmag   : Limiting Magnitude
         confstr  : Configuration object
                     containing configuration info
 
@@ -156,22 +156,24 @@ class HPMask(Mask):
         
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
-        print mag_in, self.maskgals.m, mstar, limmag, maxmag
+        
         if limmag > 0.0: #should this be self.maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
         
             #ignore reuse_errormodel
             
             mag, mag_err = self.apply_errormodels(self.maskgals.exptime, 
-                self.maskgals.limmag, mag_in, confstr, 
-                confstr.b, zp=self.maskgals.zp[0], nsig=self.maskgals.nsig[0])
+                self.maskgals.limmag, mag_in, confstr, confstr.b, 
+                zp = self.maskgals.zp[0], nsig=self.maskgals.nsig[0])
                 #changes mag, mag_err in IDL - make it return them here?!
             
             self.maskgals.refmag_obs = mag
             self.maskgals.refmag_obs_err = mag_err
         else:
             mag = mag_in
-            mag_err = 0*mag_in     #leads to divide by zero if called!
-        
+            mag_err = 0*mag_in
+            raise ValueError('Survey limiting magnitude <= 0!')
+            #Raise error here ase this would lead to divide by zero if called.
+            
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
             np.amax(self.maskgals.m50) == 0):
             tmode = 0
@@ -185,9 +187,9 @@ class HPMask(Mask):
         
         p_det = theta_i*self.maskgals.mark
         
-        c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals[0].nin
+        c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals.nin[0]
         
-        cpars = (np.polyfit(self.maskgals[0].radbins, c, 3)).flatten()
+        cpars = (np.polyfit(self.maskgals.radbins[0], c, 3)).flatten()
         
         return cpars
         
@@ -199,7 +201,7 @@ class HPMask(Mask):
         parameters
         ----------
         exptime   :
-        limmag    :
+        limmag    : Limiting Magnitude
         mag_in    :
         mag       :
         mag_err   :
@@ -279,7 +281,7 @@ class HPMask(Mask):
         zredstr  :
         maxmag   :
         dof      :
-        limmag   :
+        limmag   : Limiting Magnitude
         lam      :
         rlam     :
         z        :
