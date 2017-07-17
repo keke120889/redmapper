@@ -11,6 +11,7 @@ from redmapper.galaxy import GalaxyCatalog
 from redmapper.background import Background
 from redmapper.redsequence import RedSequenceColorPar
 from redmapper.mask import HPMask
+from redmapper.depthmap import DepthMap
 
 class BackgroundStub(Background):
 
@@ -41,6 +42,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster.z = hdr['Z_LAMBDA']
         self.richness_compare = hdr['LAMBDA']
         self.cluster.z = self.cluster.neighbors.z[0]
+        self.cluster.ra = hdr['RA']
+        self.cluster.dec = hdr['DEC']
         # this should explicitly set our default cosmology
         cosmo = Cosmo()
 
@@ -48,7 +51,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #Used by the mask, background and richness calculation
         conf_filename = 'testconfig.yaml'
         confstr = Configuration(self.file_path + '/' + conf_filename)
-
+        
         #Set up the mask
         mask = HPMask(confstr) #Create the mask
         #TODO - Need to know the mpcscale
@@ -61,7 +64,12 @@ class ClusterFiltersTestCase(unittest.TestCase):
         print "mask.offset: ",mask.offset
         print "mask.npix: ",mask.npix
         print "len(mask.maskgals): ",len(mask.maskgals)
-
+        
+        #depthstr
+        depthstr = DepthMap(confstr)
+        mpc_scale = np.radians(1.) * cosmo.Dl(0, self.cluster.z) / (1 + self.cluster.z)**2
+        depthstr.calc_maskdepth(mask.maskgals, self.cluster.ra, self.cluster.dec, mpc_scale)
+        
         # nfw
         test_indices = np.array([46, 38,  1,  2, 11, 24, 25, 16])
         py_nfw = self.cluster._calc_radial_profile()[test_indices]
@@ -86,7 +94,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         test_indices = np.array([29, 16, 27, 38, 25])
         bkg_filename = 'test_bkg.fit'
         bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
-        py_bkg = self.cluster._calc_bkg_density(bkg, cosmo)[test_indices]
+        py_bkg = self.cluster._calc_bkg_density(bkg, self.cluster.neighbors.r, 
+            self.cluster.neighbors.chisq, self.cluster.neighbors.refmag, cosmo)[test_indices]
         idl_bkg = np.array([1.3140464045388294, 0.16422314236185420, 
                             0.56610846527410053, 0.79559933744885403, 
                             0.21078853798218194])
@@ -103,7 +112,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/cosmo.Dl(0,self.cluster.z))
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
         bkg_full = Background('%s/%s' % (self.file_path, bkg_filename))
-        richness = self.cluster.calc_richness(zredstr, bkg_full, cosmo, confstr)
+        richness = self.cluster.calc_richness(zredstr, bkg_full, cosmo, confstr, mask)
         # this will just test the ~24.  Closer requires adding the mask
         testing.assert_almost_equal(richness/10.,self.richness_compare/10.,decimal=1)
 

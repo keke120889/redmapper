@@ -156,14 +156,14 @@ class HPMask(Mask):
         
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
-        
-        if limmag > 0.0: #should this be self.maskgals.limmag[0] (IDL) or zredstr.limmag or confstr.limmag_ref??
+        self.maskgals.limmag[0] = 5
+        if self.maskgals.limmag[0] > 0.0:
         
             #ignore reuse_errormodel
             
             mag, mag_err = self.apply_errormodels(self.maskgals.exptime, 
-                self.maskgals.limmag, mag_in, confstr, confstr.b, 
-                zp = self.maskgals.zp[0], nsig=self.maskgals.nsig[0])
+                self.maskgals.limmag, mag_in, confstr, zp = self.maskgals.zp[0], 
+                nsig=self.maskgals.nsig[0])
                 #changes mag, mag_err in IDL - make it return them here?!
             
             self.maskgals.refmag_obs = mag
@@ -173,7 +173,7 @@ class HPMask(Mask):
             mag_err = 0*mag_in
             raise ValueError('Survey limiting magnitude <= 0!')
             #Raise error here ase this would lead to divide by zero if called.
-            
+        print mag, mag_err
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
             np.amax(self.maskgals.m50) == 0):
             tmode = 0
@@ -193,9 +193,8 @@ class HPMask(Mask):
         
         return cpars
         
-    def apply_errormodels(self, exptime, limmag, mag_in, confstr, b, zp=22.5, 
-        nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False, 
-        errtflux='errtflux'):
+    def apply_errormodels(self, exptime, limmag, mag_in, confstr, b = None, zp=22.5, 
+        nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False):
         """
         
         parameters
@@ -223,17 +222,12 @@ class HPMask(Mask):
         mag_err   :
         
         """           
-        
-        #ignore extinction bits: ext_factor = 1.0
-        
         f1lim = 10.**((limmag - zp)/(-2.5))
         fsky1 = (((f1lim**2.) * exptime)/(nsig**2.) - f1lim) > 0.001
         
-        if inlup:   #ignore inlup ?
-            bnmgy = b*1e9       #1d9 - number of decimal points or 1e9????
-            
+        if inlup:
+            bnmgy = b*1e9
             tflux = exptime*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
-         #---> needed??
         else:
             tflux = exptime*10.**((mag_in - zp)/(-2.5))
         
@@ -248,20 +242,16 @@ class HPMask(Mask):
             mag = flux/exptime
             mag_err = noise/exptime
         else:
-            #set error for now - delete completely after fixed
-            error = True
-            if b.size > 0 and not error:
-                bnmgy = b[0]*1e9        #1d9 - number of decimal points or 1e9????    
+            if b is not None:
+                bnmgy = b*1e9
+                   
                 #TAKE b[0] unntil problem fixed
                 
                 flux_new = flux/exptime
                 noise_new = noise/exptime
                 
-                mag = 2.5*np.log10(1.0/b[0]) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
-                #TAKE b[0] unntil problem fixed
-                mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)
-                    *np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
-                #PROBLEMS WITH LENGTHS OF ARRAYS HERE: b.size = 5; flux_new.size=6000
+                mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
+                mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
             else:
                 mag = zp-2.5*np.log10(flux/exptime)
                 mag_err = (2.5/np.log(10.0))*(noise/flux)
@@ -292,7 +282,8 @@ class HPMask(Mask):
         r0       :
         beta     :
         gamma    :
-        cosmo    :
+        cosmo    : Cosmology object
+                    From esutil
         refmag   :
 
         returns
@@ -350,7 +341,8 @@ class HPMask(Mask):
     #    refmag_for_bcounts :
     #    bkg                : Background object
     #                         background lookup table
-    #    cosmo              :
+    #    cosmo              : Cosmology object
+    #       From esutil
     #    neigbours.refmag   :
     #    allow0             :
     #

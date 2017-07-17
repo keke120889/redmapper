@@ -4,6 +4,7 @@ import numpy as np
 
 from utilities import astro_to_sphere
 from catalog import Catalog, Entry
+from healpy import pixelfunc
 
 
 class DepthMap(object):
@@ -23,8 +24,13 @@ class DepthMap(object):
         depthinfo, hdr = fitsio.read(self.depthfile, ext=1, header=True)
         # convert into catalog for convenience...
         depthinfo = Catalog(depthinfo)
-
-        nlim, nside, nest = depthinfo.hpix.size, hdr['NSIDE'], hdr['NEST']
+        
+        nlim = depthinfo.hpix.size
+        nside = hdr['NSIDE']
+        nest = hdr['NEST']
+        self.nsig = hdr['NSIG']
+        self.zp = hdr['ZP']
+        
         if nest != 1:
             hpix_ring = depthinfo.hpix
         else:
@@ -85,7 +91,7 @@ class DepthMap(object):
         
         """
         
-        unseen = -1.63750e30
+        unseen = hp.pixelfunc.UNSEEN
         
         # compute ra and dec based on maskgals
         ras = ra + (maskgals.x/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
@@ -93,23 +99,21 @@ class DepthMap(object):
         theta = (90.0 - decs)*np.pi/180.
         phi = ras*np.pi/180.
         
-        maskgals.w = depthstr.w                 #does this work?
-        maskgals.eff = depthstr.eff
+        
+        maskgals.eff = 0 #depthstr.eff
         maskgals.limmag = unseen
-        maskgals[0].zp = depthstr.zp
-        maskgals[0].nsig = depthstr.nsig
+        maskgals.zp[0] = 0 #self.zp
+        maskgals.nsig[0] = self.nsig
         
         theta, phi = astro_to_sphere(ras, decs)
-        ipring = hp.ang2pix(maskgals.nside, theta, phi)
-        ipring_offset = np.clip(ipring - maskgals.offset, 0, maskgals.npix-1)
+        ipring = hp.ang2pix(self.nside, theta, phi)
+        ipring_offset = np.clip(ipring - self.offset, 0, self.ntot-1)
         
-        maskgals.limmag = depthstr.limmag[ipring_offset]
-        maskgals.exptime = depthstr.exptime[ipring_offset]
-        maskgals.m50 = depthstr.m50[ipring_offset]
-        maskgals.ebv = depthstr.ebv[ipring_offset]
-        maskgals.limmag_dered = maskgals.limmag     #ignore extinction
+        maskgals.limmag     = self.limmag[ipring_offset]
+        maskgals.exptime    = self.exptime[ipring_offset]
+        maskgals.m50        = self.m50[ipring_offset]
         
-        bd = where(maskgals.limmag < 0.0)
+        bd, = np.where(maskgals.limmag < 0.0)
         ok = np.delete(np.copy(maskgals.limmag), bd)
         nok = ok.size
         

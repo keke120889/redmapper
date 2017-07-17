@@ -207,11 +207,10 @@ class Cluster(Entry):
         bar_p = np.sum(wt**2.0)/np.sum(wt)                  #ASSUME wtvals = wt
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
-        dldr_gamma = 0.6 #WHAT IS dldr_gamma? - from redmapper_read_config - only connection i could find
         if not noerr:
             lam_cerr = mask.calc_maskcorr_lambdaerr(self, zredstr.mstar(self.z), 
                 zredstr ,maxmag ,zredstr.ncol, zredstr.limmag, lam, rlam ,self.z ,bkg, 
-                wt, cval, r0, beta, dldr_gamma, cosmo)
+                wt, cval, r0, beta, confstr.dldr_gamma, cosmo)
         else:
             lam_cerr = 0.0
         
