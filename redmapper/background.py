@@ -48,7 +48,9 @@ class Background(object):
         obkg = Entry.from_fits_file(filename)
         
         # Set the bin size in redshift, chisq and refmag spaces
-        self.zbinsize, self.chisqbinsize, self.refmagbinsize = 0.001, 0.5, 0.01
+        self.zbinsize = 0.001
+        self.chisqbinsize = 0.5
+        self.refmagbinsize = 0.01
 
         # Create the refmag bins
         refmagbins = np.arange(obkg.refmagrange[0], obkg.refmagrange[1], self.refmagbinsize)

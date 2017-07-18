@@ -87,10 +87,10 @@ class DepthMap(object):
         
         parameters
         ----------
-        maskgals:
-        ra:
-        dec:
-        mpc_scale:
+        maskgals: Object holding mask galaxy parameters
+        ra: Right ascention of cluster
+        dec: Declination of cluster
+        mpc_scale: scaling to go from mpc to degrees (check units) at cluster redshift
         
         """
         

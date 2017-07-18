@@ -141,9 +141,9 @@ class HPMask(Mask):
         
         parameters
         ----------
-        maskgals :
+        maskgals : Object holding mask galaxy parameters
         mstar    :
-        maxmag   :
+        maxmag   : Maximum magnitude
         limmag   : Limiting Magnitude
         confstr  : Configuration object
                     containing configuration info
@@ -153,18 +153,13 @@ class HPMask(Mask):
         cpars:
         
         """
-        
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
         
         if self.maskgals.limmag[0] > 0.0:
-        
-            #ignore reuse_errormodel
-            
             mag, mag_err = self.apply_errormodels(self.maskgals.exptime, 
                 self.maskgals.limmag, mag_in, confstr, zp = self.maskgals.zp[0], 
                 nsig=self.maskgals.nsig[0])
-                #changes mag, mag_err in IDL - make it return them here?!
             
             self.maskgals.refmag_obs = mag
             self.maskgals.refmag_obs_err = mag_err
@@ -172,7 +167,7 @@ class HPMask(Mask):
             mag = mag_in
             mag_err = 0*mag_in
             raise ValueError('Survey limiting magnitude <= 0!')
-            #Raise error here ase this would lead to divide by zero if called.
+            #Raise error here as this would lead to divide by zero if called.
         
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
             np.amax(self.maskgals.m50) == 0):
@@ -193,18 +188,17 @@ class HPMask(Mask):
     def apply_errormodels(self, exptime, limmag, mag_in, confstr, b = None, zp=22.5, 
         nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False):
         """
+        Find magnitude and uncertainty.
         
         parameters
         ----------
         exptime   :
         limmag    : Limiting Magnitude
         mag_in    :
-        mag       :
-        mag_err   :
         confstr   : Configuration object
             containing configuration info
         nonoise   :
-        zp:       :
+        zp:       : Zero point magnitudes
         nsig:     :
         fluxmode  :
         lnscat    :
@@ -215,8 +209,8 @@ class HPMask(Mask):
 
         returns
         -------
-        mag       :
-        mag_err   :
+        mag 
+        mag_err 
         
         """
         f1lim = 10.**((limmag - zp)/(-2.5))
@@ -242,8 +236,6 @@ class HPMask(Mask):
         else:
             if b is not None:
                 bnmgy = b*1e9
-                   
-                #TAKE b[0] unntil problem fixed
                 
                 flux_new = flux/exptime
                 noise_new = noise/exptime
@@ -262,31 +254,33 @@ class HPMask(Mask):
     def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr, maxmag,
          lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
         """
+        Calculate richness error
         
         parameters
         ----------
         mstar    :
-        zredstr  :
-        maxmag   :
-        dof      :
+        zredstr  : RedSequenceColorPar object
+                    Red sequence parameters
+        maxmag   : Maximum magnitude
+        dof      : Degrees of freedom / number of collumns
         limmag   : Limiting Magnitude
-        lam      :
-        rlam     :
-        z        :
+        lam      : Richness
+        rlam     : 
+        z        : Redshift
         bkg      : Background object
                    background lookup table
-        wt       :
+        wt       : Weights
         cval     :
         r0       :
         beta     :
-        gamma    :
+        gamma    : Local slope of the richness profile of galaxy clusters
         cosmo    : Cosmology object
                     From esutil
-        refmag   :
+        refmag   : Reference magnitude
 
         returns
         -------
-        lambda_err:
+        lambda_err
         
         """
         dof = zredstr.ncol
@@ -301,14 +295,16 @@ class HPMask(Mask):
         lumwt   = self.maskgals.lumwt[use]
         chisq   = self.maskgals.chisq[use]
         r       = self.maskgals.r[use]
-        
+    
+        # normalizing nfw
         logrc   = np.log(rlam)
         norm    = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. - 
             0.0719021*logrc**3. - 0.0158241*logrc**4.-0.000854985*logrc**5.)
         nfw     = norm*nfw
         
         ucounts = cwt*nfw*lumwt
-
+        
+        #Set too faint galaxy magnitudes close to limiting magnitude
         faint, = np.where(refmag >= limmag)
         refmag_for_bcounts = np.copy(refmag)
         refmag_for_bcounts[faint] = limmag-0.01

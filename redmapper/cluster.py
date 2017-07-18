@@ -163,7 +163,7 @@ class Cluster(Entry):
 
         returns
         -------
-        TBD
+        lam: cluster richness
 
         """
         
@@ -186,21 +186,20 @@ class Cluster(Entry):
 
         cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
         
-        
         try:
             w = theta_i * self.neighbors.wvals
         except AttributeError:
             w = np.ones_like(ucounts) * theta_i
-        
+            
+        #DELETE ONCE VALUES ARE FIXED
+        richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
+        lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
+    
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w, 
             cpars = cpars, rsig = confstr.rsig)
         #Call the solving routine
         #this returns three items: lam_obj, p_obj, wt_obj, rlam_obj, theta_r
         lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
-        
-        #DELETE ONCE VALUES ARE FIXED
-        #richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
-        #lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
         
         #error
         bar_p = np.sum(wt**2.0)/np.sum(wt)
@@ -230,7 +229,7 @@ class Cluster(Entry):
         # --> needed?
         pcol = ucounts * lam/(ucounts * lam + bcounts)
         bad = np.where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) | 
-            (self.neighbors.refmag > zredstr.limmag)| (np.isfinite(pcol) == False))
+            (self.neighbors.refmag > zredstr.limmag) | (np.isfinite(pcol) == False))
         pcol[bad] = 0.0
         
         self.neighbors.theta_i  = theta_i
