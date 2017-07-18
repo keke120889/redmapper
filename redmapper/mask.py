@@ -150,9 +150,9 @@ class HPMask(Mask):
 
         returns
         -------
-        cpars:
+        cpars
         
-        """
+        """         
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
         
@@ -168,7 +168,7 @@ class HPMask(Mask):
             mag_err = 0*mag_in
             raise ValueError('Survey limiting magnitude <= 0!')
             #Raise error here as this would lead to divide by zero if called.
-        
+            
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
             np.amax(self.maskgals.m50) == 0):
             theta_i = calc_theta_i(mag, mag_err, maxmag, limmag)
@@ -181,7 +181,7 @@ class HPMask(Mask):
         
         c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals.nin[0]
         
-        cpars = (np.polyfit(self.maskgals.radbins[0], c, 3)).flatten()
+        cpars = (np.polyfit(self.maskgals.radbins[0], c, 3))
         
         return cpars
         
@@ -228,6 +228,8 @@ class HPMask(Mask):
         if nonoise:
             flux = tflux
         else:
+            #Can set seed
+            #random.seed(seed = 0)
             flux = tflux + noise*random.standard_normal(mag_in.size)
 
         if fluxmode:
@@ -249,6 +251,7 @@ class HPMask(Mask):
                 bad, = np.where(np.isfinite(mag) == False)
                 mag[bad] = 99.0
                 mag_err[bad] = 99.0
+                
         return mag, mag_err
         
     def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr, maxmag,

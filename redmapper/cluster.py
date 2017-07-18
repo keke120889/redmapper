@@ -217,7 +217,6 @@ class Cluster(Entry):
         lam_unscaled = lam/scaleval
         
         if (lam < 0.0):
-            elam = -1.0
             raise ValueError('Richness < 0!')
         else: # $ important ?
            elam = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
@@ -240,6 +239,7 @@ class Cluster(Entry):
         self.richness           = lam
         self.rlambda            = rlam
         self.elambda            = elam
+        self.cpars              = cpars
         #Record lambda, record p_obj onto the neighbors, 
         return lam
 
