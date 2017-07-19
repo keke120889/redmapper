@@ -13,6 +13,8 @@ from redmapper.redsequence import RedSequenceColorPar
 from redmapper.mask import HPMask
 from redmapper.depthmap import DepthMap
 
+#import matplotlib.pyplot as plt
+
 class BackgroundStub(Background):
 
     def __init__(self, filename):
@@ -42,12 +44,21 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster.z = hdr['Z_LAMBDA']
         self.richness_compare = hdr['LAMBDA']
         self.richness_compare_err = hdr['LAMBDA_E']
-        self.cluster.z = self.cluster.neighbors.z[0]
+        self.cluster.z = self.cluster.neighbors.z[0] #DOUBLE DEFINITION
         self.cluster.ra = hdr['RA']
         self.cluster.dec = hdr['DEC']
         # this should explicitly set our default cosmology
         cosmo = Cosmo()
-
+        
+        #filename = 'test_cpars.fits'
+        #test_cpars = fitsio.read(self.file_path+'/'+filename,ext=1)
+        #self.idl_P_DET   = test_cpars['P_DET'][0]
+        #self.idl_THETA_R = test_cpars['THETA_R'][0]
+        #self.idl_NIN     = test_cpars['NIN'][0]
+        #self.idl_C       = test_cpars['C'][0]
+        #self.idl_RADBINS = test_cpars['RADBINS'][0]
+        #self.idl_CPARS   = test_cpars['CPARS'][0][::-1]
+        
         #The configuration
         #Used by the mask, background and richness calculation
         conf_filename = 'testconfig.yaml'
@@ -107,20 +118,49 @@ class ClusterFiltersTestCase(unittest.TestCase):
         The purpose of this function is to calculate the richness,
         also written as lambda_chisq, of the cluster
         for a single iteration during the redmapper algorithm.
+        
+        With testing the calc_richness() function, this also tests the 
+        mask correction.
 
         THIS TEST IS STILL IN DEVELOPEMENT!!!
         """
         self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/cosmo.Dl(0,self.cluster.z))
         bkg = Background('%s/%s' % (self.file_path, bkg_filename))
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
-        #bkg_full = Background('%s/%s' % (self.file_path, bkg_filename))
+        
+        #test mask correction
+        maxmag = zredstr.mstar(self.cluster.z) - 2.5*np.log10(confstr.lval_reference)
+        mag_in = mask.maskgals.m + zredstr.mstar(self.cluster.z)
+        mag, mag_err = mask.apply_errormodels(mask.maskgals.exptime, 
+            mask.maskgals.limmag, mag_in, confstr, zp = mask.maskgals.zp[0], 
+            nsig=mask.maskgals.nsig[0], seed = 0)
+            
+        cpars = mask.calc_maskcorr(zredstr.mstar(self.cluster.z), maxmag, zredstr.limmag, confstr)
+        #testing.assert_almost_equal(self.cluster.cpars, cpars_idl)
+        #testing.assert_almost_equal(mag, mag_idl)
+        #testing.assert_almost_equal(mag_err, mag_err_idl)
+        
+        #test the richness and error
         richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr, mask)
         # this will just test the ~24.  Closer requires adding the mask
-        testing.assert_almost_equal(richness/10.,self.richness_compare/10.,decimal=1)
+        testing.assert_almost_equal(richness, self.richness_compare, decimal = 0)
+        #testing.assert_almost_equal(self.cluster.elambda, lam_err_idl, decimal = 0)
+        
+        #print self.idl_CPARS
+        print self.cluster.cpars
+        print richness, self.cluster.elambda
+        
+        #x = np.arange(0, 1, 0.02)
+        #plt.plot(x, self.cubic(x, self.idl_CPARS), 'b')
+        #plt.plot(x, self.cubic(x, self.cluster.cpars), 'r')
+        #plt.show()
         
         #End of the tests
         return
 
+    def cubic(self, x, cpars):
+        return cpars[0]*x**3 + cpars[1]*x**2 + cpars[2]*x + cpars[3]
+        
 class ClusterMembersTestCase(unittest.TestCase):
 
     #This next test MUST be done before the calc_richness test can be completed.

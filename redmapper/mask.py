@@ -135,7 +135,7 @@ class HPMask(Mask):
         decs = cluster.dec + self.maskgals.y/(mpcscale*SEC_PER_DEG)
         self.maskgals['MASKED'] = self.compute_radmask(ras,decs)
         
-    def calc_maskcorr(self, mstar, maxmag, limmag, confstr):
+    def calc_maskcorr(self, mstar, maxmag, limmag, confstr, seed = False):
         """
         Obtain mask correction c parameters.
         
@@ -159,7 +159,7 @@ class HPMask(Mask):
         if self.maskgals.limmag[0] > 0.0:
             mag, mag_err = self.apply_errormodels(self.maskgals.exptime, 
                 self.maskgals.limmag, mag_in, confstr, zp = self.maskgals.zp[0], 
-                nsig=self.maskgals.nsig[0])
+                nsig=self.maskgals.nsig[0], seed = seed)
             
             self.maskgals.refmag_obs = mag
             self.maskgals.refmag_obs_err = mag_err
@@ -181,12 +181,12 @@ class HPMask(Mask):
         
         c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals.nin[0]
         
-        cpars = (np.polyfit(self.maskgals.radbins[0], c, 3))
+        cpars = np.polyfit(self.maskgals.radbins[0], c, 3)
         
         return cpars
         
     def apply_errormodels(self, exptime, limmag, mag_in, confstr, b = None, zp=22.5, 
-        nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False):
+        nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False, seed = False):
         """
         Find magnitude and uncertainty.
         
@@ -197,15 +197,15 @@ class HPMask(Mask):
         mag_in    :
         confstr   : Configuration object
             containing configuration info
-        nonoise   :
+        nonoise   : account for noise / no noise
         zp:       : Zero point magnitudes
         nsig:     :
         fluxmode  :
         lnscat    :
-        b         :
+        b         : parameters for luptitude calculation
         inlup     :
         errtflux  :
-        err_ratio :
+        err_ratio : scaling factor
 
         returns
         -------
@@ -229,7 +229,12 @@ class HPMask(Mask):
             flux = tflux
         else:
             #Can set seed
-            #random.seed(seed = 0)
+            if seed:
+                try:
+                    random.seed(seed = seed)
+                except:
+                    raise ValueError('Seed must be convertible to 32 bit unsigned integers!')
+                    
             flux = tflux + noise*random.standard_normal(mag_in.size)
 
         if fluxmode:

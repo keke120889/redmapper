@@ -102,7 +102,7 @@ class DepthMap(object):
         theta = (90.0 - decs)*np.pi/180.
         phi = ras*np.pi/180.
         
-        
+        maskgals.w = self.w
         maskgals.eff = 0 #depthstr.eff
         maskgals.limmag = unseen
         maskgals.zp[0] = self.zp
@@ -128,9 +128,9 @@ class DepthMap(object):
                 maskgals.m50[bd] = median(maskgals.m50[ok])
             elif (nok > 0):
                 # fill with mean
-                maskgals[bd].limmag = mean(maskgals[ok].limmag)
-                maskgals[bd].exptime = mean(maskgals[ok].exptime)
-                maskgals[bd].m50 = mean(maskgals[ok].m50)
+                maskgals.limmag[bd] = mean(maskgals.limmag[ok])
+                maskgals.exptime[bd] = mean(maskgals.exptime[ok])
+                maskgals.m50[bd] = mean(maskgals.m50[ok])
             else:
                 # very bad
                 ok = where(depthstr.limmag > 0.0)
