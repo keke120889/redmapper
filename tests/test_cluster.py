@@ -2,6 +2,7 @@ import unittest
 import numpy.testing as testing
 import numpy as np
 import fitsio
+from numpy import random
 
 from esutil.cosmology import Cosmo
 from redmapper.catalog import Entry
@@ -129,13 +130,10 @@ class ClusterFiltersTestCase(unittest.TestCase):
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
         
         #test mask correction
-        maxmag = zredstr.mstar(self.cluster.z) - 2.5*np.log10(confstr.lval_reference)
-        mag_in = mask.maskgals.m + zredstr.mstar(self.cluster.z)
-        mag, mag_err = mask.apply_errormodels(mask.maskgals.exptime, 
-            mask.maskgals.limmag, mag_in, confstr, zp = mask.maskgals.zp[0], 
-            nsig=mask.maskgals.nsig[0], seed = 0)
-            
-        cpars = mask.calc_maskcorr(zredstr.mstar(self.cluster.z), maxmag, zredstr.limmag, confstr)
+        #set seed
+        seed = 0
+        random.seed(seed = seed)
+        
         #testing.assert_almost_equal(self.cluster.cpars, cpars_idl)
         #testing.assert_almost_equal(mag, mag_idl)
         #testing.assert_almost_equal(mag_err, mag_err_idl)
@@ -143,12 +141,19 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #test the richness and error
         richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr, mask)
         # this will just test the ~24.  Closer requires adding the mask
+        
+        #   these test the apply_errormodels function
+        #testing.assert_almost_equal(mask.maskgals.refmag_obs, mag_idl)
+        #testing.assert_almost_equal(mask.maskgals.refmag_obs_err, mag_err_idl)
+        #   test cpars, richness, lambda error
+        #testing.assert_almost_equal(self.cluster.cpars, cpars_idl)
         testing.assert_almost_equal(richness, self.richness_compare, decimal = 0)
         #testing.assert_almost_equal(self.cluster.elambda, lam_err_idl, decimal = 0)
         
         #print self.idl_CPARS
         print self.cluster.cpars
         print richness, self.cluster.elambda
+        
         
         #x = np.arange(0, 1, 0.02)
         #plt.plot(x, self.cubic(x, self.idl_CPARS), 'b')

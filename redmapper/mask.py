@@ -135,7 +135,7 @@ class HPMask(Mask):
         decs = cluster.dec + self.maskgals.y/(mpcscale*SEC_PER_DEG)
         self.maskgals['MASKED'] = self.compute_radmask(ras,decs)
         
-    def calc_maskcorr(self, mstar, maxmag, limmag, confstr, seed = False):
+    def calc_maskcorr(self, mstar, maxmag, limmag, confstr):
         """
         Obtain mask correction c parameters.
         
@@ -159,7 +159,7 @@ class HPMask(Mask):
         if self.maskgals.limmag[0] > 0.0:
             mag, mag_err = self.apply_errormodels(self.maskgals.exptime, 
                 self.maskgals.limmag, mag_in, confstr, zp = self.maskgals.zp[0], 
-                nsig=self.maskgals.nsig[0], seed = seed)
+                nsig=self.maskgals.nsig[0])
             
             self.maskgals.refmag_obs = mag
             self.maskgals.refmag_obs_err = mag_err
@@ -186,7 +186,7 @@ class HPMask(Mask):
         return cpars
         
     def apply_errormodels(self, exptime, limmag, mag_in, confstr, b = None, zp=22.5, 
-        nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False, seed = False):
+        nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False):
         """
         Find magnitude and uncertainty.
         
@@ -227,14 +227,7 @@ class HPMask(Mask):
         
         if nonoise:
             flux = tflux
-        else:
-            #Can set seed
-            if seed:
-                try:
-                    random.seed(seed = seed)
-                except:
-                    raise ValueError('Seed must be convertible to 32 bit unsigned integers!')
-                    
+        else:        
             flux = tflux + noise*random.standard_normal(mag_in.size)
 
         if fluxmode:
