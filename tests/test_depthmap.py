@@ -13,6 +13,9 @@ from redmapper.galaxy import GalaxyCatalog
 
 class TestDepthMap(unittest.TestCase):
     """
+    Unittest for depthmap.py
+    
+    not sure if this is really necessary as depthmap results are  tested in test_cluster.py.
     """
     def runTest(self):
         """

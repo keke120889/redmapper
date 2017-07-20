@@ -78,9 +78,11 @@ class ClusterFiltersTestCase(unittest.TestCase):
         print "mask.npix: ",mask.npix
         print "len(mask.maskgals): ",len(mask.maskgals)
         
+        mpc_scale = np.radians(1.) * cosmo.Dl(0, self.cluster.z) / (1 + self.cluster.z)**2
+        mask.set_radmask(self.cluster, mpc_scale)
+        
         #depthstr
         depthstr = DepthMap(confstr)
-        mpc_scale = np.radians(1.) * cosmo.Dl(0, self.cluster.z) / (1 + self.cluster.z)**2
         depthstr.calc_maskdepth(mask.maskgals, self.cluster.ra, self.cluster.dec, mpc_scale)
         
         # nfw
@@ -134,10 +136,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         seed = 0
         random.seed(seed = seed)
         
-        #testing.assert_almost_equal(self.cluster.cpars, cpars_idl)
-        #testing.assert_almost_equal(mag, mag_idl)
-        #testing.assert_almost_equal(mag_err, mag_err_idl)
-        
         #test the richness and error
         richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr, mask)
         # this will just test the ~24.  Closer requires adding the mask
@@ -153,7 +151,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #print self.idl_CPARS
         print self.cluster.cpars
         print richness, self.cluster.elambda
-        
         
         #x = np.arange(0, 1, 0.02)
         #plt.plot(x, self.cubic(x, self.idl_CPARS), 'b')

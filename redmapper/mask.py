@@ -5,6 +5,7 @@ from catalog import Catalog,Entry
 from utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i
 from numpy import random
 from scipy.special import erf
+#from cluster import Cluster
 
 class Mask(object):
     """
@@ -130,14 +131,14 @@ class HPMask(Mask):
         """
 
         # note this probably can be in the superclass, no?
-
-        ras = cluster.ra + self.maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(clusters.dec))
+        #print cluster.__dict__
+        ras = cluster.ra + self.maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(cluster.dec))
         decs = cluster.dec + self.maskgals.y/(mpcscale*SEC_PER_DEG)
-        self.maskgals['MASKED'] = self.compute_radmask(ras,decs)
+        self.maskgals.mark = self.compute_radmask(ras,decs)
         
-    def calc_maskcorr(self, mstar, maxmag, limmag, confstr):
+    def calc_maskcorr(self, mstar, maxmag, limmag):
         """
-        Obtain mask correction c parameters.
+        Obtain mask correction c parameters. From calclambda_chisq_calc_maskcorr.pro
         
         parameters
         ----------
@@ -152,14 +153,13 @@ class HPMask(Mask):
         -------
         cpars
         
-        """         
+        """
+                 
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
         
         if self.maskgals.limmag[0] > 0.0:
-            mag, mag_err = self.apply_errormodels(self.maskgals.exptime, 
-                self.maskgals.limmag, mag_in, confstr, zp = self.maskgals.zp[0], 
-                nsig=self.maskgals.nsig[0])
+            mag, mag_err = self.apply_errormodels(mag_in)
             
             self.maskgals.refmag_obs = mag
             self.maskgals.refmag_obs_err = mag_err
@@ -168,7 +168,9 @@ class HPMask(Mask):
             mag_err = 0*mag_in
             raise ValueError('Survey limiting magnitude <= 0!')
             #Raise error here as this would lead to divide by zero if called.
-            
+        
+        fitsio.write('test_data.fits', self.maskgals._ndarray)
+        
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
             np.amax(self.maskgals.m50) == 0):
             theta_i = calc_theta_i(mag, mag_err, maxmag, limmag)
@@ -178,25 +180,22 @@ class HPMask(Mask):
             raise Exception('Unsupported mode!')
         
         p_det = theta_i*self.maskgals.mark
-        
+        np.set_printoptions(threshold=np.nan)
+        #print self.maskgals.mark
         c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals.nin[0]
         
         cpars = np.polyfit(self.maskgals.radbins[0], c, 3)
         
         return cpars
         
-    def apply_errormodels(self, exptime, limmag, mag_in, confstr, b = None, zp=22.5, 
-        nsig=10.0, err_ratio=1.0, fluxmode=False, nonoise=False, inlup=False):
+    def apply_errormodels(self, mag_in, b = None, err_ratio=1.0, fluxmode=False, 
+        nonoise=False, inlup=False):
         """
         Find magnitude and uncertainty.
         
         parameters
         ----------
-        exptime   :
-        limmag    : Limiting Magnitude
         mag_in    :
-        confstr   : Configuration object
-            containing configuration info
         nonoise   : account for noise / no noise
         zp:       : Zero point magnitudes
         nsig:     :
@@ -213,17 +212,17 @@ class HPMask(Mask):
         mag_err 
         
         """
-        f1lim = 10.**((limmag - zp)/(-2.5))
-        fsky1 = (((f1lim**2.) * exptime)/(nsig**2.) - f1lim)
+        f1lim = 10.**((self.maskgals.limmag - self.maskgals.zp[0])/(-2.5))
+        fsky1 = (((f1lim**2.) * self.maskgals.exptime)/(self.maskgals.nsig[0]**2.) - f1lim)
         fsky1 = np.clip(fsky1, None, 0.001)
         
         if inlup:
             bnmgy = b*1e9
-            tflux = exptime*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
+            tflux = self.maskgals.exptime*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
         else:
-            tflux = exptime*10.**((mag_in - zp)/(-2.5))
+            tflux = self.maskgals.exptime*10.**((mag_in - self.maskgals.zp[0])/(-2.5))
         
-        noise = err_ratio*np.sqrt(fsky1*exptime + tflux)
+        noise = err_ratio*np.sqrt(fsky1*self.maskgals.exptime + tflux)
         
         if nonoise:
             flux = tflux
@@ -231,19 +230,19 @@ class HPMask(Mask):
             flux = tflux + noise*random.standard_normal(mag_in.size)
 
         if fluxmode:
-            mag = flux/exptime
-            mag_err = noise/exptime
+            mag = flux/self.maskgals.exptime
+            mag_err = noise/self.maskgals.exptime
         else:
             if b is not None:
                 bnmgy = b*1e9
                 
-                flux_new = flux/exptime
-                noise_new = noise/exptime
+                flux_new = flux/self.maskgals.exptime
+                noise_new = noise/self.maskgals.exptime
                 
                 mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
                 mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
             else:
-                mag = zp-2.5*np.log10(flux/exptime)
+                mag = self.maskgals.zp[0]-2.5*np.log10(flux/self.maskgals.exptime)
                 mag_err = (2.5/np.log(10.0))*(noise/flux)
                 
                 bad, = np.where(np.isfinite(mag) == False)

@@ -184,7 +184,7 @@ class Cluster(Entry):
         theta_i = calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, 
             maxmag, zredstr.limmag)
 
-        cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag, confstr)
+        cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag)
         
         try:
             w = theta_i * self.neighbors.wvals
