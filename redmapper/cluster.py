@@ -190,10 +190,6 @@ class Cluster(Entry):
             w = theta_i * self.neighbors.wvals
         except AttributeError:
             w = np.ones_like(ucounts) * theta_i
-            
-        #DELETE ONCE VALUES ARE FIXED
-        richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w)
-        lam, p_obj, wt, rlam, theta_r = richness_obj.solve_nfw()
     
         richness_obj = Solver(r0, beta, ucounts, bcounts, self.neighbors.r, w, 
             cpars = cpars, rsig = confstr.rsig)
@@ -207,8 +203,7 @@ class Cluster(Entry):
         
         if not noerr:
             lam_cerr = mask.calc_maskcorr_lambdaerr(self, zredstr.mstar(self.z), 
-                zredstr ,maxmag, lam, rlam ,self.z ,bkg, wt, cval, r0, beta, 
-                confstr.dldr_gamma, cosmo)
+                zredstr, lam, rlam,bkg, cval, beta, confstr.dldr_gamma, cosmo)
         else:
             lam_cerr = 0.0
         

@@ -169,7 +169,8 @@ class HPMask(Mask):
             raise ValueError('Survey limiting magnitude <= 0!')
             #Raise error here as this would lead to divide by zero if called.
         
-        fitsio.write('test_data.fits', self.maskgals._ndarray)
+        #extract object for testing
+        #fitsio.write('test_data.fits', self.maskgals._ndarray)
         
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
             np.amax(self.maskgals.m50) == 0):
@@ -251,8 +252,8 @@ class HPMask(Mask):
                 
         return mag, mag_err
         
-    def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr, maxmag,
-         lam, rlam ,z ,bkg, wt, cval, r0, beta, gamma, cosmo):
+    def calc_maskcorr_lambdaerr(self, cluster, mstar, zredstr,
+         lam, rlam ,bkg, cval, beta, gamma, cosmo):
         """
         Calculate richness error
         
@@ -261,17 +262,13 @@ class HPMask(Mask):
         mstar    :
         zredstr  : RedSequenceColorPar object
                     Red sequence parameters
-        maxmag   : Maximum magnitude
         dof      : Degrees of freedom / number of collumns
         limmag   : Limiting Magnitude
         lam      : Richness
-        rlam     : 
-        z        : Redshift
+        rlam     :
         bkg      : Background object
                    background lookup table
-        wt       : Weights
         cval     :
-        r0       :
         beta     :
         gamma    : Local slope of the richness profile of galaxy clusters
         cosmo    : Cosmology object
