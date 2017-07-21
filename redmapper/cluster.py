@@ -230,11 +230,11 @@ class Cluster(Entry):
         self.neighbors.w        = w
         self.neighbors.wt       = wt
         self.neighbors.theta_r  = theta_r
-        self.neighbors.p        = pcol      #????
         self.richness           = lam
         self.rlambda            = rlam
         self.elambda            = elam
         self.cpars              = cpars
+        self.pcol               = pcol
         #Record lambda, record p_obj onto the neighbors, 
         return lam
 

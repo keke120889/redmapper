@@ -215,7 +215,7 @@ class HPMask(Mask):
         """
         f1lim = 10.**((self.maskgals.limmag - self.maskgals.zp[0])/(-2.5))
         fsky1 = (((f1lim**2.) * self.maskgals.exptime)/(self.maskgals.nsig[0]**2.) - f1lim)
-        fsky1 = np.clip(fsky1, None, 0.001)
+        fsky1 = np.clip(fsky1, 0.001, None)
         
         if inlup:
             bnmgy = b*1e9
