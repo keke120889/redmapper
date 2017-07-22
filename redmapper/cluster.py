@@ -213,14 +213,12 @@ class Cluster(Entry):
         
         if (lam < 0.0):
             raise ValueError('Richness < 0!')
-        else: # $ important ?
+        else:
            elam = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
         
         # calculate pcol -- color only.  Don't need to worry about nfw norm!
         ucounts = rho*phi
         
-        #bcounts_ = (bcounts/(2.*np.pi*self.neighbors.r))*np.pi*rlam**2.
-        # --> needed?
         pcol = ucounts * lam/(ucounts * lam + bcounts)
         bad = np.where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) | 
             (self.neighbors.refmag > zredstr.limmag) | (np.isfinite(pcol) == False))
@@ -237,6 +235,172 @@ class Cluster(Entry):
         self.pcol               = pcol
         #Record lambda, record p_obj onto the neighbors, 
         return lam
+        
+    def redmapper_zlambda(confstr,zredstr,bkg,zin,mask,cosmo,z_lambda_e='z_lambda_e',maxmag_in='maxmag_in',corrstr='corrstr',wvals=None,npzbins='npzbins',pzbins='pzbins',pzvals='pzvals',noerr='noerr',ncross='ncross'):
+        #refmag_total,refmag_total_err,refmag_rs,refmag_rs_err,col_or_flux_arr,magerr_or_ivar_arr,dis,ebv,r0,beta,
+        
+        """
+        MISSING:
+        
+        
+        """
+        
+        z_lambda=zin
+
+        m = np.amin(self.neighbors.dist)
+        minind = np.argmin(self.neighbors.dist) #assuming self.neighbors.dist = dis
+
+        if maxmag_in.size == 1:
+            maxmag = maxmag_in
+        if wvals is not None or wvals.size == 0:
+             wvals = np.ones(refmag_total.size)
+             #YEAH??
+        if npzbins is not None or npzbins.size == 0:
+            npzbins=0
+        else:
+            pzbins = np.full(npzbins, -1.0)
+            pzvals = pzbins
+            
+        maxrad = 1.2 * confstr.percolation_r0 * 3.**confstr.percolation_beta
+        #300./100. = 3.
+        
+        i = 0
+        done = False
+        niter = 0
+        pzdone = 0
+        
+        if noerr:
+            z_lambda_e = 0.0
+        for pi in range(0, 1):
+            #skip second iteration if we're already done
+            if pzdone: continue
+            
+            while i < confstr.zlambda_maxiter and not done:
+                #calclambda_z_rad,z_lambda,mpcscale,1./60.,/rtok,/silent
+                #ignore?
+                mpc_scale = np.radians(1.) * cosmo.Dl(0, self.z) / (1 + self.z)**2
+                #YEAH??
+                r=dis*mpcscale
+        
+                in_r = np.where(r < maxrad)
+                #thought about creating an object here that contains all in data
+                #- but how would I implement that?
+                
+                if in_r.size < 1:
+                    z_lambda = -1.0
+                    done = 1
+                    continue
+                
+                #if confstr.use_lambda_zred: ----> not implementing zred in calc_richness so do we need this at all?
+                lam = calc_richness(zredstr, bkg, cosmo, confstr, mask, 
+                    r0=confstr.percolation_r0, beta=confstr.percolation_beta, 
+                    noerr = True)
+                        #confstr,zredstr,bkg,z_lambda,
+                        #zreds[in_r],zred_errs[in_r],zred_chisqs[in_r],refmag_total[in_r],
+                        #refmag_total_err[in_r],r[in_r],wtvals=wtvals_in,
+                        #r0=confstr.percolation_r0,beta=confstr.percolation_beta,
+                        #wvals=wvals[in_r],maskgals=maskgals,maxmag_in=maxmag_in,
+                        #pcol=pcol_in,noerr = True)
+                        #----> so are we trying to only use the ones indexed [in_r]?
+            
+                #else:   
+                #    lam= calclambda_chisq_cluster_lambda(confstr,zredstr,bkg,z_lambda,$
+                #           col_or_flux_arr[:,in_r],magerr_or_ivar_arr[:,in_r],$
+                #           refmag_total[in_r],refmag_total_err[in_r],$
+                #           refmag_rs[in_r],refmag_rs_err[in_r],$
+                #           r[in_r],wtvals=wtvals_in,$
+                #           r0=confstr.percolation_r0,$
+                #           beta=confstr.percolation_beta,$
+                #           wvals=wvals[in_r],maskgals=maskgals,$
+                #           chisqs=chisqs_in,maxmag_in=maxmag_in,$
+                #           pcol=pcol_in,ebv=ebv[in_r],/noerr)
+               
+                if lam < confstr.percolation_minlambda:
+                    z_lambda = -1.0
+                    done = 1
+                    continue
+                    
+                wtvals_mod = self.pcol
+                
+                r_lambda=confstr.percolation_r0*(lam/100.)**confstr.percolation_beta
+                if maxmag_in.size == 0:
+                   maxmag = zredstr.mstar(z_lambda)-2.5*np.log10(confstr.lval_reference)
+                
+                z_lambda_new=redmapper_zlambda_calcz(confstr,zredstr,z_lambda,refmag_total[in_r],refmag_rs[in_r],col_or_flux_arr[:,in_r],
+                                magerr_or_ivar_arr[:,in_r],r[in_r],ebv[in_r],wtvals_mod,r_lambda,maxmag)
+                z_lambda_new = np.clip(z_lambda_new, zredstr[0].z, zredstr[n_elements(zredstr)-1].z)
+                if np.absolute(z_lambda_new-z_lambda) < confstr.zlambda_tol or z_lambda_new < 0.0:
+                    done = 1
+                    
+                z_lambda = z_lambda_new
+                i += 1
+        
+            niter = i
+            
+            if z_lambda > 0.0:
+                if npzbins == 0 and not noerr:
+                    #regular Gaussian error   
+                    z_lambda_e = redmapper_zlambda_err(confstr,zredstr,z_lambda,refmag_total[in_r],refmag_rs[in_r],col_or_flux_arr[:,in_r],magerr_or_ivar_arr[:,in_r],r[in_r],ebv[in_r],wtvals_mod,r_lambda,maxmag)
+                    #and check for an error
+                    if z_lambda_e < 0.0:
+                        z_lambda = -1.0
+                elif npzbins > 0:
+                    pzvals = redmapper_zlambda_pz(confstr,zredstr,z_lambda,npzbins,refmag_total[in_r],refmag_rs[in_r],col_or_flux_arr[:,in_r],magerr_or_ivar_arr[:,in_r],r[in_r],ebv[in_r],wtvals_mod,r_lambda,maxmag,pzbins)
+            
+                    #check for bad values
+                    if (pzvals[0]/pzvals[(npzbins-1)/2] > 0.01 and 
+                        pzbins[0] >= np.amin(zredstr.z) + 0.01) or \
+                        (pzvals[npzbins-1]/pzvals[(npzbins-1)/2] > 0.01 and 
+                        pzbins[npzbins-1] <= np.amax(zredstr.z)-0.01):
+                        
+                        pzvals = redmapper_zlambda_pz(confstr,zredstr,z_lambda,npzbins,refmag_total[in_r],refmag_rs[in_r],col_or_flux_arr[:,in_r],magerr_or_ivar_arr[:,in_r],r[in_r],ebv[in_r],wtvals_mod,r_lambda,maxmag,pzbins,slow = True)
+                        
+                    if pzvals[0] < 0:
+                        #this is bad
+                        z_lambda = -1.0
+                        z_lambda_e = -1.0
+                    else:
+                        res = gaussfit_rm(pzbins,pzvals,a,nterms=3,status=status)
+                
+                        if status == 0 and (a[2] > 0 or a[2] > 0.2):
+                            z_lambda_e = a[2]
+                        else:
+                            z_lambda_e = redmapper_zlambda_err(confstr,zredstr,z_lambda,refmag_total[in_r],refmag_rs[in_r],col_or_flux_arr[:,in_r],magerr_or_ivar_arr[:,in_r],r[in_r],ebv[in_r],wtvals_mod,r_lambda,maxmag)
+                            
+                # check peak of p(z)...
+                if npzbins == 0:
+                    # we didn't do p(z) so we have no way to check here.
+                    pzdone = 1                
+                else:
+                    #pm = np.amax(pzvals)
+                    pmind = np.argmax(pzvals)
+                    if np.absolute(pzbins[pmind] - z_lambda) < confstr.zlambda_tol:
+                        pzdone = 1
+                    else:
+                        print('Warning: z_lambda / p(z) inconsistency detected.')
+                        z_lambda = pzbins[pmind]
+                        pzdone = 0
+            else:
+                z_lambda_e = -1.0
+                pzdone = 1
+                
+                
+        #and apply the correction if necessary...
+        if corrstr is not None and z_lambda > 0:
+            redmapper_zlambda_apply_correction(confstr,corrstr,total(wtvals_in),z_lambda,z_lambda_e,pzbins=pzbins,pzvals=pzvals,noerr=noerr)
+
+        if ncross is not None and z_lambda > confstr.zrange[0] and z_lambda < confstr.zrange[1]:
+            ncross = redmapper_zlambda_ncross(confstr,zredstr,bkg,zin,refmag_total,refmag_total_err,refmag_rs,refmag_rs_err,col_or_flux_arr,magerr_or_ivar_arr,dis,ebv,r0,beta,maskgals,z_lambda,wvals=wvals,maxmag_in=maxmag_in,zreds=zreds,zred_errs=zred_errs,zred_chisqs=zred_chisqs)
+
+        return z_lambda
+
+        
+        
+
+class neighbours_in(object):
+    def __init__(self, neigbours):
+        #self.
+        pass
 
 class ClusterCatalog(Catalog): 
     """
