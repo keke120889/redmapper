@@ -44,6 +44,8 @@ class DataObject(object):
             pass
         if attr.upper() in self._ndarray.dtype.names:
             return self._ndarray[attr.upper()]
+        elif attr.lower() in self._ndarray.dtype.names:
+            return self._ndarray[attr.lower()]
         return object.__getattribute__(self, attr)
 
     def __setattr__(self, attr, val):
@@ -99,6 +101,8 @@ class Entry(DataObject):
             pass
         if attr.upper() in self._ndarray.dtype.names:
             return self._ndarray[attr.upper()][0]
+        elif attr.lower() in self._ndarray.dtype.names:
+            return self._ndarray[attr.lower()][0]
         return object.__getattribute__(self, attr)
 
 
