@@ -24,7 +24,7 @@ class TestDepthMap(unittest.TestCase):
         conf_filename = 'testconfig.yaml'
         confstr = Configuration(self.file_path + '/' + conf_filename)
         
-        self.cluster = Cluster(np.empty(1))
+        self.cluster = Cluster()
         filename = 'test_cluster_members.fit'
         self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
         cosmo = Cosmo()

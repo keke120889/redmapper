@@ -7,7 +7,7 @@ from catalog import Catalog, Entry
 from utilities import chisq_pdf, calc_theta_i
 from mask import HPMask
 
-class Cluster(Entry):
+class Cluster(object):
     """
 
     Class for a single galaxy cluster, with methods to perform
@@ -202,7 +202,7 @@ class Cluster(Entry):
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
         if not noerr:
-            lam_cerr = mask.calc_maskcorr_lambdaerr(self, zredstr.mstar(self.z), 
+            lam_cerr = self.calc_maskcorr_lambdaerr(mask.maskgals, zredstr.mstar(self.z), 
                 zredstr, lam, rlam,bkg, cval, beta, confstr.dldr_gamma, cosmo)
         else:
             lam_cerr = 0.0
@@ -235,26 +235,99 @@ class Cluster(Entry):
         self.pcol               = pcol
         #Record lambda, record p_obj onto the neighbors, 
         return lam
+    
+    def calc_maskcorr_lambdaerr(self, maskgals, mstar, zredstr,
+         lam, rlam ,bkg, cval, beta, gamma, cosmo):
+        """
+        Calculate richness error
         
-    def redmapper_zlambda(confstr,zredstr,bkg,zin,mask,cosmo,z_lambda_e='z_lambda_e',maxmag_in='maxmag_in',corrstr='corrstr',wvals=None,npzbins='npzbins',pzbins='pzbins',pzvals='pzvals',noerr='noerr',ncross='ncross'):
+        parameters
+        ----------
+        mstar    :
+        zredstr  : RedSequenceColorPar object
+                    Red sequence parameters
+        dof      : Degrees of freedom / number of collumns
+        limmag   : Limiting Magnitude
+        lam      : Richness
+        rlam     :
+        bkg      : Background object
+                   background lookup table
+        cval     :
+        beta     :
+        gamma    : Local slope of the richness profile of galaxy clusters
+        cosmo    : Cosmology object
+                    From esutil
+        refmag   : Reference magnitude
+
+        returns
+        -------
+        lambda_err
+        
+        """
+        dof = zredstr.ncol
+        limmag = zredstr.limmag
+        
+        use, = np.where(maskgals.r < rlam)
+        
+        mark    = maskgals.mark[use]
+        refmag  = mstar + maskgals.m[use]
+        cwt     = maskgals.cwt[use]
+        nfw     = maskgals.nfw[use]
+        lumwt   = maskgals.lumwt[use]
+        chisq   = maskgals.chisq[use]
+        r       = maskgals.r[use]
+    
+        # normalizing nfw
+        logrc   = np.log(rlam)
+        norm    = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. - 
+            0.0719021*logrc**3. - 0.0158241*logrc**4.-0.000854985*logrc**5.)
+        nfw     = norm*nfw
+        
+        ucounts = cwt*nfw*lumwt
+        
+        #Set too faint galaxy magnitudes close to limiting magnitude
+        faint, = np.where(refmag >= limmag)
+        refmag_for_bcounts = np.copy(refmag)
+        refmag_for_bcounts[faint] = limmag-0.01
+        
+        bcounts = self._calc_bkg_density(bkg, r, chisq , refmag_for_bcounts, cosmo)
+        
+        out, = np.where((refmag > limmag) | (mark == 0))
+        
+        if out.size == 0 or cval < 0.01:
+            lambda_err = 0.0
+        else:
+            p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
+            varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
+            sigc = np.sqrt(varc0 - varc0**2.)
+            k = lam**2./total(lambda_p**2.)
+            lambda_err = k*sigc/(1.-beta*gamma)
+        
+        return lambda_err
+        
+    def redmapper_zlambda(confstr,zredstr,bkg,zin,mask,cosmo,z_lambda_e='z_lambda_e',maxmag_in='maxmag_in',corrstr='corrstr',npzbins='npzbins',pzbins='pzbins',pzvals='pzvals',noerr='noerr',ncross='ncross'):
         #refmag_total,refmag_total_err,refmag_rs,refmag_rs_err,col_or_flux_arr,magerr_or_ivar_arr,dis,ebv,r0,beta,
         
         """
         MISSING:
+        refmag_total,refmag_total_err, = self.neighbors.refmag
         
+        col_or_flux_arr,
+        magerr_or_ivar_arr
         
         """
         
         z_lambda=zin
 
-        m = np.amin(self.neighbors.dist)
-        minind = np.argmin(self.neighbors.dist) #assuming self.neighbors.dist = dis
+        #m = np.amin(self.neighbors.dist)
+        #minind = np.argmin(self.neighbors.dist) #assuming self.neighbors.dist = dis
 
-        if maxmag_in.size == 1:
-            maxmag = maxmag_in
-        if wvals is not None or wvals.size == 0:
-             wvals = np.ones(refmag_total.size)
-             #YEAH??
+        if maxmag_in is not None:
+            if maxmag_in.size == 1:
+                maxmag = maxmag_in
+        #if wvals is not None or wvals.size == 0:       #HAVE self.neighbors.wvals
+        #     wvals = np.ones(refmag_total.size)
+        #     #YEAH??
         if npzbins is not None or npzbins.size == 0:
             npzbins=0
         else:

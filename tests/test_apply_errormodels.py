@@ -6,6 +6,7 @@ from numpy import random
 
 from redmapper.mask import HPMask
 from redmapper.config import Configuration
+from redmapper.utilities import apply_errormodels
 
 class ClusterFiltersTestCase(unittest.TestCase):
     """
@@ -28,7 +29,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         mag_in[:6]            = np.array([16., 17., 18., 19., 20., 21.])
         
         #test without noise
-        mag, mag_err = mask.apply_errormodels(mag_in, nonoise = True)
+        mag, mag_err = apply_errormodels(mask.maskgals, mag_in, nonoise = True)
         idx = np.array([0, 1, 2, 3, 4, 5])
         mag_idl     = np.array([16., 17., 18., 19., 20., 21.])
         mag_err_idl = np.array([0.00602535, 0.0107989, 0.0212915, 0.0463765, 0.108574, 0.264390])
@@ -38,7 +39,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #test with noise and set seed
         seed = 0
         random.seed(seed = seed)
-        mag, mag_err = mask.apply_errormodels(mag_in)
+        mag, mag_err = apply_errormodels(mask.maskgals, mag_in)
         
         idx = np.array([0, 1, 2, 3, 4, 5, 1257, 2333, 3876])
         mag_test = np.array([15.98942267, 16.99568733, 17.97935868, 

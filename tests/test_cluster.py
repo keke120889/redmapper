@@ -36,7 +36,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         First test the filters:
         nfw, lum, and bkg
         """
-        self.cluster = Cluster(np.empty(1))
+        self.cluster = Cluster()
         self.file_path = 'data_for_tests'
         filename = 'test_cluster_members.fit'
         self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
@@ -45,7 +45,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster.z = hdr['Z_LAMBDA']
         self.richness_compare = hdr['LAMBDA']
         self.richness_compare_err = hdr['LAMBDA_E']
-        self.cluster.z = self.cluster.neighbors.z[0] #DOUBLE DEFINITION
+        self.cluster.z = self.cluster.neighbors.z[0]
         self.cluster.ra = hdr['RA']
         self.cluster.dec = hdr['DEC']
         # this should explicitly set our default cosmology
@@ -140,9 +140,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr, mask)
         # this will just test the ~24.  Closer requires adding the mask
         
-        #   these test the apply_errormodels function
-        #testing.assert_almost_equal(mask.maskgals.refmag_obs, mag_idl)
-        #testing.assert_almost_equal(mask.maskgals.refmag_obs_err, mag_err_idl)
         #   test cpars, richness, lambda error
         #testing.assert_almost_equal(self.cluster.cpars, cpars_idl)
         testing.assert_almost_equal(richness, self.richness_compare, decimal = 0)
