@@ -371,6 +371,7 @@ class RedSequenceColorPar(object):
         zind = self.zindex(z)
         magind = self.refmagindex(galaxies.refmag)
         galcolor = galaxies.mag[:,:self.ncol] - galaxies.mag[:,1:]
+        #can be replaced as galcolor = galaxies.galcol - not sure about self.ncol
         chisq_dist = ChisqDist(self.covmat[:,:,zind], self.c[zind,:], 
                                self.slope[zind,:], self.pivotmag[zind], 
                                galaxies.refmag, galaxies.mag_err, 

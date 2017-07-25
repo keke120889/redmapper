@@ -105,6 +105,11 @@ class GalaxyCatalog(Catalog):
         # In the IDL version this is trimmed to the precise boundary requested.
         # that's easy in simplepix.  Not sure how to do in healpix.
         return cls(cat)
+        
+    @property
+    def galcol(self):
+        galcol = self.mag[:,:-1] - self.mag[:,1:]
+        return galcol
 
     def match(self, galaxy, radius):
         """
