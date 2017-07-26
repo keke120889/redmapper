@@ -60,9 +60,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster.z = self.cluster.neighbors.z[0]
         self.cluster.ra = hdr['RA']
         self.cluster.dec = hdr['DEC']
-        # this should explicitly set our default cosmology
-        cosmo = Cosmo()
-        
         
         #Set up the mask
         mask = HPMask(confstr) #Create the mask
@@ -77,7 +74,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         print "mask.npix: ",mask.npix
         print "len(mask.maskgals): ",len(mask.maskgals)
         
-        mpc_scale = np.radians(1.) * cosmo.Dl(0, self.cluster.z) / (1 + self.cluster.z)**2
+        mpc_scale = np.radians(1.) * self.cluster.cosmo.Dl(0, self.cluster.z) / (1 + self.cluster.z)**2
         mask.set_radmask(self.cluster, mpc_scale)
         
         #depthstr
@@ -111,7 +108,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster_bkgtest.z = self.cluster.z
         self.cluster_bkgtest.bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
         py_bkg = self.cluster_bkgtest._calc_bkg_density(self.cluster.neighbors.r, 
-            self.cluster.neighbors.chisq, self.cluster.neighbors.refmag, cosmo)[test_indices]
+            self.cluster.neighbors.chisq, self.cluster.neighbors.refmag)[test_indices]
         idl_bkg = np.array([1.3140464045388294, 0.16422314236185420, 
                             0.56610846527410053, 0.79559933744885403, 
                             0.21078853798218194])
@@ -128,7 +125,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
 
         THIS TEST IS STILL IN DEVELOPEMENT!!!
         """
-        self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/cosmo.Dl(0,self.cluster.z))
+        self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/self.cluster.cosmo.Dl(0,self.cluster.z))
         
         #test mask correction
         #set seed
@@ -136,7 +133,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         random.seed(seed = seed)
         
         #test the richness and error
-        richness = self.cluster.calc_richness(cosmo, confstr, mask)
+        richness = self.cluster.calc_richness(confstr, mask)
         # this will just test the ~24.  Closer requires adding the mask
         
         #   test cpars, richness, lambda error

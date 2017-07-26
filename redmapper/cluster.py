@@ -10,6 +10,7 @@ from scipy.optimize import brent, minimize_scalar
 from scipy.integrate import simps
 from chisq_dist import ChisqDist
 from redmapper.redsequence import RedSequenceColorPar
+from esutil.cosmology import Cosmo
 
 class Cluster(object):
     """
@@ -25,6 +26,8 @@ class Cluster(object):
     def __init__(self,confstr, r0 = 1.0, beta = 0.2):
         self.r0     = r0
         self.beta   = beta
+        # this should explicitly set our default cosmology
+        self.cosmo = Cosmo()
         
     def find_neighbors(self, radius, galcat):
         """
@@ -128,7 +131,7 @@ class Cluster(object):
         phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag)))
         return phi_term_a * phi_term_b / normalization
 
-    def _calc_bkg_density(self, r, chisq, refmag, cosmo):
+    def _calc_bkg_density(self, r, chisq, refmag):
         """
         Internal method to compute background filter
 
@@ -145,11 +148,11 @@ class Cluster(object):
         bcounts: float array
             b(x) for the cluster
         """
-        mpc_scale = np.radians(1.) * cosmo.Dl(0, self.z) / (1 + self.z)**2
+        mpc_scale = np.radians(1.) * self.cosmo.Dl(0, self.z) / (1 + self.z)**2
         sigma_g = self.bkg.sigma_g_lookup(self.z, chisq, refmag)
         return 2 * np.pi * r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, cosmo, confstr, mask, 
+    def calc_richness(self, confstr, mask, 
         noerr = False, index = None):
         """
         compute richness for a cluster
@@ -183,7 +186,7 @@ class Cluster(object):
             idx = np.arange(len(self.neighbors))
             
         maxmag = self.zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
-        self.neighbors.r = np.radians(self.neighbors.dist[idx]) * cosmo.Dl(0, self.z)
+        self.neighbors.r = np.radians(self.neighbors.dist[idx]) * self.cosmo.Dl(0, self.z)
 
         # need to clip r at > 1e-6 or else you get a singularity
         self.neighbors.r[idx] = self.neighbors.r[idx].clip(min=1e-6)
@@ -194,7 +197,7 @@ class Cluster(object):
         phi = self._calc_luminosity(maxmag) #phi is lumwt in the IDL code
         ucounts = (2*np.pi*self.neighbors.r[idx]) * nfw * phi * rho
         bcounts = self._calc_bkg_density(self.neighbors.r[idx], self.neighbors.chisq[idx], 
-            self.neighbors.refmag[idx], cosmo)
+            self.neighbors.refmag[idx])
         
         theta_i = calc_theta_i(self.neighbors.refmag[idx], self.neighbors.refmag_err[idx], 
             maxmag, self.zredstr.limmag)
@@ -218,7 +221,7 @@ class Cluster(object):
         
         if not noerr:
             lam_cerr = self.calc_maskcorr_lambdaerr(mask.maskgals, self.zredstr.mstar(self.z), 
-                lam, rlam, cval, confstr.dldr_gamma, cosmo)
+                lam, rlam, cval, confstr.dldr_gamma)
         else:
             lam_cerr = 0.0
         
@@ -257,27 +260,20 @@ class Cluster(object):
         return lam
     
     def calc_maskcorr_lambdaerr(self, maskgals, mstar,
-         lam, rlam, cval, gamma, cosmo):
+         lam, rlam, cval, gamma):
         """
         Calculate richness error
         
         parameters
         ----------
         mstar    :
-        self.zredstr  : RedSequenceColorPar object
-                    Red sequence parameters
-        dof      : Degrees of freedom / number of collumns
-        limmag   : Limiting Magnitude
         lam      : Richness
         rlam     :
-        bkg      : Background object
-                   background lookup table
         cval     :
-        beta     :
         gamma    : Local slope of the richness profile of galaxy clusters
         cosmo    : Cosmology object
                     From esutil
-        refmag   : Reference magnitude
+        
 
         returns
         -------
@@ -310,7 +306,7 @@ class Cluster(object):
         refmag_for_bcounts = np.copy(refmag)
         refmag_for_bcounts[faint] = limmag-0.01
         
-        bcounts = self._calc_bkg_density(r, chisq , refmag_for_bcounts, cosmo)
+        bcounts = self._calc_bkg_density(r, chisq , refmag_for_bcounts)
         
         out, = np.where((refmag > limmag) | (mark == 0))
         
@@ -325,11 +321,19 @@ class Cluster(object):
         
         return lambda_err
         
-    def redmapper_zlambda(self, confstr, zin, mask, cosmo, z_lambda_e=None,
+    def redmapper_zlambda(self, confstr, zin, mask, z_lambda_e=None,
         maxmag_in=None, corrstr=None, npzbins=None, noerr=None, ncross=None):
         
         """
         from redmapper_zlambda.pro
+        
+        parameters
+        ----------
+        
+
+        returns
+        -------
+        
         """
         
         z_lambda=zin
@@ -360,7 +364,7 @@ class Cluster(object):
             
             while i < confstr.zlambda_maxiter and not done:
                 print z_lambda
-                mpc_scale = np.radians(1.) * cosmo.Dl(0, z_lambda) / (1 + z_lambda)**2
+                mpc_scale = np.radians(1.) * self.cosmo.Dl(0, z_lambda) / (1 + z_lambda)**2
                 
                 r = self.neighbors.dist * mpc_scale
         
@@ -371,7 +375,7 @@ class Cluster(object):
                     done = 1
                     continue
                 
-                lam = self.calc_richness(cosmo, confstr, mask, 
+                lam = self.calc_richness(confstr, mask, 
                     noerr = True, index = in_r)
                 #print lam
                         
