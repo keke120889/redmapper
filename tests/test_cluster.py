@@ -47,6 +47,12 @@ class ClusterFiltersTestCase(unittest.TestCase):
         filename = 'test_cluster_members.fit'
         self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
         
+        zred_filename = 'test_dr8_pars.fit'
+        self.cluster.zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
+        
+        bkg_filename = 'test_bkg.fit'
+        self.cluster.bkg = Background('%s/%s' % (self.file_path, bkg_filename))
+        
         hdr=fitsio.read_header(self.file_path+'/'+filename,ext=1)
         self.cluster.z = hdr['Z_LAMBDA']
         self.richness_compare = hdr['LAMBDA']
@@ -87,9 +93,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
 
         # lum
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
-        zred_filename = 'test_dr8_pars.fit'
-        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
-        mstar = zredstr.mstar(self.cluster.z)
+        mstar = self.cluster.zredstr.mstar(self.cluster.z)
         maxmag = mstar - 2.5*np.log10(confstr.lval_reference)
         py_lum = self.cluster._calc_luminosity(maxmag)[test_indices]
         idl_lum = np.array([0.31448608824729662, 0.51525195091720710, 
@@ -99,10 +103,14 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_lum, idl_lum)
 
         # bkg
+        # - by making bkg a cluster attribute we must create a new cluster class here to get 
+        #   matching results to the test. Maybe due for a change.
+        
         test_indices = np.array([29, 16, 27, 38, 25])
-        bkg_filename = 'test_bkg.fit'
-        bkg_stub = BackgroundStub(self.file_path + '/' + bkg_filename)
-        py_bkg = self.cluster._calc_bkg_density(bkg_stub, self.cluster.neighbors.r, 
+        self.cluster_bkgtest = Cluster(confstr)
+        self.cluster_bkgtest.z = self.cluster.z
+        self.cluster_bkgtest.bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
+        py_bkg = self.cluster_bkgtest._calc_bkg_density(self.cluster.neighbors.r, 
             self.cluster.neighbors.chisq, self.cluster.neighbors.refmag, cosmo)[test_indices]
         idl_bkg = np.array([1.3140464045388294, 0.16422314236185420, 
                             0.56610846527410053, 0.79559933744885403, 
@@ -121,8 +129,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         THIS TEST IS STILL IN DEVELOPEMENT!!!
         """
         self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/cosmo.Dl(0,self.cluster.z))
-        bkg = Background('%s/%s' % (self.file_path, bkg_filename))
-        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine=True)
         
         #test mask correction
         #set seed
@@ -130,7 +136,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         random.seed(seed = seed)
         
         #test the richness and error
-        richness = self.cluster.calc_richness(bkg, cosmo, confstr, mask)
+        richness = self.cluster.calc_richness(cosmo, confstr, mask)
         # this will just test the ~24.  Closer requires adding the mask
         
         #   test cpars, richness, lambda error
@@ -138,16 +144,19 @@ class ClusterFiltersTestCase(unittest.TestCase):
         testing.assert_almost_equal(richness, self.richness_compare, decimal = 0)
         #testing.assert_almost_equal(self.cluster.elambda, lam_err_idl, decimal = 0)
         
+        
+        #print self.cluster.neighbors.__dict__
+        #print self.cluster.zredstr.__dict__
         #print self.idl_CPARS
         print self.cluster.cpars
         print richness, self.cluster.elambda
-        print self.cluster.pcol
+        
         #x = np.arange(0, 1, 0.02)
         #plt.plot(x, self.cubic(x, self.idl_CPARS), 'b')
         #plt.plot(x, self.cubic(x, self.cluster.cpars), 'r')
         #plt.show()
         
-        #z_lambda = self.cluster.redmapper_zlambda(confstr, bkg, self.cluster.z, mask, cosmo)
+        #z_lambda = self.cluster.redmapper_zlambda(confstr, self.cluster.z, mask, cosmo)
         
         #End of the tests
         return
