@@ -36,11 +36,17 @@ class ClusterFiltersTestCase(unittest.TestCase):
         First test the filters:
         nfw, lum, and bkg
         """
-        self.cluster = Cluster()
         self.file_path = 'data_for_tests'
+        
+        #The configuration
+        #Used by the mask, background and richness calculation
+        conf_filename = 'testconfig.yaml'
+        confstr = Configuration(self.file_path + '/' + conf_filename)
+        
+        self.cluster = Cluster(confstr)
         filename = 'test_cluster_members.fit'
         self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
-
+        
         hdr=fitsio.read_header(self.file_path+'/'+filename,ext=1)
         self.cluster.z = hdr['Z_LAMBDA']
         self.richness_compare = hdr['LAMBDA']
@@ -51,19 +57,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         # this should explicitly set our default cosmology
         cosmo = Cosmo()
         
-        #filename = 'test_cpars.fits'
-        #test_cpars = fitsio.read(self.file_path+'/'+filename,ext=1)
-        #self.idl_P_DET   = test_cpars['P_DET'][0]
-        #self.idl_THETA_R = test_cpars['THETA_R'][0]
-        #self.idl_NIN     = test_cpars['NIN'][0]
-        #self.idl_C       = test_cpars['C'][0]
-        #self.idl_RADBINS = test_cpars['RADBINS'][0]
-        #self.idl_CPARS   = test_cpars['CPARS'][0][::-1]
-        
-        #The configuration
-        #Used by the mask, background and richness calculation
-        conf_filename = 'testconfig.yaml'
-        confstr = Configuration(self.file_path + '/' + conf_filename)
         
         #Set up the mask
         mask = HPMask(confstr) #Create the mask
@@ -98,7 +91,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
         mstar = zredstr.mstar(self.cluster.z)
         maxmag = mstar - 2.5*np.log10(confstr.lval_reference)
-        py_lum = self.cluster._calc_luminosity(zredstr, maxmag)[test_indices]
+        py_lum = self.cluster._calc_luminosity(maxmag)[test_indices]
         idl_lum = np.array([0.31448608824729662, 0.51525195091720710, 
                             0.50794115714566024, 0.57002321121039334, 
                             0.48596850373287931, 0.53985704075616792, 
@@ -137,7 +130,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         random.seed(seed = seed)
         
         #test the richness and error
-        richness = self.cluster.calc_richness(zredstr, bkg, cosmo, confstr, mask)
+        richness = self.cluster.calc_richness(bkg, cosmo, confstr, mask)
         # this will just test the ~24.  Closer requires adding the mask
         
         #   test cpars, richness, lambda error
@@ -148,11 +141,13 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #print self.idl_CPARS
         print self.cluster.cpars
         print richness, self.cluster.elambda
-        
+        print self.cluster.pcol
         #x = np.arange(0, 1, 0.02)
         #plt.plot(x, self.cubic(x, self.idl_CPARS), 'b')
         #plt.plot(x, self.cubic(x, self.cluster.cpars), 'r')
         #plt.show()
+        
+        #z_lambda = self.cluster.redmapper_zlambda(confstr, bkg, self.cluster.z, mask, cosmo)
         
         #End of the tests
         return

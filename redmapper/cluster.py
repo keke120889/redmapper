@@ -9,6 +9,7 @@ from mask import HPMask
 from scipy.optimize import brent, minimize_scalar
 from scipy.integrate import simps
 from chisq_dist import ChisqDist
+from redmapper.redsequence import RedSequenceColorPar
 
 class Cluster(object):
     """
@@ -21,9 +22,10 @@ class Cluster(object):
     (TBD)
 
     """
-    def __init__(self, r0 = 1.0, beta = 0.2):
+    def __init__(self,confstr, r0 = 1.0, beta = 0.2):
         self.r0     = r0
         self.beta   = beta
+        self.zredstr = RedSequenceColorPar(confstr.parfile)
         
     def find_neighbors(self, radius, galcat):
         """
@@ -101,13 +103,13 @@ class Cluster(object):
 
         return sigx
 
-    def _calc_luminosity(self, zredstr, normmag):
+    def _calc_luminosity(self, normmag):
         """
         Internal method to compute luminosity filter
 
         parameters
         ----------
-        zredstr: RedSequenceColorPar
+        self.zredstr: RedSequenceColorPar
             Red sequence object
         normmag: float
             Normalization magnitude
@@ -118,11 +120,11 @@ class Cluster(object):
             phi(x) filter for the cluster
 
         """
-        zind = zredstr.zindex(self.z)
-        refind = zredstr.lumrefmagindex(normmag)
-        normalization = zredstr.lumnorm[refind, zind]
-        mstar = zredstr.mstar(self.z)
-        phi_term_a = 10. ** (0.4 * (zredstr.alpha+1.) 
+        zind = self.zredstr.zindex(self.z)
+        refind = self.zredstr.lumrefmagindex(normmag)
+        normalization = self.zredstr.lumnorm[refind, zind]
+        mstar = self.zredstr.mstar(self.z)
+        phi_term_a = 10. ** (0.4 * (self.zredstr.alpha+1.) 
                                  * (mstar-self.neighbors.refmag))
         phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag)))
         return phi_term_a * phi_term_b / normalization
@@ -148,14 +150,14 @@ class Cluster(object):
         sigma_g = bkg.sigma_g_lookup(self.z, chisq, refmag)
         return 2 * np.pi * r * (sigma_g/mpc_scale**2)
 
-    def calc_richness(self, zredstr, bkg, cosmo, confstr, mask, 
+    def calc_richness(self, bkg, cosmo, confstr, mask, 
         noerr = False, index = None):
         """
         compute richness for a cluster
 
         parameters
         ----------
-        zredstr: RedSequenceColorPar object
+        self.zredstr: RedSequenceColorPar object
             Red sequence parameters
         bkg: Background object
             background lookup table
@@ -181,24 +183,24 @@ class Cluster(object):
         else:
             idx = np.arange(len(self.neighbors))
             
-        maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
+        maxmag = self.zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist[idx]) * cosmo.Dl(0, self.z)
 
         # need to clip r at > 1e-6 or else you get a singularity
         self.neighbors.r[idx] = self.neighbors.r[idx].clip(min=1e-6)
 
-        self.neighbors.chisq[idx] = zredstr.calculate_chisq(self.neighbors[idx], self.z)
-        rho = chisq_pdf(self.neighbors.chisq[idx], zredstr.ncol)
+        self.neighbors.chisq[idx] = self.zredstr.calculate_chisq(self.neighbors[idx], self.z)
+        rho = chisq_pdf(self.neighbors.chisq[idx], self.zredstr.ncol)
         nfw = self._calc_radial_profile()
-        phi = self._calc_luminosity(zredstr, maxmag) #phi is lumwt in the IDL code
+        phi = self._calc_luminosity(maxmag) #phi is lumwt in the IDL code
         ucounts = (2*np.pi*self.neighbors.r[idx]) * nfw * phi * rho
         bcounts = self._calc_bkg_density(bkg, self.neighbors.r[idx], self.neighbors.chisq[idx], 
             self.neighbors.refmag[idx], cosmo)
         
         theta_i = calc_theta_i(self.neighbors.refmag[idx], self.neighbors.refmag_err[idx], 
-            maxmag, zredstr.limmag)
+            maxmag, self.zredstr.limmag)
 
-        cpars = mask.calc_maskcorr(zredstr.mstar(self.z), maxmag, zredstr.limmag)
+        cpars = mask.calc_maskcorr(self.zredstr.mstar(self.z), maxmag, self.zredstr.limmag)
         
         try:
             w = theta_i * self.neighbors.wvals[idx]
@@ -216,8 +218,8 @@ class Cluster(object):
         cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
         
         if not noerr:
-            lam_cerr = self.calc_maskcorr_lambdaerr(mask.maskgals, zredstr.mstar(self.z), 
-                zredstr, lam, rlam,bkg, cval, confstr.dldr_gamma, cosmo)
+            lam_cerr = self.calc_maskcorr_lambdaerr(mask.maskgals, self.zredstr.mstar(self.z), 
+                lam, rlam,bkg, cval, confstr.dldr_gamma, cosmo)
         else:
             lam_cerr = 0.0
         
@@ -235,7 +237,7 @@ class Cluster(object):
         
         pcol = ucounts * lam/(ucounts * lam + bcounts)
         bad = np.where((self.neighbors.r[idx] > rlam) | (self.neighbors.refmag[idx] > maxmag) | 
-            (self.neighbors.refmag[idx] > zredstr.limmag) | (np.isfinite(pcol) == False))
+            (self.neighbors.refmag[idx] > self.zredstr.limmag) | (np.isfinite(pcol) == False))
         pcol[bad] = 0.0
         
         #create w, wt
@@ -255,7 +257,7 @@ class Cluster(object):
         
         return lam
     
-    def calc_maskcorr_lambdaerr(self, maskgals, mstar, zredstr,
+    def calc_maskcorr_lambdaerr(self, maskgals, mstar,
          lam, rlam ,bkg, cval, gamma, cosmo):
         """
         Calculate richness error
@@ -263,7 +265,7 @@ class Cluster(object):
         parameters
         ----------
         mstar    :
-        zredstr  : RedSequenceColorPar object
+        self.zredstr  : RedSequenceColorPar object
                     Red sequence parameters
         dof      : Degrees of freedom / number of collumns
         limmag   : Limiting Magnitude
@@ -283,8 +285,8 @@ class Cluster(object):
         lambda_err
         
         """
-        dof = zredstr.ncol
-        limmag = zredstr.limmag
+        dof = self.zredstr.ncol
+        limmag = self.zredstr.limmag
         
         use, = np.where(maskgals.r < rlam)
         
@@ -324,7 +326,7 @@ class Cluster(object):
         
         return lambda_err
         
-    def redmapper_zlambda(self, confstr, zredstr, bkg, zin, mask, cosmo, z_lambda_e=None,
+    def redmapper_zlambda(self, confstr, bkg, zin, mask, cosmo, z_lambda_e=None,
         maxmag_in=None, corrstr=None, npzbins=None, noerr=None, ncross=None):
         #refmag_total,refmag_total_err,refmag_rs,refmag_rs_err,col_or_flux_arr,magerr_or_ivar_arr,dis,ebv,r0,beta,
         
@@ -342,7 +344,7 @@ class Cluster(object):
 
         #m = np.amin(self.neighbors.dist)
         #minind = np.argmin(self.neighbors.dist) #assuming self.neighbors.dist = dis
-        maxmag = zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
+        maxmag = self.zredstr.mstar(self.z) - 2.5*np.log10(confstr.lval_reference)
         if maxmag_in is not None:
             if maxmag_in.size == 1:
                 maxmag = maxmag_in
@@ -370,20 +372,17 @@ class Cluster(object):
             while i < confstr.zlambda_maxiter and not done:
                 print z_lambda
                 mpc_scale = np.radians(1.) * cosmo.Dl(0, z_lambda) / (1 + z_lambda)**2
-                #print mpc_scale
-                #YEAH??
+                
                 r = self.neighbors.dist * mpc_scale
         
                 in_r, = np.where(r < maxrad)
-                #thought about creating an object here that contains all in data
-                #- but how would I implement that?
                 
                 if in_r.size < 1:
                     z_lambda = -1.0
                     done = 1
                     continue
                 
-                lam = self.calc_richness(zredstr, bkg, cosmo, confstr, mask, 
+                lam = self.calc_richness(bkg, cosmo, confstr, mask, 
                     noerr = True, index = in_r)
                 #print lam
                         
@@ -397,11 +396,11 @@ class Cluster(object):
                 r_lambda=self.r0*(lam/100.)**self.beta
                 
                 if maxmag_in is not None:
-                   maxmag = zredstr.mstar(z_lambda)-2.5*np.log10(confstr.lval_reference)
+                   maxmag = self.zredstr.mstar(z_lambda)-2.5*np.log10(confstr.lval_reference)
                 
-                z_lambda_new = self.zlambda_calcz(confstr,zredstr,z_lambda,
+                z_lambda_new = self.zlambda_calcz(confstr,z_lambda,
                                 wtvals_mod,r_lambda,maxmag, in_r)
-                z_lambda_new = np.clip(z_lambda_new, zredstr.z[0], zredstr.z[-1])
+                z_lambda_new = np.clip(z_lambda_new, self.zredstr.z[0], self.zredstr.z[-1])
                 
                 #check for convergence
                 if np.absolute(z_lambda_new-z_lambda) < confstr.zlambda_tol or z_lambda_new < 0.0:
@@ -409,37 +408,37 @@ class Cluster(object):
                     
                 z_lambda = z_lambda_new
                 i += 1
-            
+            print confstr.zlambda_tol
             niter = i
             if z_lambda > 0.0:
                 if npzbins == 0 and not noerr:
                     #regular Gaussian error   
-                    z_lambda_e = self.zlambda_err(confstr, zredstr, z_lambda, wtvals_mod, r_lambda, maxmag, in_r)
+                    z_lambda_e = self.zlambda_err(confstr, z_lambda, wtvals_mod, r_lambda, maxmag, in_r)
                     #and check for an error
                     if z_lambda_e < 0.0:
                         z_lambda = -1.0
                 elif npzbins > 0:
-                    pzvals = self.zlambda_pz(confstr,zredstr,z_lambda,npzbins,wtvals_mod,r_lambda,maxmag,pzbins, in_r)
+                    pzvals = self.zlambda_pz(confstr, z_lambda, npzbins, wtvals_mod, r_lambda, maxmag, pzbins, in_r)
             
                     #check for bad values
                     if (pzvals[0]/pzvals[(npzbins-1)/2] > 0.01 and 
-                        pzbins[0] >= np.amin(zredstr.z) + 0.01) or \
+                        pzbins[0] >= np.amin(self.zredstr.z) + 0.01) or \
                         (pzvals[npzbins-1]/pzvals[(npzbins-1)/2] > 0.01 and 
-                        pzbins[npzbins-1] <= np.amax(zredstr.z)-0.01):
+                        pzbins[npzbins-1] <= np.amax(self.zredstr.z)-0.01):
                         
-                        pzvals = self.zlambda_pz(confstr,zredstr,z_lambda,npzbins,wtvals_mod,r_lambda,maxmag,pzbins,in_r, slow = True)
+                        pzvals = self.zlambda_pz(confstr, z_lambda, npzbins, wtvals_mod, r_lambda, maxmag, pzbins, in_r, slow = True)
                         
                     if pzvals[0] < 0:
                         #this is bad
                         z_lambda = -1.0
                         z_lambda_e = -1.0
                     else:
-                        res = gaussfit_rm(pzbins,pzvals,a,nterms=3,status=status)
+                        res = gaussfit_rm(pzbins, pzvals, a, nterms=3, status=status)
                 
                         if status == 0 and (a[2] > 0 or a[2] > 0.2):
                             z_lambda_e = a[2]
                         else:
-                            z_lambda_e = self.zlambda_err(confstr,zredstr,z_lambda,wtvals_mod,r_lambda,maxmag, in_r)
+                            z_lambda_e = self.zlambda_err(confstr, z_lambda, wtvals_mod, r_lambda, maxmag, in_r)
                             
                 # check peak of p(z)...
                 if npzbins == 0:
@@ -465,19 +464,19 @@ class Cluster(object):
             redmapper_zlambda_apply_correction(confstr,corrstr,total(wtvals_in),z_lambda,z_lambda_e,pzbins=pzbins,pzvals=pzvals,noerr=noerr)
 
         if ncross is not None and z_lambda > confstr.zrange[0] and z_lambda < confstr.zrange[1]:
-            ncross = redmapper_zlambda_ncross(confstr,zredstr,bkg,zin,refmag_total,refmag_total_err,col_or_flux_arr,magerr_or_ivar_arr,dis,ebv,r0,beta,maskgals,z_lambda,wvals=wvals,maxmag_in=maxmag_in,zreds=zreds,zred_errs=zred_errs,zred_chisqs=zred_chisqs)
+            ncross = redmapper_zlambda_ncross(confstr,self.zredstr,bkg,zin,refmag_total,refmag_total_err,col_or_flux_arr,magerr_or_ivar_arr,dis,ebv,r0,beta,maskgals,z_lambda,wvals=wvals,maxmag_in=maxmag_in,zreds=zreds,zred_errs=zred_errs,zred_chisqs=zred_chisqs)
 
         return z_lambda
 
-    def zlambda_calcz(self, confstr, zredstr, z_in, wtvals, maxrad, maxmag, idx):
-        rzcs_str = rzcs(self.neighbors[idx], zredstr, confstr, z_in, wtvals, maxrad, maxmag)
+    def zlambda_calcz(self, confstr, z_in, wtvals, maxrad, maxmag, idx):
+        neighbors_in_str = neighbors_in(self.neighbors[idx], self.zredstr, confstr, z_in, wtvals, maxrad, maxmag)
         
         #calculate z_lambda
         nsteps = 10
         steps = np.linspace(0., nsteps*confstr.zlambda_parab_step, num = nsteps, dtype = np.float64)+z_in-confstr.zlambda_parab_step*(nsteps-1)/2
         likes = np.zeros(nsteps)
         for i in range(0, nsteps-1):
-             likes[i] = rzcs_str.rzc_bracket_fn(steps[i])
+             likes[i] = neighbors_in_str.bracket_fn(steps[i])
         
         fit = np.polyfit(steps,likes,2)
         
@@ -490,36 +489,36 @@ class Cluster(object):
         
         return z_lambda
             
-    def zlambda_err(self, confstr, zredstr, z_lambda, wtvals, maxrad, maxmag, idx):
-        rzcs_str = rzcs(self.neighbors[idx], zredstr, confstr, z_lambda, wtvals, maxrad, maxmag)
+    def zlambda_err(self, confstr, z_lambda, wtvals, maxrad, maxmag, idx):
+        neighbors_in_str = neighbors_in(self.neighbors[idx], self.zredstr, confstr, z_lambda, wtvals, maxrad, maxmag)
         
         #calculate error
-        minlike = rzcs_str.rzc_bracket_fn(z_lambda) # of course this is negative
+        minlike = neighbors_in_str.bracket_fn(z_lambda) # of course this is negative
         #now we want to aim for minlike+1
-        rzcs_str.targval = minlike+1
+        neighbors_in_str.targval = minlike+1
         
-        print rzcs_str(z_lambda-0.1),rzcs_str(z_lambda-0.02),rzcs_str(z_lambda-0.001)
+        print neighbors_in_str(z_lambda-0.1),neighbors_in_str(z_lambda-0.02),neighbors_in_str(z_lambda-0.001)
         
-        z_lambda_lo, fval_lo = minimize_scalar(rzcs_str, bracket = (z_lambda-0.1,z_lambda-0.02,z_lambda-0.001), method='brent', tol=0.0002)
-        z_lambda_hi, fval_hi = minimize_scalar(rzcs_str, bracket = (z_lambda+0.001,z_lambda+0.02,z_lambda+0.1), method='brent', tol=0.0002)
+        z_lambda_lo, fval_lo = minimize_scalar(neighbors_in_str, bracket = (z_lambda-0.1,z_lambda-0.02,z_lambda-0.001), method='brent', tol=0.0002)
+        z_lambda_hi, fval_hi = minimize_scalar(neighbors_in_str, bracket = (z_lambda+0.001,z_lambda+0.02,z_lambda+0.1), method='brent', tol=0.0002)
         z_lambda_e = (z_lambda_hi-z_lambda_lo)/2.
         
         return z_lambda_e
 
-    def zlambda_pz(self, confstr, zredstr, z_lambda, npzbins, wtvals, maxrad, maxmag,pzbins,idx,slow=False):
+    def zlambda_pz(self, confstr, z_lambda, npzbins, wtvals, maxrad, maxmag,pzbins,idx,slow=False):
         
-        rzcs_str = rzcs(self.neighbors[idx], zredstr, confstr, z_lambda, wtvals, maxrad, maxmag)
+        neighbors_in_str = neighbors_in(self.neighbors[idx], self.zredstr, confstr, z_lambda, wtvals, maxrad, maxmag)
         
-        minlike = rzcs_str.rzc_bracket_fn(z_lambda)
+        minlike = neighbors_in_str.bracket_fn(z_lambda)
         #4 sigma
-        rzcs_str.targval=minlike+16
+        neighbors_in_str.targval=minlike+16
         
         if not slow:
             #do we need both directions?  For speed, just do one...
             #also don't need as tight tolerance.
             #This is very approximate, but is fine...
             
-            z_lambda_hi, fval_hi = minimize_scalar(rzcs_str, bracket = (z_lambda+0.001,z_lambda+0.05,z_lambda+0.15),method='brent', tol=0.001)
+            z_lambda_hi, fval_hi = minimize_scalar(neighbors_in_str, bracket = (z_lambda+0.001,z_lambda+0.05,z_lambda+0.15),method='brent', tol=0.001)
             dz = np.clip((z_lambda_hi-z_lambda), 0.005, 0.15) # minimal to consider
             
             pzbinsize = 2.*dz/(npzbins-1)
@@ -528,34 +527,34 @@ class Cluster(object):
         else:
             #super-slow-mode
             #find the center
-            pk=-1*rzcs_str.rzc_bracket_fn(z_lambda) #REPLACE WITH *minlike
-            zbin = np.clip(np.round((z_lambda-zredstr[0].z)/(zredstr[1].z-zredstr[0].z)), 0, (zredstr.size-1))
+            pk=-1*neighbors_in_str.bracket_fn(z_lambda) #REPLACE WITH *minlike
+            zbin = np.clip(np.round((z_lambda-self.zredstr[0].z)/(self.zredstr[1].z-self.zredstr[0].z)), 0, (self.zredstr.size-1))
             
-            pz0=zredstr.volume_factor[zbin]
+            pz0=self.zredstr.volume_factor[zbin]
             
             #go to lower redshift
             dztest = 0.05
             
             lowz=z_lambda-dztest
             ratio = 1.0
-            while (lowz >= np.amin(zredstr.z) and (ratio > 0.01)):
-                val = -1 * rzcs_str.rzc_bracket_fn(lowz)
+            while (lowz >= np.amin(self.zredstr.z) and (ratio > 0.01)):
+                val = -1 * neighbors_in_str.bracket_fn(lowz)
         
-                zbin = np.clip(np.round((lowz-zredstr.z[0])/(zredstr.z[1]-zredstr.z[0])), 0, (zredstr.size-1))
+                zbin = np.clip(np.round((lowz-self.zredstr.z[0])/(self.zredstr.z[1]-self.zredstr.z[0])), 0, (self.zredstr.size-1))
 
                 if sconst:
                     #ch = val-pk
-                    pz = np.exp(-(val-pk)/2.)*zredstr.volume_factor[zbin]
+                    pz = np.exp(-(val-pk)/2.)*self.zredstr.volume_factor[zbin]
                 else:
                     #ln_lkhd = val - pk
-                    pz=np.exp(val - pk)*zredstr.volume_factor[zbin]
+                    pz=np.exp(val - pk)*self.zredstr.volume_factor[zbin]
 
                 ratio=pz/pz0
 
                 if (ratio > 0.01):
                     lowz=lowz-dztest
             
-            highz = np.clip(highz, None, np.amax(zredstr.z))
+            highz = np.clip(highz, None, np.amax(self.zredstr.z))
 
             pzbinsize = (highz - lowz)/(npzbins-1)
 
@@ -566,7 +565,7 @@ class Cluster(object):
             zmind = np.argmin(np.absolute(pzbins-z_lambda))
             pzbins=pzbins-(pzbins[zmind]-z_lambda)
             
-        zbins = np.clip(np.round((pzbins-zredstr.z[0])/(zredstr[1].z-zredstr[0].z)), 0, (zredstr.size-1))
+        zbins = np.clip(np.round((pzbins-self.zredstr.z[0])/(self.zredstr[1].z-self.zredstr[0].z)), 0, (self.zredstr.size-1))
             
         if sconst or scol:
             ch=fltarr(npzbins)
@@ -574,39 +573,39 @@ class Cluster(object):
             for i in range(0, npzbins-1):
                 if not scol:
                     #regular
-                    chisqs=calclambda_chisq_dist(np.transpose(zredstr[zbins[i]].covmat[rzcs_str.zrefmagbin,:,:]),
-                                                 zredstr[zbins[i]].c,zredstr[zbins[i]].slope,
-                                                 zredstr[zbins[i]].pivotmag,rzcs_str.refmag,rzcs_str.merr,
-                                                 rzcs_str.c,chisq = True,
-                                                 lupcorr = zredstr[zbins[i]].lupcorr[:,rzcs_str.zrefmagbin].flatten())    
+                    chisqs=calclambda_chisq_dist(np.transpose(self.zredstr[zbins[i]].covmat[neighbors_in_str.zrefmagbin,:,:]),
+                                                 self.zredstr[zbins[i]].c,self.zredstr[zbins[i]].slope,
+                                                 self.zredstr[zbins[i]].pivotmag,neighbors_in_str.refmag,neighbors_in_str.merr,
+                                                 neighbors_in_str.c,chisq = True,
+                                                 lupcorr = self.zredstr[zbins[i]].lupcorr[:,neighbors_in_str.zrefmagbin].flatten())    
             
                 else:
                     # single color
-                    d=reform(c_arr) - (zredstr[zbin].slope[0]*(rzcs_str.refmag - zredstr[zbins[i]].pivotmag) + zredstr[zbins[i]].c[0])
-                    ctot=(zredstr[zbins[i]].covmat[rzcs_str.zrefmagbin] + rzcs_str.merr[0]**2. + rzcs_str.merr[1]**2.)
+                    d=reform(c_arr) - (self.zredstr[zbin].slope[0]*(neighbors_in_str.refmag - self.zredstr[zbins[i]].pivotmag) + self.zredstr[zbins[i]].c[0])
+                    ctot=(self.zredstr[zbins[i]].covmat[neighbors_in_str.zrefmagbin] + neighbors_in_str.merr[0]**2. + neighbors_in_str.merr[1]**2.)
                     #chisqs=d*(1./ctot)*d
                     chisqs=d**2 / ctot
                     
                 
                 #this may be correct...
-                ch[i] = np.sum(rzcs_str.pw*chisqs)
+                ch[i] = np.sum(neighbors_in_str.pw*chisqs)
                 
             ch = ch-np.amin(ch)
-            pz = np.exp(-ch/2.)*zredstr.volume_factor[zbins]
+            pz = np.exp(-ch/2.)*self.zredstr.volume_factor[zbins]
             
         else:
             ln_lkhd = np.zeros(npzbins)
             for i in range(0, npzbins-1):
-                likelihoods=calclambda_chisq_dist(transpose(zredstr[zbins[i]].covmat[rzcs_str.zrefmagbin,:,:]),
-                                                  zredstr[zbins[i]].c,zredstr[zbins[i]].slope,
-                                                  zredstr[zbins[i]].pivotmag,rzcs_str.refmag,rzcs_str.merr,
-                                                  rzcs_str.c,
-                                                  lupcorr = zredstr[zbins[i]].lupcorr[:,rzcs_str.zrefmagbin].flatten())
+                likelihoods=calclambda_chisq_dist(transpose(self.zredstr[zbins[i]].covmat[neighbors_in_str.zrefmagbin,:,:]),
+                                                  self.zredstr[zbins[i]].c,self.zredstr[zbins[i]].slope,
+                                                  self.zredstr[zbins[i]].pivotmag,neighbors_in_str.refmag,neighbors_in_str.merr,
+                                                  neighbors_in_str.c,
+                                                  lupcorr = self.zredstr[zbins[i]].lupcorr[:,neighbors_in_str.zrefmagbin].flatten())
 
-                ln_lkhd[i] = np.sum(rzcs_str.pw*likelihoods)
+                ln_lkhd[i] = np.sum(neighbors_in_str.pw*likelihoods)
                 
             ln_lkhd = ln_lkhd - np.amax(ln_lkhd)
-            pz = np.exp(ln_lkhd) * zredstr.volume_factor[zbins]
+            pz = np.exp(ln_lkhd) * self.zredstr.volume_factor[zbins]
             
             #now normalize
             n = simps(pz, pzbins)
@@ -614,7 +613,7 @@ class Cluster(object):
 
             return pz
             
-class rzcs(object):
+class neighbors_in(object):
     def __init__(self, neighbors, zredstr, confstr, z_in, wtvals, maxrad, maxmag):
         #is this a constant scatter model?
         topfrac=confstr.zlambda_topfrac
@@ -653,13 +652,13 @@ class rzcs(object):
         self.pw            = pw[gd]
         self.targval       = 0
         
-    def rzc_bracket_fn(self, p):
+    def bracket_fn(self, p):
         likelihoods = self.zredstr.calculate_chisq(self, p, calc_lkhd=True)
         t=-np.sum(self.pw*likelihoods)
         return t
         
     def __call__(self, p):
-        t  = self.rzc_bracket_fn(p)
+        t  = self.bracket_fn(p)
         dt = np.absolute(t-self.targval)
         return dt
         
