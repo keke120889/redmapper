@@ -106,9 +106,9 @@ class GalaxyCatalog(Catalog):
         # that's easy in simplepix.  Not sure how to do in healpix.
         return cls(cat)
         
-    #@property
-    def galcol(self, ncol):
-        galcol = self.mag[:,:ncol] - self.mag[:,1:]
+    @property
+    def galcol(self):
+        galcol = self.mag[:,:-1] - self.mag[:,1:]
         return galcol
 
     def match(self, galaxy, radius):

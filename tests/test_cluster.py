@@ -40,15 +40,17 @@ class ClusterFiltersTestCase(unittest.TestCase):
         
         #The configuration
         #Used by the mask, background and richness calculation
-        conf_filename = 'testconfig.yaml'
-        confstr = Configuration(self.file_path + '/' + conf_filename)
         
-        self.cluster = Cluster(confstr)
+        self.cluster = Cluster()
+        
+        conf_filename = 'testconfig.yaml'
+        self.cluster.confstr = Configuration(self.file_path + '/' + conf_filename)
+        
         filename = 'test_cluster_members.fit'
         self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
         
         zred_filename = 'test_dr8_pars.fit'
-        self.cluster.zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename)
+        self.cluster.zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,)
         
         bkg_filename = 'test_bkg.fit'
         self.cluster.bkg = Background('%s/%s' % (self.file_path, bkg_filename))
@@ -62,7 +64,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster.dec = hdr['DEC']
         
         #Set up the mask
-        mask = HPMask(confstr) #Create the mask
+        mask = HPMask(self.cluster.confstr) #Create the mask
         #TODO - Need to know the mpcscale
         #mask.set_radmask(self.cluster,mpcscale???)
         print "In development: printing features of the mask"
@@ -78,7 +80,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         mask.set_radmask(self.cluster, mpc_scale)
         
         #depthstr
-        depthstr = DepthMap(confstr)
+        depthstr = DepthMap(self.cluster.confstr)
         depthstr.calc_maskdepth(mask.maskgals, self.cluster.ra, self.cluster.dec, mpc_scale)
         
         # nfw
@@ -87,24 +89,24 @@ class ClusterFiltersTestCase(unittest.TestCase):
         idl_nfw = np.array([0.23875841, 0.033541825, 0.032989189, 0.054912228, 
                             0.11075225, 0.34660992, 0.23695366, 0.25232968])
         testing.assert_almost_equal(py_nfw, idl_nfw)
-
+        
         # lum
         test_indices = np.array([47, 19,  0, 30, 22, 48, 34, 19])
         mstar = self.cluster.zredstr.mstar(self.cluster.z)
-        maxmag = mstar - 2.5*np.log10(confstr.lval_reference)
+        maxmag = mstar - 2.5*np.log10(self.cluster.confstr.lval_reference)
         py_lum = self.cluster._calc_luminosity(maxmag)[test_indices]
         idl_lum = np.array([0.31448608824729662, 0.51525195091720710, 
                             0.50794115714566024, 0.57002321121039334, 
                             0.48596850373287931, 0.53985704075616792, 
                             0.61754178397796256, 0.51525195091720710])
         testing.assert_almost_equal(py_lum, idl_lum)
-
+        
         # bkg
         # - by making bkg a cluster attribute we must create a new cluster class here to get 
         #   matching results to the test. Maybe due for a change.
         
         test_indices = np.array([29, 16, 27, 38, 25])
-        self.cluster_bkgtest = Cluster(confstr)
+        self.cluster_bkgtest = Cluster(self.cluster.confstr)
         self.cluster_bkgtest.z = self.cluster.z
         self.cluster_bkgtest.bkg = BackgroundStub(self.file_path + '/' + bkg_filename)
         py_bkg = self.cluster_bkgtest._calc_bkg_density(self.cluster.neighbors.r, 
@@ -133,25 +135,14 @@ class ClusterFiltersTestCase(unittest.TestCase):
         random.seed(seed = seed)
         
         #test the richness and error
-        richness = self.cluster.calc_richness(confstr, mask)
+        richness = self.cluster.calc_richness(mask)
         # this will just test the ~24.  Closer requires adding the mask
         
         #   test cpars, richness, lambda error
         #testing.assert_almost_equal(self.cluster.cpars, cpars_idl)
         testing.assert_almost_equal(richness, self.richness_compare, decimal = 0)
         #testing.assert_almost_equal(self.cluster.elambda, lam_err_idl, decimal = 0)
-    
         
-        #print self.idl_CPARS
-        print self.cluster.cpars
-        print richness, self.cluster.elambda
-        
-        #x = np.arange(0, 1, 0.02)
-        #plt.plot(x, self.cubic(x, self.idl_CPARS), 'b')
-        #plt.plot(x, self.cubic(x, self.cluster.cpars), 'r')
-        #plt.show()
-        
-        #z_lambda = self.cluster.redmapper_zlambda(confstr, self.cluster.z, mask)
         
         #End of the tests
         return

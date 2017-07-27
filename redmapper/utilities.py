@@ -23,6 +23,10 @@ def chisq_pdf(data, k):
     normalization = 1./(2**(k/2.) * special.gamma(k/2.))
     return normalization * data**((k/2.)-1) * np.exp(-data/2.)
 
+def gaussFunction(x, *p):
+   A, mu, sigma = p
+   return A*np.exp(-(x-mu)**2./(2.*sigma**2))
+
 
 ######################################
 ## mstar LUT code
