@@ -140,10 +140,8 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #testing.assert_almost_equal(self.cluster.cpars, cpars_idl)
         testing.assert_almost_equal(richness, self.richness_compare, decimal = 0)
         #testing.assert_almost_equal(self.cluster.elambda, lam_err_idl, decimal = 0)
+    
         
-        
-        #print self.cluster.neighbors.__dict__
-        #print self.cluster.zredstr.__dict__
         #print self.idl_CPARS
         print self.cluster.cpars
         print richness, self.cluster.elambda
@@ -153,7 +151,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #plt.plot(x, self.cubic(x, self.cluster.cpars), 'r')
         #plt.show()
         
-        #z_lambda = self.cluster.redmapper_zlambda(confstr, self.cluster.z, mask, cosmo)
+        #z_lambda = self.cluster.redmapper_zlambda(confstr, self.cluster.z, mask)
         
         #End of the tests
         return
