@@ -66,7 +66,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         seed = 0
         random.seed(seed = seed)
         
-        z_lambda = self.cluster.redmapper_zlambda(self.cluster.z, mask)
+        z_lambda = self.cluster.redmapper_zlambda(self.cluster.z, mask, calcpz = True)
         
 if __name__=='__main__':
     unittest.main() 

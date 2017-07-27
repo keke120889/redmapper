@@ -23,3 +23,4 @@ zlambda_maxiter: 20.
 zlambda_tol: 0.0002
 zlambda_parab_step: 0.002
 zlambda_topfrac: 0.7
+npzbins: 21
