@@ -4,7 +4,6 @@ import numpy as np
 import fitsio
 from numpy import random
 
-from esutil.cosmology import Cosmo
 from redmapper.catalog import Entry
 from redmapper.cluster import Cluster
 from redmapper.config import Configuration

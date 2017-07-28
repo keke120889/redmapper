@@ -443,9 +443,6 @@ class Cluster(object):
             z_lambda, z_lambda_e = zlambda_apply_correction(corrstr, np.sum(wtvals_in), z_lambda ,z_lambda_e)
             #NOT READY - MISSING corrstr
         
-        #if ncross and z_lambda > confstr.zrange[0] and z_lambda < confstr.zrange[1]:
-        #    ncross = redmapper_zlambda_ncross(zin,refmag_total,refmag_total_err,refmag_rs,refmag_rs_err,col_or_flux_arr,magerr_or_ivar_arr,dis,ebv,r0,beta,maskgals,z_lambda,wvals=wvals,maxmag_in=maxmag_in,zreds=zreds,zred_errs=zred_errs,zred_chisqs=zred_chisqs)
-        #endif
         
         self.z_lambda = z_lambda
         self.z_lambda_err = z_lambda_e
@@ -667,6 +664,8 @@ class Cluster(object):
     def zlambda_apply_correction(corrstr, lambda_in, z_lambda, z_lambda_e, noerr=False):
         """
         apply corrections to modify z_lambda & uncertainty, pz and pzbins
+        NOT READY - MISSING corrstr
+        
         parameters
         ----------
         corrstr: correction object
@@ -711,25 +710,6 @@ class Cluster(object):
                 self.zlambda_pz = self.zlambda_pz/n
                 
         return z_lambda_new, z_lambda_e_new
-        
-    def zlambda_ncross(mask, maxrad, maxmag):
-        nsteps = np.ceil(2.* (self.confstr.zlambda_ncross_dz)/self.confstr.zlambda_ncross_step)
-        zstep   = np.arange(nsteps)*self.confstr.zlambda_ncross_step + z_lambda - self.confstr.zlambda_ncross_dz
-
-        gd, = np.where((zstep > confstr.zrange[0]) and (zstep < confstr.zrange[1]))
-        zstep = zstep[gd]
-
-        mpc_scale = np.radians(1.) * self.cosmo.Dl(0, zstep) / (1 + zstep)**2
-        r = self.neighbors.dist * mpc_scale
-        in_r, = np.where(r < maxrad)
-
-        zout = np.zeros(nsteps)
-        lambda_out = np.zeros(nsteps)
-        like_out = np.zeros(nsteps)
-        
-        lam = self.calc_richness(mask, noerr = True, index = in_r)
-        pass
-        
     
         
 class ClusterCatalog(Catalog): 

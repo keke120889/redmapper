@@ -49,12 +49,11 @@ class Mask(object):
 
         results
         -------
-        sets maskgals['MASKED']
+        sets maskgals.mark
 
         """
 
         # note this probably can be in the superclass, no?
-        #print cluster.__dict__
         ras = cluster.ra + self.maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(cluster.dec))
         decs = cluster.dec + self.maskgals.y/(mpcscale*SEC_PER_DEG)
         self.maskgals.mark = self.compute_radmask(ras,decs)

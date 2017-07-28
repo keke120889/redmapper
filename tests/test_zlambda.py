@@ -4,8 +4,6 @@ import numpy as np
 import fitsio
 from numpy import random
 
-from esutil.cosmology import Cosmo
-from redmapper.catalog import Entry
 from redmapper.cluster import Cluster
 from redmapper.config import Configuration
 from redmapper.galaxy import GalaxyCatalog
@@ -66,7 +64,18 @@ class ClusterFiltersTestCase(unittest.TestCase):
         seed = 0
         random.seed(seed = seed)
         
+        #TEST AGAINST CHANGES
+        #with calcpz = True
         z_lambda = self.cluster.redmapper_zlambda(self.cluster.z, mask, calcpz = True)
+        
+        testing.assert_almost_equal(self.cluster.z_lambda, 0.22816455)
+        testing.assert_almost_equal(self.cluster.z_lambda_err, 0.00632459)
+        
+        #test zlambda_err extra
+        z_lambda_err = self.cluster.zlambda_err(self.cluster.z_lambda)
+        
+        testing.assert_almost_equal(z_lambda_err, 0.00897011)
+        
         
 if __name__=='__main__':
     unittest.main() 
