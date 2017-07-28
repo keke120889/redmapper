@@ -159,17 +159,8 @@ class Cluster(object):
 
         parameters
         ----------
-        self.zredstr: RedSequenceColorPar object
-            Red sequence parameters
-        bkg: Background object
-            background lookup table
-        cosmo: Cosmology object
-            From esutil
-        r0: float, optional
-            Radius -- richness scaling amplitude (default = 1.0 Mpc)
-        beta: float, optional
-            Radius -- richness scaling index (default = 0.2)
-        noerr: 
+        mask:  mask object
+        noerr: if True, no error calculated
         index: only use part of self.neighbor data
 
         returns
@@ -257,21 +248,17 @@ class Cluster(object):
         
         return lam
     
-    def calc_maskcorr_lambdaerr(self, maskgals, mstar,
-         lam, rlam, cval, gamma):
+    def calc_maskcorr_lambdaerr(self, maskgals, mstar, lam, rlam, cval, gamma):
         """
         Calculate richness error
         
         parameters
         ----------
-        mstar    :
+        maskgals : maskgals object
         lam      : Richness
         rlam     :
         cval     :
         gamma    : Local slope of the richness profile of galaxy clusters
-        cosmo    : Cosmology object
-                    From esutil
-        
 
         returns
         -------
@@ -320,8 +307,7 @@ class Cluster(object):
         return lambda_err
         
     def redmapper_zlambda(self, zin, mask, maxmag_in=None, calcpz=False, noerr=False, 
-        ncross=None, correction = False):
-        
+        correction = False, ncross=None):
         """
         from redmapper_zlambda.pro
         
@@ -329,6 +315,7 @@ class Cluster(object):
         ----------
         zin: input redshift
         mask: mask object
+        noerr: if True, no error calculated
 
         returns
         -------
@@ -352,7 +339,7 @@ class Cluster(object):
             z_lambda_e = 0.0
         for pi in range(0, 2):
             #skip second iteration if we're already done
-            if pzdone: continue
+            if pzdone: break
             
             while i < self.confstr.zlambda_maxiter:
                 mpc_scale = np.radians(1.) * self.cosmo.Dl(0, z_lambda) / (1 + z_lambda)**2
@@ -373,15 +360,18 @@ class Cluster(object):
                     
                 wtvals_mod = self.pcol
                 
-                r_lambda=self.r0*(lam/100.)**self.beta
+                r_lambda = self.r0 * (lam/100.)**self.beta
                 
                 if maxmag_in is not None:
-                   maxmag = self.zredstr.mstar(z_lambda)-2.5*np.log10(self.confstr.lval_reference)
+                   maxmag = (self.zredstr.mstar(z_lambda) - 
+                       2.5 * np.log10(self.confstr.lval_reference))
                 
-                self.select_neighbors(z_lambda, wtvals_mod, maxrad, maxmag)
+                self.select_neighbors(wtvals_mod, maxrad, maxmag)
                 
+                #break out of loop if too few neighbors
                 if self.zlambda_fail is True:
                     z_lambda_new = -1
+                    break
                 else:   
                     z_lambda_new = self.zlambda_calcz(z_lambda)
                 
@@ -408,13 +398,14 @@ class Cluster(object):
                     # set pz and pzbins
                     self.zlambda_pz(z_lambda, wtvals_mod, r_lambda, maxmag)
             
-                    #check for bad values
+                    #check for bad values and do slow mode if necessary
                     if (self.zlambda_pz[0]/self.zlambda_pz[(self.confstr.npzbins-1)/2] > 0.01 and 
                         self.zlambda_pzbins[0] >= np.amin(self.zredstr.z) + 0.01) or \
-                        (self.zlambda_pz[self.confstr.npzbins-1]/self.zlambda_pz[(self.confstr.npzbins-1)/2] > 0.01 and 
+                        (self.zlambda_pz[self.confstr.npzbins-1]/
+                        self.zlambda_pz[(self.confstr.npzbins-1)/2] > 0.01 and 
                         self.zlambda_pzbins[self.confstr.npzbins-1] <= np.amax(self.zredstr.z)-0.01):
                         
-                        pzvals = self.zlambda_pz(self.confstr, z_lambda, self.confstr.npzbins, 
+                        self.zlambda_pz(self.confstr, z_lambda, self.confstr.npzbins, 
                             wtvals_mod, r_lambda, maxmag, slow = True)
                         
                     if self.zlambda_pz[0] < 0:
@@ -449,7 +440,7 @@ class Cluster(object):
                 
         #and apply the correction if necessary...
         if correction and z_lambda > 0.0:
-            z_lambda_e = zlambda_apply_correction(corrstr, np.sum(wtvals_in), z_lambda ,z_lambda_e)
+            z_lambda, z_lambda_e = zlambda_apply_correction(corrstr, np.sum(wtvals_in), z_lambda ,z_lambda_e)
             #NOT READY - MISSING corrstr
         
         #if ncross and z_lambda > confstr.zrange[0] and z_lambda < confstr.zrange[1]:
@@ -461,20 +452,26 @@ class Cluster(object):
         print z_lambda, z_lambda_e
         return self.z_lambda
 
-    def select_neighbors(self, z_in, wtvals, maxrad, maxmag):
+    def select_neighbors(self, wtvals, maxrad, maxmag):
         """
         select neighbours internal to r < maxrad
+        
+        parameters
+        ----------
+        wtvals: weights
+        maxrad: maximum radius for considering neighbours
+        maxmag: maximum magnitude for considering neighbours
         """
         topfrac = self.confstr.zlambda_topfrac
         
         #we need the zrefmagbin
-        nzrefmag = self.zredstr.refmagbins.size  #zredstr.refmagbins[0].size
-        zrefmagbin = np.clip(np.around(nzrefmag*(self.neighbors.refmag - self.zredstr.refmagbins[0])/
+        nzrefmag    = self.zredstr.refmagbins.size  #zredstr.refmagbins[0].size
+        zrefmagbin  = np.clip(np.around(nzrefmag*(self.neighbors.refmag - self.zredstr.refmagbins[0])/
             (self.zredstr.refmagbins[nzrefmag-2] - self.zredstr.refmagbins[0])), 0, nzrefmag-1)
         
         
-        ncount=topfrac*np.sum(wtvals)
-        use, = np.where((self.neighbors.r < maxrad) & (self.neighbors.refmag < maxmag))
+        ncount = topfrac*np.sum(wtvals)
+        use,   = np.where((self.neighbors.r < maxrad) & (self.neighbors.refmag < maxmag))
         
         if ncount < 3:
             ncount = 3
@@ -487,10 +484,10 @@ class Cluster(object):
         if use.size < ncount:
             ncount = use.size
         
-        st = np.argsort(wtvals[use])[::-1]
+        st      = np.argsort(wtvals[use])[::-1]
         pthresh = wtvals[use[st[np.int(np.around(ncount)-1)]]]
         
-        pw = 1./(np.exp((pthresh-wtvals[use])/0.04)+1)
+        pw  = 1./(np.exp((pthresh-wtvals[use])/0.04)+1)
         gd, = np.where(pw > 1e-3)
         
         self.zlambda_in_rad = use[gd]
@@ -516,7 +513,17 @@ class Cluster(object):
         return dt
         
     def zlambda_calcz(self, z_lambda):
-        #calculate z_lambda
+        """
+        calculate z_lambda
+        
+        parameters
+        ----------
+        z_lambda: input
+        
+        returns
+        -------
+        z_lambda: output
+        """
         nsteps = 10
         steps = np.linspace(0., nsteps*self.confstr.zlambda_parab_step, num = nsteps, 
             dtype = np.float64)+z_lambda-self.confstr.zlambda_parab_step*(nsteps-1)/2
@@ -537,7 +544,16 @@ class Cluster(object):
         return z_lambda
           
     def zlambda_err(self, z_lambda):
-        #calculate z_lambda error
+        """
+        calculate z_lambda error
+        parameters
+        ----------
+        z_lambda: input
+        
+        returns
+        -------
+        z_lambda_e: z_lambda error
+        """
         minlike = self.bracket_fn(z_lambda) # of course this is negative
         #now we want to aim for minlike+1
         self.zlambda_targval = minlike+1
@@ -555,6 +571,14 @@ class Cluster(object):
     def zlambda_pz(self, z_lambda, wtvals, maxrad, maxmag, slow = True):
         '''
         set pz and pzbins
+        
+        parameters
+        ----------
+        z_lambda: input
+        wtvals: weights
+        maxrad: maximum radius for considering neighbours
+        maxmag: maximum magnitude for considering neighbours
+        slow: slow or fast mode
         '''
         minlike = self.bracket_fn(z_lambda)
         #4 sigma
@@ -579,13 +603,13 @@ class Cluster(object):
         else:
             #super-slow-mode
             #find the center
-            pk = -self.bracket_fn(z_lambda) #REPLACE WITH *minlike
+            pk  = -self.bracket_fn(z_lambda) #REPLACE WITH *minlike
             pz0 = self.zredstr.volume_factor[self.zredstr.zindex(z_lambda)]
             
             #go to lower redshift
             dztest = 0.05
             
-            lowz = z_lambda - dztest
+            lowz  = z_lambda - dztest
             ratio = 1.0
             while (lowz >= np.amin(self.zredstr.z) and (ratio > 0.01)):
                 val = - self.bracket_fn(lowz)
@@ -636,55 +660,64 @@ class Cluster(object):
         n = scipy.integrate.simps(pz, pzbins)
         pz=pz/n
         
-        self.zlambda_pzbins = pzbins
-        self.zlambda_pz     = pz
+        self.zlambda_pzbins     = pzbins
+        self.zlambda_pzbinsize  = pzbinsize
+        self.zlambda_pz         = pz
         
-    def zlambda_apply_correction(corrstr, lambda_in, z_lambda, z_lambda_e,noerr=False):
+    def zlambda_apply_correction(corrstr, lambda_in, z_lambda, z_lambda_e, noerr=False):
+        """
+        apply corrections to modify z_lambda & uncertainty, pz and pzbins
+        parameters
+        ----------
+        corrstr: correction object
+        z_lambda: input
+        z_lambda_e: error
+        noerr: if True, no error calculated
+        """
         
-        niter = corrstr[0].offset.size
+        niter = corrstr.offset[0].size
 
         for i in range(0, niter):
     
-            correction = corrstr.offset[i] + corrstr.slope[i] * np.log(lambda_in/confstr.zlambda_pivot)
-            extra_err = np.interp(corrstr.scatter[i],corrstr.z,z_lambda)        
+            correction = (corrstr.offset[i] + corrstr.slope[i] * 
+                np.log(lambda_in/confstr.zlambda_pivot))
+            extra_err = np.interp(corrstr.scatter[i], corrstr.z, z_lambda)        
 
-            dz = np.interp(correction,corrstr.z,z_lambda)
-
-            oz_lambda = z_lambda
+            dz = np.interp(correction, corrstr.z, z_lambda)
     
-            z_lambda=z_lambda + dz
-
-            if self.confstr.npzbins is None and not noerr:
-                # no P(z): simple error hack
-                z_lambda_e = np.sqrt(z_lambda_e**2.+extra_err**2.)
+            z_lambda_new = z_lambda + dz
+            
+            #and recalculate z_lambda_e
+            if not noerr:
+                z_lambda_e_new = np.sqrt(z_lambda_e**2 + extra_err**2.)
             else:
+                z_lambda_e_new = z_lambda_e
+
+            if self.confstr.npzbins is not None:
                 #do space density expansion...        
                 #modify width of bins by expansion...
                 #also shift the center to the new z_lambda...
 
                 #allow for an offset between the peak and the center...
-                offset = self.zlambda_pzbins[(self.confstr.npzbins-1)/2] - oz_lambda
-
-                opdz = self.zlambda_pzbins[1]-self.zlambda_pzbins[0]
-                pdz = opdz*np.sqrt(extra_err**2.+z_lambda_e**2)/z_lambda_e
+                offset  = self.zlambda_pzbins[(self.confstr.npzbins-1)/2] - z_lambda
+                pdz     = self.zlambda_pzbinsize*np.sqrt(extra_err**2.+z_lambda_e**2)/z_lambda_e
         
                 #centered on z_lambda...
-                pzbins = pdz*np.arange(self.confstr.npzbins) + z_lambda - pdz*(self.confstr.npzbins-1)/2. + offset*pdz/opdz
+                self.zlambda_pzbins = (pdz*np.arange(self.confstr.npzbins) + z_lambda_new - 
+                    pdz*(self.confstr.npzbins-1)/2. + offset*pdz/self.zlambda_pzbinsize)
     
                 #and renormalize
                 n = scipy.integrate.simps(self.zlambda_pzbins, self.zlambda_pz)
-                pzvals=pzvals/n
-    
-                #and recalculate z_lambda_e
-                z_lambda_e = np.sqrt(z_lambda_e**2 + extra_err**2.)
-        return z_lambda_e
+                self.zlambda_pz = self.zlambda_pz/n
+                
+        return z_lambda_new, z_lambda_e_new
         
     def zlambda_ncross(mask, maxrad, maxmag):
         nsteps = np.ceil(2.* (self.confstr.zlambda_ncross_dz)/self.confstr.zlambda_ncross_step)
-        zstep = np.arange(nsteps)*self.confstr.zlambda_ncross_step + z_lambda - self.confstr.zlambda_ncross_dz
+        zstep   = np.arange(nsteps)*self.confstr.zlambda_ncross_step + z_lambda - self.confstr.zlambda_ncross_dz
 
         gd, = np.where((zstep > confstr.zrange[0]) and (zstep < confstr.zrange[1]))
-        zstep=zstep[gd]
+        zstep = zstep[gd]
 
         mpc_scale = np.radians(1.) * self.cosmo.Dl(0, zstep) / (1 + zstep)**2
         r = self.neighbors.dist * mpc_scale

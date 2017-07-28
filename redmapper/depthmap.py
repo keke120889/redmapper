@@ -83,9 +83,8 @@ class DepthMap(object):
 
     def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):
         """
-        UNTESTED
-        
-        parameters
+        set masgals parameters: limmag, exptime, m50   
+        parameters               
         ----------
         maskgals: Object holding mask galaxy parameters
         ra: Right ascention of cluster
@@ -103,7 +102,7 @@ class DepthMap(object):
         phi = ras*np.pi/180.
         
         maskgals.w = self.w
-        maskgals.eff = 0 #depthstr.eff
+        maskgals.eff = None
         maskgals.limmag = unseen
         maskgals.zp[0] = self.zp
         maskgals.nsig[0] = self.nsig
@@ -137,16 +136,3 @@ class DepthMap(object):
                 maskgals.limmag = depthstr.limmag_default
                 maskgals.exptime = depthstr.exptime_default
                 maskgals.m50 = depthstr.m50_default
-        
-        # etc...
-        # was thinking could call get_depth...
-    
-
-        # dtype = [('RA','f8'),
-        #          ('DEC','f8'),
-        #          ('TEST','i4')]
-
-        # self.arr = np.zeros(100,dtype=dtype)
-
-        # self.arr['RA'][:] = np.arange(100)
-        # self.arr['RA'][:] = self.arr['RA'] + 1.0
