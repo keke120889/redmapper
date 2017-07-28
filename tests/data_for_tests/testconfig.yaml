@@ -24,3 +24,5 @@ zlambda_tol: 0.0002
 zlambda_parab_step: 0.002
 zlambda_topfrac: 0.7
 npzbins: 21
+zlambda_ncross_dz: 0.05
+zlambda_ncross_step: 0.005

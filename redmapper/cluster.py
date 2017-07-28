@@ -319,7 +319,8 @@ class Cluster(object):
         
         return lambda_err
         
-    def redmapper_zlambda(self, zin, mask, maxmag_in=None, calcpz=False, noerr=False, ncross=None, corrstr=None):
+    def redmapper_zlambda(self, zin, mask, maxmag_in=None, calcpz=False, noerr=False, 
+        ncross=None, correction = False):
         
         """
         from redmapper_zlambda.pro
@@ -404,27 +405,28 @@ class Cluster(object):
                     pzdone = 1
                     
                 else:
-                    pzvals = self.zlambda_pz(z_lambda, wtvals_mod, r_lambda, maxmag)
+                    # set pz and pzbins
+                    self.zlambda_pz(z_lambda, wtvals_mod, r_lambda, maxmag)
             
                     #check for bad values
-                    if (pzvals[0]/pzvals[(self.confstr.npzbins-1)/2] > 0.01 and 
-                        pzbins[0] >= np.amin(self.zredstr.z) + 0.01) or \
-                        (pzvals[self.confstr.npzbins-1]/pzvals[(self.confstr.npzbins-1)/2] > 0.01 and 
+                    if (self.zlambda_pz[0]/self.zlambda_pz[(self.confstr.npzbins-1)/2] > 0.01 and 
+                        self.zlambda_pzbins[0] >= np.amin(self.zredstr.z) + 0.01) or \
+                        (self.zlambda_pz[self.confstr.npzbins-1]/self.zlambda_pz[(self.confstr.npzbins-1)/2] > 0.01 and 
                         self.zlambda_pzbins[self.confstr.npzbins-1] <= np.amax(self.zredstr.z)-0.01):
                         
-                        pzvals = self.zlambda_pz(self.confstr, z_lambda, self.confstr.npzbins, wtvals_mod, 
-                            r_lambda, maxmag, slow = True)
+                        pzvals = self.zlambda_pz(self.confstr, z_lambda, self.confstr.npzbins, 
+                            wtvals_mod, r_lambda, maxmag, slow = True)
                         
-                    if pzvals[0] < 0:
+                    if self.zlambda_pz[0] < 0:
                         #this is bad
                         z_lambda = -1.0
                         z_lambda_e = -1.0
                     else:
-                        m = np.argmax(pzvals)
-                        p0 = np.array([pzvals[m], self.zlambda_pzbins[m], 0.01])
+                        m = np.argmax(self.zlambda_pz)
+                        p0 = np.array([self.zlambda_pz[m], self.zlambda_pzbins[m], 0.01])
                         
-                        coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, self.zlambda_pzbins, 
-                            pzvals, p0=p0)
+                        coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, 
+                            self.zlambda_pzbins, self.zlambda_pz, p0=p0)
                             
                         if coeff[2] > 0 or coeff[2] > 0.2:
                             z_lambda_e = coeff[2]
@@ -432,12 +434,13 @@ class Cluster(object):
                             z_lambda_e = self.zlambda_err(z_lambda)
                             
                     # check peak of p(z)...       
-                    pmind = np.argmax(pzvals)
-                    if np.absolute(self.zlambda_pzbins[pmind] - z_lambda) < self.confstr.zlambda_tol:
+                    pmind = np.argmax(self.zlambda_pz)
+                    if (np.absolute(self.zlambda_pzbins[pmind] - z_lambda) 
+                        < self.confstr.zlambda_tol):
                         pzdone = 1
                     else:
                         print('Warning: z_lambda / p(z) inconsistency detected.')
-                        z_lambda = pzbins[pmind]
+                        z_lambda = self.zlambda_pzbins[pmind]
                         pzdone = 0
             else:
                 z_lambda_e = -1.0
@@ -445,20 +448,17 @@ class Cluster(object):
                 
                 
         #and apply the correction if necessary...
-        # -> not implemented yet!
-        if corrstr is not None and z_lambda > 0:
-            redmapper_zlambda_apply_correction(self.confstr, corrstr, np.sum(wtvals_in), 
-                z_lambda, z_lambda_e, pzbins=pzbins, pzvals=pzvals, noerr=noerr)
-
-        if (ncross is not None and z_lambda > self.confstr.zrange[0] 
-            and z_lambda < self.confstr.zrange[1]):
-            ncross = redmapper_zlambda_ncross(self.confstr, self.zredstr, bkg, zin, refmag_total, 
-                refmag_total_err, col_or_flux_arr, magerr_or_ivar_arr, dis, ebv, r0, beta, 
-                maskgals, z_lambda, wvals=wvals, maxmag_in=maxmag_in, zreds=zreds, 
-                zred_errs=zred_errs, zred_chisqs=zred_chisqs)
+        if correction and z_lambda > 0.0:
+            z_lambda_e = zlambda_apply_correction(corrstr, np.sum(wtvals_in), z_lambda ,z_lambda_e)
+            #NOT READY - MISSING corrstr
+        
+        #if ncross and z_lambda > confstr.zrange[0] and z_lambda < confstr.zrange[1]:
+        #    ncross = redmapper_zlambda_ncross(zin,refmag_total,refmag_total_err,refmag_rs,refmag_rs_err,col_or_flux_arr,magerr_or_ivar_arr,dis,ebv,r0,beta,maskgals,z_lambda,wvals=wvals,maxmag_in=maxmag_in,zreds=zreds,zred_errs=zred_errs,zred_chisqs=zred_chisqs)
+        #endif
         
         self.z_lambda = z_lambda
         self.z_lambda_err = z_lambda_e
+        print z_lambda, z_lambda_e
         return self.z_lambda
 
     def select_neighbors(self, z_in, wtvals, maxrad, maxmag):
@@ -523,9 +523,6 @@ class Cluster(object):
         likes = np.zeros(nsteps)
         for i in range(0, nsteps):
              likes[i] = self.bracket_fn(steps[i])
-        #print steps, likes
-        #plt.plot(steps, likes)
-        #plt.show()
         fit = np.polyfit(steps, likes, 2)
         
         if fit[0] > 0.0:
@@ -546,16 +543,18 @@ class Cluster(object):
         self.zlambda_targval = minlike+1
         
         z_lambda_lo = scipy.optimize.minimize_scalar(self.delta_bracket_fn, 
-            bracket = (z_lambda-0.1, z_lambda-0.001), method='bounded', bounds = (z_lambda-0.1, z_lambda-0.001))
+            bracket = (z_lambda-0.1, z_lambda-0.001), method='bounded', 
+            bounds = (z_lambda-0.1, z_lambda-0.001))
         z_lambda_hi = scipy.optimize.minimize_scalar(self.delta_bracket_fn, 
-            bracket = (z_lambda+0.001, z_lambda+0.1), method='bounded', bounds = (z_lambda+0.001, z_lambda+0.1))
+            bracket = (z_lambda+0.001, z_lambda+0.1), method='bounded', 
+            bounds = (z_lambda+0.001, z_lambda+0.1))
         z_lambda_e = (z_lambda_hi.x-z_lambda_lo.x)/2.
         
         return z_lambda_e
         
     def zlambda_pz(self, z_lambda, wtvals, maxrad, maxmag, slow = True):
         '''
-        NEEDS FIXING
+        set pz and pzbins
         '''
         minlike = self.bracket_fn(z_lambda)
         #4 sigma
@@ -566,13 +565,17 @@ class Cluster(object):
             #also don't need as tight tolerance.
             #This is very approximate, but is fine...
             
-            z_lambda_hi = scipy.optimize.minimize_scalar(self.delta_bracket_fn, bracket = (z_lambda+0.001,z_lambda+0.05,z_lambda+0.15),method='brent', tol=0.001)
-            #WORKS ?!
+            #z_lambda_hi = scipy.optimize.minimize_scalar(self.delta_bracket_fn, 
+            #bracket = (z_lambda+0.001,z_lambda+0.05,z_lambda+0.15), method='brent', tol=0.001)
+            #WORKS,  but above doesn't so use this here to stay consistent
+            z_lambda_hi = scipy.optimize.minimize_scalar(self.delta_bracket_fn, 
+                bracket = (z_lambda+0.001, z_lambda+0.15), method='bounded', 
+                bounds = (z_lambda+0.001, z_lambda+0.15))
+                
             dz = np.clip((z_lambda_hi.x - z_lambda), 0.005, 0.15) # minimal to consider
-            
             pzbinsize = 2.*dz/(self.confstr.npzbins-1)
-            
             pzbins = pzbinsize*np.arange(self.confstr.npzbins)+z_lambda - dz
+            
         else:
             #super-slow-mode
             #find the center
@@ -617,13 +620,13 @@ class Cluster(object):
             pzbins = pzbinsize*np.arange(self.confstr.npzbins) + lowz
 
             # and finally offset so that we're centered on z_lambda.  Important!
-            #zm = np.amin(np.absolute(pzbins-z_lambda))
             zmind = np.argmin(np.absolute(pzbins - z_lambda))
             pzbins = pzbins - (pzbins[zmind] - z_lambda)
             
         ln_lkhd = np.zeros(self.confstr.npzbins)
         for i in range(0, self.confstr.npzbins):
-            likelihoods = self.zredstr.calculate_chisq(self.neighbors[self.zlambda_in_rad], pzbins[i], calc_lkhd=True)
+            likelihoods = self.zredstr.calculate_chisq(self.neighbors[self.zlambda_in_rad], 
+                pzbins[i], calc_lkhd=True)
             ln_lkhd[i] = np.sum(self.zlambda_pw*likelihoods)
             
         ln_lkhd = ln_lkhd - np.amax(ln_lkhd)
@@ -635,7 +638,65 @@ class Cluster(object):
         
         self.zlambda_pzbins = pzbins
         self.zlambda_pz     = pz
-        return pz
+        
+    def zlambda_apply_correction(corrstr, lambda_in, z_lambda, z_lambda_e,noerr=False):
+        
+        niter = corrstr[0].offset.size
+
+        for i in range(0, niter):
+    
+            correction = corrstr.offset[i] + corrstr.slope[i] * np.log(lambda_in/confstr.zlambda_pivot)
+            extra_err = np.interp(corrstr.scatter[i],corrstr.z,z_lambda)        
+
+            dz = np.interp(correction,corrstr.z,z_lambda)
+
+            oz_lambda = z_lambda
+    
+            z_lambda=z_lambda + dz
+
+            if self.confstr.npzbins is None and not noerr:
+                # no P(z): simple error hack
+                z_lambda_e = np.sqrt(z_lambda_e**2.+extra_err**2.)
+            else:
+                #do space density expansion...        
+                #modify width of bins by expansion...
+                #also shift the center to the new z_lambda...
+
+                #allow for an offset between the peak and the center...
+                offset = self.zlambda_pzbins[(self.confstr.npzbins-1)/2] - oz_lambda
+
+                opdz = self.zlambda_pzbins[1]-self.zlambda_pzbins[0]
+                pdz = opdz*np.sqrt(extra_err**2.+z_lambda_e**2)/z_lambda_e
+        
+                #centered on z_lambda...
+                pzbins = pdz*np.arange(self.confstr.npzbins) + z_lambda - pdz*(self.confstr.npzbins-1)/2. + offset*pdz/opdz
+    
+                #and renormalize
+                n = scipy.integrate.simps(self.zlambda_pzbins, self.zlambda_pz)
+                pzvals=pzvals/n
+    
+                #and recalculate z_lambda_e
+                z_lambda_e = np.sqrt(z_lambda_e**2 + extra_err**2.)
+        return z_lambda_e
+        
+    def zlambda_ncross(mask, maxrad, maxmag):
+        nsteps = np.ceil(2.* (self.confstr.zlambda_ncross_dz)/self.confstr.zlambda_ncross_step)
+        zstep = np.arange(nsteps)*self.confstr.zlambda_ncross_step + z_lambda - self.confstr.zlambda_ncross_dz
+
+        gd, = np.where((zstep > confstr.zrange[0]) and (zstep < confstr.zrange[1]))
+        zstep=zstep[gd]
+
+        mpc_scale = np.radians(1.) * self.cosmo.Dl(0, zstep) / (1 + zstep)**2
+        r = self.neighbors.dist * mpc_scale
+        in_r, = np.where(r < maxrad)
+
+        zout = np.zeros(nsteps)
+        lambda_out = np.zeros(nsteps)
+        like_out = np.zeros(nsteps)
+        
+        lam = self.calc_richness(mask, noerr = True, index = in_r)
+        pass
+        
     
         
 class ClusterCatalog(Catalog): 

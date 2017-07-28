@@ -146,9 +146,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         
         #End of the tests
         return
-
-    def cubic(self, x, cpars):
-        return cpars[0]*x**3 + cpars[1]*x**2 + cpars[2]*x + cpars[3]
         
 class ClusterMembersTestCase(unittest.TestCase):
 
