@@ -29,16 +29,18 @@ class ClusterFiltersTestCase(unittest.TestCase):
         self.cluster = Cluster()
         
         conf_filename = 'testconfig.yaml'
-        self.cluster.confstr = Configuration(self.file_path + '/' + conf_filename)
+        confstr = Configuration(self.file_path + '/' + conf_filename)
         
         filename = 'test_cluster_members.fit'
-        self.cluster.neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
+        neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
         
         zred_filename = 'test_dr8_pars.fit'
-        self.cluster.zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine = True)
+        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine = True)
         
         bkg_filename = 'test_bkg.fit'
-        self.cluster.bkg = Background('%s/%s' % (self.file_path, bkg_filename))
+        bkg = Background('%s/%s' % (self.file_path, bkg_filename))
+        
+        self.cluster = Cluster(confstr = confstr, zredstr = zredstr, bkg = bkg, neighbors = neighbors)
         
         hdr=fitsio.read_header(self.file_path+'/'+filename,ext=1)
         self.cluster.z = hdr['Z_LAMBDA']

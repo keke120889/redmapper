@@ -24,11 +24,17 @@ class Cluster(object):
     (TBD)
 
     """
-    def __init__(self, r0 = 1.0, beta = 0.2):
+    def __init__(self, r0 = 1.0, beta = 0.2, confstr=None, zredstr=None, bkg=None, neighbors=None):
         self.r0     = r0
         self.beta   = beta
         # this should explicitly set our default cosmology
         self.cosmo = Cosmo()
+        self.confstr = confstr
+        self.zredstr = zredstr
+        self.bkg = bkg
+        self.neighbors = neighbors
+        
+        
         
     def find_neighbors(self, radius, galcat):
         """
@@ -309,6 +315,7 @@ class Cluster(object):
     def redmapper_zlambda(self, zin, mask, maxmag_in=None, calcpz=False, noerr=False, 
         correction = False, ncross=None):
         """
+        compute z_lambda with uncertainty - Cluster Redshift Estimation
         from redmapper_zlambda.pro
         
         parameters
@@ -319,7 +326,8 @@ class Cluster(object):
 
         returns
         -------
-        z_lambda
+        z_lambda: estimated cluster redshift
+        z_lambda_err: uncertainty
         """
         
         z_lambda = zin
@@ -549,6 +557,7 @@ class Cluster(object):
     def zlambda_err(self, z_lambda):
         """
         calculate z_lambda error
+        
         parameters
         ----------
         z_lambda: input
@@ -623,7 +632,7 @@ class Cluster(object):
                 ratio=pz/pz0
 
                 if (ratio > 0.01):
-                    lowz=lowz-dztest
+                    lowz = lowz - dztest
                     
             lowz = np.clip(lowz, np.amin(self.zredstr.z), None)
             
@@ -635,10 +644,10 @@ class Cluster(object):
                 ln_lkhd = val - pk
                 pz = np.exp(ln_lkhd)*self.zredstr.volume_factor[self.zredstr.zindex(highz)]
 
-                ratio=pz/pz0
+                ratio = pz/pz0
 
                 if (ratio > 0.01):
-                    highz=highz+dztest
+                    highz = highz+dztest
             
             highz = np.clip(highz, None, np.amax(self.zredstr.z))
 
@@ -661,7 +670,7 @@ class Cluster(object):
         
         #now normalize
         n = scipy.integrate.simps(pz, pzbins)
-        pz=pz/n
+        pz = pz/n
         
         self.zlambda_pzbins     = pzbins
         self.zlambda_pzbinsize  = pzbinsize
@@ -671,6 +680,8 @@ class Cluster(object):
         """
         apply corrections to modify z_lambda & uncertainty, pz and pzbins
         NOT READY - MISSING corrstr
+        
+        UNTESTED - sorry for bugs!
         
         parameters
         ----------

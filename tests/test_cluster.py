@@ -103,6 +103,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         # bkg
         # - by making bkg a cluster attribute we must create a new cluster class here to get 
         #   matching results to the test. Maybe due for a change.
+        # Get rid of BackgroundStub and take full bkg as we load it anyways.
         
         test_indices = np.array([29, 16, 27, 38, 25])
         self.cluster_bkgtest = Cluster(self.cluster.confstr)
@@ -141,7 +142,6 @@ class ClusterFiltersTestCase(unittest.TestCase):
         #testing.assert_almost_equal(self.cluster.cpars, cpars_idl)
         testing.assert_almost_equal(richness, self.richness_compare, decimal = 0)
         #testing.assert_almost_equal(self.cluster.elambda, lam_err_idl, decimal = 0)
-        
         
         #End of the tests
         return
