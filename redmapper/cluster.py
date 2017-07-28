@@ -298,11 +298,11 @@ class Cluster(object):
         if out.size == 0 or cval < 0.01:
             lambda_err = 0.0
         else:
-            p_out = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
-            varc0 = (1./lam)*(1./use.size)*np.sum(p_out)
-            sigc = np.sqrt(varc0 - varc0**2.)
-            k = lam**2./total(lambda_p**2.)
-            lambda_err = k*sigc/(1.-self.beta*gamma)
+            p_out       = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
+            varc0       = (1./lam)*(1./use.size)*np.sum(p_out)
+            sigc        = np.sqrt(varc0 - varc0**2.)
+            k           = lam**2./np.sum(lambda_p**2.)
+            lambda_err  = k*sigc/(1.-self.beta*gamma)
         
         return lambda_err
         
@@ -410,7 +410,7 @@ class Cluster(object):
                         
                     if self.zlambda_pz[0] < 0:
                         #this is bad
-                        z_lambda = -1.0
+                        z_lambda   = -1.0
                         z_lambda_e = -1.0
                     else:
                         m = np.argmax(self.zlambda_pz)
@@ -444,9 +444,8 @@ class Cluster(object):
             #NOT READY - MISSING corrstr
         
         
-        self.z_lambda = z_lambda
+        self.z_lambda     = z_lambda
         self.z_lambda_err = z_lambda_e
-        print z_lambda, z_lambda_e
         return self.z_lambda
 
     def select_neighbors(self, wtvals, maxrad, maxmag):
@@ -458,6 +457,11 @@ class Cluster(object):
         wtvals: weights
         maxrad: maximum radius for considering neighbours
         maxmag: maximum magnitude for considering neighbours
+        
+        returns
+        -------
+        sets zrefmagbin, refmag, refmag_err, mag, mag_err, c, pw, targval
+        for selected neighbors  
         """
         topfrac = self.confstr.zlambda_topfrac
         
@@ -465,7 +469,6 @@ class Cluster(object):
         nzrefmag    = self.zredstr.refmagbins.size  #zredstr.refmagbins[0].size
         zrefmagbin  = np.clip(np.around(nzrefmag*(self.neighbors.refmag - self.zredstr.refmagbins[0])/
             (self.zredstr.refmagbins[nzrefmag-2] - self.zredstr.refmagbins[0])), 0, nzrefmag-1)
-        
         
         ncount = topfrac*np.sum(wtvals)
         use,   = np.where((self.neighbors.r < maxrad) & (self.neighbors.refmag < maxmag))
@@ -499,6 +502,9 @@ class Cluster(object):
         self.zlambda_targval       = 0
     
     def bracket_fn(self, z):
+        """
+        bracketing function
+        """
         likelihoods = self.zredstr.calculate_chisq(self.neighbors[self.zlambda_in_rad], 
             z, calc_lkhd=True)
         t = -np.sum(self.zlambda_pw*likelihoods)
