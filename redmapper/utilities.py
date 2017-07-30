@@ -6,6 +6,8 @@ from scipy.linalg import solve_banded
 from pkg_resources import resource_filename
 import scipy.interpolate as interpolate
 import fitsio
+from scipy.special import erf
+from numpy import random
 
 ###################################
 ## Useful constants/conversions ##
@@ -20,6 +22,10 @@ def astro_to_sphere(ra, dec):
 def chisq_pdf(data, k):
     normalization = 1./(2**(k/2.) * special.gamma(k/2.))
     return normalization * data**((k/2.)-1) * np.exp(-data/2.)
+
+def gaussFunction(x, *p):
+   A, mu, sigma = p
+   return A*np.exp(-(x-mu)**2./(2.*sigma**2))
 
 
 ######################################
@@ -85,7 +91,7 @@ class CubicSpline(object):
         y2 = solve_banded((1,1), mat, bb)
         self.x, self.y, self.y2 = (x, y, y2)
 
-    def splint(self,x):
+    def splint(self,x):                                     
         npts = len(self.x)
         lo = np.searchsorted(self.x, x)-1
         lo = np.clip(lo, 0, npts-2)
@@ -99,3 +105,94 @@ class CubicSpline(object):
         
     def __call__(self, x):
         return self.splint(x)
+        
+def calc_theta_i(mag, mag_err, maxmag, limmag):
+    """
+    Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
+    
+    parameters
+    ----------
+    mag:
+    mag_err:
+    maxmag:
+    limmag:
+
+    returns
+    -------
+    theta_i:
+    """
+ 
+    theta_i = np.ones((len(mag)))
+    eff_lim = np.clip(maxmag,0,limmag)
+    dmag = eff_lim - mag
+    calc = dmag < 5.0
+    N_calc = np.count_nonzero(calc==True)
+    if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
+    hi = mag > limmag
+    N_hi = np.count_nonzero(hi==True)
+    if N_hi > 0:
+        theta_i[hi] = 0.0
+    return theta_i
+
+def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False, 
+    nonoise=False, inlup=False):
+    """
+    Find magnitude and uncertainty.
+    
+    parameters
+    ----------
+    mag_in    :
+    nonoise   : account for noise / no noise
+    zp:       : Zero point magnitudes
+    nsig:     :
+    fluxmode  :
+    lnscat    :
+    b         : parameters for luptitude calculation
+    inlup     :
+    errtflux  :
+    err_ratio : scaling factor
+
+    returns
+    -------
+    mag 
+    mag_err 
+    
+    """
+    f1lim = 10.**((maskgals.limmag - maskgals.zp[0])/(-2.5))
+    fsky1 = (((f1lim**2.) * maskgals.exptime)/(maskgals.nsig[0]**2.) - f1lim)
+    fsky1 = np.clip(fsky1, 0.001, None)
+    
+    if inlup:
+        bnmgy = b*1e9
+        tflux = maskgals.exptime*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
+    else:
+        tflux = maskgals.exptime*10.**((mag_in - maskgals.zp[0])/(-2.5))
+    
+    noise = err_ratio*np.sqrt(fsky1*maskgals.exptime + tflux)
+    
+    if nonoise:
+        flux = tflux
+    else:        
+        flux = tflux + noise*random.standard_normal(mag_in.size)
+
+    if fluxmode:
+        mag = flux/maskgals.exptime
+        mag_err = noise/maskgals.exptime
+    else:
+        if b is not None:
+            bnmgy = b*1e9
+            
+            flux_new = flux/maskgals.exptime
+            noise_new = noise/maskgals.exptime
+            
+            mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
+            mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
+        else:
+            mag = maskgals.zp[0]-2.5*np.log10(flux/maskgals.exptime)
+            mag_err = (2.5/np.log(10.0))*(noise/flux)
+            
+            bad, = np.where(np.isfinite(mag) == False)
+            mag[bad] = 99.0
+            mag_err[bad] = 99.0
+            
+    return mag, mag_err

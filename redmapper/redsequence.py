@@ -79,8 +79,8 @@ class RedSequenceColorPar(object):
             except:
                 raise ValueError("Need REF_IND or I_IND")
 
-        nz = np.round((zrange[1]-zrange[0])/zbinsize).astype('i4')
-        self.z = zbinsize*np.arange(nz) + zrange[0]
+        nz = np.round((zrange[1]-zrange[0])/zbinsize).astype('i4') #nr of bins
+        self.z = zbinsize*np.arange(nz) + zrange[0]                #z bins
 
         # append a high-end overflow bin
         # for computation this will be the same as the top bin, and at the end
@@ -131,7 +131,7 @@ class RedSequenceColorPar(object):
         spl=CubicSpline(pars[0][pivotmag_name+'_Z'],pars[0][pivotmag_name])
         self.pivotmag = spl(self.z)
 
-        # c/slope
+        # c/slope                                                               
         self.c = np.zeros((nz,ncol),dtype=np.float64)
         self.slope = np.zeros((nz,ncol),dtype=np.float64)
         for j in xrange(ncol):
@@ -208,7 +208,7 @@ class RedSequenceColorPar(object):
         else :
             self.corr_r = np.ones(nz)
             self.corr2_r = np.ones(nz)
-
+            
         # mstar
         # create LUT
         self._mstar = ms(self.z)
@@ -370,7 +370,8 @@ class RedSequenceColorPar(object):
         """
         zind = self.zindex(z)
         magind = self.refmagindex(galaxies.refmag)
-        galcolor = galaxies.mag[:,:self.ncol] - galaxies.mag[:,1:]
+        #galcolor = galaxies.mag[:,:self.ncol] - galaxies.mag[:,1:]
+        galcolor = galaxies.galcol
         chisq_dist = ChisqDist(self.covmat[:,:,zind], self.c[zind,:], 
                                self.slope[zind,:], self.pivotmag[zind], 
                                galaxies.refmag, galaxies.mag_err, 

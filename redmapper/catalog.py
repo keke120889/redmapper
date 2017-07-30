@@ -23,7 +23,8 @@ class DataObject(object):
 
     @classmethod
     def from_fits_file(cls, filename):
-        """Constructs DataObject directly from FITS file.
+        """
+        Constructs DataObject directly from FITS file.
 
         Makes use of Erin Sheldon's fitsio reading routine. The fitsio
         package wraps cfitsio for maximum efficiency.

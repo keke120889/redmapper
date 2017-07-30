@@ -37,7 +37,6 @@ class Solver(object):
         # we'll do that here in Python, and save the c code.
         # Though of course that makes the c code more fragile,
         # but it should always be accessed through here.
-        
         self.r0 = float(r0)
         self.beta = float(beta)
 

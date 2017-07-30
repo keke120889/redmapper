@@ -54,7 +54,7 @@ class Configuration(object):
 
         for key in gal_stats:
             setattr(self, key, gal_stats[key])
-
+        
     def galfile_stats(self, galfile, refmag):
         """
         """

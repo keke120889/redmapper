@@ -2,6 +2,10 @@ import fitsio
 import healpy as hp
 import numpy as np
 
+from utilities import astro_to_sphere
+from catalog import Catalog, Entry
+from healpy import pixelfunc
+
 
 class DepthMap(object):
     """
@@ -17,11 +21,19 @@ class DepthMap(object):
         # record for posterity
         self.depthfile = confstr.depthfile
 
-        depthinfo, hdr = fitsio.read(filename, ext=1, header=True)
+        depthinfo, hdr = fitsio.read(self.depthfile, ext=1, header=True)
         # convert into catalog for convenience...
         depthinfo = Catalog(depthinfo)
-
-        nlim, nside, nest = depthinfo.hpix.size, hdr['NSIDE'], hdr['NEST']
+        
+        nlim        = depthinfo.hpix.size
+        nside       = hdr['NSIDE']
+        nest        = hdr['NEST']
+        self.nsig   = hdr['NSIG']
+        self.zp     = hdr['ZP']
+        self.nband  = hdr['NBAND']
+        self.w      = hdr['W']
+        self.eff    = hdr['EFF']
+        
         if nest != 1:
             hpix_ring = depthinfo.hpix
         else:
@@ -70,22 +82,57 @@ class DepthMap(object):
 
 
     def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):
+        """
+        set masgals parameters: limmag, exptime, m50   
+        parameters               
+        ----------
+        maskgals: Object holding mask galaxy parameters
+        ra: Right ascention of cluster
+        dec: Declination of cluster
+        mpc_scale: scaling to go from mpc to degrees (check units) at cluster redshift
+        
+        """
+        
+        unseen = hp.pixelfunc.UNSEEN
+        
         # compute ra and dec based on maskgals
-        # ras = ra + (maskgals['X']/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
-        # decs = dec + maskgals['Y']/(mpc_scale*3600.)
-        # theta = (90.0 - decs)*np.pi/180.
-        # phi = ras*np.pi/180.
-
-        # etc...
-        # was thinking could call get_depth...
-    
-
-        # dtype = [('RA','f8'),
-        #          ('DEC','f8'),
-        #          ('TEST','i4')]
-
-        # self.arr = np.zeros(100,dtype=dtype)
-
-        # self.arr['RA'][:] = np.arange(100)
-        # self.arr['RA'][:] = self.arr['RA'] + 1.0
-        pass
+        ras = ra + (maskgals.x/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
+        decs = dec + maskgals.y/(mpc_scale*3600.)
+        theta = (90.0 - decs)*np.pi/180.
+        phi = ras*np.pi/180.
+        
+        maskgals.w = self.w
+        maskgals.eff = None
+        maskgals.limmag = unseen
+        maskgals.zp[0] = self.zp
+        maskgals.nsig[0] = self.nsig
+        
+        theta, phi = astro_to_sphere(ras, decs)
+        ipring = hp.ang2pix(self.nside, theta, phi)
+        ipring_offset = np.clip(ipring - self.offset, 0, self.ntot-1)
+        
+        maskgals.limmag     = self.limmag[ipring_offset]
+        maskgals.exptime    = self.exptime[ipring_offset]
+        maskgals.m50        = self.m50[ipring_offset]
+        
+        bd, = np.where(maskgals.limmag < 0.0)
+        ok = np.delete(np.copy(maskgals.limmag), bd)
+        nok = ok.size
+        
+        if (bd.size > 0):
+            if (nok >= 3):
+                # fill them in
+                maskgals.limmag[bd] = median(maskgals.limmag[ok])
+                maskgals.exptime[bd] = median(maskgals.exptime[ok])
+                maskgals.m50[bd] = median(maskgals.m50[ok])
+            elif (nok > 0):
+                # fill with mean
+                maskgals.limmag[bd] = mean(maskgals.limmag[ok])
+                maskgals.exptime[bd] = mean(maskgals.exptime[ok])
+                maskgals.m50[bd] = mean(maskgals.m50[ok])
+            else:
+                # very bad
+                ok = where(depthstr.limmag > 0.0)
+                maskgals.limmag = depthstr.limmag_default
+                maskgals.exptime = depthstr.exptime_default
+                maskgals.m50 = depthstr.m50_default

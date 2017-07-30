@@ -26,7 +26,7 @@ int solver_nfw(double r0, double beta, long ngal,
       for (i=0;i<ngal;i++) {
 	outlo+=wt[i];
       }
-      cval = cpars[0] + cpars[1]*(*rlambda) + cpars[2]*(*rlambda)*(*rlambda) + cpars[3]*(*rlambda)*(*rlambda)*(*rlambda);
+      cval = cpars[3] + cpars[2]*(*rlambda) + cpars[1]*(*rlambda)*(*rlambda) + cpars[0]*(*rlambda)*(*rlambda)*(*rlambda);
       //if (cval < 0.0) { cval = 0.0; }
       
       outlo += lamlo*cval;
@@ -36,7 +36,7 @@ int solver_nfw(double r0, double beta, long ngal,
     for (i=0;i<ngal;i++) {
       outmid+=wt[i];
     }
-    cval = cpars[0] + cpars[1]*(*rlambda) + cpars[2]*(*rlambda)*(*rlambda) + cpars[3]*(*rlambda)*(*rlambda)*(*rlambda);
+    cval = cpars[3] + cpars[2]*(*rlambda) + cpars[1]*(*rlambda)*(*rlambda) + cpars[0]*(*rlambda)*(*rlambda)*(*rlambda);
     //if (cval < 0.0) { cval = 0.0; }
     
     outmid += mid*cval;
