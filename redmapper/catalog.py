@@ -63,7 +63,7 @@ class DataObject(object):
         return self._ndarray.dtype
 
     def add_fields(self, newdtype):
-        array = np.empty(self._ndarray.size, newdtype)
+        array = np.zeros(self._ndarray.size, newdtype)
         self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
 
     def __repr__(self):
@@ -76,7 +76,12 @@ class DataObject(object):
 
     def __dir__(self):
         # lower case list of all the available variables
-        return [x.lower() for x in self._ndarray.dtype.names]
+        # also need to know original __dir__!
+        #return [x.lower() for x in self._ndarray.dtype.names]
+        return sorted(set(
+                dir(type(self)) +
+                self.__dict__.keys() +
+                [x.lower() for x in self._ndarray.dtype.names]))
 
 
 class Entry(DataObject):
