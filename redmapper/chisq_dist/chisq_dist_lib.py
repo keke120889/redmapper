@@ -53,8 +53,8 @@ class ChisqDist(object):
         if (self.mode == 0):
             # only one redshift for mode 0
             self.nz = 1
-            
-            # this is one redshift, many galaxies            
+
+            # this is one redshift, many galaxies
             if (self.slope.shape[0] != self.ncol):
                 raise ValueError("slope must have ncol elements for mode 0")
             if (self.pivotmag.shape[0] != 1):
@@ -86,7 +86,7 @@ class ChisqDist(object):
                 self.lupcorr = np.zeros((self.ngal, self.ncol),dtype='f8')
             else :
                 self.lupcorr = lupcorr.astype('f8')
-                
+
             if (self.lupcorr.shape[0] != self.ngal) or (self.lupcorr.shape[1] != self.ncol):
                 raise ValueError("lupcorr must be ncol x ngal for mode 0")
 
@@ -99,12 +99,12 @@ class ChisqDist(object):
             # nz is the second dimension of c (nope)
             self.nz = self.c.shape[0]
             self.ngal = 1
-            
+
             if (self.slope.shape[0] != self.nz or self.slope.shape[1] != self.ncol):
                 raise ValueError("slope must have ncol x nz elements for mode 1")
             if (self.pivotmag.size != self.nz):
                 raise ValueError("pivotmag must be nz elements for mode 1")
-            
+
             if (self.covmat.ndim != 3):
                 raise ValueError("covmat must be 3 dimensions for mode 1")
             if (self.covmat.shape[2] != self.nz):
