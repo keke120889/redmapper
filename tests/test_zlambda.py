@@ -11,8 +11,9 @@ from redmapper.background import Background
 from redmapper.redsequence import RedSequenceColorPar
 from redmapper.mask import HPMask
 from redmapper.depthmap import DepthMap
+from redmapper.zlambda import Zlambda
 
-class ClusterFiltersTestCase(unittest.TestCase):
+class ClusterZlambdaTestCase(unittest.TestCase):
     """
     Unittest for testing the z_lambda functions
 
@@ -20,63 +21,65 @@ class ClusterFiltersTestCase(unittest.TestCase):
 
     """
     def runTest(self):
-
-        self.file_path = 'data_for_tests'
+        file_path = 'data_for_tests'
 
         #The configuration
         #Used by the mask, background and richness calculation
 
-        self.cluster = Cluster()
-
         conf_filename = 'testconfig.yaml'
-        confstr = Configuration(self.file_path + '/' + conf_filename)
+        confstr = Configuration(file_path + '/' + conf_filename)
 
         filename = 'test_cluster_members.fit'
-        neighbors = GalaxyCatalog.from_fits_file(self.file_path + '/' + filename)
+        neighbors = GalaxyCatalog.from_fits_file(file_path + '/' + filename)
 
         zred_filename = 'test_dr8_pars.fit'
-        zredstr = RedSequenceColorPar(self.file_path + '/' + zred_filename,fine = True)
+        zredstr = RedSequenceColorPar(file_path + '/' + zred_filename,fine = True)
 
         bkg_filename = 'test_bkg.fit'
-        bkg = Background('%s/%s' % (self.file_path, bkg_filename))
+        bkg = Background('%s/%s' % (file_path, bkg_filename))
 
-        self.cluster = Cluster(confstr = confstr, zredstr = zredstr, bkg = bkg, neighbors = neighbors)
+        cluster = Cluster(confstr=confstr, zredstr=zredstr, bkg=bkg, neighbors=neighbors)
 
-        hdr=fitsio.read_header(self.file_path+'/'+filename,ext=1)
-        self.cluster.z = hdr['Z_LAMBDA']
-        self.richness_compare = hdr['LAMBDA']
-        self.richness_compare_err = hdr['LAMBDA_E']
-        self.cluster.z = self.cluster.neighbors.z[0]
-        self.cluster.ra = hdr['RA']
-        self.cluster.dec = hdr['DEC']
+        hdr=fitsio.read_header(file_path+'/'+filename,ext=1)
+        cluster.z = hdr['Z']
+        richness_compare = hdr['LAMBDA']
+        richness_compare_err = hdr['LAMBDA_E']
+        cluster.ra = hdr['RA']
+        cluster.dec = hdr['DEC']
 
         #Set up the mask
-        mask = HPMask(self.cluster.confstr) #Create the mask
+        mask = HPMask(cluster.confstr) #Create the mask
 
-        mpc_scale = np.radians(1.) * self.cluster.cosmo.Dl(0, self.cluster.z) / (1 + self.cluster.z)**2
-        mask.set_radmask(self.cluster, mpc_scale)
+        mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster.z) / (1 + cluster.z)**2
+        mask.set_radmask(cluster, mpc_scale)
 
         #depthstr
-        depthstr = DepthMap(self.cluster.confstr)
-        depthstr.calc_maskdepth(mask.maskgals, self.cluster.ra, self.cluster.dec, mpc_scale)
+        depthstr = DepthMap(cluster.confstr)
+        depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, mpc_scale)
 
-        self.cluster.neighbors.dist = np.degrees(self.cluster.neighbors.r/self.cluster.cosmo.Dl(0,self.cluster.z))
+        cluster.neighbors.dist = np.degrees(cluster.neighbors.r/cluster.cosmo.Dl(0,cluster.z))
 
         #set seed
         seed = 0
         random.seed(seed = seed)
 
-        #TEST AGAINST CHANGES
-        #with calcpz = True
-        z_lambda = self.cluster.calc_zlambda(self.cluster.z, mask, calcpz = True)
+        # make a zlambda object
+        zlam = Zlambda(cluster)
 
-        testing.assert_almost_equal(self.cluster.z_lambda, 0.22816455)
-        testing.assert_almost_equal(self.cluster.z_lambda_err, 0.00632459)
+        z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.z, mask, calc_err=True, calcpz=True)
 
-        #test zlambda_err extra
-        z_lambda_err = self.cluster._zlambda_calc_err(self.cluster.z_lambda)
+        #testing.assert_almost_equal(self.cluster.z_lambda, 0.22816455)
+        testing.assert_almost_equal(cluster.z_lambda, 0.227865)
+        #testing.assert_almost_equal(self.cluster.z_lambda_err, 0.00632813)
+        testing.assert_almost_equal(cluster.z_lambda_err,0.00630833)
 
-        testing.assert_almost_equal(z_lambda_err, 0.00897011)
+
+        # zlambda_err test
+        z_lambda_err = zlam._zlambda_calc_gaussian_err(cluster.z_lambda)
+
+        #testing.assert_almost_equal(z_lambda_err, 0.00897011)
+        testing.assert_almost_equal(z_lambda_err, 0.00894175)
+
 
 if __name__=='__main__':
     unittest.main()

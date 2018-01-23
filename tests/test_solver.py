@@ -19,9 +19,9 @@ class SolverNFWTestCase(unittest.TestCase):
         """
         file_name = 'test_solver_data.fit'
         file_path = 'data_for_tests'
-        
+
         data=fitsio.read('%s/%s' % (file_path,file_name),ext=1)
-        
+
         #need to transpose cpars
         data[0]['CPARS'] = data[0]['CPARS'][::-1]
 
@@ -34,7 +34,7 @@ class SolverNFWTestCase(unittest.TestCase):
 
         # and test the results
         solver=redmapper.solver_nfw.Solver(data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
-        
+
         """
         solve_nfw() spits out:
         lambda,
@@ -46,8 +46,8 @@ class SolverNFWTestCase(unittest.TestCase):
         testing.assert_almost_equal(lam,data[0]['LAMBDA'])
         testing.assert_array_almost_equal(p,data[0]['PVALS'])
         testing.assert_array_almost_equal(wt,data[0]['WTVALS'])
-        testing.assert_almost_equal(rlambda,data[0]['R0']*(data[0]['LAMBDA']/100.)**data[0]['BETA'],4)
-        # need new test data with theta_r
+        testing.assert_almost_equal(rlambda,data[0]['R0']*(data[0]['LAMBDA']/100.)**data[0]['BETA'])
+        testing.assert_almost_equal(theta_r,data[0]['THETA_R'],6)
 
 if __name__=='__main__':
     unittest.main()
