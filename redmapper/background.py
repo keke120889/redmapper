@@ -46,7 +46,7 @@ class Background(object):
         #"""
         # Get the raw object background from the fits file
         obkg = Entry.from_fits_file(filename)
-        
+
         # Set the bin size in redshift, chisq and refmag spaces
         self.zbinsize = 0.001
         self.chisqbinsize = 0.5
@@ -143,11 +143,18 @@ class Background(object):
         zmin = self.zbins[0]
         chisqindex = np.searchsorted(self.chisqbins, chisq) - 1
         refmagindex = np.searchsorted(self.refmagbins, refmag) - 1
-        ind = np.clip(np.round((z-zmin)/(self.zbins[1]-zmin)),0, self.zbins.size-1)
+        ind = np.clip(np.round((z-zmin)/(self.zbins[1]-zmin)),0, self.zbins.size-1).astype(np.int32)
 
-        badchisq  = np.where((chisq < self.chisqbins[0])| (chisq > self.chisqbins[-1]))
-        badrefmag = np.where((refmag <= self.refmagbins[0]) 
-                             | (refmag >= self.refmagbins[-1]))
+        #badchisq  = np.where((chisq < self.chisqbins[0])| (chisq > self.chisqbins[-1]))
+        # badchisq, = np.where((chisqindex < 0) | (chisqindex >= self.chisqbins.size))
+        badchisq, = np.where((chisq < self.chisqbins[0]) |
+                             (chisq > (self.chisqbins[-1] + self.chisqbinsize)))
+        #badrefmag, = np.where((refmag <= self.refmagbins[0])
+        #                     | (refmag >= self.refmagbins[-1]))
+        #badrefmag, = np.where((refmagindex < 0) | (refmagindex >= self.refmagbins.size))
+        badrefmag, = np.where((refmag <= self.refmagbins[0]) |
+                              (refmag > (self.refmagbins[-1] + self.refmagbinsize)))
+
         chisqindex[badchisq] = 0
         refmagindex[badrefmag] = 0
 
