@@ -1,13 +1,14 @@
 import fitsio
-import esutil as eu
+import esutil as esutil
 import numpy as np
 import itertools
 import scipy.optimize
 import scipy.integrate
+import copy
 
 from solver_nfw import Solver
 from catalog import Catalog, Entry
-from utilities import chisq_pdf, calc_theta_i, gaussFunction
+from utilities import chisq_pdf, calc_theta_i
 from mask import HPMask
 from chisq_dist import ChisqDist
 from redmapper.redsequence import RedSequenceColorPar
@@ -25,16 +26,18 @@ class Cluster(object):
     (TBD)
 
     """
-    def __init__(self, r0 = 1.0, beta = 0.2, confstr=None, zredstr=None, bkg=None, neighbors=None):
+    def __init__(self, r0 = 1.0, beta = 0.2, confstr=None, zredstr=None, bkg=None, neighbors=None, cosmo=None):
         self.r0     = r0
         self.beta   = beta
         # this should explicitly set our default cosmology
-        self.cosmo = Cosmo()
+        self.cosmo = cosmo
+        if self.cosmo is None: self.cosmo = Cosmo()
         self.confstr = confstr
         self.zredstr = zredstr
         self.bkg = bkg
         self.set_neighbors(neighbors)
 
+        self.z = None
         self.lam = -1.0
         self.lam_err = -1.0
         self.rlambda = -1.0
@@ -47,22 +50,24 @@ class Cluster(object):
         if (neighbors.__class__ is not GalaxyCatalog and neighbors is not None):
             raise ValueError("Cluster neighbors must be a GalaxyCatalog")
 
-        self.neighbors = neighbors
-        if (self.neighbors is not None):
+        self.neighbors = None
+        if (neighbors is not None):
+            self.neighbors = copy.deepcopy(neighbors)
 
             # extra fields
             neighbor_extra_dtype = [('R', 'f8'),
                                     ('DIST', 'f8'),
                                     ('CHISQ', 'f8'),
-                                    ('W', 'f8'),
-                                    ('WT', 'f8'),
+                                    ('PFREE', 'f8'),
                                     ('THETA_I', 'f8'),
                                     ('THETA_R', 'f8'),
+                                    ('P', 'f8'),
                                     ('PCOL', 'f8'),
                                     ('PMEM', 'f8')]
 
             dtype_augment = [dt for dt in neighbor_extra_dtype if dt[0] not in self.neighbors.dtype.names]
-            self.neighbors.add_fields(dtype_augment)
+            if len(dtype_augment) > 0:
+                self.neighbors.add_fields(dtype_augment)
 
 
     def find_neighbors(self, radius, galcat):
@@ -93,6 +98,21 @@ class Cluster(object):
         #self.neighbors.dist = dists
         self.set_neighbors(galcat[indices])
         self.neighbors.dist = dists
+
+    def clear_neighbors(self):
+        """
+        """
+
+        # Clear out the memory used by the neighbors.
+        # Here or elsewhere to copy to members?
+        self.neighbors = None
+
+    def neighbors_to_members(self):
+        """
+        """
+
+        # copy the neighbors to a members subset
+        pass
 
     def _calc_radial_profile(self, rscale=0.15):
         """
@@ -214,7 +234,9 @@ class Cluster(object):
         else:
             idx = np.arange(len(self.neighbors))
 
-        maxmag = self.zredstr.mstar(self.z) - 2.5*np.log10(self.confstr.lval_reference)
+        self.mstar = self.zredstr.mstar(self.z)
+
+        maxmag = self.mstar - 2.5*np.log10(self.confstr.lval_reference)
         self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Dl(0, self.z)
 
         # need to clip r at > 1e-6 or else you get a singularity
@@ -231,60 +253,71 @@ class Cluster(object):
         theta_i = calc_theta_i(self.neighbors.refmag[idx], self.neighbors.refmag_err[idx],
                                maxmag, self.zredstr.limmag)
 
-        cpars = mask.calc_maskcorr(self.zredstr.mstar(self.z), maxmag, self.zredstr.limmag)
+        cpars = mask.calc_maskcorr(self.mstar, maxmag, self.zredstr.limmag)
 
         try:
-            w = theta_i * self.neighbors.wvals[idx]
+            #w = theta_i * self.neighbors.wvals[idx]
+            w = theta_i * self.neighbors.pfree[idx]
         except AttributeError:
-            w = np.ones_like(ucounts) * theta_i
+            w = theta_i * np.ones_like(ucounts)
 
         richness_obj = Solver(self.r0, self.beta, ucounts, bcounts, self.neighbors.r[idx], w,
                               cpars = cpars, rsig = self.confstr.rsig)
 
-        #Call the solving routine
-        #this returns five items: lam_obj, pmem, wt, rlam, theta_r
-        lam, pmem, wt, rlam, theta_r = richness_obj.solve_nfw()
+        # Call the solving routine
+        # this returns five items: lam_obj, p, pmem, rlam, theta_r
+        # pmem = p * pfree * theta_i * theta_r
+        lam, p, pmem, rlam, theta_r = richness_obj.solve_nfw()
 
-        #error
-        bar_p = np.sum(wt**2.0)/np.sum(wt)
-        cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
+        # error
+        bar_pmem = np.sum(pmem**2.0)/np.sum(pmem)
+        # cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
+        cval = np.clip(np.sum(cpars * rlam**np.arange(cpars.size, dtype=float)),
+                       0.0, None)
 
         if calc_err:
-            lam_cerr = self.calc_lambdaerr(mask.maskgals, self.zredstr.mstar(self.z),
+            lam_cerr = self.calc_lambdaerr(mask.maskgals, self.mstar,
                                            lam, rlam, cval, self.confstr.dldr_gamma)
         else:
             lam_cerr = 0.0
 
-        scaleval = np.absolute(lam/np.sum(wt))
+        self.scaleval = np.absolute(lam/np.sum(pmem))
 
-        lam_unscaled = lam/scaleval
+        lam_unscaled = lam/self.scaleval
 
         if (lam < 0.0):
             lam_err = -1.0
         else:
-            lam_err = np.sqrt((1-bar_p) * lam_unscaled * scaleval**2. + lam_cerr**2.)
+            lam_err = np.sqrt((1-bar_pmem) * lam_unscaled * self.scaleval**2. + lam_cerr**2.)
 
         # calculate pcol -- color only.  Don't need to worry about nfw norm!
         ucounts = rho*phi
 
         pcol = ucounts * lam/(ucounts * lam + bcounts)
         bad, = np.where((self.neighbors.r[idx] > rlam) | (self.neighbors.refmag[idx] > maxmag) |
-                        (self.neighbors.refmag[idx] > self.zredstr.limmag) | (np.isfinite(pcol) == False))
+                        (self.neighbors.refmag[idx] > self.zredstr.limmag) | (~np.isfinite(pcol)))
         pcol[bad] = 0.0
 
-        #create w, wt
+        # reset before setting subsets
+        self.neighbors.theta_i[:] = 0.0
+        self.neighbors.theta_r[:] = 0.0
+        self.neighbors.p[:] = 0.0
+        self.neighbors.pcol[:] = 0.0
+        self.neighbors.pmem[:] = 0.0
 
-        # Only record values if we are asked to
-        if record_values:
-            self.neighbors.theta_i[idx] = theta_i
-            self.neighbors.w[idx] = w
-            self.neighbors.wt[idx] = wt
-            self.neighbors.theta_r[idx] = theta_r
-            self.lam = lam
-            self.rlambda = rlam
-            if calc_err:
-                self.lam_err = lam_err
-            self.neighbors.pcol[idx] = pcol
+        # and set the values
+        self.neighbors.theta_i[idx] = theta_i
+        self.neighbors.theta_r[idx] = theta_r
+        self.neighbors.p[idx] = p
+        self.neighbors.pcol[idx] = pcol
+        self.neighbors.pmem[idx] = pmem
+
+        self.lam = lam
+        self.rlambda = rlam
+        if calc_err:
+            self.lam_err = lam_err
+        else:
+            self.lam_err = 0.0
 
         return lam
 
@@ -346,428 +379,19 @@ class Cluster(object):
 
         return lam_err
 
-    def calc_zlambda(self, zin, mask, maxmag_in=None, calcpz=False, calc_err=True,
-        correction=False, record_values=True):
-        """
-        compute z_lambda with uncertainty - Cluster Redshift Estimation
-        from redmapper_zlambda.pro
-
-        parameters
-        ----------
-        zin: input redshift
-        mask: mask object
-        calc_err: if False, no error calculated
-
-        returns
-        -------
-        z_lambda: estimated cluster redshift
-        z_lambda_err: uncertainty
-        """
-
-        z_lambda = zin
-
-        maxmag = self.zredstr.mstar(self.z) - 2.5*np.log10(self.confstr.lval_reference)
-        if maxmag_in is not None:
-            if maxmag_in.size == 1:
-                maxmag = maxmag_in
-
-        maxrad = 1.2 * self.r0 * 3.**self.beta
-
-        i = 0
-        niter = 0
-        pzdone = False
-
-        if not calc_err:
-            z_lambda_e = 0.0
-
-        for pi in xrange(0, 2):
-            #skip second iteration if we're already done
-            if pzdone: break
-
-            while i < self.confstr.zlambda_maxiter:
-                mpc_scale = np.radians(1.) * self.cosmo.Dl(0, z_lambda) / (1 + z_lambda)**2
-
-                r = self.neighbors.dist * mpc_scale
-
-                in_r, = np.where(r < maxrad)
-
-                if in_r.size < 1:
-                    z_lambda = -1.0
-                    break
-
-                lam = self.calc_richness(mask, calc_err=False, index=in_r)
-
-                if lam < self.confstr.percolation_minlambda:
-                    z_lambda = -1.0
-                    break
-
-                wtvals_mod = self.neighbors.pcol
-
-                r_lambda = self.r0 * (lam/100.)**self.beta
-
-                if maxmag_in is not None:
-                   maxmag = (self.zredstr.mstar(z_lambda) -
-                       2.5 * np.log10(self.confstr.lval_reference))
-
-                self._zlambda_select_neighbors(wtvals_mod, maxrad, maxmag)
-
-                #break out of loop if too few neighbors
-                if self.zlambda_fail is True:
-                    z_lambda_new = -1
-                    break
-                else:
-                    z_lambda_new = self._zlambda_calcz(z_lambda)
-
-                #check for convergence
-                if (np.absolute(z_lambda_new-z_lambda) < self.confstr.zlambda_tol or 
-                    z_lambda_new < 0.0):
-                    break
-
-                z_lambda = z_lambda_new
-                i += 1
-
-            niter = i
-
-            if z_lambda > 0.0 and calc_err:
-                if not calcpz:
-                    #regular Gaussian error
-                    z_lambda_e = self._zlambda_calc_err(z_lambda)
-                    #and check for an error
-                    if z_lambda_e < 0.0:
-                        self.z_lambda = -1.0
-                    pzdone = 1
-
-                else:
-                    # set pz and pzbins
-                    self._zlambda_calc_pz(z_lambda, wtvals_mod, r_lambda, maxmag)
-
-                    #check for bad values and do slow mode if necessary
-                    if (self.zlambda_pz[0]/self.zlambda_pz[(self.confstr.npzbins-1)/2] > 0.01 and
-                        self.zlambda_pzbins[0] >= np.amin(self.zredstr.z) + 0.01) or \
-                        (self.zlambda_pz[self.confstr.npzbins-1]/
-                        self.zlambda_pz[(self.confstr.npzbins-1)/2] > 0.01 and
-                        self.zlambda_pzbins[self.confstr.npzbins-1] <= np.amax(self.zredstr.z)-0.01):
-
-                        self._zlambda_calc_pz(self.confstr, z_lambda, self.confstr.npzbins,
-                            wtvals_mod, r_lambda, maxmag, slow = True)
-
-                    if self.zlambda_pz[0] < 0:
-                        #this is bad
-                        z_lambda   = -1.0
-                        z_lambda_e = -1.0
-                    else:
-                        m = np.argmax(self.zlambda_pz)
-                        p0 = np.array([self.zlambda_pz[m], self.zlambda_pzbins[m], 0.01])
-
-                        coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction,
-                            self.zlambda_pzbins, self.zlambda_pz, p0=p0)
-
-                        if coeff[2] > 0 or coeff[2] > 0.2:
-                            z_lambda_e = coeff[2]
-                        else:
-                            z_lambda_e = self._zlambda_calc_err(z_lambda)
-
-                    # check peak of p(z)...
-                    pmind = np.argmax(self.zlambda_pz)
-                    if (np.absolute(self.zlambda_pzbins[pmind] - z_lambda) 
-                        < self.confstr.zlambda_tol):
-                        pzdone = 1
-                    else:
-                        print('Warning: z_lambda / p(z) inconsistency detected.')
-                        z_lambda = self.zlambda_pzbins[pmind]
-                        pzdone = 0
-            else:
-                z_lambda_e = -1.0
-                pzdone = 1
-
-        #and apply the correction if necessary...
-        if correction and z_lambda > 0.0:
-            z_lambda, z_lambda_e = zlambda_apply_correction(corrstr, np.sum(wtvals_in), z_lambda ,z_lambda_e)
-            #NOT READY - MISSING corrstr
-
-        if record_values:
-            self.z_lambda = z_lambda
-            self.z_lambda_err = z_lambda_e
-
-        return z_lambda, z_lambda_e
-
-    def _zlambda_select_neighbors(self, wtvals, maxrad, maxmag):
-        """
-        select neighbours internal to r < maxrad
-
-        parameters
-        ----------
-        wtvals: weights
-        maxrad: maximum radius for considering neighbours
-        maxmag: maximum magnitude for considering neighbours
-
-        returns
-        -------
-        sets zrefmagbin, refmag, refmag_err, mag, mag_err, c, pw, targval
-        for selected neighbors
-        """
-        topfrac = self.confstr.zlambda_topfrac
-
-        #we need the zrefmagbin
-        nzrefmag    = self.zredstr.refmagbins.size  #zredstr.refmagbins[0].size
-        zrefmagbin  = np.clip(np.around(nzrefmag*(self.neighbors.refmag - self.zredstr.refmagbins[0])/
-                                        (self.zredstr.refmagbins[nzrefmag-2] - self.zredstr.refmagbins[0])), 0, nzrefmag-1)
-
-        ncount = topfrac*np.sum(wtvals)
-        use,   = np.where((self.neighbors.r < maxrad) & (self.neighbors.refmag < maxmag))
-
-        if ncount < 3:
-            ncount = 3
-
-        #exit variable in case use.size < 3
-        self.zlambda_fail = False
-        if use.size < 3:
-            self.zlambda_fail = True
-            return
-
-        if use.size < ncount:
-            ncount = use.size
-
-        st      = np.argsort(wtvals[use])[::-1]
-        pthresh = wtvals[use[st[np.int(np.around(ncount)-1)]]]
-
-        pw  = 1./(np.exp((pthresh-wtvals[use])/0.04)+1)
-        gd, = np.where(pw > 1e-3)
-
-        # record these values
-        self._zlambda_in_rad = use[gd]
-
-        self._zlambda_zrefmagbin = zrefmagbin[self._zlambda_in_rad]
-        self._zlambda_refmag = self.neighbors.refmag[self._zlambda_in_rad]
-        self._zlambda_refmag_err = self.neighbors.refmag_err[self._zlambda_in_rad]
-        self._zlambda_mag = self.neighbors.mag[self._zlambda_in_rad,:]
-        self._zlambda_mag_err = self.neighbors.mag_err[self._zlambda_in_rad,:]
-        self._zlambda_c = self.neighbors.galcol[self._zlambda_in_rad,:]
-        self._zlambda_pw = pw[gd]
-        self._zlambda_targval = 0
-
-    def _bracket_fn(self, z):
-        """
-        bracketing function
-        """
-        likelihoods = self.zredstr.calculate_chisq(self.neighbors[self._zlambda_in_rad], 
-            z, calc_lkhd=True)
-        t = -np.sum(self._zlambda_pw*likelihoods)
-        return t
-
-    def _delta_bracket_fn(self, z):
-        t  = self._bracket_fn(z)
-        dt = np.absolute(t-self._zlambda_targval)
-        return dt
-
-    def _zlambda_calcz(self, z_lambda):
-        """
-        calculate z_lambda
-
-        parameters
-        ----------
-        z_lambda: input
-
-        returns
-        -------
-        z_lambda: output
-        """
-        nsteps = 10
-        steps = np.linspace(0., nsteps*self.confstr.zlambda_parab_step, num = nsteps,
-            dtype = np.float64)+z_lambda - self.confstr.zlambda_parab_step*(nsteps-1)/2
-        likes = np.zeros(nsteps)
-        for i in xrange(0, nsteps):
-             likes[i] = self._bracket_fn(steps[i])
-        fit = np.polyfit(steps, likes, 2)
-
-        if fit[0] > 0.0:
-            z_lambda = -fit[1]/(2.0 * fit[0])
-        else:
-            z_lambda = -1.0
-
-        z_lambda = np.clip(z_lambda, (steps[0]-self.confstr.zlambda_parab_step), 
-            (steps[nsteps-1]+self.confstr.zlambda_parab_step))
-        z_lambda = np.clip(z_lambda, self.zredstr.z[0], self.zredstr.z[-2])
-
-        return z_lambda
-
-    def _zlambda_calc_err(self, z_lambda):
-        """
-        calculate z_lambda error
-
-        parameters
-        ----------
-        z_lambda: input
-
-        returns
-        -------
-        z_lambda_e: z_lambda error
-        """
-        minlike = self._bracket_fn(z_lambda) # of course this is negative
-        #now we want to aim for minlike+1
-        self._zlambda_targval = minlike+1
-
-        z_lambda_lo = scipy.optimize.minimize_scalar(self._delta_bracket_fn,
-            bracket = (z_lambda-0.1, z_lambda-0.001), method='bounded',
-            bounds = (z_lambda-0.1, z_lambda-0.001))
-        z_lambda_hi = scipy.optimize.minimize_scalar(self._delta_bracket_fn,
-            bracket = (z_lambda+0.001, z_lambda+0.1), method='bounded',
-            bounds = (z_lambda+0.001, z_lambda+0.1))
-        z_lambda_e = (z_lambda_hi.x-z_lambda_lo.x)/2.
-
-        return z_lambda_e
-
-    def _zlambda_calc_pz(self, z_lambda, wtvals, maxrad, maxmag, slow=True, record_values=True):
-        '''
-        set pz and pzbins
-
-        parameters
-        ----------
-        z_lambda: input
-        wtvals: weights
-        maxrad: maximum radius for considering neighbours
-        maxmag: maximum magnitude for considering neighbours
-        slow: slow or fast mode
-        '''
-        minlike = self._bracket_fn(z_lambda)
-        #4 sigma
-        self._zlambda_targval=minlike+16
-
-        if not slow:
-            #do we need both directions?  For speed, just do one...
-            #also don't need as tight tolerance.
-            #This is very approximate, but is fine...
-
-            #z_lambda_hi = scipy.optimize.minimize_scalar(self.delta_bracket_fn,
-            #bracket = (z_lambda+0.001,z_lambda+0.05,z_lambda+0.15), method='brent', tol=0.001)
-            #WORKS,  but above doesn't so use this here to stay consistent
-            z_lambda_hi = scipy.optimize.minimize_scalar(self._delta_bracket_fn,
-                bracket = (z_lambda+0.001, z_lambda+0.15), method='bounded',
-                bounds = (z_lambda+0.001, z_lambda+0.15))
-
-            dz = np.clip((z_lambda_hi.x - z_lambda), 0.005, 0.15) # minimal to consider
-            pzbinsize = 2.*dz/(self.confstr.npzbins-1)
-            pzbins = pzbinsize*np.arange(self.confstr.npzbins)+z_lambda - dz
-
-        else:
-            #super-slow-mode
-            #find the center
-            pk  = -self._bracket_fn(z_lambda) #REPLACE WITH *minlike
-            pz0 = self.zredstr.volume_factor[self.zredstr.zindex(z_lambda)]
-
-            #go to lower redshift
-            dztest = 0.05
-
-            lowz  = z_lambda - dztest
-            ratio = 1.0
-            while (lowz >= np.amin(self.zredstr.z) and (ratio > 0.01)):
-                val = - self._bracket_fn(lowz)
-
-                ln_lkhd = val - pk
-                pz = np.exp(val - pk)*self.zredstr.volume_factor[self.zredstr.zindex(lowz)]
-
-                ratio=pz/pz0
-
-                if (ratio > 0.01):
-                    lowz = lowz - dztest
-
-            lowz = np.clip(lowz, np.amin(self.zredstr.z), None)
-
-            highz = z_lambda + dztest
-            ratio = 1.0
-            while (highz <= np.amax(self.zredstr.z) and (ratio > 0.01)):
-                val  = - self._bracket_fn(highz)
-
-                ln_lkhd = val - pk
-                pz = np.exp(ln_lkhd)*self.zredstr.volume_factor[self.zredstr.zindex(highz)]
-
-                ratio = pz/pz0
-
-                if (ratio > 0.01):
-                    highz = highz+dztest
-
-            highz = np.clip(highz, None, np.amax(self.zredstr.z))
-
-            pzbinsize = (highz - lowz)/(self.confstr.npzbins-1)
-
-            pzbins = pzbinsize*np.arange(self.confstr.npzbins) + lowz
-
-            # and finally offset so that we're centered on z_lambda.  Important!
-            zmind = np.argmin(np.absolute(pzbins - z_lambda))
-            pzbins = pzbins - (pzbins[zmind] - z_lambda)
-
-        ln_lkhd = np.zeros(self.confstr.npzbins)
-        for i in range(0, self.confstr.npzbins):
-            likelihoods = self.zredstr.calculate_chisq(self.neighbors[self._zlambda_in_rad],
-                pzbins[i], calc_lkhd=True)
-            ln_lkhd[i] = np.sum(self._zlambda_pw*likelihoods)
-
-        ln_lkhd = ln_lkhd - np.amax(ln_lkhd)
-        pz = np.exp(ln_lkhd) * self.zredstr.volume_factor[self.zredstr.zindex(pzbins)]
-
-        #now normalize
-        n = scipy.integrate.simps(pz, pzbins)
-        pz = pz/n
-
-        if record_values:
-            self.zlambda_pzbins     = pzbins
-            self.zlambda_pzbinsize  = pzbinsize
-            self.zlambda_pz         = pz
-
-        return pzbins, pz
-
-    # FIXME
-    def zlambda_apply_correction(corrstr, lambda_in, z_lambda, z_lambda_e, noerr=False):
-        """
-        apply corrections to modify z_lambda & uncertainty, pz and pzbins
-        NOT READY - MISSING corrstr
-
-        UNTESTED - sorry for bugs!
-
-        parameters
-        ----------
-        corrstr: correction object
-        z_lambda: input
-        z_lambda_e: error
-        noerr: if True, no error calculated
-        """
-
-        niter = corrstr.offset[0].size
-
-        for i in range(0, niter):
-
-            correction = (corrstr.offset[i] + corrstr.slope[i] *
-                np.log(lambda_in/confstr.zlambda_pivot))
-            extra_err = np.interp(corrstr.scatter[i], corrstr.z, z_lambda)
-
-            dz = np.interp(correction, corrstr.z, z_lambda)
-
-            z_lambda_new = z_lambda + dz
-
-            #and recalculate z_lambda_e
-            if not noerr:
-                z_lambda_e_new = np.sqrt(z_lambda_e**2 + extra_err**2.)
-            else:
-                z_lambda_e_new = z_lambda_e
-
-            if self.confstr.npzbins is not None:
-                #do space density expansion...
-                #modify width of bins by expansion...
-                #also shift the center to the new z_lambda...
-
-                #allow for an offset between the peak and the center...
-                offset  = self.zlambda_pzbins[(self.confstr.npzbins-1)/2] - z_lambda
-                pdz     = self.zlambda_pzbinsize*np.sqrt(extra_err**2.+z_lambda_e**2)/z_lambda_e
-
-                #centered on z_lambda...
-                self.zlambda_pzbins = (pdz*np.arange(self.confstr.npzbins) + z_lambda_new - 
-                    pdz*(self.confstr.npzbins-1)/2. + offset*pdz/self.zlambda_pzbinsize)
-
-                #and renormalize
-                n = scipy.integrate.simps(self.zlambda_pzbins, self.zlambda_pz)
-                self.zlambda_pz = self.zlambda_pz/n
-
-        return z_lambda_new, z_lambda_e_new
+    def copy(self):
+        return self.__copy__()
+
+    def __copy__(self):
+        # This returns a copy of the cluster, and note that the neighbors will
+        # be deepcopied which is what we want.
+        return Cluster(r0=self.r0,
+                       beta=self.beta,
+                       confstr=self.confstr,
+                       zredstr=self.zredstr,
+                       bkg=self.bkg,
+                       neighbors=self.neighbors,
+                       cosmo=self.cosmo)
 
 class ClusterCatalog(Catalog):
     """
