@@ -105,11 +105,11 @@ class CubicSpline(object):
         
     def __call__(self, x):
         return self.splint(x)
-        
+
 def calc_theta_i(mag, mag_err, maxmag, limmag):
     """
-    Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pr
-    
+    Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pro
+
     parameters
     ----------
     mag:
@@ -121,18 +121,29 @@ def calc_theta_i(mag, mag_err, maxmag, limmag):
     -------
     theta_i:
     """
- 
-    theta_i = np.ones((len(mag)))
-    eff_lim = np.clip(maxmag,0,limmag)
+
+    theta_i = np.ones(mag.size)
+    eff_lim = np.clip(maxmag, 0, limmag)
     dmag = eff_lim - mag
-    calc = dmag < 5.0
-    N_calc = np.count_nonzero(calc==True)
-    if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
-    hi = mag > limmag
-    N_hi = np.count_nonzero(hi==True)
-    if N_hi > 0:
+    calc, = np.where(dmag < 5.0 * mag_err)
+    if calc.size > 0:
+        theta_i[calc] = 0.5 + 0.5 * erf(dmag[calc] / (np.sqrt(2) * mag_err[calc]))
+    hi, = np.where(mag > limmag)
+    if hi.size > 0:
         theta_i[hi] = 0.0
     return theta_i
+
+    #theta_i = np.ones((len(mag)))
+    #eff_lim = np.clip(maxmag,0,limmag)
+    #dmag = eff_lim - mag
+    #calc = dmag < 5.0
+    #N_calc = np.count_nonzero(calc==True)
+    #if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
+    #hi = mag > limmag
+    #N_hi = np.count_nonzero(hi==True)
+    #if N_hi > 0:
+    #    theta_i[hi] = 0.0
+    #return theta_i
 
 def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False, 
     nonoise=False, inlup=False):
