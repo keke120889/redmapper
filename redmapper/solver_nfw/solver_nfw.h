@@ -30,7 +30,8 @@ struct solver {
 
 int nfw_weights(double inlambda, double r0, double beta, long ngal,
 		double *ucounts, double *bcounts, double *r, double *w,
-		double *p, double *wt, double *rlambda, double *theta_r, double rsig);
+		double *p, double *wt, double *rlambda, double *theta_r, double rsig,
+                int update_all);
 
 int solver_nfw(double r0, double beta, long ngal,
 	       double *ucounts, double *bcounts, double *r, double *w,
