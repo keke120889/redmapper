@@ -36,7 +36,7 @@ class Mask(object):
         # this needs to be written to generate maskgals if not from file
         # Tom-where would we generate them from?
         pass
-    
+
     def set_radmask(self, cluster, mpcscale):
         """
         Assign mask (0/1) values to maskgals for a given cluster
@@ -57,11 +57,11 @@ class Mask(object):
         ras = cluster.ra + self.maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(cluster.dec))
         decs = cluster.dec + self.maskgals.y/(mpcscale*SEC_PER_DEG)
         self.maskgals.mark = self.compute_radmask(ras,decs)
-        
+
     def calc_maskcorr(self, mstar, maxmag, limmag):
         """
         Obtain mask correction c parameters. From calclambda_chisq_calc_maskcorr.pro
-        
+
         parameters
         ----------
         maskgals : Object holding mask galaxy parameters
@@ -74,15 +74,15 @@ class Mask(object):
         returns
         -------
         cpars
-        
+
         """
-                 
+
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
-        
+
         if self.maskgals.limmag[0] > 0.0:
             mag, mag_err = apply_errormodels(self.maskgals, mag_in)
-            
+
             self.maskgals.refmag_obs = mag
             self.maskgals.refmag_obs_err = mag_err
         else:
@@ -90,10 +90,10 @@ class Mask(object):
             mag_err = 0*mag_in
             raise ValueError('Survey limiting magnitude <= 0!')
             #Raise error here as this would lead to divide by zero if called.
-        
+
         #extract object for testing
         #fitsio.write('test_data.fits', self.maskgals._ndarray)
-        
+
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
             np.amax(self.maskgals.m50) == 0):
             theta_i = calc_theta_i(mag, mag_err, maxmag, limmag)
@@ -101,14 +101,14 @@ class Mask(object):
             theta_i = calc_theta_i(mag, mag_err, maxmag, self.maskgals.m50)
         else:
             raise Exception('Unsupported mode!')
-        
+
         p_det = theta_i*self.maskgals.mark
         np.set_printoptions(threshold=np.nan)
         #print self.maskgals.mark
         c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals.nin[0]
-        
+
         cpars = np.polyfit(self.maskgals.radbins[0], c, 3)
-        
+
         return cpars
 
 class HPMask(Mask):
@@ -142,7 +142,7 @@ class HPMask(Mask):
             muse, = esutil.numpy_util.match(hpix_ring, pixint)
 
         offset, ntot = np.min(hpix_ring)-1, np.max(hpix_ring)-np.min(hpix_ring)+3
-        self.nside = nside 
+        self.nside = nside
         self.offset = offset
         self.npix = ntot
 
