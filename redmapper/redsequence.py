@@ -300,6 +300,7 @@ class RedSequenceColorPar(object):
         # return the z index/indices with rounding.
 
         zind = np.searchsorted(self.zinteger,np.round(np.atleast_1d(z)*self.zbinscale).astype(np.int64))
+        #zind = np.searchsorted(self.zinteger,(np.atleast_1d(z)*self.zbinscale).astype(np.int64))
         if (zind.size == 1):
             return np.asscalar(zind)
         else:
