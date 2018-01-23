@@ -7,7 +7,8 @@
 
 int nfw_weights(double inlambda, double r0, double beta, long ngal,
 		double *ucounts, double *bcounts, double *r, double *w,
-		double *p, double *wt, double *rlambda, double *theta_r, double rsig)
+		double *p, double *wt, double *rlambda, double *theta_r, double rsig,
+                int update_all)
 {
   double nfwnorm,logrlambda;
   int i;
@@ -27,7 +28,9 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
     
   for (i=0;i<ngal;i++) {
     // calculate p[i]
-    p[i] = (inlambda*ucounts[i]*nfwnorm)/(inlambda*ucounts[i]*nfwnorm+bcounts[i]);
+      if (update_all) {
+          p[i] = (inlambda*ucounts[i]*nfwnorm)/(inlambda*ucounts[i]*nfwnorm+bcounts[i]);
+      }
 
     // check for infinity/NaN
     if (!finite(p[i])) p[i]=0.0;
@@ -36,14 +39,12 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
     if (rsig <= 0.0) {
       // old skool... hard cut.
       if (r[i] < *rlambda) {
-	wt[i]=p[i]*w[i]; //Tom - The problem is on this line. 
-	//Either w[i] or p[i] values are messed up
-	/*TOM - the following line is found on line 149 in
-	  calclambda_chisq_cluster_lambda.pro.
-	*/
-	theta_r[i] = 1.0; // added by Tom
+         if (update_all) {
+	    wt[i]=p[i]*w[i];
+         }
+	 theta_r[i] = 1.0; // added by Tom
       } else {
-        wt[i]=0.0;
+         wt[i]=0.0;
       }
     } else { // rsig > 0.0
       /*
@@ -65,7 +66,9 @@ int nfw_weights(double inlambda, double r0, double beta, long ngal,
           theta_r[i] = (0.5+0.5*erf((*rlambda - r[i])*rsig_const));
           //wt[i] = p[i]*w[i]*(0.5+0.5*erf((*rlambda - r[i])*rsig_const));
       }
-      wt[i] = p[i] * w[i] * theta_r[i];
+      if (update_all) {
+         wt[i] = p[i] * w[i] * theta_r[i];
+      }
     }
   }
   
