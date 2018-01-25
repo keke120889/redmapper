@@ -2,8 +2,11 @@ import numpy as np
 import scipy.optimize
 import scipy.integrate
 import copy
+import os
+import fitsio
 
 from utilities import gaussFunction
+from utilities import CubicSpline
 
 
 class Zlambda(object):
@@ -481,5 +484,115 @@ class Zlambda(object):
         return z_lambda_new, z_lambda_e_new
 
 
+class ZlambdaCorrectionPar(object):
+    """
+    """
+    def __init__(self, parfile, zlambda_pivot, zrange=None, zbinsize=None):
+        parfile = parfile
 
+        if not os.path.isfile(parfile):
+            raise IOError("Could not find ZlambdaCorrectionPar file %s" % (parfile))
+
+        hdr = fitsio.read_header(parfile, ext=1)
+
+        if zrange is None:
+            zrange = [hdr['ZRANGE0'], hdr['ZRANGE1']]
+        self.zrange = zrange
+
+        if zbinsize is None:
+            zbinsize = hdr['ZBINSIZE']
+        self.zbinsize = zbinsize
+
+        self.zlambda_pivot = zlambda_pivot
+
+        pars = fitsio.read(parfile, ext=1)
+
+        nbins = np.round((zrange[1] - zrange[0])/zbinsize).astype(np.int32)
+        self.z = zbinsize*np.arange(nbins) + zrange[0]
+
+        self.niter = 1
+        if 'NITER_TRUE' in pars.dtype.names:
+            self.niter = pars[0]['NITER_TRUE']
+
+        self.extrapolated = np.zeros_like(self.z, dtype=np.bool)
+
+        self.offset = np.zeros((self.niter, nbins))
+        self.slope = np.zeros_like(self.offset)
+        self.scatter = np.zeros_like(self.offset)
+
+        loz, = np.where(self.z < pars[0]['OFFSET_Z'][0])
+        hiz, = np.where(self.z > pars[0]['OFFSET_Z'][-1])
+
+        self.extrapolated[loz] = True
+        self.extrapolated[hiz] = True
+
+        if self.niter == 1:
+            spl = CubicSpline(pars[0]['OFFSET_Z'], pars[0]['OFFSET_TRUE'])
+            self.offset[0, :] = spl(self.z)
+
+            spl = CubicSpline(pars[0]['SLOPE_Z'], pars[0]['SLOPE_TRUE'])
+            self.slope[0, :] = spl(self.z)
+
+            spl = CubicSpline(pars[0]['SLOPE_Z'], pars[0]['SCATTER_TRUE'])
+            self.scatter[0, :] = np.clip(spl(self.z), 0.001, None)
+        else:
+            for i in xrange(self.niter):
+                spl = CubicSpline(pars[0]['OFFSET_Z'], pars[0]['OFFSET_TRUE'][:, i])
+                self.offset[i, :] = spl(self.z)
+
+                spl = CubicSpline(pars[0]['SLOPE_Z'], pars[0]['SLOPE_TRUE'][:, i])
+                self.slope[i, :] = spl(self.z)
+
+                spl = CubicSpline(pars[0]['SLOPE_Z'], pars[0]['SCATTER_TRUE'][:, i])
+                self.scatter[i, :] = np.clip(spl(self.z), 0.001, None)
+
+        spl = CubicSpline(pars[0]['OFFSET_Z'], pars[0]['ZRED_CORR'])
+        self.zred_corr = spl(self.z)
+
+        spl = CubicSpline(pars[0]['OFFSET_Z'], pars[0]['ZRED_UNCORR'])
+        self.zred_uncorr = spl(self.z)
+
+    def apply_correction(self, lam, zlam, zlam_e, pzbins=None, pzvals=None, noerr=False):
+        """
+        """
+
+        if pzbins is None:
+            npzbins = 0
+        else:
+            npzbins = pzbins.size
+
+        for i in xrange(self.niter):
+            correction = self.offset[i, :] + self.slope[i, :] * np.log(lam / self.zlambda_pivot)
+            extra_err = np.interp(zlam, self.z, self.scatter[i, :])
+
+            dz = np.interp(zlam, self.z, correction)
+
+            ozlam = copy.deepcopy(zlam)
+
+            zlam += dz
+
+            if pzbins is None and not noerr:
+                # No P(z).  Simple error application
+                zlam_e = np.sqrt(zlam_e**2. + extra_err**2.)
+            else:
+                # With P(z).  Do "space density expansion"
+                # modify width of bins by expansion, and also
+                # shift the center to the new zlam
+
+                offset = pzbins[(float(npzbins) - 1)/2.] - ozlam
+
+                opdz = pzbins[1] - pzbins[0]
+                pdz = opdz * np.sqrt(extra_err**2. + zlam_e**2.) / zlam_e
+
+                pzbins = pdz * np.arange(npzbins) + zlam - pdz * (npzbins - 1)/2. + offset
+
+                n = scipy.integrate.simps(pzvals, pzbins)
+                pzvals /= n
+
+                zlam_e = np.sqrt(zlam_e**2. + extra_err**2.)
+
+        if pzbins is None:
+            return zlam, zlam_e
+        else:
+            return zlam, zlam_e, pzbins, pzvals
 

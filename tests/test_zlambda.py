@@ -12,6 +12,7 @@ from redmapper.redsequence import RedSequenceColorPar
 from redmapper.mask import HPMask
 from redmapper.depthmap import DepthMap
 from redmapper.zlambda import Zlambda
+from redmapper.zlambda import ZlambdaCorrectionPar
 
 class ClusterZlambdaTestCase(unittest.TestCase):
     """
@@ -79,6 +80,23 @@ class ClusterZlambdaTestCase(unittest.TestCase):
 
         #testing.assert_almost_equal(z_lambda_err, 0.00897011)
         testing.assert_almost_equal(z_lambda_err, 0.00894175)
+
+        # and test the correction on its own
+        corr_filename = 'test_dr8_zlambdacorr.fit'
+
+        zlambda_corr = ZlambdaCorrectionPar(file_path + '/' + corr_filename, 30.0)
+
+        zlam_in = 0.227865
+        zlam_e_in = 0.00629995
+        zlam_out = 0.228654
+        zlam_e_out = 0.00840213
+
+        zlam_new, zlam_e_new = zlambda_corr.apply_correction(cluster.z, zlam_in, zlam_e_in)
+        #print(zlam_in, zlam_out, zlam_new)
+        #print(zlam_e_in, zlam_e_out, zlam_e_new)
+
+        testing.assert_almost_equal(zlam_new, zlam_out, 5)
+        testing.assert_almost_equal(zlam_e_new, zlam_e_out, 5)
 
 
 if __name__=='__main__':
