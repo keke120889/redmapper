@@ -70,8 +70,7 @@ class Zlambda(object):
             self.cluster.z = z_lambda
 
             while i < self.confstr.zlambda_maxiter:
-                mpc_scale = np.radians(1.) * (self.cosmo.Dl(0, z_lambda) /
-                                              (1 + z_lambda)**2)
+                mpc_scale = np.radians(1.) * self.cosmo.Da(0, z_lambda)
                 r = self.cluster.neighbors.dist * mpc_scale
 
                 in_r, = np.where(r < maxrad)
