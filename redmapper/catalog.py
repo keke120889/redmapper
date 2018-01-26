@@ -58,7 +58,7 @@ class DataObject(object):
             object.__setattr__(self, attr, val)
 
     @property
-    def dtype(self): 
+    def dtype(self):
         """numpy.dtype: dtype associated with the DataObject."""
         return self._ndarray.dtype
 
