@@ -70,16 +70,19 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.z, mask, calc_err=True, calcpz=True)
 
         #testing.assert_almost_equal(self.cluster.z_lambda, 0.22816455)
-        testing.assert_almost_equal(cluster.z_lambda, 0.227865)
+        #testing.assert_almost_equal(cluster.z_lambda, 0.227865)
+        testing.assert_almost_equal(cluster.z_lambda, 0.22700983)
         #testing.assert_almost_equal(self.cluster.z_lambda_err, 0.00632813)
-        testing.assert_almost_equal(cluster.z_lambda_err,0.00630833)
+        #testing.assert_almost_equal(cluster.z_lambda_err,0.00630833)
+        testing.assert_almost_equal(cluster.z_lambda_err, 0.00448909596)
 
 
         # zlambda_err test
         z_lambda_err = zlam._zlambda_calc_gaussian_err(cluster.z_lambda)
 
         #testing.assert_almost_equal(z_lambda_err, 0.00897011)
-        testing.assert_almost_equal(z_lambda_err, 0.00894175)
+        #testing.assert_almost_equal(z_lambda_err, 0.00894175)
+        testing.assert_almost_equal(z_lambda_err, 0.006303830)
 
         # and test the correction on its own
         corr_filename = 'test_dr8_zlambdacorr.fit'
