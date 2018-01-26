@@ -15,7 +15,40 @@ from redmapper.redsequence import RedSequenceColorPar
 from esutil.cosmology import Cosmo
 from galaxy import GalaxyCatalog
 
-class Cluster(object):
+cluster_dtype_base = [('RA', 'f8'),
+                      ('DEC', 'f8'),
+                      ('Z', 'f4'),
+                      ('REFMAG', 'f4'),
+                      ('REFMAG_ERR', 'f4'),
+                      ('LAMBDA', 'f4'),
+                      ('LAMBDA_E', 'f4'),
+                      ('Z_LAMBDA', 'f4'),
+                      ('Z_LAMBDA_E', 'f4'),
+                      ('CG_SPEC_Z', 'f4'),
+                      ('Z_SPEC_INIT', 'f4'),
+                      ('Z_INIT', 'f4'),
+                      ('R_LAMBDA', 'f4'),
+                      ('SCALEVAL', 'f4'),
+                      ('MASKFRAC', 'f4'),
+                      ('CHISQ', 'f4'),
+                      ('Z_LAMBDA_NITER', 'i2'),
+                      ('EBV_MEAN', 'f4'),
+                      ('LNLAMLIKE', 'f4'),
+                      ('LNCGLIKE', 'f4'),
+                      ('LNLIKE', 'f4'),
+                      ('RA_ORIG', 'f8'),
+                      ('DEC_ORIG', 'f8'),
+                      ('DLAMBDA_DZ', 'f4'),
+                      ('DLAMBDA_DZ2', 'f4'),
+                      ('DLAMBDAVAR_DZ', 'f4'),
+                      ('DLAMBDAVAR_DZ2', 'f4'),
+                      ('Z_LAMBDA_RAW', 'f4'),
+                      ('Z_LAMBDA_E_RAW', 'f4'),
+                      ('LIM_EXPTIME', 'f4'),
+                      ('LIM_LIMMAG', 'f4'),
+                      ('LIM_LIMMAG_HARD', 'f4')]
+
+class Cluster(Entry):
     """
 
     Class for a single galaxy cluster, with methods to perform
@@ -26,10 +59,26 @@ class Cluster(object):
     (TBD)
 
     """
-    def __init__(self, r0 = 1.0, beta = 0.2, confstr=None, zredstr=None, bkg=None, neighbors=None, cosmo=None):
-        self.r0     = r0
-        self.beta   = beta
-        # this should explicitly set our default cosmology
+    def __init__(self, cat_vals=None, r0=None, beta=None, confstr=None, zredstr=None, bkg=None, neighbors=None, cosmo=None):
+
+        if cat_vals is None:
+            #cat_vals = np.zeros(1, dtype=[('RA', 'f8'),
+            #                              ('DEC', 'f8'),
+            #                              ('Z', 'f8')])
+            if confstr is not None:
+                cat_vals = np.zeros(1, dtype=confstr.cluster_dtype)
+            else:
+                # This might lead to bugs down the line, but let's try
+                cat_vals = np.zeros(1, dtype=cluster_dtype_base)
+
+        # Start by taking catalog values and stuffing them into a nice Entry format
+        # we need to extend if necessary?  Or just the catalog?
+        super(Cluster, self).__init__(cat_vals)
+
+        self.r0 = 1.0 if r0 is None else r0
+        self.beta = 0.2 if beta is None else beta
+
+        # FIXME: this should explicitly set our default cosmology
         self.cosmo = cosmo
         if self.cosmo is None: self.cosmo = Cosmo()
         self.confstr = confstr
@@ -37,11 +86,13 @@ class Cluster(object):
         self.bkg = bkg
         self.set_neighbors(neighbors)
 
-        self.z = None
-        self.lam = -1.0
-        self.lam_err = -1.0
-        self.rlambda = -1.0
+    def reset(self):
+        """
+        """
 
+        # reset values to defaults
+        self.Lambda = -1.0
+        self.z_lambda = -1.0
 
     def set_neighbors(self, neighbors):
         """
@@ -63,12 +114,16 @@ class Cluster(object):
                                     ('THETA_R', 'f8'),
                                     ('P', 'f8'),
                                     ('PCOL', 'f8'),
-                                    ('PMEM', 'f8')]
+                                    ('PMEM', 'f8'),
+                                    ('INDEX', 'i8')]
 
             dtype_augment = [dt for dt in neighbor_extra_dtype if dt[0] not in self.neighbors.dtype.names]
             if len(dtype_augment) > 0:
                 self.neighbors.add_fields(dtype_augment)
 
+            if 'PFREE' in [dt[0] for dt in dtype_augment]:
+                # The PFREE is new, so we must set it to 1s
+                self.neighbors.pfree[:] = 1.0
 
     def find_neighbors(self, radius, galcat):
         """
@@ -86,7 +141,8 @@ class Cluster(object):
             raise ValueError("A GalaxyCatalog object must be specified.")
         if radius is None or radius < 0 or radius > 180:
             raise ValueError("A radius in degrees must be specified.")
-        indices, dists = galcat.match(self, radius) # self refers to the cluster
+        #indices, dists = galcat.match(self, radius) # self refers to the cluster
+        indices, dists = galcat.match_one(self.ra, self.dec, radius)
 
         #self.neighbors = galcat[indices]
         #Dist is arcmin???, R is Mpc/h
@@ -98,6 +154,7 @@ class Cluster(object):
         #self.neighbors.dist = dists
         self.set_neighbors(galcat[indices])
         self.neighbors.dist = dists
+        self.neighbors.index = indices
 
     def clear_neighbors(self):
         """
@@ -114,23 +171,28 @@ class Cluster(object):
         # copy the neighbors to a members subset
         pass
 
-    def _calc_radial_profile(self, rscale=0.15):
+    def _calc_radial_profile(self, idx=None, rscale=0.15):
         """
         internal method for computing radial profile weights
 
         parameters
         ----------
+        idx: integer array (optional)
+           indices to compute
         rscale: float
-            r_s for nfw profile
+           r_s for nfw profile
 
         returns
         -------
         sigx: array of floats
            sigma(x)
         """
+        if idx is None:
+            idx = np.arange(len(self.neighbors))
+
         corer = 0.1
-        x, corex = self.neighbors.r/rscale, corer/rscale
-        sigx = np.zeros(self.neighbors.r.size)
+        x, corex = self.neighbors.r[idx]/rscale, corer/rscale
+        sigx = np.zeros(self.neighbors.r[idx].size)
 
         low, = np.where(x < corex)
         mid, = np.where((x >= corex) & (x < 1.0))
@@ -166,7 +228,7 @@ class Cluster(object):
 
         return sigx
 
-    def _calc_luminosity(self, normmag):
+    def _calc_luminosity(self, normmag, idx=None):
         """
         Internal method to compute luminosity filter
 
@@ -176,6 +238,8 @@ class Cluster(object):
             Red sequence object
         normmag: float
             Normalization magnitude
+        idx: int array (optional)
+            Indices to compute
 
         returns
         -------
@@ -183,13 +247,17 @@ class Cluster(object):
             phi(x) filter for the cluster
 
         """
+
+        if idx is None:
+            idx = np.arange(len(self.neighbors))
+
         zind = self.zredstr.zindex(self.z)
         refind = self.zredstr.lumrefmagindex(normmag)
         normalization = self.zredstr.lumnorm[refind, zind]
         mstar = self.zredstr.mstar(self.z)
-        phi_term_a = 10. ** (0.4 * (self.zredstr.alpha+1.) 
-                                 * (mstar-self.neighbors.refmag))
-        phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag)))
+        phi_term_a = 10. ** (0.4 * (self.zredstr.alpha+1.)
+                                 * (mstar-self.neighbors.refmag[idx]))
+        phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag[idx])))
         return phi_term_a * phi_term_b / normalization
 
     def _calc_bkg_density(self, r, chisq, refmag):
@@ -209,7 +277,7 @@ class Cluster(object):
         bcounts: float array
             b(x) for the cluster
         """
-        mpc_scale = np.radians(1.) * self.cosmo.Dl(0, self.z) / (1 + self.z)**2
+        mpc_scale = np.radians(1.) * self.cosmo.Da(0, self.z)
         sigma_g = self.bkg.sigma_g_lookup(self.z, chisq, refmag)
         return 2 * np.pi * r * (sigma_g/mpc_scale**2)
 
@@ -237,15 +305,15 @@ class Cluster(object):
         self.mstar = self.zredstr.mstar(self.z)
 
         maxmag = self.mstar - 2.5*np.log10(self.confstr.lval_reference)
-        self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Dl(0, self.z)
+        self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Da(0, self.z)
 
         # need to clip r at > 1e-6 or else you get a singularity
         self.neighbors.r[idx] = self.neighbors.r[idx].clip(min=1e-6)
 
         self.neighbors.chisq[idx] = self.zredstr.calculate_chisq(self.neighbors[idx], self.z)
         rho = chisq_pdf(self.neighbors.chisq[idx], self.zredstr.ncol)
-        nfw = self._calc_radial_profile()
-        phi = self._calc_luminosity(maxmag) #phi is lumwt in the IDL code
+        nfw = self._calc_radial_profile(idx=idx)
+        phi = self._calc_luminosity(maxmag, idx=idx) #phi is lumwt in the IDL code
         ucounts = (2*np.pi*self.neighbors.r[idx]) * nfw * phi * rho
         bcounts = self._calc_bkg_density(self.neighbors.r[idx], self.neighbors.chisq[idx],
                                          self.neighbors.refmag[idx])
@@ -312,12 +380,12 @@ class Cluster(object):
         self.neighbors.pcol[idx] = pcol
         self.neighbors.pmem[idx] = pmem
 
-        self.lam = lam
-        self.rlambda = rlam
+        self.Lambda = lam
+        self.r_lambda = rlam
         if calc_err:
-            self.lam_err = lam_err
+            self.Lambda_e = lam_err
         else:
-            self.lam_err = 0.0
+            self.Lambda_e = 0.0
 
         return lam
 
@@ -402,3 +470,53 @@ class ClusterCatalog(Catalog):
     """
     entry_class = Cluster
 
+    # Okay, here's the plan for the cluster catalog...
+
+    # It is simply an array of numbers ... all the fields we want
+    #   So we need to override and append all those values when we load a catalog
+    # And it will also have an array of members, if necessary
+    # And on demand it will return a cluster object which it needs to initialize...
+
+
+    def __init__(self, *arrays, **kwargs):
+        super(ClusterCatalog, self).__init__(*arrays)
+
+        self.r0 = None if 'r0' not in kwargs else kwargs['r0']
+        self.beta = None if 'beta' not in kwargs else kwargs['beta']
+        self.zredstr = None if 'zredstr' not in kwargs else kwargs['zredstr']
+        self.confstr = None if 'confstr' not in kwargs else kwargs['confstr']
+        self.bkg = None if 'bkg' not in kwargs else kwargs['bkg']
+        self.cosmo = None if 'cosmo' not in kwargs else kwargs['cosmo']
+
+        if self.confstr is not None:
+            cluster_dtype = self.confstr.cluster_dtype
+        else:
+            cluster_dtype = cluster_dtype_base
+
+        # and if confstr is set then use that cluster_dtype because that
+        #  will have all the other stuff filled as well.
+        dtype_augment = [dt for dt in cluster_dtype if dt[0] not in self._ndarray.dtype.names]
+        if len(dtype_augment) > 0:
+            self.add_fields(dtype_augment)
+
+    @classmethod
+    def from_catfile(cls, filename, **kwargs):
+        """
+        """
+        cat = fitsio.read(filename, ext=1)
+
+        return cls(cat, **kwargs)
+
+    def __getitem__(self, key):
+        if isinstance(key, int):
+            # Note that if we have members, we can associate them with the cluster
+            #  here.
+            return Cluster(cat_vals=self._ndarray.__getitem__(key),
+                           r0=self.r0,
+                           beta=self.beta,
+                           zredstr=self.zredstr,
+                           confstr=self.confstr,
+                           bkg=self.bkg,
+                           cosmo=self.cosmo)
+        else:
+            raise ValueError("Don't know what to do with this key type yet?")
