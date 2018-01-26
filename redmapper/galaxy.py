@@ -1,6 +1,7 @@
 import fitsio
-import esutil as eu
+import esutil
 from esutil.htm import Matcher
+#import smatch
 import numpy as np
 import itertools
 from catalog import Catalog, Entry
@@ -21,6 +22,8 @@ class GalaxyCatalog(Catalog):
         super(GalaxyCatalog, self).__init__(*arrays)
         self._htm_matcher = None
         self.depth = 10 if 'depth' not in kwargs else kwargs['depth']
+        #self._smatch_catalog = None
+        #self._smatch_nside = 4096 if 'smatch_nside' not in kwargs else kwargs['smatch_nside']
 
     @classmethod
     def from_galfile(cls, filename, nside=None, hpix=None, border=0.0):
@@ -91,7 +94,7 @@ class GalaxyCatalog(Catalog):
                                     border*np.pi/180., inclusive=True, fact=8)
                     inhpix = np.append(inhpix, pixint)
                 inhpix = np.unique(inhpix)
-                _, indices = eu.numpy_util.match(inhpix, tab[0]['HPIX'])
+                _, indices = esutil.numpy_util.match(inhpix, tab[0]['HPIX'])
 
         # create the catalog array to read into
         elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]]),ext=1, rows=0)
@@ -105,38 +108,63 @@ class GalaxyCatalog(Catalog):
         # In the IDL version this is trimmed to the precise boundary requested.
         # that's easy in simplepix.  Not sure how to do in healpix.
         return cls(cat)
-        
+
     @property
     def galcol(self):
         galcol = self.mag[:,:-1] - self.mag[:,1:]
         return galcol
 
-    def match(self, galaxy, radius):
+    def match_one(self, ra, dec, radius):
         """
-        match a galaxy to the catalog
+        match an ra/dec to the galaxy catalog
 
         parameters
         ----------
-        galaxy: Galaxy object
+        ra: input ra
+        dec: input dec
         radius: float
            radius in degrees
 
         returns
         -------
-        (indices, dists)
-        indices: array of integers
-            indices in galaxy catalog of matches
-        dists: array of floats
-            match distance for each match
+        #(indices, dists)
+        #indices: array of integers
+        #    indices in galaxy catalog of matches
+        #dists: array of floats
+        #    match distance for each match (degrees)
         """
 
-        # probably need a multi-match one as well?  depends on speed/overhead
-        # also, I think we want to change to smatch
+        if self._htm_matcher is None:
+            self._htm_matcher = Matcher(self.depth, self.ra, self.dec)
+
+        _, indices, dists = self._htm_matcher.match(ra, dec, radius, maxmatch=0)
+
+        return indices, dists
+
+    def match_many(self, ras, decs, radius):
+        """
+        match many ras/decs to the galaxy catalog
+
+        parameters
+        ----------
+        ras: input ras
+        decs: input decs
+        radius: float
+           radius/radii in degrees
+
+        returns
+        -------
+        (i0, i1, dists)
+        i0: array of integers
+            indices for input ra/dec
+        i1: array of integers
+            indices for galaxy catalog
+        dists: array of floats
+            match distance (degrees)
+        """
 
         if self._htm_matcher is None:
-            dummy_object = eu.htm.HTM(self.depth)
             self._htm_matcher = Matcher(self.depth, self.ra, self.dec)
-        _, indices, dists = self._htm_matcher.match(galaxy.ra, galaxy.dec, 
-                                                        radius, maxmatch=0)
-        return indices, dists
+
+        return self._htm_matcher.match(ras, decs, radius, maxmatch=0)
 
