@@ -1,9 +1,71 @@
 import fitsio
 import esutil
 
-import config
+import config as rmconfig
 from cluster import ClusterCatalog
+from background import Background
+from mask import HPMask
+from galaxy import GalaxyCatalog
+from cluster import Cluster
+from cluster import ClusterCatalog
+from depthmap import DepthMap
+from zlambda import Zlambda
+from zlambda import ZlambdaCorrectionPar
+#from runcat_base import RunCatalogBase
+from cluster_runner import ClusterRunner
 
+class RunCatalog(ClusterRunner):
+    """
+    """
+
+    def _more_setup(self):
+        # read in catalog, etc
+
+        pass
+
+    def _process_cluster(self, *args):
+        # here is where the work on an individual cluster is done
+
+        pass
+
+    #def run(self, mask=False):
+    #    """
+    #    """
+
+        # The "runcat" mode does masking based on the "percolation" settings.
+    #    self._setup('percolation')
+
+        # read in input catalog
+    #    incat = fitsio.read(self.config['catfile'], ext=1)
+
+        # cut down the input catalog to those that are within the pixel
+
+
+        # loop over clusters
+
+        # compute limiting mag stuff if depth not available
+        #  (needs to be tested)
+
+
+        # iterate here!
+
+        # compute richness
+
+        # and z_lambda
+
+        # and +/-
+
+        # apply any zlambda corrections
+
+        # copy selection of members
+
+        # and record pfree values...
+
+
+    #def output(self, savemembers=True):
+    #    pass
+
+    
 
 def run(confdict=None, conffile=None, outbase=None, 
                         savemembers=False, mask=False):
