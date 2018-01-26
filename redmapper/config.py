@@ -1,8 +1,11 @@
 import yaml
 import fitsio
+import copy
+
+from cluster import cluster_dtype_base
 
 def read_yaml(filename, defaults=None):
-    
+
     """
     Name:
         read_yaml
@@ -19,20 +22,20 @@ def read_yaml(filename, defaults=None):
     Outputs:
         outdict: a dictionary of the key/value pairs in the YAML file.
     """
-    
+
     # The output dictionary
     outdict = defaults if defaults is not None else {}
-    
+
     # Open the yaml file and find key/value pairs
     with open(filename) as f: yaml_data = yaml.load(f)
     for tag in outdict:
         if outdict[tag] is None:
             raise ValueError('A value for the required tag \"' 
                                 + tag + '\" must be specified.')
-    
+
     # Add the pairs to the dictionary
     for tag in yaml_data: outdict[tag] = yaml_data[tag]
-    
+
     return outdict
 
 
@@ -54,7 +57,14 @@ class Configuration(object):
 
         for key in gal_stats:
             setattr(self, key, gal_stats[key])
-        
+
+        # and the cluster dtype
+        # Make sure we make a local copy of this!
+        self.cluster_dtype = copy.copy(cluster_dtype_base)
+        self.cluster_dtype.extend([('MAG', 'f4', self.nmag),
+                                   ('MAG_ERR', 'f4', self.nmag)])
+        # also need pz stuff, etc, etc.  Will need to deal with defaults
+
     def galfile_stats(self, galfile, refmag):
         """
         """
