@@ -112,7 +112,7 @@ class ClusterTestCase(unittest.TestCase):
 
         # Now the cluster tests
 
-        cluster.neighbors.dist = np.degrees(cluster.neighbors.r / cluster.cosmo.Dl(0, cluster.z))
+        cluster.neighbors.dist = np.degrees(cluster.neighbors.r / cluster.cosmo.Da(0, cluster.z))
 
         seed = 0
         random.seed(seed = 0)
@@ -121,8 +121,8 @@ class ClusterTestCase(unittest.TestCase):
 
         # these are regression tests.  Various mask issues make the matching
         #  to idl for the time being
-        testing.assert_almost_equal(cluster.lam, 23.86299324)
-        testing.assert_almost_equal(cluster.lam_err, 2.4780307)
+        testing.assert_almost_equal(cluster.Lambda, 23.86299324)
+        testing.assert_almost_equal(cluster.lambda_e, 2.4780304)
 
         #testing.assert_almost_equal(cluster.neighbors.theta_i,
         #                            neighbors.theta_i, 3)
