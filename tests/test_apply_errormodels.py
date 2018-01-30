@@ -5,7 +5,7 @@ import fitsio
 from numpy import random
 
 from redmapper.mask import HPMask
-from redmapper.config import Configuration
+from redmapper.configuration import Configuration
 from redmapper.utilities import apply_errormodels
 
 class ClusterFiltersTestCase(unittest.TestCase):
@@ -15,9 +15,9 @@ class ClusterFiltersTestCase(unittest.TestCase):
     def runTest(self):
         file_path = 'data_for_tests'
         conf_filename = 'testconfig.yaml'
-        confstr = Configuration(file_path + '/' + conf_filename)
+        config = Configuration(file_path + '/' + conf_filename)
         
-        mask = HPMask(confstr) #Create the mask
+        mask = HPMask(config) #Create the mask
         
         #set all the necessary inputs from test file
         mask.maskgals.exptime = 100.
