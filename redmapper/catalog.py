@@ -38,6 +38,10 @@ class DataObject(object):
         array = fitsio.read(filename, ext=1)
         return cls(array)
 
+    @classmethod
+    def zeros(cls, size, dtype):
+        return cls(np.zeros(size, dtype=dtype))
+
     def __getattribute__(self, attr):
         try:
             return object.__getattribute__(self, attr)
@@ -125,6 +129,16 @@ class Catalog(DataObject):
 
     @property
     def size(self): return self._ndarray.size
+
+    def append(self, append_cat):
+        if isinstance(append_cat, Catalog):
+            self._ndarray = np.append(self._ndarray, append_cat._ndarray)
+        else:
+            self._ndarray = np.append(self._ndarray, append_cat)
+
+    def extend(self, n_new):
+        temp = np.zeros(n_new, dtype=self._ndarray.dtype)
+        self._ndarray = np.append(self._ndarray, temp)
 
     def __len__(self): return self.size
 
