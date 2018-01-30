@@ -5,7 +5,7 @@ import fitsio
 from numpy import random
 
 from redmapper.cluster import Cluster
-from redmapper.config import Configuration
+from redmapper.configuration import Configuration
 from redmapper.galaxy import GalaxyCatalog
 from redmapper.background import Background
 from redmapper.redsequence import RedSequenceColorPar
@@ -28,7 +28,7 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         #Used by the mask, background and richness calculation
 
         conf_filename = 'testconfig.yaml'
-        confstr = Configuration(file_path + '/' + conf_filename)
+        config = Configuration(file_path + '/' + conf_filename)
 
         filename = 'test_cluster_members.fit'
         neighbors = GalaxyCatalog.from_fits_file(file_path + '/' + filename)
@@ -39,26 +39,28 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         bkg_filename = 'test_bkg.fit'
         bkg = Background('%s/%s' % (file_path, bkg_filename))
 
-        cluster = Cluster(confstr=confstr, zredstr=zredstr, bkg=bkg, neighbors=neighbors)
+        cluster = Cluster(config=config, zredstr=zredstr, bkg=bkg, neighbors=neighbors)
 
         hdr=fitsio.read_header(file_path+'/'+filename,ext=1)
-        cluster.z = hdr['Z']
+        #cluster.z = hdr['Z']
+        cluster.update_z(hdr['Z'])
         richness_compare = hdr['LAMBDA']
         richness_compare_err = hdr['LAMBDA_E']
         cluster.ra = hdr['RA']
         cluster.dec = hdr['DEC']
 
         #Set up the mask
-        mask = HPMask(cluster.confstr) #Create the mask
+        mask = HPMask(cluster.config) #Create the mask
 
-        mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster.z) / (1 + cluster.z)**2
+        #mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster.z) / (1 + cluster.z)**2
+        mpc_scale = cluster.mpc_scale()
         mask.set_radmask(cluster, mpc_scale)
 
         #depthstr
-        depthstr = DepthMap(cluster.confstr)
+        depthstr = DepthMap(cluster.config)
         depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, mpc_scale)
 
-        cluster.neighbors.dist = np.degrees(cluster.neighbors.r/cluster.cosmo.Dl(0,cluster.z))
+        cluster.neighbors.dist = np.degrees(cluster.neighbors.r/cluster.cosmo.Dl(0,cluster._z))
 
         #set seed
         seed = 0
@@ -67,7 +69,7 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         # make a zlambda object
         zlam = Zlambda(cluster)
 
-        z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.z, mask, calc_err=True, calcpz=True)
+        z_lambda, z_lambda_e = zlam.calc_zlambda(cluster._z, mask, calc_err=True, calcpz=True)
 
         #testing.assert_almost_equal(self.cluster.z_lambda, 0.22816455)
         #testing.assert_almost_equal(cluster.z_lambda, 0.227865)
@@ -94,7 +96,7 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         zlam_out = 0.228654
         zlam_e_out = 0.00840213
 
-        zlam_new, zlam_e_new = zlambda_corr.apply_correction(cluster.z, zlam_in, zlam_e_in)
+        zlam_new, zlam_e_new = zlambda_corr.apply_correction(24.5, zlam_in, zlam_e_in)
         #print(zlam_in, zlam_out, zlam_new)
         #print(zlam_e_in, zlam_e_out, zlam_e_new)
 
