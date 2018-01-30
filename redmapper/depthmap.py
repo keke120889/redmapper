@@ -13,18 +13,18 @@ class DepthMap(object):
 
     parameters
     ----------
-    confstr: Config object
+    config: Config object
         Configuration object with depthfile
 
     """
-    def __init__(self, confstr):
+    def __init__(self, config):
         # record for posterity
-        self.depthfile = confstr.depthfile
+        self.depthfile = config.depthfile
 
         depthinfo, hdr = fitsio.read(self.depthfile, ext=1, header=True)
         # convert into catalog for convenience...
         depthinfo = Catalog(depthinfo)
-        
+
         nlim        = depthinfo.hpix.size
         nside       = hdr['NSIDE']
         nest        = hdr['NEST']
@@ -33,7 +33,7 @@ class DepthMap(object):
         self.nband  = hdr['NBAND']
         self.w      = hdr['W']
         self.eff    = hdr['EFF']
-        
+
         if nest != 1:
             hpix_ring = depthinfo.hpix
         else:
@@ -42,10 +42,10 @@ class DepthMap(object):
         muse = np.arange(nlim)
 
         # if we have a sub-region of the sky, cut down mask to save memory
-        if confstr.hpix > 0:
-            border = confstr.border + hp.nside2resol(nside)
-            theta, phi = hp.pix2ang(confstr.nside, confstr.hpix)
-            radius = np.sqrt(2) * (hp.nside2resol(confstr.nside)/2. + border)
+        if config.hpix > 0:
+            border = config.border + hp.nside2resol(nside)
+            theta, phi = hp.pix2ang(config.nside, config.hpix)
+            radius = np.sqrt(2) * (hp.nside2resol(config.nside)/2. + border)
             pixint = hp.query_disc(nside, hp.ang2vec(theta, phi), 
                                         np.radians(radius), inclusive=False)
             muse, = esutil.numpy_util.match(hpix_ring, pixint)
@@ -83,42 +83,42 @@ class DepthMap(object):
 
     def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):
         """
-        set masgals parameters: limmag, exptime, m50   
-        parameters               
+        set masgals parameters: limmag, exptime, m50
+        parameters
         ----------
         maskgals: Object holding mask galaxy parameters
         ra: Right ascention of cluster
         dec: Declination of cluster
         mpc_scale: scaling to go from mpc to degrees (check units) at cluster redshift
-        
+
         """
-        
+
         unseen = hp.pixelfunc.UNSEEN
-        
+
         # compute ra and dec based on maskgals
         ras = ra + (maskgals.x/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
         decs = dec + maskgals.y/(mpc_scale*3600.)
         theta = (90.0 - decs)*np.pi/180.
         phi = ras*np.pi/180.
-        
+
         maskgals.w = self.w
         maskgals.eff = None
         maskgals.limmag = unseen
         maskgals.zp[0] = self.zp
         maskgals.nsig[0] = self.nsig
-        
+
         theta, phi = astro_to_sphere(ras, decs)
         ipring = hp.ang2pix(self.nside, theta, phi)
         ipring_offset = np.clip(ipring - self.offset, 0, self.ntot-1)
-        
+
         maskgals.limmag     = self.limmag[ipring_offset]
         maskgals.exptime    = self.exptime[ipring_offset]
         maskgals.m50        = self.m50[ipring_offset]
-        
+
         bd, = np.where(maskgals.limmag < 0.0)
         ok = np.delete(np.copy(maskgals.limmag), bd)
         nok = ok.size
-        
+
         if (bd.size > 0):
             if (nok >= 3):
                 # fill them in
