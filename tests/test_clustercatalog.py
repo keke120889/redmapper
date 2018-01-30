@@ -8,7 +8,7 @@ from esutil.cosmology import Cosmo
 
 from redmapper.cluster import Cluster
 from redmapper.cluster import ClusterCatalog
-from redmapper.config import Configuration
+from redmapper.configuration import Configuration
 from redmapper.galaxy import GalaxyCatalog
 from redmapper.catalog import DataObject
 from redmapper.redsequence import RedSequenceColorPar
@@ -26,9 +26,9 @@ class ClusterCatalogTestCase(unittest.TestCase):
         file_path = 'data_for_tests'
         conffile = 'testconfig.yaml'
 
-        confstr = Configuration(file_path + '/' + conffile)
+        config = Configuration(file_path + '/' + conffile)
 
-        gals_all = GalaxyCatalog.from_galfile(confstr.galfile)
+        gals_all = GalaxyCatalog.from_galfile(config.galfile)
 
         zred_filename = 'test_dr8_pars.fit'
         zredstr = RedSequenceColorPar(file_path + '/' + zred_filename, fine=True)
@@ -36,18 +36,17 @@ class ClusterCatalogTestCase(unittest.TestCase):
         bkg_filename = 'test_bkg.fit'
         bkg = Background('%s/%s' % (file_path, bkg_filename))
 
-        mask = HPMask(confstr)
-        depthstr = DepthMap(confstr)
+        mask = HPMask(config)
+        depthstr = DepthMap(config)
 
-        cosmo = Cosmo()
+        #cosmo = Cosmo()
 
 
         testcatfile = 'test_cluster_pos.fit'
         cat = ClusterCatalog.from_catfile(file_path + '/' + testcatfile,
                                           zredstr=zredstr,
-                                          confstr=confstr,
-                                          bkg=bkg,
-                                          cosmo=cosmo)
+                                          config=config,
+                                          bkg=bkg)
 
         # test single neighbors...
         c0 = cat[0]
@@ -86,5 +85,5 @@ class ClusterCatalogTestCase(unittest.TestCase):
         testing.assert_almost_equal(richness, 23.86299324)
 
         # and we're done
-        
+
 
