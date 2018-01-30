@@ -4,7 +4,6 @@ import fitsio
 import numpy as np
 import esutil
 
-import config as rmconfig
 from cluster import ClusterCatalog
 from background import Background
 from mask import HPMask
