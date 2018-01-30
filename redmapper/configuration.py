@@ -1,8 +1,9 @@
 import yaml
 import fitsio
 import copy
+from esutil.cosmology import Cosmo
 
-from cluster import cluster_dtype_base
+from cluster import cluster_dtype_base, member_dtype_base
 
 def read_yaml(filename, defaults=None):
 
@@ -62,8 +63,16 @@ class Configuration(object):
         # Make sure we make a local copy of this!
         self.cluster_dtype = copy.copy(cluster_dtype_base)
         self.cluster_dtype.extend([('MAG', 'f4', self.nmag),
-                                   ('MAG_ERR', 'f4', self.nmag)])
+                                   ('MAG_ERR', 'f4', self.nmag),
+                                   ('PZBINS', 'f4', self.npzbins),
+                                   ('PZ', 'f4', self.npzbins)])
+        self.member_dtype = copy.copy(member_dtype_base)
+        self.member_dtype.extend([('MAG', 'f4', self.nmag),
+                                  ('MAG_ERR', 'f4', self.nmag)])
         # also need pz stuff, etc, etc.  Will need to deal with defaults
+
+        # will want to set defaults here...
+        self.cosmo = Cosmo()
 
     def galfile_stats(self, galfile, refmag):
         """
