@@ -14,7 +14,7 @@ class Mask(object):
 
     parameters
     ----------
-    confstr: Config object
+    config: Config object
        configuration
     """
 
@@ -22,9 +22,9 @@ class Mask(object):
     #   We need a routine that looks at the mask_mode and instantiates
     #   the correct type.  How is this typically done?
 
-    def __init__(self, confstr):
+    def __init__(self, config):
         try:
-            self.read_maskgals(confstr.maskgalfile)
+            self.read_maskgals(config.maskgalfile)
         except:
             # this could throw a ValueError or AttributeError
             self.gen_maskgals()
@@ -68,7 +68,7 @@ class Mask(object):
         mstar    :
         maxmag   : Maximum magnitude
         limmag   : Limiting Magnitude
-        confstr  : Configuration object
+        config  : Configuration object
                     containing configuration info
 
         returns
@@ -104,7 +104,6 @@ class Mask(object):
 
         p_det = theta_i*self.maskgals.mark
         np.set_printoptions(threshold=np.nan)
-        #print self.maskgals.mark
         c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals.nin[0]
 
         cpars = np.polyfit(self.maskgals.radbins[0], c, 3)
@@ -117,15 +116,15 @@ class HPMask(Mask):
 
     parameters
     ----------
-    confstr: Config object
+    config: Config object
         Configuration object with maskfile
 
     """
 
-    def __init__(self, confstr):
+    def __init__(self, config):
         # record for posterity
-        self.maskfile = confstr.maskfile
-        maskinfo, hdr = fitsio.read(confstr.maskfile, ext=1, header=True)
+        self.maskfile = config.maskfile
+        maskinfo, hdr = fitsio.read(config.maskfile, ext=1, header=True)
         # maskinfo converted to a catalog (array of Entrys)
         maskinfo = Catalog(maskinfo)
         nlim, nside, nest = maskinfo.hpix.size, hdr['NSIDE'], hdr['NEST']
@@ -133,10 +132,10 @@ class HPMask(Mask):
         muse = np.arange(nlim)
 
         # if we have a sub-region of the sky, cut down the mask to save memory
-        if confstr.hpix > 0:
-            border = confstr.border + hp.nside2resol(nside)
-            theta, phi = hp.pix2ang(confstr.nside, confstr.hpix)
-            radius = np.sqrt(2) * (hp.nside2resol(confstr.nside)/2. + border)
+        if config.hpix > 0:
+            border = config.border + hp.nside2resol(nside)
+            theta, phi = hp.pix2ang(config.nside, config.hpix)
+            radius = np.sqrt(2) * (hp.nside2resol(config.nside)/2. + border)
             pixint = hp.query_disc(nside, hp.ang2vec(theta, phi), 
                                         np.radians(radius), inclusive=False)
             muse, = esutil.numpy_util.match(hpix_ring, pixint)
@@ -156,7 +155,7 @@ class HPMask(Mask):
         except AttributeError:
             self.fracgood_float = 0
             self.fracgood[hpix_ring-offset] = 1
-        super(HPMask, self).__init__(confstr)
+        super(HPMask, self).__init__(config)
 
     def compute_radmask(self, ra, dec):
         """
@@ -185,3 +184,24 @@ class HPMask(Mask):
         radmask = np.zeros(_ra.size, dtype=np.bool_)
         radmask[np.where(self.fracgood[ipring_offset] > ref)] = True
         return radmask
+
+
+def get_mask(config):
+    """
+    Convenience function to look at a config file and load the appropriate type of mask.
+
+    parameters
+    ----------
+    config: Config object
+        Configuration object with maskfile
+    """
+
+    if config.mask_mode == 0:
+        # This is no mask!
+        # Return a bare object with maskgal functionality
+        return Mask(config)
+    elif config.mask_mode == 3:
+        # This is a healpix mask
+        #  (don't ask about 1 and 2)
+        return HPMask(config)
+
