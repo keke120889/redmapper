@@ -133,6 +133,13 @@ class ClusterRunner(object):
             if np.unique(self.cat.mem_match_id).size != self.cat.size:
                 raise RuntimeError("Input values for mem_match_id are not unique (and not all unset)")
 
+    def _reset_bad_values(self, cluster):
+        cluster.Lambda = -1.0
+        cluster.Lambda_e = -1.0
+        cluster.scaleval = -1.0
+        cluster.z_lambda = -1.0
+        cluster.z_lambda_e = -1.0
+
     def _process_cluster(self, cluster):
         # This must be overridden
         pass
@@ -160,7 +167,6 @@ class ClusterRunner(object):
         # if this proves too slow we can prematch bulk clusters as in the IDL code
 
         if self.do_percolation_masking:
-            print("Setting pgal...")
             self.pgal = np.zeros(self.gals.size, dtype=np.float32)
 
         self.members = None
@@ -169,13 +175,14 @@ class ClusterRunner(object):
             match_radius = np.degrees(self.maxrad / self.cosmo.Da(0.0, cluster._z))
             cluster.find_neighbors(match_radius, self.gals)
 
+            if cluster.neighbors.size == 0:
+                self._reset_bad_values(cluster)
+                continue
+
             if self.do_percolation_masking:
                 cluster.neighbors.pfree[:] = 1.0 - self.pgal[cluster.neighbors.index]
             else:
                 cluster.neighbors.pfree[:] = 1.0
-
-            print("Pfree goes from %.3f to %.3f" % (cluster.neighbors.pfree.min(),
-                                                    cluster.neighbors.pfree.max()))
 
             if self.depthstr is None:
                 # must approximate the limiting magnitude
@@ -236,7 +243,6 @@ class ClusterRunner(object):
                 if (r_mask < cluster.r_lambda):
                     r_mask = cluster.r_lambda
                 cluster.r_mask = r_mask
-                print("And r_mask = %.3f" % (r_mask))
 
                 lim = cluster.mstar() - 2.5*np.log10(self.percolation_lmask)
 
