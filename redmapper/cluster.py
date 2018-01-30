@@ -15,7 +15,8 @@ from redmapper.redsequence import RedSequenceColorPar
 from esutil.cosmology import Cosmo
 from galaxy import GalaxyCatalog
 
-cluster_dtype_base = [('RA', 'f8'),
+cluster_dtype_base = [('MEM_MATCH_ID', 'i4'),
+                      ('RA', 'f8'),
                       ('DEC', 'f8'),
                       ('Z', 'f4'),
                       ('REFMAG', 'f4'),
@@ -28,6 +29,7 @@ cluster_dtype_base = [('RA', 'f8'),
                       ('Z_SPEC_INIT', 'f4'),
                       ('Z_INIT', 'f4'),
                       ('R_LAMBDA', 'f4'),
+                      ('R_MASK', 'f4'),
                       ('SCALEVAL', 'f4'),
                       ('MASKFRAC', 'f4'),
                       ('CHISQ', 'f4'),
@@ -48,6 +50,24 @@ cluster_dtype_base = [('RA', 'f8'),
                       ('LIM_LIMMAG', 'f4'),
                       ('LIM_LIMMAG_HARD', 'f4')]
 
+member_dtype_base = [('MEM_MATCH_ID', 'i4'),
+                     ('Z', 'f4'),
+                     ('RA', 'f8'),
+                     ('DEC', 'f8'),
+                     ('R', 'f4'),
+                     ('P', 'f4'),
+                     ('PFREE', 'f4'),
+                     ('THETA_I', 'f4'),
+                     ('THETA_R', 'f4'),
+                     ('REFMAG', 'f4'),
+                     ('REFMAG_ERR', 'f4'),
+                     ('ZRED', 'f4'),
+                     ('ZRED_E', 'f4'),
+                     ('CHISQ', 'f4'),
+                     ('EBV', 'f4'),
+                     ('ZSPEC', 'f4')]
+
+
 class Cluster(Entry):
     """
 
@@ -59,14 +79,14 @@ class Cluster(Entry):
     (TBD)
 
     """
-    def __init__(self, cat_vals=None, r0=None, beta=None, confstr=None, zredstr=None, bkg=None, neighbors=None, cosmo=None):
+    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, neighbors=None):
 
         if cat_vals is None:
             #cat_vals = np.zeros(1, dtype=[('RA', 'f8'),
             #                              ('DEC', 'f8'),
             #                              ('Z', 'f8')])
-            if confstr is not None:
-                cat_vals = np.zeros(1, dtype=confstr.cluster_dtype)
+            if config is not None:
+                cat_vals = np.zeros(1, dtype=config.cluster_dtype)
             else:
                 # This might lead to bugs down the line, but let's try
                 cat_vals = np.zeros(1, dtype=cluster_dtype_base)
@@ -79,12 +99,22 @@ class Cluster(Entry):
         self.beta = 0.2 if beta is None else beta
 
         # FIXME: this should explicitly set our default cosmology
-        self.cosmo = cosmo
-        if self.cosmo is None: self.cosmo = Cosmo()
-        self.confstr = confstr
+        if config is None:
+            self.cosmo = Cosmo()
+        else:
+            self.cosmo = config.cosmo
+        self.config = config
         self.zredstr = zredstr
         self.bkg = bkg
         self.set_neighbors(neighbors)
+
+        self._mstar = None
+        self._mpc_scale = None
+
+        if self.z > 0.0:
+            self.update_z(self.z)
+        else:
+            self._z = None
 
     def reset(self):
         """
@@ -251,10 +281,10 @@ class Cluster(Entry):
         if idx is None:
             idx = np.arange(len(self.neighbors))
 
-        zind = self.zredstr.zindex(self.z)
+        zind = self.zredstr.zindex(self._z)
         refind = self.zredstr.lumrefmagindex(normmag)
         normalization = self.zredstr.lumnorm[refind, zind]
-        mstar = self.zredstr.mstar(self.z)
+        mstar = self.zredstr.mstar(self._z)
         phi_term_a = 10. ** (0.4 * (self.zredstr.alpha+1.)
                                  * (mstar-self.neighbors.refmag[idx]))
         phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag[idx])))
@@ -268,8 +298,6 @@ class Cluster(Entry):
         ----------
         bkg: Background object
            background
-        cosmo: Cosmology object
-           cosmology scaling info
 
         returns
         -------
@@ -277,9 +305,8 @@ class Cluster(Entry):
         bcounts: float array
             b(x) for the cluster
         """
-        mpc_scale = np.radians(1.) * self.cosmo.Da(0, self.z)
-        sigma_g = self.bkg.sigma_g_lookup(self.z, chisq, refmag)
-        return 2 * np.pi * r * (sigma_g/mpc_scale**2)
+        sigma_g = self.bkg.sigma_g_lookup(self._z, chisq, refmag)
+        return 2 * np.pi * r * (sigma_g/self.mpc_scale()**2)
 
     def calc_richness(self, mask, calc_err=True, index=None, record_values=True):
         """
@@ -302,15 +329,15 @@ class Cluster(Entry):
         else:
             idx = np.arange(len(self.neighbors))
 
-        self.mstar = self.zredstr.mstar(self.z)
+        #self.mstar = self.zredstr.mstar(self.z)
 
-        maxmag = self.mstar - 2.5*np.log10(self.confstr.lval_reference)
-        self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Da(0, self.z)
+        maxmag = self.mstar(update=True) - 2.5*np.log10(self.config.lval_reference)
+        self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Da(0, self._z)
 
         # need to clip r at > 1e-6 or else you get a singularity
         self.neighbors.r[idx] = self.neighbors.r[idx].clip(min=1e-6)
 
-        self.neighbors.chisq[idx] = self.zredstr.calculate_chisq(self.neighbors[idx], self.z)
+        self.neighbors.chisq[idx] = self.zredstr.calculate_chisq(self.neighbors[idx], self._z)
         rho = chisq_pdf(self.neighbors.chisq[idx], self.zredstr.ncol)
         nfw = self._calc_radial_profile(idx=idx)
         phi = self._calc_luminosity(maxmag, idx=idx) #phi is lumwt in the IDL code
@@ -321,7 +348,7 @@ class Cluster(Entry):
         theta_i = calc_theta_i(self.neighbors.refmag[idx], self.neighbors.refmag_err[idx],
                                maxmag, self.zredstr.limmag)
 
-        cpars = mask.calc_maskcorr(self.mstar, maxmag, self.zredstr.limmag)
+        cpars = mask.calc_maskcorr(self.mstar(), maxmag, self.zredstr.limmag)
 
         try:
             #w = theta_i * self.neighbors.wvals[idx]
@@ -330,7 +357,7 @@ class Cluster(Entry):
             w = theta_i * np.ones_like(ucounts)
 
         richness_obj = Solver(self.r0, self.beta, ucounts, bcounts, self.neighbors.r[idx], w,
-                              cpars = cpars, rsig = self.confstr.rsig)
+                              cpars = cpars, rsig = self.config.rsig)
 
         # Call the solving routine
         # this returns five items: lam_obj, p, pmem, rlam, theta_r
@@ -343,29 +370,6 @@ class Cluster(Entry):
         cval = np.clip(np.sum(cpars * rlam**np.arange(cpars.size, dtype=float)),
                        0.0, None)
 
-        if calc_err:
-            lam_cerr = self.calc_lambdaerr(mask.maskgals, self.mstar,
-                                           lam, rlam, cval, self.confstr.dldr_gamma)
-        else:
-            lam_cerr = 0.0
-
-        self.scaleval = np.absolute(lam/np.sum(pmem))
-
-        lam_unscaled = lam/self.scaleval
-
-        if (lam < 0.0):
-            lam_err = -1.0
-        else:
-            lam_err = np.sqrt((1-bar_pmem) * lam_unscaled * self.scaleval**2. + lam_cerr**2.)
-
-        # calculate pcol -- color only.  Don't need to worry about nfw norm!
-        ucounts = rho*phi
-
-        pcol = ucounts * lam/(ucounts * lam + bcounts)
-        bad, = np.where((self.neighbors.r[idx] > rlam) | (self.neighbors.refmag[idx] > maxmag) |
-                        (self.neighbors.refmag[idx] > self.zredstr.limmag) | (~np.isfinite(pcol)))
-        pcol[bad] = 0.0
-
         # reset before setting subsets
         self.neighbors.theta_i[:] = 0.0
         self.neighbors.theta_r[:] = 0.0
@@ -373,12 +377,35 @@ class Cluster(Entry):
         self.neighbors.pcol[:] = 0.0
         self.neighbors.pmem[:] = 0.0
 
-        # and set the values
-        self.neighbors.theta_i[idx] = theta_i
-        self.neighbors.theta_r[idx] = theta_r
-        self.neighbors.p[idx] = p
-        self.neighbors.pcol[idx] = pcol
-        self.neighbors.pmem[idx] = pmem
+        if lam < 0.0:
+            lam_err = -1.0
+            self.scaleval = -1.0
+        else:
+            self.scaleval = np.absolute(lam / np.sum(pmem))
+
+            lam_unscaled = lam / self.scaleval
+
+            if calc_err:
+                lam_cerr = self.calc_lambdaerr(mask.maskgals, self.mstar(),
+                                               lam, rlam, cval, self.config.dldr_gamma)
+                lam_err = np.sqrt((1-bar_pmem) * lam_unscaled * self.scaleval**2. + lam_cerr**2.)
+
+            # calculate pcol -- color only.  Don't need to worry about nfw norm!
+            ucounts = rho*phi
+
+            pcol = ucounts * lam/(ucounts * lam + bcounts)
+            bad, = np.where((self.neighbors.r[idx] > rlam) | (self.neighbors.refmag[idx] > maxmag) |
+                            (self.neighbors.refmag[idx] > self.zredstr.limmag) | (~np.isfinite(pcol)))
+            pcol[bad] = 0.0
+
+            # and set the values
+            self.neighbors.theta_i[idx] = theta_i
+            self.neighbors.theta_r[idx] = theta_r
+            self.neighbors.p[idx] = p
+            self.neighbors.pcol[idx] = pcol
+            self.neighbors.pmem[idx] = pmem
+
+        # set values and return
 
         self.Lambda = lam
         self.r_lambda = rlam
@@ -421,7 +448,7 @@ class Cluster(Entry):
 
         # normalizing nfw
         logrc   = np.log(rlam)
-        norm    = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. - 
+        norm    = np.exp(1.65169 - 0.547850*logrc + 0.138202*logrc**2. -
             0.0719021*logrc**3. - 0.0158241*logrc**4.-0.000854985*logrc**5.)
         nfw     = norm*nfw
 
@@ -447,6 +474,27 @@ class Cluster(Entry):
 
         return lam_err
 
+    def update_z(self, z_new):
+        self._z = z_new
+        _ = self.mstar(update=True)
+        _ = self.mpc_scale(update=True)
+
+    def mstar(self, update=False):
+        """
+        """
+        if (self._mstar is None or update):
+            self._mstar = self.zredstr.mstar(self._z)
+
+        return self._mstar
+
+    def mpc_scale(self, update=False):
+        """
+        """
+        if (self._mpc_scale is None or update):
+            self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._z)
+
+        return self._mpc_scale
+
     def copy(self):
         return self.__copy__()
 
@@ -455,11 +503,10 @@ class Cluster(Entry):
         # be deepcopied which is what we want.
         return Cluster(r0=self.r0,
                        beta=self.beta,
-                       confstr=self.confstr,
+                       config=self.config,
                        zredstr=self.zredstr,
                        bkg=self.bkg,
-                       neighbors=self.neighbors,
-                       cosmo=self.cosmo)
+                       neighbors=self.neighbors)
 
 class ClusterCatalog(Catalog):
     """
@@ -484,16 +531,15 @@ class ClusterCatalog(Catalog):
         self.r0 = None if 'r0' not in kwargs else kwargs['r0']
         self.beta = None if 'beta' not in kwargs else kwargs['beta']
         self.zredstr = None if 'zredstr' not in kwargs else kwargs['zredstr']
-        self.confstr = None if 'confstr' not in kwargs else kwargs['confstr']
+        self.config = None if 'config' not in kwargs else kwargs['config']
         self.bkg = None if 'bkg' not in kwargs else kwargs['bkg']
-        self.cosmo = None if 'cosmo' not in kwargs else kwargs['cosmo']
 
-        if self.confstr is not None:
-            cluster_dtype = self.confstr.cluster_dtype
+        if self.config is not None:
+            cluster_dtype = self.config.cluster_dtype
         else:
             cluster_dtype = cluster_dtype_base
 
-        # and if confstr is set then use that cluster_dtype because that
+        # and if config is set then use that cluster_dtype because that
         #  will have all the other stuff filled as well.
         dtype_augment = [dt for dt in cluster_dtype if dt[0] not in self._ndarray.dtype.names]
         if len(dtype_augment) > 0:
@@ -515,8 +561,7 @@ class ClusterCatalog(Catalog):
                            r0=self.r0,
                            beta=self.beta,
                            zredstr=self.zredstr,
-                           confstr=self.confstr,
-                           bkg=self.bkg,
-                           cosmo=self.cosmo)
+                           config=self.config,
+                           bkg=self.bkg)
         else:
             raise ValueError("Don't know what to do with this key type yet?")
