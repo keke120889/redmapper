@@ -6,7 +6,7 @@ from numpy import random
 
 from redmapper.catalog import Entry
 from redmapper.cluster import Cluster
-from redmapper.config import Configuration
+from redmapper.configuration import Configuration
 from redmapper.galaxy import GalaxyCatalog
 from redmapper.background import Background
 from redmapper.redsequence import RedSequenceColorPar
@@ -44,7 +44,7 @@ class ClusterTestCase(unittest.TestCase):
         cluster = Cluster()
 
         conf_filename = 'testconfig.yaml'
-        cluster.confstr = Configuration(file_path + '/' + conf_filename)
+        cluster.config = Configuration(file_path + '/' + conf_filename)
 
         filename = 'test_cluster_members.fit'
 
@@ -58,7 +58,8 @@ class ClusterTestCase(unittest.TestCase):
         cluster.bkg = Background('%s/%s' % (file_path, bkg_filename))
 
         hdr=fitsio.read_header(file_path+'/'+filename,ext=1)
-        cluster.z = hdr['Z']
+        #cluster.z = hdr['Z']
+        cluster.update_z(hdr['Z'])
         richness_compare = hdr['LAMBDA']
         richness_compare_err = hdr['LAMBDA_E']
         scaleval_compare = hdr['SCALEVAL']
@@ -69,12 +70,13 @@ class ClusterTestCase(unittest.TestCase):
         cluster.dec = hdr['DEC']
 
 
-        mask = HPMask(cluster.confstr)
+        mask = HPMask(cluster.config)
 
-        mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster.z) / (1 + cluster.z)**2
+        #mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster._z) / (1 + cluster.z)**2
+        mpc_scale = cluster.mpc_scale()
         mask.set_radmask(cluster, mpc_scale)
 
-        depthstr = DepthMap(cluster.confstr)
+        depthstr = DepthMap(cluster.config)
         depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, mpc_scale)
 
         # Test the NFW profile on its own
@@ -88,7 +90,7 @@ class ClusterTestCase(unittest.TestCase):
 
         #mstar = cluster.zredstr.mstar(cluster.z)
         #testing.assert_almost_equal(mstar, mstar_compare, 3)
-        #maxmag = mstar - 2.5*np.log10(cluster.confstr.lval_reference)
+        #maxmag = mstar - 2.5*np.log10(cluster.config.lval_reference)
         #lum_python = cluster._calc_luminosity(maxmag)
         #testing.assert_almost_equal(lum_python, neighbors.lumwt, 3)
 
@@ -112,7 +114,7 @@ class ClusterTestCase(unittest.TestCase):
 
         # Now the cluster tests
 
-        cluster.neighbors.dist = np.degrees(cluster.neighbors.r / cluster.cosmo.Da(0, cluster.z))
+        cluster.neighbors.dist = np.degrees(cluster.neighbors.r / cluster.cosmo.Da(0, cluster._z))
 
         seed = 0
         random.seed(seed = 0)
@@ -122,7 +124,7 @@ class ClusterTestCase(unittest.TestCase):
         # these are regression tests.  Various mask issues make the matching
         #  to idl for the time being
         testing.assert_almost_equal(cluster.Lambda, 23.86299324)
-        testing.assert_almost_equal(cluster.lambda_e, 2.4780304)
+        testing.assert_almost_equal(cluster.lambda_e, 2.4780307)
 
         #testing.assert_almost_equal(cluster.neighbors.theta_i,
         #                            neighbors.theta_i, 3)
