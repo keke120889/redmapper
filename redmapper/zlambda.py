@@ -26,7 +26,7 @@ class Zlambda(object):
 
         # For convenience, make references to these structures
         self.zredstr = cluster.zredstr
-        self.confstr = cluster.confstr
+        self.config = cluster.config
         self.cosmo = cluster.cosmo
 
     def calc_zlambda(self, zin, mask, maxmag_in=None, calcpz=False, calc_err=True,
@@ -49,7 +49,7 @@ class Zlambda(object):
 
         z_lambda = copy.copy(zin)
 
-        maxmag = self.zredstr.mstar(z_lambda) - 2.5*np.log10(self.confstr.lval_reference)
+        maxmag = self.zredstr.mstar(z_lambda) - 2.5*np.log10(self.config.lval_reference)
         if maxmag_in is not None:
             if maxmag_in.size == 1:
                 maxmag = maxmag_in
@@ -57,7 +57,7 @@ class Zlambda(object):
         maxrad = 1.2 * self.cluster.r0 * 3.**self.cluster.beta
 
         i = 0
-        niter = 0
+        self.niter = 0
         pzdone = False
 
         if not calc_err:
@@ -67,9 +67,10 @@ class Zlambda(object):
             # skip second iteration if already done
             if pzdone: break
 
-            self.cluster.z = z_lambda
+            #self.cluster._z = z_lambda
+            self.cluster.update_z(z_lambda)
 
-            while i < self.confstr.zlambda_maxiter:
+            while i < self.config.zlambda_maxiter:
                 mpc_scale = np.radians(1.) * self.cosmo.Da(0, z_lambda)
                 r = self.cluster.neighbors.dist * mpc_scale
 
@@ -82,7 +83,7 @@ class Zlambda(object):
                 # compute the richness here, but don't save to self.
                 lam = self.cluster.calc_richness(mask, calc_err=False, index=in_r)
 
-                if lam < self.confstr.percolation_minlambda:
+                if lam < self.config.percolation_minlambda:
                     z_lambda = -1.0
                     break
 
@@ -92,7 +93,7 @@ class Zlambda(object):
 
                 if maxmag_in is not None:
                    maxmag = (self.zredstr.mstar(z_lambda) -
-                       2.5 * np.log10(self.confstr.lval_reference))
+                       2.5 * np.log10(self.config.lval_reference))
 
                 self._zlambda_select_neighbors(wtvals_mod, maxrad, maxmag)
 
@@ -104,14 +105,14 @@ class Zlambda(object):
                     z_lambda_new = self._zlambda_calcz(z_lambda)
 
                 # check for convergence
-                if (np.abs(z_lambda_new-z_lambda) < self.confstr.zlambda_tol or 
+                if (np.abs(z_lambda_new-z_lambda) < self.config.zlambda_tol or 
                     z_lambda_new < 0.0):
                     break
 
                 z_lambda = z_lambda_new
                 i += 1
 
-            niter = i
+            self.niter = i
 
             if z_lambda > 0.0 and calc_err:
                 if not calcpz:
@@ -159,7 +160,7 @@ class Zlambda(object):
         sets zrefmagbin, refmag, refmag_err, mag, mag_err, c, pw, targval
         for selected neighbors
         """
-        topfrac = self.confstr.zlambda_topfrac
+        topfrac = self.config.zlambda_topfrac
 
         #we need the zrefmagbin
         nzrefmag    = self.zredstr.refmagbins.size  #zredstr.refmagbins[0].size
@@ -215,8 +216,8 @@ class Zlambda(object):
         z_lambda: output
         """
         nsteps = 10
-        steps = np.linspace(0., nsteps*self.confstr.zlambda_parab_step, num = nsteps,
-            dtype = np.float64)+z_lambda - self.confstr.zlambda_parab_step*(nsteps-1)/2
+        steps = np.linspace(0., nsteps*self.config.zlambda_parab_step, num = nsteps,
+            dtype = np.float64)+z_lambda - self.config.zlambda_parab_step*(nsteps-1)/2
         likes = np.zeros(nsteps)
         for i in xrange(0, nsteps):
              likes[i] = self._bracket_fn(steps[i])
@@ -227,8 +228,8 @@ class Zlambda(object):
         else:
             z_lambda = -1.0
 
-        z_lambda = np.clip(z_lambda, (steps[0]-self.confstr.zlambda_parab_step),
-            (steps[nsteps-1]+self.confstr.zlambda_parab_step))
+        z_lambda = np.clip(z_lambda, (steps[0]-self.config.zlambda_parab_step),
+            (steps[nsteps-1]+self.config.zlambda_parab_step))
         z_lambda = np.clip(z_lambda, self.zredstr.z[0], self.zredstr.z[-2])
 
         return z_lambda
@@ -293,9 +294,9 @@ class Zlambda(object):
         pzdone = False
 
         # check for bad values, and do slow run if necessary...
-        if (((self.pz[0] / self.pz[(self.confstr.npzbins-1)/2] > 0.01) and
+        if (((self.pz[0] / self.pz[(self.config.npzbins-1)/2] > 0.01) and
              (self.pzbins[0] >= (self.zredstr.z[0] + 0.01))) or
-            ((self.pz[-1] >= self.pz[(self.confstr.npzbins-1)/2] > 0.01) and
+            ((self.pz[-1] >= self.pz[(self.config.npzbins-1)/2] > 0.01) and
              (self.pzbins[-1] <= (self.zredstr.z[-1] - 0.01)))):
 
             self._zlambda_calc_pz(z_lambda, wtvals, maxrad, maxmag, slow=True)
@@ -320,7 +321,7 @@ class Zlambda(object):
 
             # check peak of p(z)...
             pmind = np.argmax(self.pz)
-            if (np.abs(self.pzbins[pmind] - z_lambda) < self.confstr.zlambda_tol):
+            if (np.abs(self.pzbins[pmind] - z_lambda) < self.config.zlambda_tol):
                 pzdone = True
             else:
                 print('Warning: z_lambda / p(z) inconsistency detected.')
@@ -355,8 +356,8 @@ class Zlambda(object):
 
             # we will not allow a dz smaller than 0.005
             dz = np.clip((z_lambda_hi.x - z_lambda), 0.005, 0.15)
-            pzbinsize = 2.*dz/(self.confstr.npzbins-1)
-            pzbins = pzbinsize*np.arange(self.confstr.npzbins)+z_lambda - dz
+            pzbinsize = 2.*dz/(self.config.npzbins-1)
+            pzbins = pzbinsize*np.arange(self.config.npzbins)+z_lambda - dz
 
         else:
             # slow mode
@@ -399,9 +400,9 @@ class Zlambda(object):
 
             highz = np.clip(highz, None, np.amax(self.zredstr.z))
 
-            pzbinsize = (highz - lowz)/(self.confstr.npzbins-1)
+            pzbinsize = (highz - lowz)/(self.config.npzbins-1)
 
-            pzbins = pzbinsize*np.arange(self.confstr.npzbins) + lowz
+            pzbins = pzbinsize*np.arange(self.config.npzbins) + lowz
 
             # and finally offset so that we're centered on z_lambda.  Important!
             zmind = np.argmin(np.abs(pzbins - z_lambda))
@@ -409,8 +410,8 @@ class Zlambda(object):
 
         # Now compute for each of the bins
 
-        ln_lkhd = np.zeros(self.confstr.npzbins)
-        for i in xrange(self.confstr.npzbins):
+        ln_lkhd = np.zeros(self.config.npzbins)
+        for i in xrange(self.config.npzbins):
             ln_lkhd[i] = -self._bracket_fn(pzbins[i])
             #likelihoods = self.zredstr.calculate_chisq(self.neighbors[self._zlambda_in_rad],
             #    pzbins[i], calc_lkhd=True)
@@ -428,60 +429,6 @@ class Zlambda(object):
         self.pz = pz
 
         return pzbins, pz
-
-    # FIXME
-    def zlambda_apply_correction(corrstr, lambda_in, z_lambda, z_lambda_e, noerr=False):
-        """
-        apply corrections to modify z_lambda & uncertainty, pz and pzbins
-        NOT READY - MISSING corrstr
-
-        UNTESTED - sorry for bugs!
-
-        parameters
-        ----------
-        corrstr: correction object
-        z_lambda: input
-        z_lambda_e: error
-        noerr: if True, no error calculated
-        """
-
-        niter = corrstr.offset[0].size
-
-        for i in range(0, niter):
-
-            correction = (corrstr.offset[i] + corrstr.slope[i] *
-                np.log(lambda_in/confstr.zlambda_pivot))
-            extra_err = np.interp(corrstr.scatter[i], corrstr.z, z_lambda)
-
-            dz = np.interp(correction, corrstr.z, z_lambda)
-
-            z_lambda_new = z_lambda + dz
-
-            #and recalculate z_lambda_e
-            if not noerr:
-                z_lambda_e_new = np.sqrt(z_lambda_e**2 + extra_err**2.)
-            else:
-                z_lambda_e_new = z_lambda_e
-
-            if self.confstr.npzbins is not None:
-                #do space density expansion...
-                #modify width of bins by expansion...
-                #also shift the center to the new z_lambda...
-
-                #allow for an offset between the peak and the center...
-                offset  = self.zlambda_pzbins[(self.confstr.npzbins-1)/2] - z_lambda
-                pdz     = self.zlambda_pzbinsize*np.sqrt(extra_err**2.+z_lambda_e**2)/z_lambda_e
-
-                #centered on z_lambda...
-                self.zlambda_pzbins = (pdz*np.arange(self.confstr.npzbins) + z_lambda_new - 
-                    pdz*(self.confstr.npzbins-1)/2. + offset*pdz/self.zlambda_pzbinsize)
-
-                #and renormalize
-                n = scipy.integrate.simps(self.zlambda_pzbins, self.zlambda_pz)
-                self.zlambda_pz = self.zlambda_pz/n
-
-        return z_lambda_new, z_lambda_e_new
-
 
 class ZlambdaCorrectionPar(object):
     """
