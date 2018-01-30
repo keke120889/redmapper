@@ -5,7 +5,7 @@ import fitsio
 from numpy import random
 import healpy as hp
 
-from redmapper.config import Configuration
+from redmapper.configuration import Configuration
 from redmapper.galaxy import GalaxyCatalog
 
 
