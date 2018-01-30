@@ -1,4 +1,7 @@
+from __future__ import print_function
+
 import fitsio
+import numpy as np
 import esutil
 
 import config as rmconfig
@@ -18,107 +21,183 @@ class RunCatalog(ClusterRunner):
     """
     """
 
-    def _more_setup(self):
+    def _set_runmode(self):
+        # This is the runmode and where we get the mask/radius config vars from
+        self.runmode = 'percolation'
+
+    def _more_setup(self, *args, **kwargs):
+        # I think I name the args here?
+
         # read in catalog, etc
+        print("Reading in catalog file...")
+        self.cat = ClusterCatalog.from_catfile(self.config.catfile,
+                                               zredstr=self.zredstr,
+                                               config=self.config,
+                                               bkg=self.bkg,
+                                               cosmo=self.cosmo)
 
-        pass
+        # check if we need to generate mem_match_ids
+        self._generate_mem_match_ids()
 
-    def _process_cluster(self, *args):
+        if 'do_percolation_masking' in kwargs:
+            self.do_percolation_masking = kwargs['do_percolation_masking']
+        else:
+            self.do_percolation_masking = False
+
+        if 'maxiter' in kwargs:
+            self.maxiter = kwargs['maxiter']
+        else:
+            self.maxiter = 5
+
+        if 'tol' in kwargs:
+            self.tol = kwargs['tol']
+        else:
+            self.tol = 0.005
+
+        if 'converge_zlambda' in kwargs:
+            self.converge_zlambda = kwargs['converge_zlambda']
+        else:
+            self.converge_zlambda = False
+
+        self.do_lam_plusminus = True
+        self.match_centers_to_galaxies = True
+
+        # this is the minimum luminosity to consider
+        # this is here to speed up computations.
+        self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
+
+        # additional bits to do with percolation limlum here
+        # if we want to save p's for very faint objects we need to compute
+        # values for them even if they don't contribute to the richness
+
+        if (self.config.percolation_memlum > 0.0 and
+            self.config.percolation_memlum < self.config.lval_reference):
+            if self.config.percolation_memlum < self.limlum:
+                self.limlum = self.config.percolation_memlum
+
+        if self.config.percolation_lmask > 0.0:
+            if self.config.percolation_lmask < self.limlum:
+                self.limlum = self.config.percolation_lmask
+
+    def _process_cluster(self, cluster):
         # here is where the work on an individual cluster is done
+        bad = False
+        iteration = 0
+        done = False
 
-        pass
+        maxmag = cluster.mstar() - 2.5*np.log10(self.limlum)
 
-    #def run(self, mask=False):
-    #    """
-    #    """
+        while iteration < self.maxiter and not done:
+            # Check if we got here because of a bad failure
+            if bad:
+                done = True
+                continue
 
-        # The "runcat" mode does masking based on the "percolation" settings.
-    #    self._setup('percolation')
+            # check if totally masked (with arbitrary 0.7 cut)
+            if (cluster.maskfrac > 0.7):
+                bad = True
+                done = True
+                continue
 
-        # read in input catalog
-    #    incat = fitsio.read(self.config['catfile'], ext=1)
+            index, = np.where(cluster.neighbors.refmag < maxmag)
 
-        # cut down the input catalog to those that are within the pixel
+            lam = cluster.calc_richness(self.mask, index=index)
+
+            # kick out if ridiculously low
+            if (lam < 3.0):
+                bad = True
+                done = True
+                cluster.Lambda = -1.0
+                cluster.Lambda_e = -1.0
+                cluster.scaleval = -1.0
+                continue
+
+            # Compute z_lambda
+            zlam = Zlambda(cluster)
+            z_lambda, z_lambda_e = zlam.calc_zlambda(cluster._z, self.mask,
+                                                     calc_err=True, calcpz=True)
+
+            if z_lambda < 0.0:
+                # total failure
+                bad = True
+                done = True
+                cluster.Lambda = -1.0
+                cluster.Lambda_e = -1.0
+                cluster.scaleval = -1.0
+                cluster.z_lambda = -1.0
+                continue
+
+            cluster.z_lambda = z_lambda
+            cluster.z_lambda_e = z_lambda_e
+            cluster.z_lambda_niter = zlam.niter
+            cluster.pzbins = zlam.pzbins
+            cluster.pz = zlam.pz
+
+            if self.converge_zlambda:
+                if (np.abs(cluster._z - cluster.z_lambda) < self.tol):
+                    done = True
+                #cluster.z = cluster.z_lambda
+                cluster.update_z(cluster.z_lambda)
+            else:
+                done = True
+
+        if not bad and self.zlambda_corr is not None:
+            self.zlambda_corr.apply_correction(cluster.Lambda,
+                                               cluster.z_lambda, cluster.z_lambda_e,
+                                               pzbins=cluster.pzbins, pzvals=cluster.pz)
+
+        return bad
 
 
-        # loop over clusters
+#def run(confdict=None, conffile=None, outbase=None, 
+#                        savemembers=False, mask=False):
+#
+#    """
+#    Name:
+#        run
+#    Purpose:
+#        Run the redmapper cluster finding algorithm.
+#    Calling sequence:
+#        TODO
+#    Inputs:
+#        confdict: A configuration dictionary containing information
+#                  about how this run of RM works. Note that
+#                  one of confdict or conffile is required.
+#        conffile: A configuration file containing information
+#                  aboud how this run of RM works. Note that
+#                  one of confdict or conffile is required.
+#    Optional Inputs:
+#        outbase: Directory location of where to put outputs.
+#        savemembers: TODO
+#        mask = TODO
+#    """#
 
-        # compute limiting mag stuff if depth not available
-        #  (needs to be tested)
+#    # Read configurations from either explicit dict or YAML file
+#    if (confdict is None) and (conffile is None):
+#        raise ValueError("Must have one of confdict or conffile")
+#    if (confdict is not None) and (conffile is not None):
+#        raise ValueError("Must have only one of confdict or conffile")
+#    if conffile is not None: confdict = config.read_config(conffile)
 
+#    r0, beta = confdict['percolation_r0'], confdict['percolation_beta']
 
-        # iterate here!
-
-        # compute richness
-
-        # and z_lambda
-
-        # and +/-
-
-        # apply any zlambda corrections
-
-        # copy selection of members
-
-        # and record pfree values...
-
-
-    #def output(self, savemembers=True):
-    #    pass
-
-    
-
-def run(confdict=None, conffile=None, outbase=None, 
-                        savemembers=False, mask=False):
-    
-    """
-    Name:
-        run
-    Purpose:
-        Run the redmapper cluster finding algorithm.
-    Calling sequence:
-        TODO
-    Inputs:
-        confdict: A configuration dictionary containing information
-                  about how this run of RM works. Note that
-                  one of confdict or conffile is required.
-        conffile: A configuration file containing information
-                  aboud how this run of RM works. Note that
-                  one of confdict or conffile is required.
-    Optional Inputs:
-        outbase: Directory location of where to put outputs.
-        savemembers: TODO
-        mask = TODO
-    """
-
-    # Read configurations from either explicit dict or YAML file
-    if (confdict is None) and (conffile is None):
-        raise ValueError("Must have one of confdict or conffile")
-    if (confdict is not None) and (conffile is not None):
-        raise ValueError("Must have only one of confdict or conffile")
-    if conffile is not None: confdict = config.read_config(conffile)
-
-    r0, beta = confdict['percolation_r0'], confdict['percolation_beta']
-
-    # This allows us to override outbase on the call line
-    if outbase is None: outbase = confdict['outbase']
+#    # This allows us to override outbase on the call line
+#    if outbase is None: outbase = confdict['outbase']
 
     # Read in the background from the bkgfile
-    bkg = None # TODO
+#    bkg = None # TODO
 
     # Read in the pars from the parfile
-    pars = None # TODO
+#    pars = None # TODO
 
     # Read in masked galaxies
-    maskgals = None #fitsio.read(confdict['maskgalfile'], ext=1) # TODO
+#    maskgals = None #fitsio.read(confdict['maskgalfile'], ext=1) # TODO
 
     # Read in the mask
-    maskfile = confdict['maskfile'] #TODO
+#    maskfile = confdict['maskfile'] #TODO
 
     # Read in the input catalog from the catfile
     #NOTE from Tom - I think that this is the old "galfile" in IDL
-    clusters = ClusterCatalog.from_fits_file(confdict['catfile'])
+#    clusters = ClusterCatalog.from_fits_file(confdict['catfile'])
 
-    return clusters
-
-
-
+#    return clusters
