@@ -107,9 +107,7 @@ class RunCatalog(ClusterRunner):
             if (lam < 3.0):
                 bad = True
                 done = True
-                cluster.Lambda = -1.0
-                cluster.Lambda_e = -1.0
-                cluster.scaleval = -1.0
+                self._reset_bad_values(cluster)
                 continue
 
             # Compute z_lambda
@@ -121,10 +119,7 @@ class RunCatalog(ClusterRunner):
                 # total failure
                 bad = True
                 done = True
-                cluster.Lambda = -1.0
-                cluster.Lambda_e = -1.0
-                cluster.scaleval = -1.0
-                cluster.z_lambda = -1.0
+                self._reset_bad_values(cluster)
                 continue
 
             cluster.z_lambda = z_lambda
