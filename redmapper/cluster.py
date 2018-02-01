@@ -147,7 +147,7 @@ class Cluster(Entry):
                                     ('PMEM', 'f8'),
                                     ('INDEX', 'i8')]
 
-            dtype_augment = [dt for dt in neighbor_extra_dtype if dt[0] not in self.neighbors.dtype.names]
+            dtype_augment = [dt for dt in neighbor_extra_dtype if dt[0].lower() not in self.neighbors.dtype.names]
             if len(dtype_augment) > 0:
                 self.neighbors.add_fields(dtype_augment)
 
@@ -541,7 +541,7 @@ class ClusterCatalog(Catalog):
 
         # and if config is set then use that cluster_dtype because that
         #  will have all the other stuff filled as well.
-        dtype_augment = [dt for dt in cluster_dtype if dt[0] not in self._ndarray.dtype.names]
+        dtype_augment = [dt for dt in cluster_dtype if dt[0].lower() not in self._ndarray.dtype.names]
         if len(dtype_augment) > 0:
             self.add_fields(dtype_augment)
 
