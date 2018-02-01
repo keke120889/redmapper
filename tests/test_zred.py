@@ -42,39 +42,32 @@ class ZredTestCase(unittest.TestCase):
         print("Ran %d galaxies in %.3f seconds" % (galaxies.size,
                                                    time.time() - starttime))
 
-        # Getting closer... there are some offsets but may be okay.
-        # Need to look at brighter ones...
-        # zred_uncorr (small sequence needs to be looked at)
-        # zred_uncorr_e (looks good)
-        # lkhd (mostly good, some outliers to check)
-        # chisq (mostly good, some outliers to check)
+        # make sure we have reasonable consistency...
+        # It seems that at least some of the discrepancies are caused by
+        # slight bugs in the IDL implementation.
 
-        # pretty sure that the differences are due to problems in the IDL code...
-        
+        delta_zred_uncorr = galaxies.zred_uncorr - galaxies_input.zred_uncorr
 
-        # a problematic one...
-        #test,=np.where((galaxies_input.zred_uncorr > 0.07) &
-        #               (galaxies_input.zred_uncorr < 0.072) &
-        #               (galaxies.zred_uncorr < 0.062))
+        use, = np.where(np.abs(delta_zred_uncorr) < 1e-3)
 
-        #print(test[0])
-        
-        
-        #test,=np.where((galaxies_input.zred_uncorr_e > 0.04) &
-        #               (galaxies_input.zred_uncorr_e < 0.045) &
-        #               (galaxies.zred_uncorr_e < 0.035) &
-        #               (galaxies.chisq < 3.0))#
+        testing.assert_array_less(0.9, float(use.size) / float(galaxies.size))
 
-        #print(test[0])
+        delta_zred = galaxies.zred[use] - galaxies_input.zred[use]
+        use2, = np.where(np.abs(delta_zred) < 1e-3)
+        testing.assert_array_less(0.99, float(use2.size) / float(delta_zred.size))
 
-        
+        delta_zred2 = galaxies.zred2[use] - galaxies_input.zred2[use]
+        use2, = np.where(np.abs(delta_zred) < 1e-3)
+        testing.assert_array_less(0.99, float(use2.size) / float(delta_zred2.size))
 
-        # and speed tests...
-        # Hot spots:
-        #  catalog.py(__getattribute__)
-        #    600000 calls, this hurts, may have to revisit
-        #  zred_color.py (compute_zred) a bunch of time
-        #  interpolate.py (_call_linear) BLAH
-        #  _chisq_dist_pywrap (compute).  Speed test this
-        #  _calculate_lndist (?!)
-        #  calculate_chisq in redsequence (!)
+        delta_zred_uncorr_e = galaxies.zred_uncorr_e[use] - galaxies_input.zred_uncorr_e[use]
+        use2, = np.where(np.abs(delta_zred_uncorr_e) < 1e-3)
+        testing.assert_array_less(0.98, float(use2.size) / float(delta_zred_uncorr_e.size))
+
+        delta_zred_e = galaxies.zred_e[use] - galaxies_input.zred_e[use]
+        use2, = np.where(np.abs(delta_zred_e) < 1e-3)
+        testing.assert_array_less(0.98, float(use2.size) / float(delta_zred_e.size))
+
+        delta_zred2_e = galaxies.zred2_e[use] - galaxies_input.zred2_e[use]
+        use2, = np.where(np.abs(delta_zred2_e) < 1e-3)
+        testing.assert_array_less(0.98, float(use2.size) / float(delta_zred2_e.size))
