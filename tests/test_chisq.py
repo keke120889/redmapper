@@ -51,11 +51,12 @@ class ChisqColorTestCase(unittest.TestCase):
 
         galcolor = mode0data['MODEL_MAG'][:,0:4] - mode0data['MODEL_MAG'][:,1:5]
 
-        chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode0data['REFMAG'],mode0data['MODEL_MAGERR'],galcolor,refmagerr=mode0data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
+        #chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode0data['REFMAG'],mode0data['MODEL_MAGERR'],galcolor,refmagerr=mode0data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
 
-        chisq = chisq_dist.compute_chisq(chisq_mode=True)
+        chisq, lkhd = redmapper.chisq_dist.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode0data['REFMAG'],mode0data['MODEL_MAGERR'],galcolor,refmagerr=mode0data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
+        #chisq = chisq_dist.compute_chisq(chisq_mode=True)
         testing.assert_almost_equal(chisq, mode0data['CHISQ'],decimal=3)
-        lkhd = chisq_dist.compute_chisq(chisq_mode=False)
+        #lkhd = chisq_dist.compute_chisq(chisq_mode=False)
         testing.assert_almost_equal(lkhd, mode0data['LKHD'],decimal=3)
 
         # test mode 1: one galaxy, many redshifts
@@ -68,11 +69,13 @@ class ChisqColorTestCase(unittest.TestCase):
 
         galcolor = mode1data[0]['MODEL_MAG'][0:4] - mode1data[0]['MODEL_MAG'][1:5]
 
-        chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode1data['REFMAG'],mode1data[0]['MODEL_MAGERR'],galcolor,refmagerr=mode1data[0]['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
+        #chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode1data['REFMAG'],mode1data[0]['MODEL_MAGERR'],galcolor,refmagerr=mode1data[0]['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
 
-        chisq = chisq_dist.compute_chisq(chisq_mode=True)
+        chisq, lkhd = redmapper.chisq_dist.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode1data['REFMAG'],mode1data[0]['MODEL_MAGERR'],galcolor,refmagerr=mode1data[0]['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
+
+        #chisq = chisq_dist.compute_chisq(chisq_mode=True)
         testing.assert_almost_equal(chisq, mode1data[0]['CHISQ'],decimal=3)
-        lkhd = chisq_dist.compute_chisq(chisq_mode=False)
+        #lkhd = chisq_dist.compute_chisq(chisq_mode=False)
         testing.assert_almost_equal(lkhd, mode1data[0]['LKHD'],decimal=3)
 
         # test mode 2: many galaxies, many redshifts
@@ -85,16 +88,17 @@ class ChisqColorTestCase(unittest.TestCase):
 
         galcolor = mode2data['MODEL_MAG'][:,0:4] - mode2data['MODEL_MAG'][:,1:5]
 
-        chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode2data['REFMAG'],mode2data['MODEL_MAGERR'],galcolor,refmagerr=mode2data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
+        #chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode2data['REFMAG'],mode2data['MODEL_MAGERR'],galcolor,refmagerr=mode2data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
 
         # there are just too many floating point rounding errors compared to the IDL
         # version.  So this is a really loose check.
 
         # will want to write python double-precision regression check as well.
+        chisq, lkhd = redmapper.chisq_dist.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode2data['REFMAG'],mode2data['MODEL_MAGERR'],galcolor,refmagerr=mode2data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
         
-        chisq = chisq_dist.compute_chisq(chisq_mode=True)
+        #chisq = chisq_dist.compute_chisq(chisq_mode=True)
         testing.assert_almost_equal(chisq, mode2data['CHISQ'],decimal=1)
-        lkhd = chisq_dist.compute_chisq(chisq_mode=False)
+        #lkhd = chisq_dist.compute_chisq(chisq_mode=False)
         testing.assert_almost_equal(lkhd, mode2data['LKHD'],decimal=2)
 
                                                     
