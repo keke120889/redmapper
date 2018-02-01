@@ -91,7 +91,7 @@ class CubicSpline(object):
         y2 = solve_banded((1,1), mat, bb)
         self.x, self.y, self.y2 = (x, y, y2)
 
-    def splint(self,x):                                     
+    def splint(self,x):
         npts = len(self.x)
         lo = np.searchsorted(self.x, x)-1
         lo = np.clip(lo, 0, npts-2)
@@ -102,7 +102,7 @@ class CubicSpline(object):
         y = (a*self.y[lo]+b*self.y[hi]+
              ((a**3-a)*self.y2[lo]+(b**3-b)*self.y2[hi])*dx**2./6.)
         return y
-        
+
     def __call__(self, x):
         return self.splint(x)
 
@@ -149,7 +149,7 @@ def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False,
     nonoise=False, inlup=False):
     """
     Find magnitude and uncertainty.
-    
+
     parameters
     ----------
     mag_in    :
@@ -165,25 +165,25 @@ def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False,
 
     returns
     -------
-    mag 
-    mag_err 
-    
+    mag
+    mag_err
+
     """
     f1lim = 10.**((maskgals.limmag - maskgals.zp[0])/(-2.5))
     fsky1 = (((f1lim**2.) * maskgals.exptime)/(maskgals.nsig[0]**2.) - f1lim)
     fsky1 = np.clip(fsky1, 0.001, None)
-    
+
     if inlup:
         bnmgy = b*1e9
         tflux = maskgals.exptime*2.0*bnmgy*np.sinh(-np.log(b)-0.4*np.log(10.0)*mag_in)
     else:
         tflux = maskgals.exptime*10.**((mag_in - maskgals.zp[0])/(-2.5))
-    
+
     noise = err_ratio*np.sqrt(fsky1*maskgals.exptime + tflux)
-    
+
     if nonoise:
         flux = tflux
-    else:        
+    else:
         flux = tflux + noise*random.standard_normal(mag_in.size)
 
     if fluxmode:
@@ -192,18 +192,31 @@ def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False,
     else:
         if b is not None:
             bnmgy = b*1e9
-            
+
             flux_new = flux/maskgals.exptime
             noise_new = noise/maskgals.exptime
-            
+
             mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
             mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
         else:
             mag = maskgals.zp[0]-2.5*np.log10(flux/maskgals.exptime)
             mag_err = (2.5/np.log(10.0))*(noise/flux)
-            
+
             bad, = np.where(np.isfinite(mag) == False)
             mag[bad] = 99.0
             mag_err[bad] = 99.0
-            
+
     return mag, mag_err
+
+def interpol(v, x, xout):
+    """
+    """
+
+    m = v.size
+    nOut = m
+
+    s = np.clip(np.searchsorted(x, xout) - 1, 0, m - 2)
+
+    diff = v[s + 1] - v[s]
+
+    return (xout - x[s]) * diff / (x[s + 1] - x[s]) + v[s]
