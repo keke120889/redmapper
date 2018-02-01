@@ -9,6 +9,15 @@ import healpy as hp
 import os
 
 
+class Galaxy(Entry):
+    """
+    """
+
+    @property
+    def galcol(self):
+        return self.mag[:-1] - self.mag[1:]
+
+
 class GalaxyCatalog(Catalog):
     """
     Name:
@@ -17,6 +26,8 @@ class GalaxyCatalog(Catalog):
         An object for holding galaxy catalogs, including all of
         the attributes that a galaxy would have.
     """
+
+    entry_class = Galaxy
 
     def __init__(self, *arrays, **kwargs):
         super(GalaxyCatalog, self).__init__(*arrays)
