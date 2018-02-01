@@ -4,6 +4,7 @@ import numpy as np
 from scipy import interpolate
 
 from chisq_dist import ChisqDist
+from chisq_dist import compute_chisq
 from catalog import Catalog
 from utilities import CubicSpline
 from utilities import MStar
@@ -131,7 +132,13 @@ class RedSequenceColorPar(object):
         spl=CubicSpline(pars[0][pivotmag_name+'_Z'],pars[0][pivotmag_name])
         self.pivotmag = spl(self.z)
 
-        # c/slope                                                               
+        # and the max/min refmag
+        spl=CubicSpline(pars[0][pivotmag_name+'_Z'], pars[0]['MAX'+refmag_name])
+        self.maxrefmag = spl(self.z)
+        spl=CubicSpline(pars[0][pivotmag_name+'_Z'], pars[0]['MIN'+refmag_name])
+        self.minrefmag = spl(self.z)
+
+        # c/slope
         self.c = np.zeros((nz,ncol),dtype=np.float64)
         self.slope = np.zeros((nz,ncol),dtype=np.float64)
         for j in xrange(ncol):
@@ -208,7 +215,7 @@ class RedSequenceColorPar(object):
         else :
             self.corr_r = np.ones(nz)
             self.corr2_r = np.ones(nz)
-            
+
         # mstar
         # create LUT
         self._mstar = ms(self.z)
@@ -352,9 +359,10 @@ class RedSequenceColorPar(object):
         else:
             return lumrefmagind
 
-    def calculate_chisq(self, galaxies, z, calc_lkhd=False):
+    def calculate_chisq(self, galaxies, z, calc_lkhd=False, z_is_index=False):
         """
-        compute chisq for a set of galaxies at redshift z
+        compute chisq for a set of galaxies at redshift z OR a galaxy at many redshifts OR
+          many galaxies at many redshifts
 
         parameters
         ----------
@@ -364,23 +372,74 @@ class RedSequenceColorPar(object):
             redshift to compute chisq
         calc_lkhd: bool, optional
             compute likelihood rather than chisq (default False)
+        z_is_index: bool, optional
+            The input redshift is already a redshift index
 
         returns
         -------
         chisqs: array of floats
         """
-        zind = self.zindex(z)
+        if z_is_index:
+            zind = z
+        else:
+            zind = self.zindex(z)
         magind = self.refmagindex(galaxies.refmag)
-        #galcolor = galaxies.mag[:,:self.ncol] - galaxies.mag[:,1:]
+        #magind = self.refmagindex(galaxies._ndarray['REFMAG'])
         galcolor = galaxies.galcol
-        chisq_dist = ChisqDist(self.covmat[:,:,zind], self.c[zind,:], 
-                               self.slope[zind,:], self.pivotmag[zind], 
-                               galaxies.refmag, galaxies.mag_err, 
-                               galcolor, refmagerr=galaxies.refmag_err, 
-                                         lupcorr=self.lupcorr[magind,zind,:])
-        if calc_lkhd: 
+        #chisq_dist = ChisqDist(self.covmat[:,:,zind], self.c[zind,:],
+        #                       self.slope[zind,:], self.pivotmag[zind],
+        #                       galaxies.refmag, galaxies.mag_err,
+        #                       galcolor, refmagerr=galaxies.refmag_err,
+        #                       lupcorr=self.lupcorr[magind,zind,:])
+        #chisq_dist = ChisqDist(self.covmat[:, :, zind], self.c[zind, :],
+        #                       self.slope[zind, :], self.pivotmag[zind],
+        #                       galaxies._ndarray['REFMAG'], galaxies._ndarray['MAG_ERR'][0],
+        #                       galcolor, refmagerr=galaxies._ndarray['REFMAG_ERR'],
+        #                       lupcorr=self.lupcorr[magind, zind, :])
+        #if calc_lkhd:
+        #    return chisq_dist.compute_chisq(chisq_mode=False)
+        #return chisq_dist.compute_chisq(chisq_mode=True)
+        if calc_lkhd:
+            calc_chisq = False
+        else:
+            calc_chisq = True
+
+        return compute_chisq(self.covmat[:,:,zind], self.c[zind,:],
+                             self.slope[zind,:], self.pivotmag[zind],
+                             galaxies.refmag, galaxies.mag_err,
+                             galcolor, refmagerr=galaxies.refmag_err,
+                             lupcorr=self.lupcorr[magind,zind,:],
+                             calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)
+
+    def calculate_chisq_redshifts(self, galaxy, zs, calc_lkhd=False):
+        """
+        Compute chisq for a galaxy at a set of redshifts zs
+
+        parameters
+        ----------
+        galaxy: element of GalaxyCatalog
+           Galaxy which needs chisq values
+        zs: numpy array
+           redshifts to compute chisq
+        calc_lkhd: bool, optional
+           compute likelihood rather than chisq (default False)
+
+        returns
+        -------
+        chisqs: array of floats
+        """
+
+        zind = self.zindex(zs)
+        magind = self.refmagindex(galaxy.refmag)
+        galcolor = galaxy.galcol
+        chisq_dist = ChisqDist(self.covmat[:, :, zind], zredstr.c[zind, :], zredstr.slope[zind, :],
+                               self.pivotmag[zind], galaxy.refmag, galaxy.mag_err,
+                               galcolor, refmagerr=galaxy.refmag_err,
+                               lupcorr=self.lupcorr[magind, zind, :])
+        if calc_lkhd:
             return chisq_dist.compute_chisq(chisq_mode=False)
         return chisq_dist.compute_chisq(chisq_mode=True)
+
 
     def calculate_zred(self,blah):
         """
