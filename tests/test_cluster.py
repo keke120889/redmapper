@@ -135,12 +135,12 @@ class ClusterTestCase(unittest.TestCase):
 
         return
 
-class ClusterMembersTestCase(unittest.TestCase):
+#class ClusterMembersTestCase(unittest.TestCase):
 
     #This next test MUST be done before the calc_richness test can be completed.
-    def test_member_finding(self): pass #Do this with a radius that is R_lambda of a 
+#    def test_member_finding(self): pass #Do this with a radius that is R_lambda of a 
     #lambda=300 cluster, so 8.37 arminutes or 0.1395 degrees
-    def test_richness(self): pass
+#    def test_richness(self): pass
 
 if __name__=='__main__':
     unittest.main()
