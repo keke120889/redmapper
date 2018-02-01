@@ -101,9 +101,9 @@ class DepthMap(object):
         theta = (90.0 - decs)*np.pi/180.
         phi = ras*np.pi/180.
 
-        maskgals.w = self.w
+        maskgals.w[:] = self.w
         maskgals.eff = None
-        maskgals.limmag = unseen
+        maskgals.limmag[:] = unseen
         maskgals.zp[0] = self.zp
         maskgals.nsig[0] = self.nsig
 
