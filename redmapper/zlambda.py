@@ -240,7 +240,7 @@ class Zlambda(object):
         bracketing function
         """
         likelihoods = self.zredstr.calculate_chisq(self.cluster.neighbors[self._zlambda_in_rad],
-                                                           z, calc_lkhd=True)
+                                                            z, calc_lkhd=True)
         t = -np.sum(self._zlambda_pw*likelihoods)
         return t
 
