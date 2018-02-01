@@ -8,18 +8,38 @@ from numpy.lib.recfunctions import merge_arrays
 class DataObject(object):
     """Abstract base class to encapsulate info from FITS files."""
 
-    def __init__(self, *arrays):
-        """Constructs DataObject from arbitrary number of ndarrays.
+    def __init__(self, array):
+        """Constructs DataObject from array.
 
-        Each ndarray can have an arbitrary number of fields. Field
-        names should all be capitalized and words in multi-word field 
-        names should be separated by underscores if necessary. ndarrays
-        have a 'size' property---their sizes should all be equivalent.
+        The array can have an arbitrary number of fields.  Field names
+        must not have spaces, and will be changed to lower case.
 
-        Args:
-            arrays (numpy.ndarray): ndarrays with equivalent sizes.
+        parameters
+        ----------
+        array: numpy ndarray
         """
-        self._ndarray = merge_arrays(arrays, flatten=True)
+
+        self._lower_array(array)
+
+        self._ndarray = array
+
+
+    #def __init__(self, *arrays):
+    #    """Constructs DataObject from arbitrary number of ndarrays.
+
+    #    Each ndarray can have an arbitrary number of fields. Field
+    #    names should all be capitalized and words in multi-word field 
+    #    names should be separated by underscores if necessary. ndarrays
+    #    have a 'size' property---their sizes should all be equivalent.
+
+    #    Args:
+    #        arrays (numpy.ndarray): ndarrays with equivalent sizes.
+    #    """
+    #    for array in arrays:
+    #        self._lower_array(array)
+
+    #    self._ndarray = merge_arrays(arrays, flatten=True)
+
 
     @classmethod
     def from_fits_file(cls, filename):
@@ -42,22 +62,17 @@ class DataObject(object):
     def zeros(cls, size, dtype):
         return cls(np.zeros(size, dtype=dtype))
 
-    def __getattribute__(self, attr):
+    def __getattr__(self, attr):
         try:
-            return object.__getattribute__(self, attr)
-        except AttributeError:  # attr must be a fieldname
-            pass
-        if attr.upper() in self._ndarray.dtype.names:
-            return self._ndarray[attr.upper()]
-        elif attr.lower() in self._ndarray.dtype.names:
             return self._ndarray[attr.lower()]
-        return object.__getattribute__(self, attr)
+        except:
+            return object.__getattr__(attr)
 
     def __setattr__(self, attr, val):
         if attr == '_ndarray':
             object.__setattr__(self, attr, val)
-        elif attr.upper() in self._ndarray.dtype.names:
-            self._ndarray[attr.upper()] = val
+        elif attr.lower() in self._ndarray.dtype.names:
+            self._ndarray[attr.lower()] = val
         else:
             object.__setattr__(self, attr, val)
 
@@ -68,7 +83,12 @@ class DataObject(object):
 
     def add_fields(self, newdtype):
         array = np.zeros(self._ndarray.size, newdtype)
+        self._lower_array(array)
         self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
+
+    def _lower_array(self, array):
+        names = list(array.dtype.names)
+        array.dtype.names = [n.lower() for n in names]
 
     def __repr__(self):
         # return the representation of the underlying array
@@ -96,24 +116,28 @@ class Entry(DataObject):
     there is only a single entry being passed in.
     """
 
-    def __init__(self, *arrays):
-        if any([arr.size != 1 for arr in arrays]):
-            raise ValueError("Input arrays must have length one.")
-        super(Entry, self).__init__(*arrays)
+    #def __init__(self, *arrays):
+    #    if any([arr.size != 1 for arr in arrays]):
+    #        raise ValueError("Input arrays must have length one.")
+    #    super(Entry, self).__init__(*arrays)
+    def __init__(self, array):
+        if array.size != 1:
+            raise ValueError("Input array must have length one.")
+        # If this is an array of length 1, we want it to be a scalar-ish
+        if len(array.shape) == 0:
+            super(Entry, self).__init__(array)
+        else:
+            super(Entry, self).__init__(array[0])
 
     @classmethod
     def from_dict(cls, dict): pass
 
-    def __getattribute__(self, attr):
+    def __getattr__(self, attr):
         try:
-            return object.__getattribute__(self, attr)
-        except AttributeError:  # attr must be a fieldname
-            pass
-        if attr.upper() in self._ndarray.dtype.names:
-            return self._ndarray[attr.upper()][0]
-        elif attr.lower() in self._ndarray.dtype.names:
-            return self._ndarray[attr.lower()][0]
-        return object.__getattribute__(self, attr)
+            #return self._ndarray[attr.lower()][0]
+            return self._ndarray[attr.lower()]
+        except:
+            return object.__getattr__(attr)
 
 
 class Catalog(DataObject):
