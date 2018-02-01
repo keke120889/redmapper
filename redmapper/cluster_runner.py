@@ -301,12 +301,22 @@ class ClusterRunner(object):
                 self.members.append(mem_temp)
 
 
-    def output(self, savemembers=True):
+    def output(self, savemembers=True, withversion=True, clobber=False):
         """
         """
-        # Can this be universal?
 
-        # maybe want to be able to override to say which fields to save.
-        # that would be clever.  Maybe with a cls?
+        # Try with a universal method.
+        # It will save the underlying _ndarrays of the Cluster and
+        # (optionally) Member catalogs.
 
-        pass
+        fname_base = self.config.outbase
+
+        if withversion:
+            fname_base += '_redmapper_' + self.config.version
+
+        fname_base += '_lambda_chisq'
+
+        fitsio.write(fname_base + '.fit', self.cat._ndarray, clobber=clobber)
+
+        if savemembers:
+            fitsio.write(fname_base + '_members.fit', self.members._ndarray, clobber=clobber)
