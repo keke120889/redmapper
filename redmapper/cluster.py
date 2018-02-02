@@ -32,6 +32,8 @@ cluster_dtype_base = [('MEM_MATCH_ID', 'i4'),
                       ('R_MASK', 'f4'),
                       ('SCALEVAL', 'f4'),
                       ('MASKFRAC', 'f4'),
+                      ('ZRED', 'f4'),
+                      ('ZRED_E', 'f4'),
                       ('CHISQ', 'f4'),
                       ('Z_LAMBDA_NITER', 'i2'),
                       ('EBV_MEAN', 'f4'),
@@ -112,9 +114,10 @@ class Cluster(Entry):
         self._mpc_scale = None
 
         if self.z > 0.0:
-            self.update_z(self.z)
+            #self.update_z(self.z)
+            self.redshift = self.z
         else:
-            self._z = None
+            self._redshift = None
 
     def reset(self):
         """
@@ -155,33 +158,33 @@ class Cluster(Entry):
                 # The PFREE is new, so we must set it to 1s
                 self.neighbors.pfree[:] = 1.0
 
-    def find_neighbors(self, radius, galcat):
+    def find_neighbors(self, radius, galcat, megaparsec=False):
         """
         parameters
         ----------
         radius: float
-            radius in degrees to look for neighbors
+            radius in degrees or megaparsec to look for neighbors
         galcat: GalaxyCatalog
             catalog of galaxies
+        megaparsec: bool, optional, default False
+            The radius is in mpc not degrees.
 
         This method is not finished or tested.
 
         """
+
+        if radius is None:
+            raise ValueError("A radius must be specified")
         if galcat is None:
             raise ValueError("A GalaxyCatalog object must be specified.")
-        if radius is None or radius < 0 or radius > 180:
-            raise ValueError("A radius in degrees must be specified.")
-        #indices, dists = galcat.match(self, radius) # self refers to the cluster
-        indices, dists = galcat.match_one(self.ra, self.dec, radius)
 
-        #self.neighbors = galcat[indices]
-        #Dist is arcmin???, R is Mpc/h
+        if megaparsec:
+            radius_degrees = np.degrees(radius / self.cosmo.Da(0.0, self._redshift))
+        else:
+            radius_degrees = radius
 
-        ## FIXME: check and add fields
-        #new_fields = [('DIST', 'f8'), ('R', 'f8'), ('PMEM', 'f8'),
-        #                ('CHISQ', 'f8')]
-        #self.neighbors.add_fields(new_fields)
-        #self.neighbors.dist = dists
+        indices, dists = galcat.match_one(self.ra, self.dec, radius_degrees)
+
         self.set_neighbors(galcat[indices])
         self.neighbors.dist = dists
         self.neighbors.index = indices
@@ -281,10 +284,10 @@ class Cluster(Entry):
         if idx is None:
             idx = np.arange(len(self.neighbors))
 
-        zind = self.zredstr.zindex(self._z)
+        zind = self.zredstr.zindex(self._redshift)
         refind = self.zredstr.lumrefmagindex(normmag)
         normalization = self.zredstr.lumnorm[refind, zind]
-        mstar = self.zredstr.mstar(self._z)
+        mstar = self.zredstr.mstar(self._redshift)
         phi_term_a = 10. ** (0.4 * (self.zredstr.alpha+1.)
                                  * (mstar-self.neighbors.refmag[idx]))
         phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag[idx])))
@@ -305,7 +308,7 @@ class Cluster(Entry):
         bcounts: float array
             b(x) for the cluster
         """
-        sigma_g = self.bkg.sigma_g_lookup(self._z, chisq, refmag)
+        sigma_g = self.bkg.sigma_g_lookup(self._redshift, chisq, refmag)
         return 2 * np.pi * r * (sigma_g/self.mpc_scale()**2)
 
     def calc_richness(self, mask, calc_err=True, index=None, record_values=True):
@@ -332,12 +335,12 @@ class Cluster(Entry):
         #self.mstar = self.zredstr.mstar(self.z)
 
         maxmag = self.mstar(update=True) - 2.5*np.log10(self.config.lval_reference)
-        self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Da(0, self._z)
+        self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Da(0, self._redshift)
 
         # need to clip r at > 1e-6 or else you get a singularity
         self.neighbors.r[idx] = self.neighbors.r[idx].clip(min=1e-6)
 
-        self.neighbors.chisq[idx] = self.zredstr.calculate_chisq(self.neighbors[idx], self._z)
+        self.neighbors.chisq[idx] = self.zredstr.calculate_chisq(self.neighbors[idx], self._redshift)
         rho = chisq_pdf(self.neighbors.chisq[idx], self.zredstr.ncol)
         nfw = self._calc_radial_profile(idx=idx)
         phi = self._calc_luminosity(maxmag, idx=idx) #phi is lumwt in the IDL code
@@ -361,6 +364,7 @@ class Cluster(Entry):
 
         # Call the solving routine
         # this returns five items: lam_obj, p, pmem, rlam, theta_r
+        # Note that pmem used to be called "wvals" in IDL code
         # pmem = p * pfree * theta_i * theta_r
         lam, p, pmem, rlam, theta_r = richness_obj.solve_nfw()
 
@@ -474,8 +478,20 @@ class Cluster(Entry):
 
         return lam_err
 
-    def update_z(self, z_new):
-        self._z = z_new
+    #def update_z(self, z_new):
+    #    self._redshift = z_new
+    #    _ = self.mstar(update=True)
+    #    _ = self.mpc_scale(update=True)#
+
+    #def get_z(self):
+    #    return self._redshift
+    @property
+    def redshift(self):
+        return self._redshift
+
+    @redshift.setter
+    def redshift(self, value):
+        self._redshift = value
         _ = self.mstar(update=True)
         _ = self.mpc_scale(update=True)
 
@@ -483,7 +499,7 @@ class Cluster(Entry):
         """
         """
         if (self._mstar is None or update):
-            self._mstar = self.zredstr.mstar(self._z)
+            self._mstar = self.zredstr.mstar(self._redshift)
 
         return self._mstar
 
@@ -491,7 +507,7 @@ class Cluster(Entry):
         """
         """
         if (self._mpc_scale is None or update):
-            self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._z)
+            self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._redshift)
 
         return self._mpc_scale
 
@@ -525,8 +541,10 @@ class ClusterCatalog(Catalog):
     # And on demand it will return a cluster object which it needs to initialize...
 
 
-    def __init__(self, *arrays, **kwargs):
-        super(ClusterCatalog, self).__init__(*arrays)
+    #def __init__(self, *arrays, **kwargs):
+    #    super(ClusterCatalog, self).__init__(*arrays)
+    def __init__(self, array, **kwargs):
+        super(ClusterCatalog, self).__init__(array)
 
         self.r0 = None if 'r0' not in kwargs else kwargs['r0']
         self.beta = None if 'beta' not in kwargs else kwargs['beta']
@@ -553,6 +571,10 @@ class ClusterCatalog(Catalog):
 
         return cls(cat, **kwargs)
 
+    @classmethod
+    def zeros(cls, size, **kwargs):
+        return cls(np.zeros(size, dtype=cluster_dtype_base))
+
     def __getitem__(self, key):
         if isinstance(key, int):
             # Note that if we have members, we can associate them with the cluster
@@ -564,4 +586,9 @@ class ClusterCatalog(Catalog):
                            config=self.config,
                            bkg=self.bkg)
         else:
-            raise ValueError("Don't know what to do with this key type yet?")
+            return ClusterCatalog(self._ndarray.__getitem__(key),
+                                  r0=self.r0,
+                                  beta=self.beta,
+                                  zredstr=self.zredstr,
+                                  config=self.config,
+                                  bkg=self.bkg)
