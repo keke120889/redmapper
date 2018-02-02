@@ -8,7 +8,6 @@ from esutil.cosmology import Cosmo
 import configuration
 from cluster import ClusterCatalog
 from background import Background
-#from mask import HPMask
 from mask import get_mask
 from galaxy import GalaxyCatalog
 from catalog import Catalog
@@ -23,7 +22,7 @@ class ClusterRunner(object):
     """
     """
 
-    def __init__(self, conf):
+    def __init__(self, conf, **kwargs):
         if not isinstance(conf, configuration.Configuration):
             # this needs to be read
             self.config = configuration.read_config(conf)
@@ -32,15 +31,16 @@ class ClusterRunner(object):
 
         # Will want to add stuff to check that everything needed is present?
 
-        self._set_runmode()
+        self._additional_initialization(**kwargs)
 
-    def _set_runmode(self):
+    def _additional_initialization(self, **kwargs):
         """
         """
 
         # must be overridden
         self.runmode = None
-
+        self.read_zreds = False
+        self.zreds_required = False
 
     def _setup(self):
         """
@@ -102,6 +102,8 @@ class ClusterRunner(object):
 
         # read in the galaxies
         # WILL NEED TO TRACK IF READING ZREDS
+        # Use self.read_zreds to know if we should read them!
+        # And self.zreds_required to know if we *must* read them
 
         self.gals = GalaxyCatalog.from_galfile(self.config.galfile)
 
@@ -111,6 +113,8 @@ class ClusterRunner(object):
         self.use_memradius = False
         self.use_memlum = False
         self.match_centers_to_galaxies = False
+        self.min_lambda = -1.0
+        self.record_members = False
 
     def _more_setup(self, *args, **kwargs):
         # This is to be overridden if necessary
@@ -142,7 +146,7 @@ class ClusterRunner(object):
 
     def _process_cluster(self, cluster):
         # This must be overridden
-        pass
+        raise RuntimeError("_process_cluster must have an override")
 
     def run(self, *args, **kwargs):
         """
@@ -172,8 +176,11 @@ class ClusterRunner(object):
         self.members = None
 
         for cluster in self.cat:
-            match_radius = np.degrees(self.maxrad / self.cosmo.Da(0.0, cluster._z))
-            cluster.find_neighbors(match_radius, self.gals)
+            # Note that the cluster is set with .z if available! (which becomes ._z)
+
+            #match_radius = np.degrees(self.maxrad / self.cosmo.Da(0.0, cluster._z))
+            #cluster.find_neighbors(match_radius, self.gals)
+            cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True)
 
             if cluster.neighbors.size == 0:
                 self._reset_bad_values(cluster)
@@ -187,7 +194,7 @@ class ClusterRunner(object):
             if self.depthstr is None:
                 # must approximate the limiting magnitude
                 # will get this from my des_depth functions...
-                pass
+                raise RuntimeError("No depthstr Must be implemented!!!!")
             else:
                 # get from the depth structure
                 self.depthstr.calc_maskdepth(self.mask.maskgals,
@@ -222,11 +229,13 @@ class ClusterRunner(object):
                 cluster_temp = cluster.copy()
 
                 #cluster_temp.z = cluster.z_lambda - self.config.zlambda_epsilon
-                cluster_temp.update_z(cluster.z_lambda - self.config.zlambda_epsilon)
+                #cluster_temp.update_z(cluster.z_lambda - self.config.zlambda_epsilon)
+                cluster_temp.redshift = cluster.z_lambda - self.config.zlambda_epsilon
                 lam_zmeps = cluster_temp.calc_richness(self.mask)
                 elambda_zmeps = cluster_temp.lambda_e
                 #cluster_temp.z = cluster.z_lambda + self.config.zlambda_epsilon
-                cluster_temp.update_z(cluster.z_lambda + self.config.zlambda_epsilon)
+                #cluster_temp.update_z(cluster.z_lambda + self.config.zlambda_epsilon)
+                cluster_temp.redshift = cluster.z_lambda + self.config.zlambda_epsilon
                 lam_zpeps = cluster_temp.calc_richness(self.mask)
                 elambda_zpeps = cluster_temp.lambda_e
 
@@ -238,8 +247,9 @@ class ClusterRunner(object):
 
             # and record pfree if desired
             if self.do_percolation_masking:
+                # FIXME
                 r_mask = (self.rmask_0 * (cluster.Lambda/100.)**self.rmask_beta *
-                          ((1. + cluster._z)/(1. + self.rmask_zpivot))**self.rmask_gamma)
+                          ((1. + cluster.redshift)/(1. + self.rmask_zpivot))**self.rmask_gamma)
                 if (r_mask < cluster.r_lambda):
                     r_mask = cluster.r_lambda
                 cluster.r_mask = r_mask
@@ -274,32 +284,44 @@ class ClusterRunner(object):
                 ok = (cluster.neighbors.pmem > 0.01)
                 pfree_temp[~ok] = 0.0
 
-            memuse, = np.where(pfree_temp > 0.01)
-            mem_temp = Catalog.zeros(memuse.size, dtype=self.config.member_dtype)
+            if self.record_members:
+                memuse, = np.where(pfree_temp > 0.01)
+                mem_temp = Catalog.zeros(memuse.size, dtype=self.config.member_dtype)
 
-            mem_temp.mem_match_id[:] = cluster.mem_match_id
-            mem_temp.z[:] = cluster.z_lambda
-            mem_temp.ra[:] = cluster.neighbors.ra[memuse]
-            mem_temp.dec[:] = cluster.neighbors.dec[memuse]
-            mem_temp.r[:] = cluster.neighbors.r[memuse]
-            mem_temp.p[:] = cluster.neighbors.p[memuse]
-            mem_temp.pfree[:] = pfree_temp[memuse]
-            mem_temp.theta_i[:] = cluster.neighbors.theta_i[memuse]
-            mem_temp.theta_r[:] = cluster.neighbors.theta_r[memuse]
-            mem_temp.refmag[:] = cluster.neighbors.refmag[memuse]
-            mem_temp.refmag_err[:] = cluster.neighbors.refmag_err[memuse]
-            # mem_temp.zred[:] = cluster.neighbors.zred[memuse]
-            # mem_temp.zred_e[:] = cluster.neighbors.zred_e[memuse]
-            mem_temp.chisq[:] = cluster.neighbors.chisq[memuse]
-            mem_temp.ebv[:] = cluster.neighbors.ebv[memuse]
-            mem_temp.mag[:, :] = cluster.neighbors.mag[memuse, :]
-            mem_temp.mag_err[:, :] = cluster.neighbors.mag_err[memuse, :]
+                mem_temp.mem_match_id[:] = cluster.mem_match_id
+                mem_temp.z[:] = cluster.z_lambda
+                mem_temp.ra[:] = cluster.neighbors.ra[memuse]
+                mem_temp.dec[:] = cluster.neighbors.dec[memuse]
+                mem_temp.r[:] = cluster.neighbors.r[memuse]
+                mem_temp.p[:] = cluster.neighbors.p[memuse]
+                mem_temp.pfree[:] = pfree_temp[memuse]
+                mem_temp.theta_i[:] = cluster.neighbors.theta_i[memuse]
+                mem_temp.theta_r[:] = cluster.neighbors.theta_r[memuse]
+                mem_temp.refmag[:] = cluster.neighbors.refmag[memuse]
+                mem_temp.refmag_err[:] = cluster.neighbors.refmag_err[memuse]
+                # mem_temp.zred[:] = cluster.neighbors.zred[memuse]
+                # mem_temp.zred_e[:] = cluster.neighbors.zred_e[memuse]
+                mem_temp.chisq[:] = cluster.neighbors.chisq[memuse]
+                mem_temp.ebv[:] = cluster.neighbors.ebv[memuse]
+                mem_temp.mag[:, :] = cluster.neighbors.mag[memuse, :]
+                mem_temp.mag_err[:, :] = cluster.neighbors.mag_err[memuse, :]
 
-            if self.members is None:
-                self.members = mem_temp
-            else:
-                self.members.append(mem_temp)
+                if self.members is None:
+                    self.members = mem_temp
+                else:
+                    self.members.append(mem_temp)
 
+
+        self._postprocess()
+
+    def _postprocess(self):
+        # default post-processing...
+
+        use, = np.where(self.cat.Lambda >= self.min_lambda)
+        self.cat = self.cat[use]
+
+        # And crop down members?
+        # FIXME
 
     def output(self, savemembers=True, withversion=True, clobber=False):
         """
@@ -314,7 +336,7 @@ class ClusterRunner(object):
         if withversion:
             fname_base += '_redmapper_' + self.config.version
 
-        fname_base += '_lambda_chisq'
+        fname_base += '_' + self.filetype
 
         fitsio.write(fname_base + '.fit', self.cat._ndarray, clobber=clobber)
 
