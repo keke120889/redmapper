@@ -132,6 +132,12 @@ class Entry(DataObject):
     @classmethod
     def from_dict(cls, dict): pass
 
+    def add_fields(self, newdtype):
+        array = np.zeros(self._ndarray.size, newdtype)
+        self._lower_array(array)
+        self._ndarray = merge_arrays([self._ndarray, array], flatten=True)[0]
+
+
     def __getattr__(self, attr):
         try:
             #return self._ndarray[attr.lower()][0]
