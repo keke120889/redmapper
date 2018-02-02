@@ -68,7 +68,8 @@ class Zlambda(object):
             if pzdone: break
 
             #self.cluster._z = z_lambda
-            self.cluster.update_z(z_lambda)
+            #self.cluster.update_z(z_lambda)
+            self.cluster.redshift = z_lambda
 
             while i < self.config.zlambda_maxiter:
                 mpc_scale = np.radians(1.) * self.cosmo.Da(0, z_lambda)
