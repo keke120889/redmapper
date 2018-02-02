@@ -13,16 +13,18 @@ from cluster import ClusterCatalog
 from depthmap import DepthMap
 from zlambda import Zlambda
 from zlambda import ZlambdaCorrectionPar
-#from runcat_base import RunCatalogBase
 from cluster_runner import ClusterRunner
 
 class RunCatalog(ClusterRunner):
     """
     """
 
-    def _set_runmode(self):
+    def _additional_initialization(self, **kwargs):
         # This is the runmode and where we get the mask/radius config vars from
         self.runmode = 'percolation'
+        self.read_zreds = False
+        self.zreds_required = False
+        self.filetype = 'lambda_chisq'
 
     def _more_setup(self, *args, **kwargs):
         # I think I name the args here?
@@ -38,28 +40,14 @@ class RunCatalog(ClusterRunner):
         # check if we need to generate mem_match_ids
         self._generate_mem_match_ids()
 
-        if 'do_percolation_masking' in kwargs:
-            self.do_percolation_masking = kwargs['do_percolation_masking']
-        else:
-            self.do_percolation_masking = False
-
-        if 'maxiter' in kwargs:
-            self.maxiter = kwargs['maxiter']
-        else:
-            self.maxiter = 5
-
-        if 'tol' in kwargs:
-            self.tol = kwargs['tol']
-        else:
-            self.tol = 0.005
-
-        if 'converge_zlambda' in kwargs:
-            self.converge_zlambda = kwargs['converge_zlambda']
-        else:
-            self.converge_zlambda = False
+        self.do_percolation_masking = kwargs.pop('do_percolation_masking', False)
+        self.maxiter = kwargs.pop('maxiter', 5)
+        self.tol = kwargs.pop('tol', 0.005)
+        self.converge_zlambda = kwargs.pop('converge_zlambda', False)
 
         self.do_lam_plusminus = True
         self.match_centers_to_galaxies = True
+        self.record_members = True
 
         # this is the minimum luminosity to consider
         # this is here to speed up computations.
@@ -111,7 +99,7 @@ class RunCatalog(ClusterRunner):
 
             # Compute z_lambda
             zlam = Zlambda(cluster)
-            z_lambda, z_lambda_e = zlam.calc_zlambda(cluster._z, self.mask,
+            z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.redshift, self.mask,
                                                      calc_err=True, calcpz=True)
 
             if z_lambda < 0.0:
@@ -128,10 +116,11 @@ class RunCatalog(ClusterRunner):
             cluster.pz = zlam.pz
 
             if self.converge_zlambda:
-                if (np.abs(cluster._z - cluster.z_lambda) < self.tol):
+                if (np.abs(cluster.redshift - cluster.z_lambda) < self.tol):
                     done = True
                 #cluster.z = cluster.z_lambda
-                cluster.update_z(cluster.z_lambda)
+                #cluster.update_z(cluster.z_lambda)
+                cluster.redshift = cluster.z_lambda
             else:
                 done = True
 
