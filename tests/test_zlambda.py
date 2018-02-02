@@ -43,7 +43,8 @@ class ClusterZlambdaTestCase(unittest.TestCase):
 
         hdr=fitsio.read_header(file_path+'/'+filename,ext=1)
         #cluster.z = hdr['Z']
-        cluster.update_z(hdr['Z'])
+        #cluster.update_z(hdr['Z'])
+        cluster.redshift = hdr['Z']
         richness_compare = hdr['LAMBDA']
         richness_compare_err = hdr['LAMBDA_E']
         cluster.ra = hdr['RA']
@@ -60,7 +61,7 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         depthstr = DepthMap(cluster.config)
         depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, mpc_scale)
 
-        cluster.neighbors.dist = np.degrees(cluster.neighbors.r/cluster.cosmo.Dl(0,cluster._z))
+        cluster.neighbors.dist = np.degrees(cluster.neighbors.r/cluster.cosmo.Dl(0,cluster.redshift))
 
         #set seed
         seed = 0
@@ -69,7 +70,7 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         # make a zlambda object
         zlam = Zlambda(cluster)
 
-        z_lambda, z_lambda_e = zlam.calc_zlambda(cluster._z, mask, calc_err=True, calcpz=True)
+        z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.redshift, mask, calc_err=True, calcpz=True)
 
         #testing.assert_almost_equal(self.cluster.z_lambda, 0.22816455)
         #testing.assert_almost_equal(cluster.z_lambda, 0.227865)

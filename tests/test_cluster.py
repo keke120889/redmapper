@@ -59,7 +59,8 @@ class ClusterTestCase(unittest.TestCase):
 
         hdr=fitsio.read_header(file_path+'/'+filename,ext=1)
         #cluster.z = hdr['Z']
-        cluster.update_z(hdr['Z'])
+        #cluster.update_z(hdr['Z'])
+        cluster.redshift = hdr['Z']
         richness_compare = hdr['LAMBDA']
         richness_compare_err = hdr['LAMBDA_E']
         scaleval_compare = hdr['SCALEVAL']
@@ -114,7 +115,7 @@ class ClusterTestCase(unittest.TestCase):
 
         # Now the cluster tests
 
-        cluster.neighbors.dist = np.degrees(cluster.neighbors.r / cluster.cosmo.Da(0, cluster._z))
+        cluster.neighbors.dist = np.degrees(cluster.neighbors.r / cluster.cosmo.Da(0, cluster.redshift))
 
         seed = 0
         random.seed(seed = 0)
