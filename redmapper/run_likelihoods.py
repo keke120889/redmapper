@@ -3,6 +3,7 @@ from __future__ import print_function
 import fitsio
 import numpy as np
 import esutil
+import copy
 
 from cluster import ClusterCatalog
 from catalog import Catalog
@@ -32,15 +33,12 @@ class RunLikelihoods(ClusterRunner):
 
         self.cat = Catalog.from_fits_file(self.config.catfile)
 
-        try:
-            keepz = kwargs['keepz']
-        except:
-            keepz = False
+        keepz = kwargs.pop('keepz', False)
 
+        zrange = copy.copy(self.config.zrange)
         if keepz:
-            zrange = self.config.zrange
             zrange[0] -= self.config.calib_zrange_cushion
-            zrange[0] = zrange[0] if self.zrange[0] > 0.05 else 0.05
+            zrange[0] = zrange[0] if zrange[0] > 0.05 else 0.05
             zrange[1] += self.config.calib_zrange_cushion
 
         use, = np.where((self.cat.z > zrange[0]) &
@@ -53,7 +51,7 @@ class RunLikelihoods(ClusterRunner):
         self.match_centers_to_galaxies = False
         self.record_members = False
 
-        self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
+        #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
 
     def _reset_bad_values(self, cluster):
         cluster.lnlamlike = -1e11
@@ -64,11 +62,9 @@ class RunLikelihoods(ClusterRunner):
 
     def _process_cluster(self, cluster):
 
-        maxmag = cluster.mstar() - 2.5*np.log10(self.limlum)
+        maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
 
-        index, = np.where(cluster.neighbors.refmag < maxmag)
-
-        lam = cluster.calc_richness(self.mask, index=index)
+        lam = cluster.calc_richness(self.mask)
 
         minrind = np.argmin(cluster.neighbors.r)
         incut, = np.where((cluster.neighbors.pmem > 0.0) &
@@ -89,7 +85,7 @@ class RunLikelihoods(ClusterRunner):
             cluster.lnbcglike = 0.0
         else:
             # First phi_cen
-            mbar = (cluster.mstar() + self.config.wcen_delta0 +
+            mbar = (cluster.mstar + self.config.wcen_delta0 +
                     self.config.wcen_delta1 * np.log(cluster.Lambda / self.config.wcen_pivot))
             phi_cen = ((1. / (np.sqrt(2. * np.pi) * self.config.wcen_sigma_m)) *
                        np.exp(-0.5 * (cluster.neighbors.refmag[minrind] - mbar)**2. / self.config.wcen_sigma_m**2.))
@@ -108,7 +104,7 @@ class RunLikelihoods(ClusterRunner):
                 g = chisq_pdf(cluster.neighbors.chisq[minrind], self.zredstr.dof)
 
             # and the w filter
-            lum = 10.**((cluster.mstar() - cluster.neighbors.refmag) / 2.5)
+            lum = 10.**((cluster.mstar - cluster.neighbors.refmag) / 2.5)
             u, = np.where((cluster.neighbors.r > 1e-5) & (cluster.neighbors.pmem > 0.0))
             w = np.alog(np.sum(cluster.neighbors.pmem[u] * lum[u] /
                                np.sqrt(cluster.neighbors.r[u]**2. + self.config.wcen_rsoft**2.)) / ((1. / cluster.r_lambda) * np.sum(cluster.neighbors.pmem[u] * lum[u])))
@@ -125,3 +121,5 @@ class RunLikelihoods(ClusterRunner):
 
         use, = np.where(self.cat.lnlamlike > -1e11)
         self.cat = self.cat[use]
+
+        # should I delete unused columns here before saving?  
