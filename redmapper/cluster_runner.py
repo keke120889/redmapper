@@ -107,6 +107,9 @@ class ClusterRunner(object):
 
         self.gals = GalaxyCatalog.from_galfile(self.config.galfile)
 
+        # default limiting luminosity
+        self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
+
         # Defaults for whether to implement masking, etc
         self.do_percolation_masking = False
         self.do_lam_plusminus = False
@@ -165,6 +168,7 @@ class ClusterRunner(object):
             self.cat.refmag_err[i0] = self.gals.refmag_err[i1]
             self.cat.mag[i0, :] = self.gals.mag[i1, :]
             self.cat.mag_err[i0, :] = self.gals.mag[i1, :]
+            # do zred stuff when in...
 
         # loop over clusters...
         # at the moment, we are doing the matching once per cluster.
@@ -180,7 +184,8 @@ class ClusterRunner(object):
 
             #match_radius = np.degrees(self.maxrad / self.cosmo.Da(0.0, cluster._z))
             #cluster.find_neighbors(match_radius, self.gals)
-            cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True)
+            maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
+            cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True, maxmag=maxmag)
 
             if cluster.neighbors.size == 0:
                 self._reset_bad_values(cluster)
@@ -191,6 +196,8 @@ class ClusterRunner(object):
             else:
                 cluster.neighbors.pfree[:] = 1.0
 
+            # FIXME: add mean ebv computation here.
+
             if self.depthstr is None:
                 # must approximate the limiting magnitude
                 # will get this from my des_depth functions...
@@ -198,14 +205,14 @@ class ClusterRunner(object):
             else:
                 # get from the depth structure
                 self.depthstr.calc_maskdepth(self.mask.maskgals,
-                                             cluster.ra, cluster.dec, cluster.mpc_scale())
+                                             cluster.ra, cluster.dec, cluster.mpc_scale)
 
                 cluster.lim_exptime = np.median(self.mask.maskgals.exptime)
                 cluster.lim_limmag = np.median(self.mask.maskgals.limmag)
                 cluster.lim_limmag_hard = self.config.limmag_catalog
 
             # And survey masking (this may be a dummy)
-            self.mask.set_radmask(cluster, cluster.mpc_scale())
+            self.mask.set_radmask(cluster, cluster.mpc_scale)
 
             # And compute maskfrac here...approximate first computation
             inside, = np.where(self.mask.maskgals.r < 1.0)
@@ -254,7 +261,7 @@ class ClusterRunner(object):
                     r_mask = cluster.r_lambda
                 cluster.r_mask = r_mask
 
-                lim = cluster.mstar() - 2.5*np.log10(self.percolation_lmask)
+                lim = cluster.mstar - 2.5*np.log10(self.percolation_lmask)
 
                 u, = np.where((cluster.neighbors.refmag < lim) &
                               (cluster.neighbors.r < r_mask) &
@@ -275,7 +282,7 @@ class ClusterRunner(object):
                 if self.use_memradius:
                     ok &= (cluster.neighbors.r < self.config.percolation_memradius * cluster.r_lambda)
                 if self.use_memlum:
-                    ok &= (cluster.neighbors.refmag < (cluster.mstar() - 2.5*np.log10(self.config.percolation_memlum)))
+                    ok &= (cluster.neighbors.refmag < (cluster.mstar - 2.5*np.log10(self.config.percolation_memlum)))
 
                 # And set pfree_temp to zero when it is not okay
                 pfree_temp[~ok] = 0.0
