@@ -54,7 +54,7 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         mask = HPMask(cluster.config) #Create the mask
 
         #mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster.z) / (1 + cluster.z)**2
-        mpc_scale = cluster.mpc_scale()
+        mpc_scale = cluster.mpc_scale
         mask.set_radmask(cluster, mpc_scale)
 
         #depthstr
