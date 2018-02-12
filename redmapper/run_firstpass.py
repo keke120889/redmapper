@@ -105,7 +105,7 @@ class RunFirstPass(ClusterRunner):
             self.cat.chisq = self.gals.chisq[use[good]]
 
             self.cat.z_init = self.gals.zred
-            self.cat.z = self.gals.z
+            self.cat.z = self.gals.zred
 
             # self.match_cat_to_spectra()
 
@@ -113,7 +113,7 @@ class RunFirstPass(ClusterRunner):
         self.match_centers_to_galaxies = False
         self.do_percolation_masking = False
 
-        self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
+        #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
 
         self.maxiter = self.config.firstpass_niter
         if self.specmode:
@@ -128,16 +128,12 @@ class RunFirstPass(ClusterRunner):
 
         zuse = cluster.z_init.copy()
 
-        maxmag = cluster.mstar() - 2.5 * np.log10(self.limlum)
-
         for i in xrange(self.maxiter):
             if bad:
                 done = True
                 continue
 
-            index, = np.where(cluster.neighbors.refmag < maxmag)
-
-            lam = cluster.calc_richness(self.mask, index=index, calc_err=False)
+            lam = cluster.calc_richness(self.mask, calc_err=False)
 
             if (lam < np.abs(self.config.firstpass_minlambda / cluster.scaleval)):
                 bad = True
@@ -165,8 +161,8 @@ class RunFirstPass(ClusterRunner):
         cluster.z_lambda_e = z_lambda_e
         cluster.z_lambda_niter = zlam.niter
 
-        cind = np.argmin(cluster.neighbors.r[index])
-        cluster.chisq = cluster.neighbors.chisq[index[cind]]
+        cind = np.argmin(cluster.neighbors.r)
+        cluster.chisq = cluster.neighbors.chisq[cind]
 
         # and record the .z for the next round
         if (self.specmode):
