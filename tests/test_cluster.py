@@ -49,6 +49,7 @@ class ClusterTestCase(unittest.TestCase):
         filename = 'test_cluster_members.fit'
 
         neighbors = GalaxyCatalog.from_fits_file(file_path + '/' + filename)
+
         cluster.set_neighbors(neighbors)
 
         zred_filename = 'test_dr8_pars.fit'
@@ -74,7 +75,7 @@ class ClusterTestCase(unittest.TestCase):
         mask = HPMask(cluster.config)
 
         #mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster._z) / (1 + cluster.z)**2
-        mpc_scale = cluster.mpc_scale()
+        mpc_scale = cluster.mpc_scale
         mask.set_radmask(cluster, mpc_scale)
 
         depthstr = DepthMap(cluster.config)
@@ -115,7 +116,7 @@ class ClusterTestCase(unittest.TestCase):
 
         # Now the cluster tests
 
-        cluster.neighbors.dist = np.degrees(cluster.neighbors.r / cluster.cosmo.Da(0, cluster.redshift))
+        # cluster.neighbors.dist = np.degrees(cluster.neighbors.r / cluster.cosmo.Da(0, cluster.redshift))
 
         seed = 0
         random.seed(seed = 0)
