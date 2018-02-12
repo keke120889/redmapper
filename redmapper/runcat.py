@@ -51,7 +51,7 @@ class RunCatalog(ClusterRunner):
 
         # this is the minimum luminosity to consider
         # this is here to speed up computations.
-        self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
+        #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
 
         # additional bits to do with percolation limlum here
         # if we want to save p's for very faint objects we need to compute
@@ -72,7 +72,7 @@ class RunCatalog(ClusterRunner):
         iteration = 0
         done = False
 
-        maxmag = cluster.mstar() - 2.5*np.log10(self.limlum)
+        maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
 
         while iteration < self.maxiter and not done:
             # Check if we got here because of a bad failure
@@ -86,9 +86,9 @@ class RunCatalog(ClusterRunner):
                 done = True
                 continue
 
-            index, = np.where(cluster.neighbors.refmag < maxmag)
+            # index, = np.where(cluster.neighbors.refmag < maxmag)
 
-            lam = cluster.calc_richness(self.mask, index=index)
+            lam = cluster.calc_richness(self.mask)
 
             # kick out if ridiculously low
             if (lam < 3.0):
