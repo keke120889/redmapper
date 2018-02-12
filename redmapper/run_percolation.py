@@ -200,4 +200,4 @@ class RunPercolation(ClusterRunner):
 
             if i == 0:
                 # Only on the first iteration -- with new center -- is this necessary
-                
+
