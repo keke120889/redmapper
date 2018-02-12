@@ -65,6 +65,7 @@ member_dtype_base = [('MEM_MATCH_ID', 'i4'),
                      ('REFMAG_ERR', 'f4'),
                      ('ZRED', 'f4'),
                      ('ZRED_E', 'f4'),
+                     ('ZRED_CHISQ','f4'),
                      ('CHISQ', 'f4'),
                      ('EBV', 'f4'),
                      ('ZSPEC', 'f4')]
@@ -158,7 +159,7 @@ class Cluster(Entry):
                 # The PFREE is new, so we must set it to 1s
                 self.neighbors.pfree[:] = 1.0
 
-    def find_neighbors(self, radius, galcat, megaparsec=False):
+    def find_neighbors(self, radius, galcat, megaparsec=False, maxmag=None):
         """
         parameters
         ----------
@@ -185,9 +186,26 @@ class Cluster(Entry):
 
         indices, dists = galcat.match_one(self.ra, self.dec, radius_degrees)
 
+        if maxmag is not None:
+            use, = np.where(galcat.refmag[indices] <= maxmag)
+            indices = indices[use]
+            dists = dists[use]
+
         self.set_neighbors(galcat[indices])
         self.neighbors.dist = dists
         self.neighbors.index = indices
+
+        # And we need to compute the r values here
+        self._compute_neighbor_r()
+
+    def update_neighbors_dist(self):
+        """
+        """
+
+        self.neighbors.dist = esutil.coords.sphdist(self.ra, self.dec,
+                                                    self.neighbors.ra, self.neighbors.dec)
+
+        self._compute_neighbor_r()
 
     def clear_neighbors(self):
         """
@@ -309,7 +327,7 @@ class Cluster(Entry):
             b(x) for the cluster
         """
         sigma_g = self.bkg.sigma_g_lookup(self._redshift, chisq, refmag)
-        return 2 * np.pi * r * (sigma_g/self.mpc_scale()**2)
+        return 2 * np.pi * r * (sigma_g/self.mpc_scale**2)
 
     def calc_richness(self, mask, calc_err=True, index=None, record_values=True):
         """
@@ -334,11 +352,12 @@ class Cluster(Entry):
 
         #self.mstar = self.zredstr.mstar(self.z)
 
-        maxmag = self.mstar(update=True) - 2.5*np.log10(self.config.lval_reference)
-        self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Da(0, self._redshift)
+        #maxmag = self.mstar(update=True) - 2.5*np.log10(self.config.lval_reference)
+        #self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Da(0, self._redshift)
+        maxmag = self.mstar - 2.5 * np.log10(self.config.lval_reference)
 
         # need to clip r at > 1e-6 or else you get a singularity
-        self.neighbors.r[idx] = self.neighbors.r[idx].clip(min=1e-6)
+        #self.neighbors.r[idx] = self.neighbors.r[idx].clip(min=1e-6)
 
         self.neighbors.chisq[idx] = self.zredstr.calculate_chisq(self.neighbors[idx], self._redshift)
         rho = chisq_pdf(self.neighbors.chisq[idx], self.zredstr.ncol)
@@ -351,7 +370,7 @@ class Cluster(Entry):
         theta_i = calc_theta_i(self.neighbors.refmag[idx], self.neighbors.refmag_err[idx],
                                maxmag, self.zredstr.limmag)
 
-        cpars = mask.calc_maskcorr(self.mstar(), maxmag, self.zredstr.limmag)
+        cpars = mask.calc_maskcorr(self.mstar, maxmag, self.zredstr.limmag)
 
         try:
             #w = theta_i * self.neighbors.wvals[idx]
@@ -390,7 +409,7 @@ class Cluster(Entry):
             lam_unscaled = lam / self.scaleval
 
             if calc_err:
-                lam_cerr = self.calc_lambdaerr(mask.maskgals, self.mstar(),
+                lam_cerr = self.calc_lambdaerr(mask.maskgals, self.mstar,
                                                lam, rlam, cval, self.config.dldr_gamma)
                 lam_err = np.sqrt((1-bar_pmem) * lam_unscaled * self.scaleval**2. + lam_cerr**2.)
 
@@ -492,24 +511,52 @@ class Cluster(Entry):
     @redshift.setter
     def redshift(self, value):
         self._redshift = value
-        _ = self.mstar(update=True)
-        _ = self.mpc_scale(update=True)
+        #_ = self.mstar(update=True)
+        #_ = self.mpc_scale(update=True)
+        self._update_mstar()
+        self._update_mpc_scale()
+        self._compute_neighbor_r()
 
-    def mstar(self, update=False):
-        """
-        """
-        if (self._mstar is None or update):
-            self._mstar = self.zredstr.mstar(self._redshift)
 
+    # want to change this and mpc_scale to properties,
+    # and internal update methods.  When you update the redshift,
+    # all of these things should be kept in sync.  That would be pretty cool.
+
+    @property
+    def mstar(self):
         return self._mstar
 
-    def mpc_scale(self, update=False):
-        """
-        """
-        if (self._mpc_scale is None or update):
-            self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._redshift)
+    def _update_mstar(self):
+        self._mstar = self.zredstr.mstar(self._redshift)
 
+    @property
+    def mpc_scale(self):
         return self._mpc_scale
+
+    def _update_mpc_scale(self):
+        self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._redshift)
+
+    #def mstar(self, update=False):
+    #    """
+    #    """
+    #    if (self._mstar is None or update):
+    #        self._mstar = self.zredstr.mstar(self._redshift)
+
+    #    return self._mstar
+
+    #def mpc_scale(self, update=False):
+    #    """
+    #    """
+    #    if (self._mpc_scale is None or update):
+    #        self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._redshift)#
+
+    #    return self._mpc_scale
+
+    def _compute_neighbor_r(self):
+        if self.neighbors is not None and self._redshift is not None:
+            # Clipping at 1e-6 to avoid singularities.
+            self.neighbors.r = np.clip(self.mpc_scale * self.neighbors.dist, 1e-6, None)
+
 
     def copy(self):
         return self.__copy__()
