@@ -103,9 +103,9 @@ class ClusterTestCase(unittest.TestCase):
 
         # Test the background
         #  Note that this uses the input chisq values
-        bkg_python = cluster._calc_bkg_density(cluster.neighbors.r,
-                                               cluster.neighbors.chisq,
-                                               cluster.neighbors.refmag)
+        bkg_python = cluster.calc_bkg_density(cluster.neighbors.r,
+                                              cluster.neighbors.chisq,
+                                              cluster.neighbors.refmag)
         # this is cheating here...
         to_test, = np.where((cluster.neighbors.refmag < cluster.bkg.refmagbins[-1]))
         #testing.assert_almost_equal(bkg_python[to_test], neighbors.bcounts[to_test], 3)
