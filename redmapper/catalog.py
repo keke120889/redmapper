@@ -42,7 +42,7 @@ class DataObject(object):
 
 
     @classmethod
-    def from_fits_file(cls, filename):
+    def from_fits_file(cls, filename, ext=1):
         """
         Constructs DataObject directly from FITS file.
 
@@ -51,11 +51,12 @@ class DataObject(object):
 
         Args:
             filename (string): the file path and name.
+            ext: optional extension (default == 1)
 
         Returns:
             DataObject, properly constructed.
         """
-        array = fitsio.read(filename, ext=1)
+        array = fitsio.read(filename, ext=ext)
         return cls(array)
 
     @classmethod
