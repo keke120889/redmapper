@@ -43,3 +43,13 @@ limmag_catalog: 21.5
 #wcen_pivot: 30.0
 #zlambda_correct_internal: False
 zlambda_epsilon: 0.005
+
+wcen_Delta0: -1.39479
+wcen_Delta1: -0.293307
+wcen_sigma_m: 0.382187
+lnw_cen_sigma: 0.134934
+lnw_cen_mean: 0.216854
+lnw_sat_sigma: 0.273727
+lnw_sat_mean: 0.0310334
+lnw_fg_sigma: 0.283303
+lnw_fg_mean: -0.278723
