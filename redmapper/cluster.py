@@ -82,7 +82,7 @@ class Cluster(Entry):
     (TBD)
 
     """
-    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, neighbors=None):
+    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, neighbors=None, zredbkg=None):
 
         if cat_vals is None:
             #cat_vals = np.zeros(1, dtype=[('RA', 'f8'),
@@ -109,13 +109,13 @@ class Cluster(Entry):
         self.config = config
         self.zredstr = zredstr
         self.bkg = bkg
+        self.zredbkg = zredbkg
         self.set_neighbors(neighbors)
 
         self._mstar = None
         self._mpc_scale = None
 
         if self.z > 0.0:
-            #self.update_z(self.z)
             self.redshift = self.z
         else:
             self._redshift = None
@@ -180,7 +180,8 @@ class Cluster(Entry):
             raise ValueError("A GalaxyCatalog object must be specified.")
 
         if megaparsec:
-            radius_degrees = np.degrees(radius / self.cosmo.Da(0.0, self._redshift))
+            #radius_degrees = np.degrees(radius / self.cosmo.Da(0.0, self._redshift))
+            radius_degrees = radius / self.mpc_scale
         else:
             radius_degrees = radius
 
@@ -311,14 +312,15 @@ class Cluster(Entry):
         phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag[idx])))
         return phi_term_a * phi_term_b / normalization
 
-    def _calc_bkg_density(self, r, chisq, refmag):
+    def calc_bkg_density(self, r, chisq, refmag):
         """
         Internal method to compute background filter
 
         parameters
         ----------
-        bkg: Background object
-           background
+        r: radius (Mpc)
+        chisq: chisq values at redshift of cluster
+        refmag: total magnitude of galaxies
 
         returns
         -------
@@ -327,7 +329,30 @@ class Cluster(Entry):
             b(x) for the cluster
         """
         sigma_g = self.bkg.sigma_g_lookup(self._redshift, chisq, refmag)
-        return 2 * np.pi * r * (sigma_g/self.mpc_scale**2)
+        return 2. * np.pi * r * (sigma_g/self.mpc_scale**2.)
+
+    def calc_zred_bkg_density(self, r, zred, refmag):
+        """
+        Internal method to compute zred background filter
+
+        parameters
+        ----------
+        r: radius (Mpc)
+        zred: zred of galaxies
+        refmag: total magnitude of galaxies
+
+        returns
+        -------
+
+        bcounts: float array
+           bzred(x) for the cluster
+        """
+
+        if self.zredbkg is None:
+            raise AttributeError("zredbkg has not been set for this cluster")
+
+        sigma_g = self.zredbkg.sigma_g_lookup(zred, refmag)
+        return 2. * np.pi * r * (sigma_g / self.mpc_scale**2.)
 
     def calc_richness(self, mask, calc_err=True, index=None, record_values=True):
         """
@@ -364,7 +389,7 @@ class Cluster(Entry):
         nfw = self._calc_radial_profile(idx=idx)
         phi = self._calc_luminosity(maxmag, idx=idx) #phi is lumwt in the IDL code
         ucounts = (2*np.pi*self.neighbors.r[idx]) * nfw * phi * rho
-        bcounts = self._calc_bkg_density(self.neighbors.r[idx], self.neighbors.chisq[idx],
+        bcounts = self.calc_bkg_density(self.neighbors.r[idx], self.neighbors.chisq[idx],
                                          self.neighbors.refmag[idx])
 
         theta_i = calc_theta_i(self.neighbors.refmag[idx], self.neighbors.refmag_err[idx],
@@ -482,7 +507,7 @@ class Cluster(Entry):
         refmag_for_bcounts = np.copy(refmag)
         refmag_for_bcounts[faint] = limmag-0.01
 
-        bcounts = self._calc_bkg_density(r, chisq , refmag_for_bcounts)
+        bcounts = self.calc_bkg_density(r, chisq , refmag_for_bcounts)
 
         out, = np.where((refmag > limmag) | (mark == 0))
 
@@ -593,11 +618,12 @@ class ClusterCatalog(Catalog):
     def __init__(self, array, **kwargs):
         super(ClusterCatalog, self).__init__(array)
 
-        self.r0 = None if 'r0' not in kwargs else kwargs['r0']
-        self.beta = None if 'beta' not in kwargs else kwargs['beta']
-        self.zredstr = None if 'zredstr' not in kwargs else kwargs['zredstr']
-        self.config = None if 'config' not in kwargs else kwargs['config']
-        self.bkg = None if 'bkg' not in kwargs else kwargs['bkg']
+        self.r0 = kwargs.pop('r0', None)
+        self.beta = kwargs.pop('beta', None)
+        self.zredstr = kwargs.pop('zredstr', None)
+        self.config = kwargs.pop('config', None)
+        self.bkg = kwargs.pop('bkg', None)
+        self.zredbkg = kwargs.pop('zredbkg', None)
 
         if self.config is not None:
             cluster_dtype = self.config.cluster_dtype
@@ -631,11 +657,13 @@ class ClusterCatalog(Catalog):
                            beta=self.beta,
                            zredstr=self.zredstr,
                            config=self.config,
-                           bkg=self.bkg)
+                           bkg=self.bkg,
+                           zredbkg=self.zredbkg)
         else:
             return ClusterCatalog(self._ndarray.__getitem__(key),
                                   r0=self.r0,
                                   beta=self.beta,
                                   zredstr=self.zredstr,
                                   config=self.config,
-                                  bkg=self.bkg)
+                                  bkg=self.bkg,
+                                  zredbkg=self.zredbkg)
