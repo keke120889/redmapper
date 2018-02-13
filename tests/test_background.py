@@ -4,6 +4,7 @@ import numpy as np
 import fitsio
 
 from redmapper.background import Background
+from redmapper.background import ZredBackground
 
 class BackgroundTestCase(unittest.TestCase):
 
@@ -25,7 +26,7 @@ class BackgroundTestCase(unittest.TestCase):
         # test that we fail if we read a non-fits file
         self.assertRaises(IOError, Background,'%s/testconfig.yaml' % (file_path))
         # test that we fail if we try a file without the right header info
-        self.assertRaises(AttributeError, Background, 
+        self.assertRaises(IOError, Background,
                           '%s/test_dr8_pars.fit' % (file_path))
         bkg = Background('%s/%s' % (file_path, file_name))
 
@@ -50,6 +51,26 @@ class BackgroundTestCase(unittest.TestCase):
                                 43.4550, 0.012194233, np.inf, 0.0])
         # idl_ouputs[4] = 42.555183
         testing.assert_almost_equal(py_outputs, idl_outputs, decimal=4)
+
+        ###########################################
+        ## And test the zred background code
+        ###########################################
+
+        zredbkg = ZredBackground('%s/%s' % (file_path, file_name))
+
+        # test creation of lookup table
+        inputs = [(60, 50), (200, 100), (300, 120)]
+        py_outputs = np.array([zredbkg.sigma_g[idx] for idx in inputs])
+        idl_outputs = np.array([1.16810, 28.4379, 373.592])
+
+        testing.assert_almost_equal(py_outputs, idl_outputs, decimal=4)
+
+        # test functionality of lookup table
+        zred = np.array([0.2154, 0.2545, 0.2876])
+        refmag = np.array([18.015,18.576,19.234])
+        idl_outputs = np.array([710.17102,1000.1127,1718.0394])
+        py_outputs = zredbkg.sigma_g_lookup(zred, refmag)
+        testing.assert_almost_equal(py_outputs, idl_outputs, decimal=3)
 
 
 if __name__=='__main__':
