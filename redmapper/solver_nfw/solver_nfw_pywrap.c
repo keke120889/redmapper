@@ -17,8 +17,12 @@ SolverObject_dealloc(struct SolverObject* self)
 	free(self->solver);
 	self->allocated = 0;
     }
-    
+
+#if PY_MAJOR_VERSION >= 3
+    Py_TYPE(self)->tp_free((PyObject*)self);
+#else
     self->ob_type->tp_free((PyObject*)self);
+#endif
 }
 
 static int
@@ -70,14 +74,20 @@ SolverObject_init(struct SolverObject* self, PyObject *args)
     if (PyArray_DIM(cpars_obj, 0) != CPAR_NTERMS) {
 	PyErr_SetString(PyExc_ValueError, "cpars with wrong number of terms");
 	return -1;
-    }    
-    
+    }
+
     return 0;
 }
 
 static PyObject*
 SolverObject_repr(struct SolverObject* self) {
-    return PyString_FromString("");
+    char repr[256];
+    sprintf(repr, "Solver Object");
+#if PY_MAJOR_VERSION >= 3
+    return Py_BuildValue("y",repr);
+#else
+    return Py_BuildValue("s",repr);
+#endif
 }
 
 PyObject* SolverObject_solver_nfw(const struct SolverObject* self, PyObject *args)
@@ -97,7 +107,7 @@ PyObject* SolverObject_solver_nfw(const struct SolverObject* self, PyObject *arg
     p_obj = PyArray_ZEROS(1, dims, NPY_DOUBLE, 0);
     wt_obj = PyArray_ZEROS(1, dims, NPY_DOUBLE, 0);
     thetar_obj = PyArray_ZEROS(1, dims, NPY_DOUBLE, 0);
-    
+
     // do the work
 
     // use the allocated arrays...
@@ -131,8 +141,12 @@ static PyMethodDef SolverObject_methods[] = {
 };
 
 static PyTypeObject PySolverType = {
+#if PY_MAJOR_VERSION >= 3
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
+#endif
     "_solver_nfw_pywrap.Solver",             /*tp_name*/
     sizeof(struct SolverObject), /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -175,27 +189,63 @@ static PyTypeObject PySolverType = {
 };
 
 
-static PyMethodDef Solver_type_methods[] = {
+static PyMethodDef Solver_module_methods[] = {
     {NULL}  /* Sentinel */
 };
+
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "_solver_nfw_pywrap",      /* m_name */
+    "Solver (w/ NFW) method",  /* m_doc */
+    -1,                        /* m_size */
+    Solver_module_methods,    /* m_methods */
+    NULL,                      /* m_reload */
+    NULL,                      /* m_traverse */
+    NULL,                      /* m_clear */
+    NULL,                      /* m_free */
+};
+#endif
 
 
 #ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
 #define PyMODINIT_FUNC void
 #endif
+
 PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+PyInit__solver_nfw_pywrap(void)
+#else
 init_solver_nfw_pywrap(void)
+#endif
 {
     PyObject* m;
 
     PySolverType.tp_new = PyType_GenericNew;
+
+#if PY_MAJOR_VERSION >= 3
+    if (PyType_Ready(&PySolverType) < 0) {
+        return NULL;
+    }
+
+    m = PyModule_Create(&moduledef);
+    if (m==NULL) {
+        return NULL;
+    }
+
+#else
+
     if (PyType_Ready(&PySolverType) < 0)
 	return;
 
-    m = Py_InitModule3("_solver_nfw_pywrap", Solver_type_methods, "Solver (w/ NFW) method");
+    m = Py_InitModule3("_solver_nfw_pywrap", Solver_module_methods, "Solver (w/ NFW) method");
+#endif
 
     Py_INCREF(&PySolverType);
     PyModule_AddObject(m, "Solver", (PyObject *) &PySolverType);
 
     import_array();
+#if PY_MAJOR_VERSION >= 3
+    return m;
+#endif
 }
