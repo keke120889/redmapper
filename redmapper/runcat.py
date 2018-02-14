@@ -1,19 +1,20 @@
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
 
 import fitsio
 import numpy as np
 import esutil
 
-from cluster import ClusterCatalog
-from background import Background
-from mask import HPMask
-from galaxy import GalaxyCatalog
-from cluster import Cluster
-from cluster import ClusterCatalog
-from depthmap import DepthMap
-from zlambda import Zlambda
-from zlambda import ZlambdaCorrectionPar
-from cluster_runner import ClusterRunner
+from .cluster import ClusterCatalog
+from .background import Background
+from .mask import HPMask
+from .galaxy import GalaxyCatalog
+from .cluster import Cluster
+from .cluster import ClusterCatalog
+from .depthmap import DepthMap
+from .zlambda import Zlambda
+from .zlambda import ZlambdaCorrectionPar
+from .cluster_runner import ClusterRunner
 
 class RunCatalog(ClusterRunner):
     """
@@ -118,8 +119,7 @@ class RunCatalog(ClusterRunner):
             if self.converge_zlambda:
                 if (np.abs(cluster.redshift - cluster.z_lambda) < self.tol):
                     done = True
-                #cluster.z = cluster.z_lambda
-                #cluster.update_z(cluster.z_lambda)
+
                 cluster.redshift = cluster.z_lambda
             else:
                 done = True
@@ -131,56 +131,3 @@ class RunCatalog(ClusterRunner):
 
         return bad
 
-
-#def run(confdict=None, conffile=None, outbase=None, 
-#                        savemembers=False, mask=False):
-#
-#    """
-#    Name:
-#        run
-#    Purpose:
-#        Run the redmapper cluster finding algorithm.
-#    Calling sequence:
-#        TODO
-#    Inputs:
-#        confdict: A configuration dictionary containing information
-#                  about how this run of RM works. Note that
-#                  one of confdict or conffile is required.
-#        conffile: A configuration file containing information
-#                  aboud how this run of RM works. Note that
-#                  one of confdict or conffile is required.
-#    Optional Inputs:
-#        outbase: Directory location of where to put outputs.
-#        savemembers: TODO
-#        mask = TODO
-#    """#
-
-#    # Read configurations from either explicit dict or YAML file
-#    if (confdict is None) and (conffile is None):
-#        raise ValueError("Must have one of confdict or conffile")
-#    if (confdict is not None) and (conffile is not None):
-#        raise ValueError("Must have only one of confdict or conffile")
-#    if conffile is not None: confdict = config.read_config(conffile)
-
-#    r0, beta = confdict['percolation_r0'], confdict['percolation_beta']
-
-#    # This allows us to override outbase on the call line
-#    if outbase is None: outbase = confdict['outbase']
-
-    # Read in the background from the bkgfile
-#    bkg = None # TODO
-
-    # Read in the pars from the parfile
-#    pars = None # TODO
-
-    # Read in masked galaxies
-#    maskgals = None #fitsio.read(confdict['maskgalfile'], ext=1) # TODO
-
-    # Read in the mask
-#    maskfile = confdict['maskfile'] #TODO
-
-    # Read in the input catalog from the catfile
-    #NOTE from Tom - I think that this is the old "galfile" in IDL
-#    clusters = ClusterCatalog.from_fits_file(confdict['catfile'])
-
-#    return clusters

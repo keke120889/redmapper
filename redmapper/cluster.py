@@ -1,19 +1,22 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import fitsio
-import esutil as esutil
+import esutil
 import numpy as np
 import itertools
 import scipy.optimize
 import scipy.integrate
 import copy
 
-from solver_nfw import Solver
-from catalog import Catalog, Entry
-from utilities import chisq_pdf, calc_theta_i
-from mask import HPMask
-from chisq_dist import ChisqDist
-from redmapper.redsequence import RedSequenceColorPar
+from .solver_nfw import Solver
+from .catalog import Catalog, Entry
+from .utilities import chisq_pdf, calc_theta_i
+from .mask import HPMask
+from .chisq_dist import ChisqDist
+from .redsequence import RedSequenceColorPar
 from esutil.cosmology import Cosmo
-from galaxy import GalaxyCatalog
+from .galaxy import GalaxyCatalog
 
 cluster_dtype_base = [('MEM_MATCH_ID', 'i4'),
                       ('RA', 'f8'),

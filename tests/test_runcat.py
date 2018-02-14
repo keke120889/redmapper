@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
@@ -5,16 +8,16 @@ import fitsio
 from numpy import random
 import healpy as hp
 
-from redmapper.cluster import Cluster
-from redmapper.cluster import ClusterCatalog
-from redmapper.configuration import Configuration
-from redmapper.galaxy import GalaxyCatalog
-from redmapper.catalog import DataObject
-from redmapper.redsequence import RedSequenceColorPar
-from redmapper.background import Background
-from redmapper.mask import HPMask
-from redmapper.depthmap import DepthMap
-from redmapper.runcat import RunCatalog
+from redmapper import Cluster
+from redmapper import ClusterCatalog
+from redmapper import Configuration
+from redmapper import GalaxyCatalog
+from redmapper import DataObject
+from redmapper import RedSequenceColorPar
+from redmapper import Background
+from redmapper import HPMask
+from redmapper import DepthMap
+from redmapper import RunCatalog
 
 class RuncatTestCase(unittest.TestCase):
     """

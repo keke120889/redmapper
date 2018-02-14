@@ -1,11 +1,14 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import yaml
 import fitsio
 import copy
 from esutil.cosmology import Cosmo
 import numpy as np
 
-from cluster import cluster_dtype_base, member_dtype_base
-from _version import __version__
+from .cluster import cluster_dtype_base, member_dtype_base
+from ._version import __version__
 
 class ConfigField(object):
     """
@@ -274,7 +277,7 @@ class Configuration(object):
 
             master=fitsio.read(self.galfile,ext=1)
 
-            mode = master['MODE'][0].rstrip()
+            mode = master['MODE'][0].rstrip().decode()
             if (mode == 'SDSS'):
                 gal_stats['survey_mode'] = 0
             elif (mode == 'DES'):

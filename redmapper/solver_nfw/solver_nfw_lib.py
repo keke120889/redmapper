@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import numpy as np
 from . import _solver_nfw_pywrap
 
@@ -8,7 +11,7 @@ class Solver(object):
     use root finding to solve for lambda given the colors,
     the formula for R_lambda, the thetas for the edges,
     and the colors.
-    
+
     parameters
     ----------
     r0: float
@@ -26,10 +29,10 @@ class Solver(object):
     cpars: float array, optional
         TBD
     rsig: float, optional
-        TBD (default = 0.0)    
+        TBD (default = 0.0)
     """
 
-    def __init__(self, r0, beta, ucounts, bcounts, r, w, 
+    def __init__(self, r0, beta, ucounts, bcounts, r, w,
                         cpars=np.zeros(4,dtype='f8'), rsig=0.0):
 
         # ensure all correct length, etc.
@@ -78,6 +81,3 @@ class Solver(object):
         """
         return self._solver.solve_nfw()
 
-        
-
-                                                 

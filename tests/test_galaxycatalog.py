@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
@@ -5,8 +8,8 @@ import fitsio
 from numpy import random
 import healpy as hp
 
-from redmapper.configuration import Configuration
-from redmapper.galaxy import GalaxyCatalog
+from redmapper import Configuration
+from redmapper import GalaxyCatalog
 
 
 class GalaxyCatalogTestCase(unittest.TestCase):

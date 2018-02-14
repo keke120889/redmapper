@@ -1,17 +1,20 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
 import fitsio
 from numpy import random
 
-from redmapper.catalog import Entry
-from redmapper.cluster import Cluster
-from redmapper.configuration import Configuration
-from redmapper.galaxy import GalaxyCatalog
-from redmapper.background import Background
-from redmapper.redsequence import RedSequenceColorPar
-from redmapper.mask import HPMask
-from redmapper.depthmap import DepthMap
+from redmapper import Entry
+from redmapper import Cluster
+from redmapper import Configuration
+from redmapper import GalaxyCatalog
+from redmapper import Background
+from redmapper import RedSequenceColorPar
+from redmapper import HPMask
+from redmapper import DepthMap
 from redmapper.utilities import calc_theta_i
 
 #import matplotlib.pyplot as plt

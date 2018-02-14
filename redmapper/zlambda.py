@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import numpy as np
 import scipy.optimize
 import scipy.integrate
@@ -5,8 +8,8 @@ import copy
 import os
 import fitsio
 
-from utilities import gaussFunction
-from utilities import CubicSpline
+from .utilities import gaussFunction
+from .utilities import CubicSpline
 
 
 class Zlambda(object):
@@ -295,9 +298,9 @@ class Zlambda(object):
         pzdone = False
 
         # check for bad values, and do slow run if necessary...
-        if (((self.pz[0] / self.pz[(self.config.npzbins-1)/2] > 0.01) and
+        if (((self.pz[0] / self.pz[(self.config.npzbins - 1) // 2] > 0.01) and
              (self.pzbins[0] >= (self.zredstr.z[0] + 0.01))) or
-            ((self.pz[-1] >= self.pz[(self.config.npzbins-1)/2] > 0.01) and
+            ((self.pz[-1] >= self.pz[(self.config.npzbins-1) // 2] > 0.01) and
              (self.pzbins[-1] <= (self.zredstr.z[-1] - 0.01)))):
 
             self._zlambda_calc_pz(z_lambda, wtvals, maxrad, maxmag, slow=True)

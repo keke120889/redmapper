@@ -1,10 +1,13 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import fitsio
 import healpy as hp
 import numpy as np
-
-from utilities import astro_to_sphere
-from catalog import Catalog, Entry
 from healpy import pixelfunc
+
+from .utilities import astro_to_sphere
+from .catalog import Catalog, Entry
 
 
 class DepthMap(object):

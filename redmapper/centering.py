@@ -1,9 +1,12 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import fitsio
 import esutil
 import numpy as np
 
-from utilities import gaussFunction
-from utilities import interpol
+from .utilities import gaussFunction
+from .utilities import interpol
 
 class Centering(object):
     """

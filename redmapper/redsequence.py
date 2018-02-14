@@ -1,13 +1,16 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import fitsio
-import esutil as eu
+import esutil
 import numpy as np
 from scipy import interpolate
 
-from chisq_dist import ChisqDist
-from chisq_dist import compute_chisq
-from catalog import Catalog
-from utilities import CubicSpline
-from utilities import MStar
+from .chisq_dist import ChisqDist
+from .chisq_dist import compute_chisq
+from .catalog import Catalog
+from .utilities import CubicSpline
+from .utilities import MStar
 
 class RedSequenceColorPar(object):
     """

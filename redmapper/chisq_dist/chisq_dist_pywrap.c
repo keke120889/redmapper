@@ -17,7 +17,11 @@ ChisqDistObject_dealloc(struct ChisqDistObject* self)
 	self->allocated = 0;
     }
 
+#if PY_MAJOR_VERSION >= 3
+    Py_TYPE(self)->tp_free((PyObject*)self);
+#else
     self->ob_type->tp_free((PyObject*)self);
+#endif
 }
 
 static int
@@ -38,7 +42,7 @@ ChisqDistObject_init(struct ChisqDistObject* self, PyObject* args)
     PyArrayObject *lupcorr_obj = NULL;
 
     // debug
-    int i,j,k,stride;
+    // int i,j,k,stride;
 
     self->allocated = 0;
 
@@ -87,74 +91,20 @@ ChisqDistObject_init(struct ChisqDistObject* self, PyObject* args)
 	self->chisq_dist->ncalc = nz;
     }
 
-    //    fprintf(stdout,"ncalc: %d\n", self->chisq_dist->ncalc);
-
     self->chisq_dist->sigint = SIGINT_DEFAULT;
 
-    // and some debugging tests...
-    /*
-    if (self->chisq_dist->mode == 0) {
-	fprintf(stdout,"mode 0\n");
-	
-	fprintf(stdout,"c: ");
-	for (i=0;i<self->chisq_dist->ncol;i++) {
-	    fprintf(stdout,"%.4f ",self->chisq_dist->c[i]);
-	}
-	fprintf(stdout,"\n");
-	fprintf(stdout,"slope: ");
-	for (i=0;i<self->chisq_dist->ncol;i++) {
-	    fprintf(stdout,"%.4f ",self->chisq_dist->slope[i]);
-	}
-	fprintf(stdout,"\n");
-	fprintf(stdout,"pivotmag: %.4f\n",self->chisq_dist->pivotmag[0]);
-	fprintf(stdout,"refmag: ");
-	for (i=0;i<self->chisq_dist->ncalc;i++) {
-	    fprintf(stdout,"%.4f ",self->chisq_dist->refmag[i]);
-	}
-	fprintf(stdout,"\n");
-	fprintf(stdout,"magerr: ");
-	for (i=0;i<self->chisq_dist->ncalc;i++) {
-	    for (j=0;j<(self->chisq_dist->ncol+1);j++) {
-		fprintf(stdout,"%.4f ",self->chisq_dist->magerr[i*(self->chisq_dist->ncol+1) + j]);
-	    }
-	    fprintf(stdout,"\n");
-	}
-	fprintf(stdout,"lupcorr: ");
-	for (i=0;i<self->chisq_dist->ngal;i++) {
-	    for (j=0;j<self->chisq_dist->ncol;j++) {
-		fprintf(stdout,"%.5f ",self->chisq_dist->lupcorr[i*(self->chisq_dist->ncol) + j]);
-	    }
-	    fprintf(stdout,"\n");
-	}
-	
-
-    } else if (self->chisq_dist->mode == 1) {
-	fprintf(stdout,"mode 1\n");
-
-	stride = self->chisq_dist->ncol * self->chisq_dist->ncol;
-	
-	for (i=0;i<2;i++) {
-	    for (j=0;j<self->chisq_dist->ncol;j++) {
-		for (k=0;k<self->chisq_dist->ncol;k++) {
-		    fprintf(stdout,"%.7f ", self->chisq_dist->covmat[i*stride + k*self->chisq_dist->ncol + j]);
-		}
-		fprintf(stdout,"\n");
-	    }
-	    fprintf(stdout,"------------------------\n");
-	}
-
-    } else {
-	fprintf(stdout,"mode 2\n");
-
-
-    }
-    */
     return 0;
 }
 
 static PyObject*
 ChisqDistObject_repr(struct ChisqDistObject* self) {
-    return PyString_FromString("");
+    char repr[256];
+    sprintf(repr, "Chisq Dist Object");
+#if PY_MAJOR_VERSION >= 3
+    return Py_BuildValue("y",repr);
+#else
+    return Py_BuildValue("s",repr);
+#endif
 }
 
 PyObject* ChisqDistObject_compute(const struct ChisqDistObject* self, PyObject *args)
@@ -169,7 +119,6 @@ PyObject* ChisqDistObject_compute(const struct ChisqDistObject* self, PyObject *
 
     chisq = (double *) PyArray_DATA((PyArrayObject*)chisq_obj);
 
-    
     // parse the args
     if (!PyArg_ParseTuple(args,
 			  (char*)"ii",
@@ -178,15 +127,14 @@ PyObject* ChisqDistObject_compute(const struct ChisqDistObject* self, PyObject *
 	PyErr_SetString(PyExc_RuntimeError,"Failed to parse args");
 	return chisq_obj;
     }
-	    
-    
+
     // and do the work.
     chisq_dist(self->chisq_dist->mode, do_chisq, nophotoerr, self->chisq_dist->ncalc,
 	       self->chisq_dist->ncol, self->chisq_dist->covmat, self->chisq_dist->c,
 	       self->chisq_dist->slope, self->chisq_dist->pivotmag, self->chisq_dist->refmag,
 	       self->chisq_dist->refmagerr, self->chisq_dist->magerr, self->chisq_dist->color,
 	       self->chisq_dist->lupcorr, chisq, self->chisq_dist->sigint);
-    
+
     return chisq_obj;
 }
 
@@ -196,8 +144,12 @@ static PyMethodDef ChisqDistObject_methods[] = {
 };
 
 static PyTypeObject PyChisqDistType = {
+#if PY_MAJOR_VERSION >= 3
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
+#endif
     "_chisq_dist_pywrap.ChisqDist",             /*tp_name*/
     sizeof(struct ChisqDistObject), /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -239,29 +191,67 @@ static PyTypeObject PyChisqDistType = {
     PyType_GenericNew,                 /* tp_new */
 };
 
-static PyMethodDef ChisqDist_type_methods[] = {
+static PyMethodDef ChisqDist_module_methods[] = {
     {NULL}  /* Sentinel */
 };
+
+
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "_chisq_dist_pywrap",      /* m_name */
+    "ChisqDist (with color)",  /* m_doc */
+    -1,                        /* m_size */
+    ChisqDist_module_methods,    /* m_methods */
+    NULL,                      /* m_reload */
+    NULL,                      /* m_traverse */
+    NULL,                      /* m_clear */
+    NULL,                      /* m_free */
+};
+#endif
 
 #ifndef PyMODINIT_FUNC  /* declarations for DLL import/export */
 #define PyMODINIT_FUNC void
 #endif
+
 PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+PyInit__chisq_dist_pywrap(void)
+#else
 init_chisq_dist_pywrap(void)
+#endif
 {
     PyObject* m;
 
     PyChisqDistType.tp_new = PyType_GenericNew;
+
+#if PY_MAJOR_VERSION >= 3
+    if (PyType_Ready(&PyChisqDistType) < 0) {
+        return NULL;
+    }
+
+    m = PyModule_Create(&moduledef);
+    if (m==NULL) {
+        return NULL;
+    }
+
+#else
     if (PyType_Ready(&PyChisqDistType) < 0)
 	return;
 
-    m = Py_InitModule3("_chisq_dist_pywrap", ChisqDist_type_methods, "ChisqDist (with color)");
+    m = Py_InitModule3("_chisq_dist_pywrap", ChisqDist_module_methods, "ChisqDist (with color)");
+    if (m==NULL) {
+        return;
+    }
+#endif
 
     Py_INCREF(&PyChisqDistType);
     PyModule_AddObject(m, "ChisqDist", (PyObject *) &PyChisqDistType);
 
     import_array();
+
+#if PY_MAJOR_VERSION >= 3
+    return m;
+#endif
 }
 
-
-	
