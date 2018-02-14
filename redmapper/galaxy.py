@@ -1,13 +1,15 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import fitsio
 import esutil
 from esutil.htm import Matcher
-#import smatch
 import numpy as np
 import itertools
-from catalog import Catalog, Entry
 import healpy as hp
 import os
 
+from .catalog import Catalog, Entry
 
 class Galaxy(Entry):
     """
@@ -37,7 +39,7 @@ class GalaxyCatalog(Catalog):
         #self._smatch_nside = 4096 if 'smatch_nside' not in kwargs else kwargs['smatch_nside']
 
     @classmethod
-    def from_galfile(cls, filename, nside=None, hpix=None, border=0.0):
+    def from_galfile(cls, filename, nside=0, hpix=None, border=0.0):
         """
         Name:
             from_galfile
@@ -62,7 +64,7 @@ class GalaxyCatalog(Catalog):
         if border < 0.0:
             raise ValueError("Border must be >= 0.0.")
         # ensure that nside is valid, and hpix is within range (if necessary)
-        if nside is not None:
+        if nside > 0:
             if not hp.isnsideok(nside):
                 raise ValueError("Nside not valid")
             if hpix is not None:
@@ -81,9 +83,9 @@ class GalaxyCatalog(Catalog):
 
         # now we can read in the galaxy table summary file...
         tab = fitsio.read(filename, ext=1)
-        nside_tab = tab['NSIDE']
+        nside_tab = tab[0]['NSIDE']
         if nside > nside_tab:
-            raise ValueError("""Requested nside (%d) must not be larger than 
+            raise ValueError("""Requested nside (%d) must not be larger than
                                     table nside (%d).""" % (nside, nside_tab))
 
         # which files do we want to read?
@@ -108,13 +110,13 @@ class GalaxyCatalog(Catalog):
                 _, indices = esutil.numpy_util.match(inhpix, tab[0]['HPIX'])
 
         # create the catalog array to read into
-        elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]]),ext=1, rows=0)
+        elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]].decode()),ext=1, rows=0)
         cat = np.zeros(np.sum(tab[0]['NGALS'][indices]), dtype=elt.dtype)
 
         # read the files
         ctr = 0
         for index in indices:
-            cat[ctr : ctr+tab[0]['NGALS'][index]] = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][index]), ext=1)
+            cat[ctr : ctr+tab[0]['NGALS'][index]] = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][index].decode()), ext=1)
             ctr += tab[0]['NGALS'][index]
         # In the IDL version this is trimmed to the precise boundary requested.
         # that's easy in simplepix.  Not sure how to do in healpix.
