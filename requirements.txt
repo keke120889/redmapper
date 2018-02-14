@@ -1,3 +1,4 @@
+astropy<3.0
 sphinx
 nose
 pyyaml
