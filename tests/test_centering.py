@@ -1,17 +1,20 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
 import fitsio
 from numpy import random
 
-from redmapper.cluster import Cluster
-from redmapper.configuration import Configuration
-from redmapper.centering import CenteringWcenZred
-from redmapper.galaxy import GalaxyCatalog
-from redmapper.redsequence import RedSequenceColorPar
-from redmapper.background import Background
-from redmapper.background import ZredBackground
-from redmapper.zlambda import ZlambdaCorrectionPar
+from redmapper import Cluster
+from redmapper import Configuration
+from redmapper import CenteringWcenZred
+from redmapper import GalaxyCatalog
+from redmapper import RedSequenceColorPar
+from redmapper import Background
+from redmapper import ZredBackground
+from redmapper import ZlambdaCorrectionPar
 
 
 class CenteringWcenZredTestCase(unittest.TestCase):

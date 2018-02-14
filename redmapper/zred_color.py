@@ -1,4 +1,5 @@
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
 
 import numpy as np
 import esutil
@@ -6,8 +7,8 @@ import scipy.integrate
 import scipy.interpolate
 import copy
 
-from galaxy import GalaxyCatalog
-from utilities import interpol
+from .galaxy import GalaxyCatalog
+from .utilities import interpol
 
 class ZredColor(object):
     """

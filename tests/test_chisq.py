@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
@@ -38,7 +41,7 @@ class ChisqColorTestCase(unittest.TestCase):
 
         # read in the parameters (note this is tested in test_redsequence.py)
         # we're only reading in a small redshift range for testing speed.
-        zredstr = redmapper.redsequence.RedSequenceColorPar('%s/%s' % (file_path, parfile),fine=True,zrange=[0.15,0.25])
+        zredstr = redmapper.RedSequenceColorPar('%s/%s' % (file_path, parfile),fine=True,zrange=[0.15,0.25])
 
         # test mode 0: many galaxies, one redshift
 
@@ -53,7 +56,7 @@ class ChisqColorTestCase(unittest.TestCase):
 
         #chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode0data['REFMAG'],mode0data['MODEL_MAGERR'],galcolor,refmagerr=mode0data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
 
-        chisq, lkhd = redmapper.chisq_dist.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode0data['REFMAG'],mode0data['MODEL_MAGERR'],galcolor,refmagerr=mode0data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
+        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode0data['REFMAG'],mode0data['MODEL_MAGERR'],galcolor,refmagerr=mode0data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
         #chisq = chisq_dist.compute_chisq(chisq_mode=True)
         testing.assert_almost_equal(chisq, mode0data['CHISQ'],decimal=3)
         #lkhd = chisq_dist.compute_chisq(chisq_mode=False)
@@ -71,7 +74,7 @@ class ChisqColorTestCase(unittest.TestCase):
 
         #chisq_dist = redmapper.chisq_dist.ChisqDist(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode1data['REFMAG'],mode1data[0]['MODEL_MAGERR'],galcolor,refmagerr=mode1data[0]['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:])
 
-        chisq, lkhd = redmapper.chisq_dist.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode1data['REFMAG'],mode1data[0]['MODEL_MAGERR'],galcolor,refmagerr=mode1data[0]['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
+        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode1data['REFMAG'],mode1data[0]['MODEL_MAGERR'],galcolor,refmagerr=mode1data[0]['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
 
         #chisq = chisq_dist.compute_chisq(chisq_mode=True)
         testing.assert_almost_equal(chisq, mode1data[0]['CHISQ'],decimal=3)
@@ -94,7 +97,7 @@ class ChisqColorTestCase(unittest.TestCase):
         # version.  So this is a really loose check.
 
         # will want to write python double-precision regression check as well.
-        chisq, lkhd = redmapper.chisq_dist.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode2data['REFMAG'],mode2data['MODEL_MAGERR'],galcolor,refmagerr=mode2data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
+        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode2data['REFMAG'],mode2data['MODEL_MAGERR'],galcolor,refmagerr=mode2data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
         
         #chisq = chisq_dist.compute_chisq(chisq_mode=True)
         testing.assert_almost_equal(chisq, mode2data['CHISQ'],decimal=1)

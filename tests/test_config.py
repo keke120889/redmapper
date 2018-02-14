@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest, os
 import numpy.testing as testing
 import numpy as np
@@ -14,7 +17,7 @@ class ReadConfigTestCase(unittest.TestCase):
         file_name = 'testconfig.yaml'
         file_path = 'data_for_tests'
 
-        config = redmapper.configuration.Configuration('%s/%s' % (file_path, file_name))
+        config = redmapper.Configuration('%s/%s' % (file_path, file_name))
 
         self.assertEqual(config.galfile,'./data_for_tests/pixelized_dr8_test/dr8_test_galaxies_master_table.fit')
         self.assertEqual(config.specfile,'./data_for_tests/dr8_test_spec.fit')

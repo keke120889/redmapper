@@ -1,10 +1,13 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
 import fitsio
 
-from redmapper.background import Background
-from redmapper.background import ZredBackground
+from redmapper import Background
+from redmapper import ZredBackground
 
 class BackgroundTestCase(unittest.TestCase):
 

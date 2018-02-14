@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
@@ -41,16 +44,16 @@ class RedSequenceColorTestCase(unittest.TestCase):
         file_path = 'data_for_tests'
 
         # test that we fail if we try a non-existent file
-        self.assertRaises(IOError,redmapper.redsequence.RedSequenceColorPar,'nonexistent.fit')
+        self.assertRaises(IOError,redmapper.RedSequenceColorPar,'nonexistent.fit')
 
         # test that we fail if we read a non-fits file
-        self.assertRaises(IOError,redmapper.redsequence.RedSequenceColorPar,'%s/testconfig.yaml' % (file_path))
+        self.assertRaises(IOError,redmapper.RedSequenceColorPar,'%s/testconfig.yaml' % (file_path))
         
         # test that we fail if we try a file without the right header info
-        self.assertRaises(ValueError,redmapper.redsequence.RedSequenceColorPar,'%s/test_bkg.fit' % (file_path))
+        self.assertRaises(ValueError,redmapper.RedSequenceColorPar,'%s/test_bkg.fit' % (file_path))
 
         # read in the parameters
-        zredstr=redmapper.redsequence.RedSequenceColorPar('%s/%s' % (file_path, file_name))
+        zredstr=redmapper.RedSequenceColorPar('%s/%s' % (file_path, file_name))
 
         # make sure that nmag matches
         testing.assert_equal(zredstr.nmag,5)

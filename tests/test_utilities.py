@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
@@ -23,7 +26,7 @@ class SplineTestCase(unittest.TestCase):
 
         # these numbers are also from redMaPPer 6.3.1, DR8
         testing.assert_almost_equal(vals,np.array([14.648017,19.792828,19.973761,20.301322],dtype=np.float64),decimal=6)
-        
+
 
 class MStarTestCase(unittest.TestCase):
     def runTest(self):
@@ -33,7 +36,7 @@ class MStarTestCase(unittest.TestCase):
         """
         # make sure invalid raises proper exception
         self.assertRaises(IOError,redmapper.utilities.MStar,'blah','junk')
-                          
+
         # make an SDSS test...
         ms = redmapper.utilities.MStar('sdss','i03')
 
@@ -43,7 +46,6 @@ class MStarTestCase(unittest.TestCase):
         # and against regressions...
         testing.assert_almost_equal(mstar,np.array([ 16.23748776,  17.85000035,  18.82812871,  19.58783337,  20.17514801]))
 
-        
 class FunctionsTestCase(unittest.TestCase):
     def runTest(self):
         """

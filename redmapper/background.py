@@ -1,9 +1,11 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import fitsio
 import numpy as np
-from catalog import Entry
-import scipy.ndimage as ndi
-# from scipy.interpolate import RegularGridInterpolator
-from utilities import interpol
+
+from .catalog import Entry
+from .utilities import interpol
 
 
 class Background(object):

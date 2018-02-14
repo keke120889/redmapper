@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
@@ -26,14 +29,14 @@ class SolverNFWTestCase(unittest.TestCase):
         data[0]['CPARS'] = data[0]['CPARS'][::-1]
 
         # check some common errors...
-        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'][0:10],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
-        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'][0:10],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
-        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'][0:10],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
-        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'][0:10],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
-        testing.assert_raises(ValueError,redmapper.solver_nfw.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'][0:1],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'][0:10],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'][0:10],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'][0:10],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'][0:10],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        testing.assert_raises(ValueError,redmapper.Solver,data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'][0:1],rsig=data[0]['RSIG'])
 
         # and test the results
-        solver=redmapper.solver_nfw.Solver(data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
+        solver=redmapper.Solver(data[0]['R0'],data[0]['BETA'],data[0]['UCOUNTS'],data[0]['BCOUNTS'],data[0]['R'],data[0]['W'],cpars=data[0]['CPARS'],rsig=data[0]['RSIG'])
 
         """
         solve_nfw() spits out:

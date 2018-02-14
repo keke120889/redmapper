@@ -1,31 +1,32 @@
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
 
 import fitsio
 import numpy as np
 import esutil
 from esutil.cosmology import Cosmo
 
-import configuration
-from cluster import ClusterCatalog
-from background import Background
-from mask import get_mask
-from galaxy import GalaxyCatalog
-from catalog import Catalog
-from cluster import Cluster
-from cluster import ClusterCatalog
-from depthmap import DepthMap
-from zlambda import Zlambda
-from zlambda import ZlambdaCorrectionPar
-from redmapper.redsequence import RedSequenceColorPar
+from .configuration import Configuration
+from .cluster import ClusterCatalog
+from .background import Background
+from .mask import get_mask
+from .galaxy import GalaxyCatalog
+from .catalog import Catalog
+from .cluster import Cluster
+from .cluster import ClusterCatalog
+from .depthmap import DepthMap
+from .zlambda import Zlambda
+from .zlambda import ZlambdaCorrectionPar
+from .redsequence import RedSequenceColorPar
 
 class ClusterRunner(object):
     """
     """
 
     def __init__(self, conf, **kwargs):
-        if not isinstance(conf, configuration.Configuration):
+        if not isinstance(conf, Configuration):
             # this needs to be read
-            self.config = configuration.read_config(conf)
+            self.config = Configuration(conf)
         else:
             self.config = conf
 

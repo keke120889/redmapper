@@ -1,10 +1,14 @@
-import esutil, fitsio
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
+import esutil
+import fitsio
 import healpy as hp
 import numpy as np
-from catalog import Catalog,Entry
-from utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels
 from scipy.special import erf
-#from cluster import Cluster
+
+from .catalog import Catalog,Entry
+from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels
 
 class Mask(object):
     """

@@ -1,3 +1,6 @@
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
+
 import unittest
 import numpy.testing as testing
 import numpy as np
@@ -6,10 +9,10 @@ import copy
 from numpy import random
 import time
 
-from redmapper.configuration import Configuration
-from redmapper.galaxy import GalaxyCatalog
-from redmapper.redsequence import RedSequenceColorPar
-from redmapper.zred_color import ZredColor
+from redmapper import Configuration
+from redmapper import GalaxyCatalog
+from redmapper import RedSequenceColorPar
+from redmapper import ZredColor
 
 class ZredTestCase(unittest.TestCase):
     """
