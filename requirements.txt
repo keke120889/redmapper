@@ -7,3 +7,4 @@ esutil
 numpy
 healpy
 scipy
+future
