@@ -57,7 +57,6 @@ class RedSequenceColorPar(object):
             except:
                 raise ValueError("Missing field from parameter header.")
 
-
         try:
             lowzmode=hdr['LOWZMODE']
         except:
