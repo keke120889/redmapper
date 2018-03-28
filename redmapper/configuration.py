@@ -140,6 +140,7 @@ class Configuration(object):
     zlambda_epsilon = ConfigField(default=0.005, required=True)
     zlambda_parab_step = ConfigField(default=0.002, required=True)
 
+    centerclass = ConfigField(default='CenteringBCG', required=True)
     wcen_rsoft = ConfigField(default=0.05, required=True)
     wcen_zred_chisq_max = ConfigField(default=100.0, required=True)
     wcen_minlambda = ConfigField(default=10.0, required=True)
@@ -207,7 +208,18 @@ class Configuration(object):
         self.cluster_dtype.extend([('MAG', 'f4', self.nmag),
                                    ('MAG_ERR', 'f4', self.nmag),
                                    ('PZBINS', 'f4', self.npzbins),
-                                   ('PZ', 'f4', self.npzbins)])
+                                   ('PZ', 'f4', self.npzbins),
+                                   ('RA_CENT', 'f8', self.percolation_maxcen),
+                                   ('DEC_CENT', 'f8', self.percolation_maxcen),
+                                   ('ID_CENT', 'i4', self.percolation_maxcen),
+                                   ('LAMBDA_CENT', 'f4', self.percolation_maxcen),
+                                   ('ZLAMBDA_CENT', 'f4', self.percolation_maxcen),
+                                   ('P_CEN', 'f4', self.percolation_maxcen),
+                                   ('Q_CEN', 'f4', self.percolation_maxcen),
+                                   ('P_FG', 'f4', self.percolation_maxcen),
+                                   ('Q_MISS', 'f4'),
+                                   ('P_SAT', 'f4', self.percolation_maxcen),
+                                   ('P_C', 'f4', self.percolation_maxcen)])
         self.member_dtype = copy.copy(member_dtype_base)
         self.member_dtype.extend([('MAG', 'f4', self.nmag),
                                   ('MAG_ERR', 'f4', self.nmag)])
