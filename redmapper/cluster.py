@@ -53,7 +53,10 @@ cluster_dtype_base = [('MEM_MATCH_ID', 'i4'),
                       ('Z_LAMBDA_E_RAW', 'f4'),
                       ('LIM_EXPTIME', 'f4'),
                       ('LIM_LIMMAG', 'f4'),
-                      ('LIM_LIMMAG_HARD', 'f4')]
+                      ('LIM_LIMMAG_HARD', 'f4'),
+                      ('LAMBDA_C', 'f4'),
+                      ('LAMBDA_CE', 'f4'),
+                      ('NCENT_GOOD', 'i2')]
 
 member_dtype_base = [('MEM_MATCH_ID', 'i4'),
                      ('Z', 'f4'),
