@@ -1,20 +1,23 @@
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
 
 import fitsio
 import numpy as np
 import esutil
 import copy
+import sys
 
-from cluster import ClusterCatalog
-from background import Background
-from mask import HPMask
-from galaxy import GalaxyCatalog
-from cluster import Cluster
-from cluster import ClusterCatalog
-from depthmap import DepthMap
-from zlambda import Zlambda
-from zlambda import ZlambdaCorrectionPar
-from cluster_runner import ClusterRunner
+from .cluster import ClusterCatalog
+from .background import Background
+from .mask import HPMask
+from .galaxy import GalaxyCatalog
+from .cluster import Cluster
+from .cluster import ClusterCatalog
+from .depthmap import DepthMap
+from .zlambda import Zlambda
+from .zlambda import ZlambdaCorrectionPar
+from .cluster_runner import ClusterRunner
+from . import centering
 
 class RunPercolation(ClusterRunner):
     """
@@ -72,7 +75,6 @@ class RunPercolation(ClusterRunner):
             self.use_memradius = True
 
         self.use_memlum = False
-        #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
         if (self.config.lval_reference > 0.1):
             self.limlum = self.limlum if self.limlum > 0.1 else 0.1
 
@@ -84,6 +86,9 @@ class RunPercolation(ClusterRunner):
         if self.config.percolation_lmask > 0.0:
             if self.config.percolation_lmask < self.limlum:
                 self.limlum = self.config.percolation_lmask
+
+        self.maxiter = self.config.percolation_niter
+        self.min_lambda = self.config.percolation_minlambda
 
     def _process_cluster(self, cluster):
         bad = False
@@ -133,35 +138,49 @@ class RunPercolation(ClusterRunner):
             self._reset_bad_values()
             return
 
-        # GET CENTERING STRUCTURE HERE
-        # AND THE CENTERING STRUCTURE WILL SET THE CLUSTER PROPERTIES
-
-        if cent.ncent == 0:
+        # Grab the correct centering class here
+        cent = reduce(getattr, self.config.centerclass.split('.'), sys.modules[__name__])(cluster)
+        if not cent.find_center() or cent.ncent==0:
             bad = True
             self._reset_bad_values()
             return
 
-        #cluster.ncent = cent.ncent
-        #cluster.ncent_good = cent.ncent_good
-
-        #cluster.ra = cent.ra[0]
-        #cluster.dec = cent.dec[0]
-
-        #if cent.maxind >= 0:
-            # we have centered on a galaxy, and need to update stats.
-        #    cluster.mag[:] = cluster.neighbors.mag[cent.maxind, :]
-        #    cluster.mag_err[:] = cluster.neighbors.mag[cent.maxind, :]
-        #    cluster.refmag = cluster.neighbors.refmag[cent.maxind]
-        #    cluster.refmag_err = cluster.neighbors.refmag_err[cent.maxind]
-        #    cluster.zred = cluster.neighbors.zred[cent.maxind]
-        #    cluster.zred_e = cluster.neighbors.zred[cent.maxind]
-        #    cluster.zred_chisq = cluster.neighbors.zred_chisq[cent.maxind]
-
-        # Since we changed the center, we need new "dist" values!
-        #  (this uses the new ra/dec)
+        # Record the centering values
+        # update the cluster center!
+        cluster.ra = cent.ra[0]
+        cluster.dec = cent.dec[0]
         cluster.update_neighbors_dist()
 
-        for i in xrange(self.config.percolation_niter):
+        # only update central galaxy values if we centered on a galaxy
+        #  (this is typical, but not required for a centering module)
+        if cent.index[0] >= 0:
+            # check order of index
+            cluster.mag[:] = self.neighbors.mag[cent.index[0], :]
+            cluster.mag_err[:] = self.neighbors.mag[cent.index[0], :]
+            cluster.refmag = self.neighbors.refmag[cent.index[0]]
+            cluster.refmag_err = self.neighbors.refmag_err[cent.index[0]]
+            cluster.ebv_mean = self.neighbors.ebv[cent.index[0]]
+            if self.read_zreds:
+                cluster.zred = self.neighbors.zred[cent.index[0]]
+                cluster.zred_e = self.neighbors.zred_e[cent.index[0]]
+                cluster.zred_chisq = self.neighbors.zred_chisq[cent.index[0]]
+
+            cluster.id_cent[:] = cluster.neighbors.id[cent.index]
+
+        # And update the center info...
+        cluster.ncent_good = cent.ngood
+        cluster.ra_cent[:] = cent.ra
+        cluster.dec_cent[:] = cent.dec
+        cluster.p_cen[:] = cent.p_cen
+        cluster.q_cen[:] = cent.q_cen
+        cluster.p_fg[:] = cent.p_fg
+        cluster.q_miss = cent.q_miss
+        cluster.p_sat[:] = cent.p_sat
+        cluster.p_c[:] = cent.p_c
+
+        # now we iterate over the new center to get the redshift
+
+        for i in xrange(self.maxiter):
             if cluster.redshift < 0.0:
                 bad = True
             if bad:
@@ -185,7 +204,7 @@ class RunPercolation(ClusterRunner):
                 lc, = np.where(cluster.r < 1.1 * rmask)
             else:
                 # previous iteration -- leave cushion for getting bigger
-                lc, = np.where(cluster.r < 2.0 * rlambda)
+                lc, = np.where(cluster.r < 2.0 * cluster.r_lambda)
 
             if lc.size < 2:
                 bad = True
@@ -199,5 +218,50 @@ class RunPercolation(ClusterRunner):
                 continue
 
             if i == 0:
+                # Maybe this is i less than maxiter??
                 # Only on the first iteration -- with new center -- is this necessary
-                pass
+                zlam = Zlambda(cluster)
+                z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.redshift, self.mask,
+                                                         calc_err=True, calcpz=True)
+                cluster.pzbins[:] = zlam.pzbins
+                cluster.pz[:] = zlam.pz
+
+            if not self.keepz:
+                cluster.redshift = z_lambda
+
+            if cluster.redshift < 0.0:
+                bad = True
+                continue
+
+        # and we're done with the iteration loop
+
+        # We need to compute richness for other possible centers!
+        cluster.lambda_cent[0] = cluster.Lambda
+        cluster.zlambda_cent[0] = cluster.z_lambda
+        if cluster.ncent_good > 1:
+            for ce in xrange(1,cluster.ncent_good):
+                cluster_temp = cluster.copy()
+                cluster_temp.ra = cluster.ra_cent[ce]
+                cluster_temp.dec = cluster.dec_cent[ce]
+                cluster_temp.update_neighbors_dist()
+
+                clc, = np.where(cluster_temp.neighbors.r < 1.5*cluster.r_lambda)
+                lam = cluster_temp.calc_richness(self.mask, calc_err=False, idx=clc)
+                cluster.lambda_cent[ce] = lam
+
+                if ce == 1:
+                    # For just the first alternate center compute z_lambda (for speed)
+                    zlam = Zlambda(cluster_temp)
+                    z_lambda, _ = zlam.calc_zlambda(cluster.redshift, self.mask, calc_err=False, calpz=False)
+                    cluster.zlambda_cent[ce] = z_lambda
+
+            # And the overall average over the centers...
+            cluster.lambda_c = np.sum(cluster.p_cen * cluster.lambda_cent)
+            cluster.lambda_ce = np.sqrt(np.sum(cluster.p_cen * cluster.lambda_cent**2.) - cluster.lambda_c**2.)
+        else:
+            # There's just one possible center...
+            cluster.lambda_c = cluster.Lambda
+            cluster.lambda_ce = 0.0
+
+
+        # Everything else should be taken care of by cluster_runner
