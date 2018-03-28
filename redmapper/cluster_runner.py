@@ -314,6 +314,7 @@ class ClusterRunner(object):
                 mem_temp.mag[:, :] = cluster.neighbors.mag[memuse, :]
                 mem_temp.mag_err[:, :] = cluster.neighbors.mag_err[memuse, :]
 
+                # Worried this is going to be slow...
                 if self.members is None:
                     self.members = mem_temp
                 else:
