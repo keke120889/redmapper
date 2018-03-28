@@ -1,20 +1,21 @@
-from __future__ import print_function
+from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
 
 import fitsio
 import numpy as np
 import esutil
 
-from cluster import ClusterCatalog
-from catalog import Catalog
-from background import Background
-from mask import HPMask
-from galaxy import GalaxyCatalog
-from cluster import Cluster
-from cluster import ClusterCatalog
-from depthmap import DepthMap
-from zlambda import Zlambda
-from zlambda import ZlambdaCorrectionPar
-from cluster_runner import ClusterRunner
+from .cluster import ClusterCatalog
+from .catalog import Catalog
+from .background import Background
+from .mask import HPMask
+from .galaxy import GalaxyCatalog
+from .cluster import Cluster
+from .cluster import ClusterCatalog
+from .depthmap import DepthMap
+from .zlambda import Zlambda
+from .zlambda import ZlambdaCorrectionPar
+from .cluster_runner import ClusterRunner
 
 class RunFirstPass(ClusterRunner):
     """
