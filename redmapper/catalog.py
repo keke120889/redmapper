@@ -60,6 +60,13 @@ class DataObject(object):
         return cls(array)
 
     @classmethod
+    def from_fits_ext(cls, fits_ext):
+        """
+        """
+        array = fits_ext.read()
+        return cls(array)
+
+    @classmethod
     def zeros(cls, size, dtype):
         return cls(np.zeros(size, dtype=dtype))
 
