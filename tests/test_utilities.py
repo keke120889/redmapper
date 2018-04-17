@@ -4,6 +4,7 @@ from past.builtins import xrange
 import unittest
 import numpy.testing as testing
 import numpy as np
+import fitsio
 
 import redmapper
 
@@ -57,6 +58,24 @@ class FunctionsTestCase(unittest.TestCase):
         testing.assert_almost_equal(redmapper.utilities.astro_to_sphere(ra,dec),np.array([ 0.5936,  0.7003]),decimal=4)
         #Need a test for chisq_pdf
         #TO DO
+
+class CicTestCase(unittest.TestCase):
+    def runTest(self):
+        incat = fitsio.read('data_for_tests/test_cic_small.fits', ext=1)
+
+        posx = incat[0]['POSX']
+        nx = incat[0]['NX']
+        posy = incat[0]['POSY']
+        ny = incat[0]['NY']
+        posz = incat[0]['POSZ']
+        nz = incat[0]['NZ']
+        value = np.ones(posx.size)
+
+        field = redmapper.utilities.cic(value, posx, nx, posy, ny, posz, nz)
+        avfield = redmapper.utilities.cic(value, posx, nx, posy, ny, posz, nz, average=True)
+        testing.assert_almost_equal(field, incat[0]['FIELD'], decimal=6)
+        testing.assert_almost_equal(avfield, incat[0]['AVFIELD'], decimal=6)
+
 
 
 # copy this for a new utility test
