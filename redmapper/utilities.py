@@ -212,6 +212,10 @@ def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False,
 
     return mag, mag_err
 
+#####################
+## IDL interpol
+#####################
+
 def interpol(v, x, xout):
     """
     """
@@ -224,3 +228,211 @@ def interpol(v, x, xout):
     diff = v[s + 1] - v[s]
 
     return (xout - x[s]) * diff / (x[s + 1] - x[s]) + v[s]
+
+#####################
+## IDL cic
+#####################
+
+def cic(value, posx=None, nx=None, posy=None, ny=None, posz=None, nz=None, average=False, isolated=True):
+    """
+    Port of idl astronomy utils cic.pro
+    """
+
+    # need type checks
+
+    nrsamples = value.size
+    dim = 0
+    if (posx is not None and nx is not None):
+        dim += 1
+    if (posy is not None and ny is not None):
+        dim += 1
+    if (posz is not None and nz is not None):
+        dim += 1
+
+    if dim <= 2:
+        nz = 1
+        if dim == 1:
+            ny = 1
+
+    nxny = nx * ny
+
+    # X-direction
+
+    # coordinates of nearest grid point (ngp)
+    ngx = posx.astype(np.int32) + 0.5
+
+    # distance from sample to ngp
+    dngx = ngx - posx
+
+    # Index of ngp
+    kx1 = ngx - 0.5
+    # weight of ngp
+    wx1 = 1.0 - np.abs(dngx)
+
+    # other side
+    left, = np.where(dngx < 0.0)
+    # The following is only correct if x(ngp)>posx (ngp to the right).
+    kx2 = kx1 - 1
+    # Correct points where x(ngp)<posx (ngp to the left).
+    if left.size > 0:
+        kx2[left] += 2
+    wx2 = np.abs(dngx)
+
+    # free memory
+    left = None
+
+    bad, = np.where(kx2 == -1)
+    if bad.size > 0:
+        kx2[bad] = nx - 1
+        if isolated:
+            wx2[bad] = 0.0
+    bad, = np.where(kx2 == nx)
+    if bad.size > 0:
+        kx2[bad] = 0
+        if isolated:
+            wx2[bad] = 0.0
+    bad = None
+
+    # Y-direction
+
+    if dim >= 2:
+        ngy = posy.astype(np.int32) + 0.5
+
+        # distance from sample to ngp
+        dngy = ngy - posy
+
+        # Index of ngp
+        ky1 = ngy - 0.5
+        # weight of ngp
+        wy1 = 1.0 - np.abs(dngy)
+
+        # other side
+        left, = np.where(dngy < 0.0)
+        # The following is only correct if y(ngp)>posy (ngp to the right).
+        ky2 = ky1 - 1
+        # Correct points where x(ngp)<posx (ngp to the left).
+        if left.size > 0:
+            ky2[left] += 2
+        wy2 = np.abs(dngy)
+
+        # free memory
+        left = None
+
+        bad, = np.where(ky2 == -1)
+        if bad.size > 0:
+            ky2[bad] = ny - 1
+            if isolated:
+                wy2[bad] = 0.0
+        bad, = np.where(ky2 == ny)
+        if bad.size > 0:
+            ky2[bad] = 0
+            if isolated:
+                wy2[bad] = 0.0
+        bad = None
+    else:
+        ky1 = 0
+        ky2 = 0
+        wy1 = 1
+        wy2 = 1
+
+    # Z-direction
+
+    if dim == 3:
+        ngz = posz.astype(np.int32) + 0.5
+
+        # distance from sample to ngp
+        dngz = ngz - posz
+
+        # Index of ngp
+        kz1 = ngz - 0.5
+        # weight of ngp
+        wz1 = 1.0 - np.abs(dngz)
+
+        # other side
+        left, = np.where(dngz < 0.0)
+        # The following is only correct if z(ngp)>posz (ngp to the right).
+        kz2 = kz1 - 1
+        # Correct points where z(ngp)<posz (ngp to the left).
+        if left.size > 0:
+            kz2[left] += 2
+        wz2 = np.abs(dngz)
+
+        # free memory
+        left = None
+
+        bad, = np.where(kz2 == -1)
+        if bad.size > 0:
+            kz2[bad] = nz - 1
+            if isolated:
+                wz2[bad] = 0.0
+        bad, = np.where(kz2 == nz)
+        if bad.size > 0:
+            kz2[bad] = 0
+            if isolated:
+                wz2[bad] = 0.0
+        bad = None
+    else:
+        kz1 = 0
+        kz2 = 0
+        wz1 = 1
+        wz2 = 1
+
+    # Interpolate samples to grid
+
+    field = np.zeros(nx * ny * nz)
+
+    if average:
+        totcicweight = np.zeros_like(field)
+
+    index = (kx1 + ky1*nx + kz1 * nxny).astype(np.int32)
+    cicweight = wx1 * wy1 * wz1
+    np.add.at(field, index, cicweight * value)
+    if average:
+        np.add.at(totcicweight, index, cicweight)
+
+    index = (kx2 + ky1 * nx + kz1 * nxny).astype(np.int32)
+    cicweight = wx2 * wy1 * wz1
+    np.add.at(field, index, cicweight * value)
+    if average:
+        np.add.at(totcicweight, index, cicweight)
+
+    if dim >= 2:
+        index = (kx1 + ky2*nx + kz1*nxny).astype(np.int32)
+        cicweight = wx1 * wy2 * wz1
+        np.add.at(field, index, cicweight * value)
+        if average:
+            np.add.at(totcicweight, index, cicweight)
+        index = (kx2 + ky2*nx + kz1*nxny).astype(np.int32)
+        cicweight = wx2 * wy2 * wz1
+        np.add.at(field, index, cicweight * value)
+        if average:
+            np.add.at(totcicweight, index, cicweight)
+        if dim == 3:
+            index = (kx1 + ky1 * nx + kz2 * nxny).astype(np.int32)
+            cicweight = wx1 * wy1 * wz2
+            np.add.at(field, index, cicweight * value)
+            if average:
+                np.add.at(totcicweight, index, cicweight)
+            index = (kx2 + ky1 * nx + kz2 * nxny).astype(np.int32)
+            cicweight = wx2 * wy1 * wz2
+            np.add.at(field, index, cicweight * value)
+            if average:
+                np.add.at(totcicweight, index, cicweight)
+            index = (kx1 + ky2 * nx + kz2 * nxny).astype(np.int32)
+            cicweight = wx1 * wy2 * wz2
+            np.add.at(field, index, cicweight * value)
+            if average:
+                np.add.at(totcicweight, index, cicweight)
+            index = (kx2 + ky2 * nx + kz2 * nxny).astype(np.int32)
+            cicweight = wx2 * wy2 * wz2
+            np.add.at(field, index, cicweight * value)
+            if average:
+                np.add.at(totcicweight, index, cicweight)
+
+    index = None
+
+    if average:
+        good, = np.where(totcicweight != 0)
+        field[good] /= totcicweight[good]
+
+    return field.reshape((nz, ny, nx))
