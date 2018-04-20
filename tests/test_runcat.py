@@ -57,3 +57,5 @@ class RuncatTestCase(unittest.TestCase):
         #testing.assert_almost_equal(runcat.cat.z_lambda_e, [ 0.00629484,  0.01389629, -1.0])
         testing.assert_almost_equal(runcat.cat.z_lambda_e, [ 0.00629484,  0.0139078, -1.0])
 
+if __name__=='__main__':
+    unittest.main()
