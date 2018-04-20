@@ -39,7 +39,7 @@ class GalaxyCatalog(Catalog):
         #self._smatch_nside = 4096 if 'smatch_nside' not in kwargs else kwargs['smatch_nside']
 
     @classmethod
-    def from_galfile(cls, filename, nside=0, hpix=None, border=0.0):
+    def from_galfile(cls, filename, nside=0, hpix=0, border=0.0):
         """
         Name:
             from_galfile
@@ -58,8 +58,12 @@ class GalaxyCatalog(Catalog):
         Outputs:
             A galaxy catalog object
         """
+        if hpix == 0:
+            _hpix = None
+        else:
+            _hpix = hpix
         # do we have appropriate keywords
-        if hpix is not None and nside is None:
+        if _hpix is not None and nside is None:
             raise ValueError("If hpix is specified, must also specify nside")
         if border < 0.0:
             raise ValueError("Border must be >= 0.0.")
@@ -67,8 +71,8 @@ class GalaxyCatalog(Catalog):
         if nside > 0:
             if not hp.isnsideok(nside):
                 raise ValueError("Nside not valid")
-            if hpix is not None:
-                if hpix < 0 or hpix >= hp.nside2npix(nside):
+            if _hpix is not None:
+                if _hpix < 0 or _hpix >= hp.nside2npix(nside):
                     raise ValueError("hpix out of range.")
 
         # check that the file is there and the right format
@@ -90,17 +94,17 @@ class GalaxyCatalog(Catalog):
 
         # which files do we want to read?
         path = os.path.dirname(os.path.abspath(filename))
-        if hpix is None:
+        if _hpix is None:
             # all of them!
             indices = np.arange(tab[0]['FILENAMES'].size)
         else:
             # first we need all the pixels that are contained in the big pixel
             theta, phi = hp.pix2ang(nside_tab, tab[0]['HPIX'])
             ipring_big = hp.ang2pix(nside, theta, phi)
-            indices, = np.where(ipring_big == hpix)
+            indices, = np.where(ipring_big == _hpix)
             if border > 0.0:
                 # now we need to find the extra boundary...
-                boundaries = hp.boundaries(nside, hpix, step=nside_tab/nside)
+                boundaries = hp.boundaries(nside, _hpix, step=nside_tab/nside)
                 inhpix = tab[0]['HPIX'][indices]
                 for i in xrange(boundaries.shape[1]):
                     pixint = hp.query_disc(nside_tab, boundaries[:,i],
