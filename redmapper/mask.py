@@ -131,21 +131,28 @@ class HPMask(Mask):
         maskinfo, hdr = fitsio.read(config.maskfile, ext=1, header=True)
         # maskinfo converted to a catalog (array of Entrys)
         maskinfo = Catalog(maskinfo)
-        nlim, nside, nest = maskinfo.hpix.size, hdr['NSIDE'], hdr['NEST']
-        hpix_ring = maskinfo.hpix if nest != 1 else hp.nest2ring(nside, maskinfo.hpix)
-        muse = np.arange(nlim)
+        nside_mask = hdr['NSIDE']
+        nest = hdr['NEST']
+
+        hpix_ring = maskinfo.hpix if nest != 1 else hp.nest2ring(nside_mask, maskinfo.hpix)
 
         # if we have a sub-region of the sky, cut down the mask to save memory
         if config.hpix > 0:
-            border = config.border + hp.nside2resol(nside)
+            print("I'm here!")
+            border = np.radians(config.border) + hp.nside2resol(nside_mask)
             theta, phi = hp.pix2ang(config.nside, config.hpix)
             radius = np.sqrt(2) * (hp.nside2resol(config.nside)/2. + border)
-            pixint = hp.query_disc(nside, hp.ang2vec(theta, phi), 
-                                        np.radians(radius), inclusive=False)
-            muse, = esutil.numpy_util.match(hpix_ring, pixint)
+            pixint = hp.query_disc(nside_mask, hp.ang2vec(theta, phi),
+                                   radius, inclusive=False)
+            suba, subb = esutil.numpy_util.match(pixint, hpix_ring)
+            hpix_ring = hpix_ring[subb]
+            muse = subb
+        else:
+            print("No, I'm here.")
+            muse = np.arange(hpix_ring.size, dtype='i4')
 
         offset, ntot = np.min(hpix_ring)-1, np.max(hpix_ring)-np.min(hpix_ring)+3
-        self.nside = nside
+        self.nside = nside_mask
         self.offset = offset
         self.npix = ntot
 
