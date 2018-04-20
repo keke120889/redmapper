@@ -170,6 +170,58 @@ class ColorBackground(object):
 
         return bkg['bc'][refmagindex, col_index2, col_index1] / bkg['n'][refmagindex]
 
-    
+class ColorBackgroundGenerator(object):
+    """
+    """
+
+    def __init__(self, config):
+        self.config = config
+
+    def run(self, clobber=False):
+        """
+        """
+
+        # Check if it's already there...
+        if not clobber and os.path.isfile(self.config.bkgfile_color):
+            print("Found %s and clobber is False" % (self.config.bkgfile_color))
+
+        # read in the galaxies
+        gals = GalaxyCatalog.from_galfile(self.config.galfile,
+                                          nside=self.config.nside,
+                                          hpix=self.config.hpix,
+                                          border=self.config.border)
+
+        # Generate ranges based on the data
+        refmagbinsize = 0.1
+
+        refmagrange = np.array([12.0, self.config.limmag])
+
+        nmag = self.config.nmag
+        ncol = nmag - 1
+
+        col = gals.galcol
+
+        colrange_default = np.array([-2.0, 5.0])
+
+        colranges = np.zeros((2, ncol))
+        colbinsize = 0.1
+        for i in xrange(ncol):
+            use, = np.where((col[:, i] > colrange_default[0]) &
+                            (col[:, i] < colrange_default[1]) &
+                            (gals.refmag < (self.config.limmag - 0.5)))
+
+            h = esutil.stat.histogram(col[use, i], min=colrange_default[0],
+                                      max=colrange_default[1], binsize=colbinsize)
+            bins = np.arange(h.size) * colbinsize + colrange_default[0]
+
+            good, = np.where(h > 1000)
+
+            colranges[0, i] = np.min(bins[good])
+            colranges[1, i] = np.max(bins[good]) + colbinsize
+
+        nrefmag = np.ceil((refmagrange[1] - refmagrange[0]) / refmagbinsize).astype(np.int32)
+        refmagbins = np.arange(nrefmag) * refmagbinsize + refmagrange[0]
+
+        
 
 
