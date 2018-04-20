@@ -79,5 +79,17 @@ class MaskTestCase(unittest.TestCase):
 
         testing.assert_equal(mask.compute_radmask(RAs, Decs), comp)
 
+        # And test that we're getting the right numbers from a sub-mask
+        config2 = Configuration(file_path + "/" + conf_filename)
+        config2.hpix = 582972
+        config2.nside = 1024
+        config2.border = 0.02
+        mask2 = get_mask(config2)
+
+        comp = np.array([False, True, True, True, False])
+        testing.assert_equal(mask2.compute_radmask(RAs, Decs), comp)
+
+
+
 if __name__=='__main__':
     unittest.main()
