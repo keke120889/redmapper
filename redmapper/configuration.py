@@ -21,15 +21,15 @@ class ConfigField(object):
         self._required = required
         self._array_length = array_length
 
-        _default = default
+        self._default = default
         if isArray:
             if default is not None:
-                _default = np.atleast_1d(default)
+                self._default = np.atleast_1d(default)
             if self._value is not None:
                 self._value = np.atleast_1d(self._value)
 
         if self._value is None:
-            self._value = _default
+            self._value = self._default
 
     def __get__(self, obj, type=None):
         return self._value
@@ -44,6 +44,9 @@ class ConfigField(object):
             except:
                 pass
             self._value = value
+
+    def reset(self):
+        self._value = self._default
 
     def validate(self, name):
         if self._required:
@@ -100,10 +103,13 @@ class Configuration(object):
     outbase = ConfigField(required=True)
     parfile = ConfigField()
     bkgfile = ConfigField()
+    bkgfile_color = ConfigField()
     zlambdafile = ConfigField()
     maskfile = ConfigField()
     depthfile = ConfigField()
     wcenfile = ConfigField()
+
+    outpath = ConfigField(default='./', required=True)
 
     border = ConfigField(default=0.0, required=True)
     hpix = ConfigField(default=0, required=True)
@@ -183,6 +189,8 @@ class Configuration(object):
 
     def __init__(self, configfile):
 
+        self._reset_vars()
+
         # First, read in the yaml file
         confdict = read_yaml(configfile)
 
@@ -238,6 +246,13 @@ class Configuration(object):
         for var in type(self).__dict__:
             try:
                 type(self).__dict__[var].validate(var)
+            except AttributeError:
+                pass
+
+    def _reset_vars(self):
+        for var in type(self).__dict__:
+            try:
+                type(self).__dict__[var].reset()
             except AttributeError:
                 pass
 
