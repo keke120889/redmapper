@@ -5,6 +5,7 @@ import fitsio
 import healpy as hp
 import numpy as np
 from healpy import pixelfunc
+import esutil
 
 from .utilities import astro_to_sphere
 from .catalog import Catalog, Entry
@@ -28,34 +29,72 @@ class DepthMap(object):
         # convert into catalog for convenience...
         depthinfo = Catalog(depthinfo)
 
-        nlim        = depthinfo.hpix.size
-        nside       = hdr['NSIDE']
-        nest        = hdr['NEST']
-        self.nsig   = hdr['NSIG']
-        self.zp     = hdr['ZP']
-        self.nband  = hdr['NBAND']
-        self.w      = hdr['W']
-        self.eff    = hdr['EFF']
+        #self.npix = depthinfo.hpix.size
+        nside_mask = hdr['NSIDE']
+        nest = hdr['NEST']
+        self.nsig = hdr['NSIG']
+        self.zp = hdr['ZP']
+        self.nband = hdr['NBAND']
+        self.w = hdr['W']
+        self.eff = hdr['EFF']
+
+        self.config_area = config.area
+        self.hpix = config.hpix
 
         if nest != 1:
             hpix_ring = depthinfo.hpix
         else:
-            hpix_ring = hp.nest2ring(nside, depthinfo.hpix)
-
-        muse = np.arange(nlim)
+            hpix_ring = hp.nest2ring(nside_mask, depthinfo.hpix)
 
         # if we have a sub-region of the sky, cut down mask to save memory
         if config.hpix > 0:
-            border = config.border + hp.nside2resol(nside)
+            border = np.radians(config.border) + hp.nside2resol(nside_mask)
             theta, phi = hp.pix2ang(config.nside, config.hpix)
             radius = np.sqrt(2) * (hp.nside2resol(config.nside)/2. + border)
-            pixint = hp.query_disc(nside, hp.ang2vec(theta, phi), 
-                                        np.radians(radius), inclusive=False)
-            muse, = esutil.numpy_util.match(hpix_ring, pixint)
+            pixint = hp.query_disc(nside_mask, hp.ang2vec(theta, phi),
+                                   radius, inclusive=False)
+            suba, subb = esutil.numpy_util.match(pixint, hpix_ring)
+            hpix_ring = hpix_ring[subb]
+            duse = subb
+        else:
+            duse = np.arange(hpix_ring.size, dtype='i4')
+
+        self.nside = nside_mask
+        self.offset = np.min(hpix_ring) - 1
+        self.ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
+
+        self.npix = hpix_ring.size
+
+        self.fracgood = np.zeros(self.npix + 1, dtype='f4')
+        try:
+            self.fracgood_float = 1
+            self.fracgood[0:self.npix] = depthinfo[duse].fracgood
+        except AttributeError:
+            self.fracgood_float = 0
+            self.fracgood[0:self.npix] = 0
+
+        self.exptime = np.zeros(self.npix + 1, dtype='f4')
+        self.exptime[0:self.npix] = depthinfo[duse].exptime
+        self.limmag = np.zeros(self.npix + 1, dtype='f4')
+        self.limmag[0:self.npix] = depthinfo[duse].limmag
+        self.m50 = np.zeros(self.npix + 1, dtype='f4')
+        self.m50[0:self.npix] = depthinfo[duse].m50
+
+        # And the overflow bins
+        self.fracgood[self.npix] = hp.UNSEEN
+        self.exptime[self.npix] = hp.UNSEEN
+        self.limmag[self.npix] = hp.UNSEEN
+        self.m50[self.npix] = hp.UNSEEN
+
+        # The look-up table
+        #  Set default to overflow bin
+        self.hpix_to_index = np.zeros(self.ntot, dtype='i4') + self.npix
+        self.hpix_to_index[hpix_ring - self.offset] = np.arange(self.npix)
+
+        """
 
         offset = np.min(hpix_ring)-1
         ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
-        self.nside = nside
         self.offset = offset
         self.ntot = ntot
 
@@ -75,13 +114,21 @@ class DepthMap(object):
         self.limmag[hpix_ring-offset] = depthinfo[muse].limmag
         self.m50 = np.zeros(ntot,dtype='f4')
         self.m50[hpix_ring-offset] = depthinfo[muse].m50
+        """
 
+    def get_depth_values(self, ras, decs):
+        """
+        """
 
-    def get_depth(self, ra=None, dec=None, theta=None, phi=None, ipring=None):
-        # require ra/dec or theta/phi and check
+        theta = (90.0 - decs) * np.pi / 180.
+        phi = ras * np.pi / 180.
 
-        # return depth info
-        pass
+        ipring_offset = np.clip(hp.ang2pix(self.nside, theta, phi) - self.offset,
+                                0, self.ntot - 1)
+
+        return (self.limmag[self.hpix_to_index[ipring_offset]],
+                self.exptime[self.hpix_to_index[ipring_offset]],
+                self.m50[self.hpix_to_index[ipring_offset]])
 
 
     def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):
@@ -101,8 +148,8 @@ class DepthMap(object):
         # compute ra and dec based on maskgals
         ras = ra + (maskgals.x/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
         decs = dec + maskgals.y/(mpc_scale*3600.)
-        theta = (90.0 - decs)*np.pi/180.
-        phi = ras*np.pi/180.
+        #theta = (90.0 - decs)*np.pi/180.
+        #phi = ras*np.pi/180.
 
         maskgals.w[:] = self.w
         maskgals.eff = None
@@ -110,13 +157,15 @@ class DepthMap(object):
         maskgals.zp[0] = self.zp
         maskgals.nsig[0] = self.nsig
 
-        theta, phi = astro_to_sphere(ras, decs)
-        ipring = hp.ang2pix(self.nside, theta, phi)
-        ipring_offset = np.clip(ipring - self.offset, 0, self.ntot-1)
+        #theta, phi = astro_to_sphere(ras, decs)
+        #ipring = hp.ang2pix(self.nside, theta, phi)
+        #ipring_offset = np.clip(ipring - self.offset, 0, self.ntot-1)
 
-        maskgals.limmag     = self.limmag[ipring_offset]
-        maskgals.exptime    = self.exptime[ipring_offset]
-        maskgals.m50        = self.m50[ipring_offset]
+        #maskgals.limmag = self.limmag[self.hpix_to_index[ipring_offset]]
+        #maskgals.exptime = self.exptime[self.hpix_to_index[ipring_offset]]
+        #maskgals.m50 = self.m50[self.hpix_to_index[ipring_offset]]
+
+        maskgals.limmag, maskgals.exptime, maskgals.m50 = self.get_depth_values(ras, decs)
 
         bd, = np.where(maskgals.limmag < 0.0)
         ok = np.delete(np.copy(maskgals.limmag), bd)
@@ -135,7 +184,30 @@ class DepthMap(object):
                 maskgals.m50[bd] = mean(maskgals.m50[ok])
             else:
                 # very bad
-                ok = where(depthstr.limmag > 0.0)
-                maskgals.limmag = depthstr.limmag_default
-                maskgals.exptime = depthstr.exptime_default
-                maskgals.m50 = depthstr.m50_default
+                raise RuntimeError("This shouldn't get here...")
+                #ok, = np.where(self.limmag > 0.0)
+                #maskgals.limmag = self.limmag_default
+                #maskgals.exptime = depthstr.exptime_default
+                #maskgals.m50 = depthstr.m50_default
+
+    def calc_areas(self, mags):
+        """
+        """
+
+        pixsize = hp.nside2pixarea(self.nside, degrees=True)
+
+        if (self.w < 0.0):
+            # This is just constant area
+            areas = np.zeros(mags.size) + self.config_area
+            return areas
+
+        if self.hpix > 0:
+            # We need to deal with the sub-region
+            pass
+        else:
+            muse = np.arange(self.npix)
+
+        areas = np.zeros(mags.size)
+
+        #gd, = np.where((self.m50
+
