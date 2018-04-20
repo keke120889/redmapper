@@ -106,7 +106,10 @@ class ClusterRunner(object):
         # Use self.read_zreds to know if we should read them!
         # And self.zreds_required to know if we *must* read them
 
-        self.gals = GalaxyCatalog.from_galfile(self.config.galfile)
+        self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
+                                               nside=self.config.nside,
+                                               hpix=self.config.hpix,
+                                               border=self.config.border)
 
         # default limiting luminosity
         self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
