@@ -34,6 +34,12 @@ class DepthMapTestCase(unittest.TestCase):
         testing.assert_almost_equal(exptime, comp_exptime, 4)
         testing.assert_almost_equal(m50, comp_m50, 4)
 
+        # And check the areas...
+        mags = np.array([20.0, 20.2, 20.4, 20.6, 20.8, 21.0])
+        areas_idl = np.array([3.29709, 3.29709, 3.29709, 3.29709, 2.86089, 0.0603447])
+        areas = depthstr.calc_areas(mags)
+        testing.assert_almost_equal(areas, areas_idl, 4)
+
         config2 = Configuration(file_path + "/" + conf_filename)
         config2.hpix = 582972
         config2.nside = 1024

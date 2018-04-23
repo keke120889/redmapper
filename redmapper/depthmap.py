@@ -205,9 +205,24 @@ class DepthMap(object):
             # We need to deal with the sub-region
             pass
         else:
-            muse = np.arange(self.npix)
+            use = np.arange(self.ntot)
 
         areas = np.zeros(mags.size)
 
-        #gd, = np.where((self.m50
+        gd, = np.where((self.m50[self.hpix_to_index[use]] >= 0.0))
+
+        depths = self.m50[self.hpix_to_index[use[gd]]]
+        st = np.argsort(depths)
+        depths = depths[st]
+
+        fracgoods = self.fracgood[self.hpix_to_index[use[gd[st]]]]
+
+        inds = np.clip(np.searchsorted(depths, mags) - 1, 1, depths.size - 1)
+
+        lo = (inds < 0)
+        areas[lo] = np.sum(fracgoods) * pixsize
+        carea = pixsize * np.cumsum(fracgoods)
+        areas[~lo] = carea[carea.size - inds[~lo]]
+
+        return areas
 
