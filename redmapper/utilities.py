@@ -435,4 +435,9 @@ def cic(value, posx=None, nx=None, posy=None, ny=None, posz=None, nz=None, avera
         good, = np.where(totcicweight != 0)
         field[good] /= totcicweight[good]
 
-    return field.reshape((nz, ny, nx))
+    if dim == 1:
+        return field
+    elif dim == 2:
+        return field.reshape((ny, nx))
+    else:
+        return field.reshape((nz, ny, nx))
