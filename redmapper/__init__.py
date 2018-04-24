@@ -19,4 +19,4 @@ from .cluster_runner import ClusterRunner
 from .zred_color import ZredColor
 from .centering import Centering, CenteringWcenZred, CenteringBCG
 from .depthmap import DepthMap
-from .color_background import ColorBackground
+from .color_background import ColorBackground, ColorBackgroundGenerator
