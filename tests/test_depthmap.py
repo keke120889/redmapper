@@ -55,5 +55,13 @@ class DepthMapTestCase(unittest.TestCase):
         testing.assert_almost_equal(exptime2, comp_exptime, 4)
         testing.assert_almost_equal(m502, comp_m50, 4)
 
+        config3 = Configuration(file_path + "/" + conf_filename)
+        config3.hpix = 8421
+        config3.nside = 128
+        config3.border = 0.0
+        depthstr3 = DepthMap(config3)
+        areas3 = depthstr3.calc_areas(np.array([20.0, 20.5, 21.0]))
+        testing.assert_almost_equal(areas3[0], 0.20457271, 6)
+
 if __name__=='__main__':
     unittest.main()
