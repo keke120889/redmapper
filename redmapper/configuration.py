@@ -125,6 +125,7 @@ class Configuration(object):
     zeropoint = ConfigField(required=True)
     survey_mode = ConfigField(required=True)
     b = ConfigField(isArray=True)
+    galfile_nside = ConfigField(required=True)
 
     zrange = ConfigField(isArray=True, array_length=2, required=True)
     lval_reference = ConfigField(default=0.2, required=True)
@@ -297,6 +298,7 @@ class Configuration(object):
             gal_stats['zeropoint'] = hdr.get('ZP')
             gal_stats['ref_ind'] = hdr.get(self.refmag.upper()+'_IND')
             gal_stats['b'] = None
+            gal_stats['galfile_nside'] = 0
 
         else:
             # statistics are from the master table file
@@ -321,6 +323,7 @@ class Configuration(object):
                 gal_stats['b'] = None
             gal_stats['zeropoint'] = master['ZEROPOINT'][0]
             gal_stats['ref_ind'] = master[self.refmag.upper()+'_IND'][0]
+            gal_stats['galfile_nside'] = master['NSIDE'][0]
 
         return gal_stats
 
