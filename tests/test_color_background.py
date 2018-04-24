@@ -5,8 +5,12 @@ import unittest
 import numpy.testing as testing
 import numpy as np
 import fitsio
+import tempfile
+import os
 
 from redmapper import ColorBackground
+from redmapper import ColorBackgroundGenerator
+from redmapper import Configuration
 
 class ColorBackgroundTestCase(unittest.TestCase):
     def runTest(self):
@@ -40,3 +44,41 @@ class ColorBackgroundTestCase(unittest.TestCase):
         py_outputs = cbkg.lookup_offdiag(1, 2, col1, col2, refmags)
         testing.assert_almost_equal(py_outputs, idl_bkg12, decimal=5)
 
+        #####################################################
+        # Now a test of the generation of a color background
+        conf_filename = 'testconfig.yaml'
+        config = Configuration(file_path + "/" + conf_filename)
+
+        tfile = tempfile.mkstemp()
+        os.close(tfile[0])
+        config.bkgfile_color = tfile[1]
+        config.nside = 128
+        config.hpix = 8421
+        config.border = 0.0
+
+        cbg = ColorBackgroundGenerator(config, minrangecheck=5)
+        # Need to set clobber=True because the tempfile was created
+        cbg.run(clobber=True)
+
+        fits = fitsio.FITS(config.bkgfile_color)
+
+        # Make sure we have 11 extensions
+        testing.assert_equal(len(fits), 11)
+
+        # Check the 01_01 and 01_02
+        bkg11 = fits['01_01_REF'].read()
+        bkg11_compare = fitsio.read(file_path + "/test_dr8_bkg_zredc_sub.fits", ext='01_01_REF')
+        testing.assert_almost_equal(bkg11['BC'], bkg11_compare['BC'], 3)
+        testing.assert_almost_equal(bkg11['N'], bkg11_compare['N'], 3)
+
+        bkg12 = fits['01_02_REF'].read()
+        bkg12_compare = fitsio.read(file_path + "/test_dr8_bkg_zredc_sub.fits", ext='01_02_REF')
+
+        testing.assert_almost_equal(bkg12['BC'], bkg12_compare['BC'], 2)
+        testing.assert_almost_equal(bkg12['N'], bkg12_compare['N'], 4)
+
+        # And delete the tempfile
+        os.remove(config.bkgfile_color)
+
+if __name__=='__main__':
+    unittest.main()
