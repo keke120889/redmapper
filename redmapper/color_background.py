@@ -3,9 +3,13 @@ from past.builtins import xrange
 
 import fitsio
 import numpy as np
+import esutil
 
 from .catalog import Entry
 from .utilities import interpol
+from .depthmap import DepthMap
+from .utilities import cic
+from .galaxy import GalaxyCatalog
 
 class ColorBackground(object):
     """
@@ -174,8 +178,9 @@ class ColorBackgroundGenerator(object):
     """
     """
 
-    def __init__(self, config):
+    def __init__(self, config, minrangecheck=1000):
         self.config = config
+        self.minrangecheck = minrangecheck
 
     def run(self, clobber=False):
         """
@@ -194,7 +199,7 @@ class ColorBackgroundGenerator(object):
         # Generate ranges based on the data
         refmagbinsize = 0.1
 
-        refmagrange = np.array([12.0, self.config.limmag])
+        refmagrange = np.array([12.0, self.config.limmag_ref])
 
         nmag = self.config.nmag
         ncol = nmag - 1
@@ -208,13 +213,13 @@ class ColorBackgroundGenerator(object):
         for i in xrange(ncol):
             use, = np.where((col[:, i] > colrange_default[0]) &
                             (col[:, i] < colrange_default[1]) &
-                            (gals.refmag < (self.config.limmag - 0.5)))
+                            (gals.refmag < (self.config.limmag_ref - 0.5)))
 
             h = esutil.stat.histogram(col[use, i], min=colrange_default[0],
                                       max=colrange_default[1], binsize=colbinsize)
             bins = np.arange(h.size) * colbinsize + colrange_default[0]
 
-            good, = np.where(h > 1000)
+            good, = np.where(h > self.minrangecheck)
 
             colranges[0, i] = np.min(bins[good])
             colranges[1, i] = np.max(bins[good]) + colbinsize
@@ -222,6 +227,140 @@ class ColorBackgroundGenerator(object):
         nrefmag = np.ceil((refmagrange[1] - refmagrange[0]) / refmagbinsize).astype(np.int32)
         refmagbins = np.arange(nrefmag) * refmagbinsize + refmagrange[0]
 
-        
+        depthstr = DepthMap(self.config)
+        areas = depthstr.calc_areas(refmagbins)
+
+        for i in xrange(ncol):
+            for j in xrange(i, ncol):
+                if (i == j):
+                    # diagonal
+                    ncoldiag = np.ceil((colranges[1, i] - colranges[0, i]) / colbinsize).astype(np.int32)
+                    coldiagbins = np.arange(ncoldiag) * colbinsize + colranges[0, i]
+                    binsizes = refmagbinsize * colbinsize
+
+                    bad = ((col[:, i] < colranges[0, i]) |
+                           (col[:, i] >= colranges[1, i]) |
+                           (gals.refmag < refmagrange[0]) |
+                           (gals.refmag >= refmagrange[1]))
+
+                    colpos = (col[~bad, i] - colranges[0, i]) * ncoldiag / (colranges[1, i] - colranges[0, i])
+                    refmagpos = (gals[~bad].refmag - refmagrange[0]) * nrefmag / (refmagrange[1] - refmagrange[0])
+
+                    value = np.ones(np.sum(~bad))
+                    print("Running CIC on %d, %d" % (i, j))
+                    field = cic(value, colpos, ncoldiag, refmagpos, nrefmag, isolated=True)
+                    # need to fix cic...
+                    bad = ~np.isfinite(field)
+                    field[bad] = 0.0
+
+                    bc = field.astype(np.float32) / binsizes
+                    n = np.sum(bc, axis=1) * colbinsize
+
+                    outstr = np.zeros(1, dtype=[('COL1', 'i2'),
+                                                ('COL2', 'i2'),
+                                                ('COL_INDEX', 'i2'),
+                                                ('REFMAG_INDEX', 'i2'),
+                                                ('COLBINS', 'f4', coldiagbins.size),
+                                                ('COLRANGE', 'f4', 2),
+                                                ('COLBINSIZE', 'f4'),
+                                                ('REFMAGBINS', 'f4', refmagbins.size),
+                                                ('REFMAGRANGE', 'f4', 2),
+                                                ('REFMAGBINSIZE', 'f4'),
+                                                ('AREAS', 'f4', areas.size),
+                                                ('BC', 'f4', bc.shape),
+                                                ('N', 'f4', n.size)])
+
+                    outstr['COL1'] = i
+                    outstr['COL2'] = j
+                    outstr['COL_INDEX'] = 0
+                    outstr['REFMAG_INDEX'] = 1
+                    outstr['COLBINS'][:] = coldiagbins
+                    outstr['COLRANGE'][:] = colranges[:, i]
+                    outstr['COLBINSIZE'] = colbinsize
+                    outstr['REFMAGBINS'][:] = refmagbins
+                    outstr['REFMAGRANGE'][:] = refmagrange
+                    outstr['REFMAGBINSIZE'] = refmagbinsize
+                    outstr['AREAS'][:] = areas
+                    outstr['BC'][:, :] = bc
+                    outstr['N'][:] = n
+
+                else:
+                    # off-diagonal
+
+                    ncol1 = np.ceil((colranges[1, i] - colranges[0, i]) / colbinsize).astype(np.int32)
+                    col1bins = np.arange(ncol1) * colbinsize + colranges[0, i]
+                    ncol2 = np.ceil((colranges[1, j] - colranges[0, j]) / colbinsize).astype(np.int32)
+                    col2bins = np.arange(ncol2) * colbinsize + colranges[0, j]
+
+                    binsizes = refmagbinsize * colbinsize * colbinsize
+
+                    bad = ((col[:, i] < colranges[0, i]) |
+                           (col[:, i] >= colranges[1, i]) |
+                           (col[:, j] < colranges[0, j]) |
+                           (col[:, j] >= colranges[1, j]) |
+                           (gals.refmag < refmagrange[0]) |
+                           (gals.refmag >= refmagrange[1]))
+
+                    col1pos = (col[~bad, i] - colranges[0, i]) * ncol1 / (colranges[1, i] - colranges[0, i])
+                    col2pos = (col[~bad, j] - colranges[0, j]) * ncol2 / (colranges[1, j] - colranges[0, j])
+                    refmagpos = (gals[~bad].refmag - refmagrange[0]) * nrefmag / (refmagrange[1] - refmagrange[0])
+
+                    value = np.ones(np.sum(~bad))
+                    print("Running CIC on %d, %d" % (i, j))
+                    field = cic(value, col1pos, ncol1, col2pos, ncol2, refmagpos, nrefmag, isolated=True)
+                    bad = ~np.isfinite(field)
+                    field[bad] = 0.0
+
+                    bc = field.astype(np.float32) / binsizes
+                    temp = np.sum(bc, axis=2) * colbinsize
+                    n = np.sum(temp, axis=1) * colbinsize
+
+                    outstr = np.zeros(1, dtype=[('COL1', 'i2'),
+                                                ('COL2', 'i2'),
+                                                ('COL1_INDEX', 'i2'),
+                                                ('COL2_INDEX', 'i2'),
+                                                ('REFMAG_INDEX', 'i2'),
+                                                ('COL1BINS', 'f4', col1bins.size),
+                                                ('COL1RANGE', 'f4', 2),
+                                                ('COL1BINSIZE', 'f4'),
+                                                ('COL2BINS', 'f4', col2bins.size),
+                                                ('COL2RANGE', 'f4', 2),
+                                                ('COL2BINSIZE', 'f4'),
+                                                ('REFMAGBINS', 'f4', refmagbins.size),
+                                                ('REFMAGRANGE', 'f4', 2),
+                                                ('REFMAGBINSIZE', 'f4'),
+                                                ('AREAS', 'f4', areas.size),
+                                                ('BC', 'f4', bc.shape),
+                                                ('N', 'f4', n.size)])
+
+                    outstr['COL1'] = i
+                    outstr['COL2'] = j
+                    outstr['COL1_INDEX'] = 0
+                    outstr['COL2_INDEX'] = 1
+                    outstr['REFMAG_INDEX'] = 2
+                    outstr['COL1BINS'][:] = col1bins
+                    outstr['COL1RANGE'][:] = colranges[:, i]
+                    outstr['COL1BINSIZE'] = colbinsize
+                    outstr['COL2BINS'][:] = col2bins
+                    outstr['COL2RANGE'][:] = colranges[:, j]
+                    outstr['COL2BINSIZE'] = colbinsize
+                    outstr['REFMAGBINS'][:] = refmagbins
+                    outstr['REFMAGRANGE'][:] = refmagrange
+                    outstr['REFMAGBINSIZE'] = refmagbinsize
+                    outstr['AREAS'][:] = areas
+                    outstr['BC'][:, :] = bc
+                    outstr['N'][:] = n
+
+
+                extname = "%02d_%02d_REF" % (i, j)
+                hdr = fitsio.FITSHDR()
+                hdr['AREA'] = self.config.area
+                if i == 0 and j == 0:
+                    startClobber = True
+                else:
+                    startClobber = False
+
+                fitsio.write(self.config.bkgfile_color, outstr, extname=extname, header=hdr, clobber=startClobber)
+
 
 
