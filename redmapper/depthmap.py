@@ -39,7 +39,10 @@ class DepthMap(object):
         self.eff = hdr['EFF']
 
         self.config_area = config.area
-        self.hpix = config.hpix
+        self.submask_hpix = config.hpix
+        self.submask_nside = config.nside
+        self.submask_border = config.border
+        self.galfile_nside = config.galfile_nside
 
         if nest != 1:
             hpix_ring = depthinfo.hpix
@@ -47,10 +50,10 @@ class DepthMap(object):
             hpix_ring = hp.nest2ring(nside_mask, depthinfo.hpix)
 
         # if we have a sub-region of the sky, cut down mask to save memory
-        if config.hpix > 0:
-            border = np.radians(config.border) + hp.nside2resol(nside_mask)
-            theta, phi = hp.pix2ang(config.nside, config.hpix)
-            radius = np.sqrt(2) * (hp.nside2resol(config.nside)/2. + border)
+        if self.submask_hpix > 0:
+            border = np.radians(self.submask_border) + hp.nside2resol(nside_mask)
+            theta, phi = hp.pix2ang(self.submask_nside, self.submask_hpix)
+            radius = np.sqrt(2) * (hp.nside2resol(self.submask_nside)/2. + border)
             pixint = hp.query_disc(nside_mask, hp.ang2vec(theta, phi),
                                    radius, inclusive=False)
             suba, subb = esutil.numpy_util.match(pixint, hpix_ring)
@@ -90,31 +93,6 @@ class DepthMap(object):
         #  Set default to overflow bin
         self.hpix_to_index = np.zeros(self.ntot, dtype='i4') + self.npix
         self.hpix_to_index[hpix_ring - self.offset] = np.arange(self.npix)
-
-        """
-
-        offset = np.min(hpix_ring)-1
-        ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
-        self.offset = offset
-        self.ntot = ntot
-
-        self.fracgood = np.zeros(ntot,dtype='f4')
-
-        # check if we have a fracgood in the input maskinfo
-        try:
-            self.fracgood_float = 1
-            self.fracgood[hpix_ring-offset] = depthinfo[muse].fracgood
-        except AttributeError:
-            self.fracgood_float = 0
-            self.fracgood[hpix_ring-offset] = 1
-
-        self.exptime = np.zeros(ntot,dtype='f4')
-        self.exptime[hpix_ring-offset] = depthinfo[muse].exptime
-        self.limmag = np.zeros(ntot,dtype='f4')
-        self.limmag[hpix_ring-offset] = depthinfo[muse].limmag
-        self.m50 = np.zeros(ntot,dtype='f4')
-        self.m50[hpix_ring-offset] = depthinfo[muse].m50
-        """
 
     def get_depth_values(self, ras, decs):
         """
@@ -201,9 +179,18 @@ class DepthMap(object):
             areas = np.zeros(mags.size) + self.config_area
             return areas
 
-        if self.hpix > 0:
-            # We need to deal with the sub-region
-            pass
+        if self.submask_hpix > 0:
+            # for the subregion, we need the area covered in the main pixel
+            # I'm not sure what to do about border...but you shouldn't
+            # be running this with a subregion with a border
+            if self.submask_border > 0.0:
+                raise ValueError("Cannot run calc_areas() with a subregion with a border")
+
+            hpix = np.arange(self.ntot) + self.offset
+            theta, phi = hp.pix2ang(self.nside, hpix)
+            hpix_submask = hp.ang2pix(self.galfile_nside, theta, phi)
+
+            use, = np.where(hpix_submask == self.submask_hpix)
         else:
             use = np.arange(self.ntot)
 
