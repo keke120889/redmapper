@@ -126,6 +126,7 @@ class Background(object):
         zmin = self.zbins[0]
         chisqindex = np.searchsorted(self.chisqbins, chisq) - 1
         refmagindex = np.searchsorted(self.refmagbins, refmag) - 1
+        # Look into changing to searchsorted
         ind = np.clip(np.round((z-zmin)/(self.zbins[1]-zmin)),0, self.zbins.size-1).astype(np.int32)
 
         badchisq, = np.where((chisq < self.chisqbins[0]) |
