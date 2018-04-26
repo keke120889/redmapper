@@ -76,13 +76,10 @@ class ClusterTestCase(unittest.TestCase):
 
 
         mask = HPMask(cluster.config)
-
-        #mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster._z) / (1 + cluster.z)**2
-        mpc_scale = cluster.mpc_scale
-        mask.set_radmask(cluster, mpc_scale)
+        mask.set_radmask(cluster)
 
         depthstr = DepthMap(cluster.config)
-        depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, mpc_scale)
+        depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, cluster.mpc_scale)
 
         # Test the NFW profile on its own
         #  (this works to 5 decimal places because of the 2*pi*r scaling)
