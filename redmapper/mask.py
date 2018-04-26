@@ -41,15 +41,13 @@ class Mask(object):
         # Tom-where would we generate them from?
         pass
 
-    def set_radmask(self, cluster, mpcscale):
+    def set_radmask(self, cluster):
         """
         Assign mask (0/1) values to maskgals for a given cluster
 
         parameters
         ----------
         cluster: Cluster object
-        mpcscale: float
-            scaling to go from mpc to degrees (check units) at cluster redshift
 
         results
         -------
@@ -58,8 +56,8 @@ class Mask(object):
         """
 
         # note this probably can be in the superclass, no?
-        ras = cluster.ra + self.maskgals.x/(mpcscale*SEC_PER_DEG)/np.cos(np.radians(cluster.dec))
-        decs = cluster.dec + self.maskgals.y/(mpcscale*SEC_PER_DEG)
+        ras = cluster.ra + self.maskgals.x/(cluster.mpc_scale*SEC_PER_DEG)/np.cos(np.radians(cluster.dec))
+        decs = cluster.dec + self.maskgals.y/(cluster.mpc_scale*SEC_PER_DEG)
         self.maskgals.mark = self.compute_radmask(ras,decs)
 
     def calc_maskcorr(self, mstar, maxmag, limmag):
@@ -138,7 +136,6 @@ class HPMask(Mask):
 
         # if we have a sub-region of the sky, cut down the mask to save memory
         if config.hpix > 0:
-            print("I'm here!")
             border = np.radians(config.border) + hp.nside2resol(nside_mask)
             theta, phi = hp.pix2ang(config.nside, config.hpix)
             radius = np.sqrt(2) * (hp.nside2resol(config.nside)/2. + border)
@@ -148,7 +145,6 @@ class HPMask(Mask):
             hpix_ring = hpix_ring[subb]
             muse = subb
         else:
-            print("No, I'm here.")
             muse = np.arange(hpix_ring.size, dtype='i4')
 
         offset, ntot = np.min(hpix_ring)-1, np.max(hpix_ring)-np.min(hpix_ring)+3
