@@ -149,6 +149,27 @@ class ColorBackground(object):
                                   'n': n,
                                   'sigma_g': sigma_g}
 
+    def sigma_g_diagonal(self, bkg_index, colors, refmags):
+        """
+        """
+        bkg = self.bkgs[bkg_index * 100 + bkg_index]
+
+        colindex = np.searchsorted(bkg['colbins'], colors - bkg['colbinsize'])
+        refmagindex = np.searchsorted(bkg['refmagbins'], refmags - bkg['refmagbinsize'])
+        # check for overruns
+        badcol, = np.where((colindex < 0) | (colindex >= bkg['colbins'].size))
+        colindex[badcol] = 0
+        badrefmag, = np.where((refmagindex < 0) | (refmagindex >= bkg['refmagbins'].size))
+        refmagindex[badrefmag] = 0
+
+        sigma_g = bkg['sigma_g'][refmagindex, colindex]
+        sigma_g[badcol] = np.inf
+        sigma_g[badrefmag] = np.inf
+        badcombo, = np.where(sigma_g == 0.0)
+        sigma_g[badcombo] = np.inf
+
+        return sigma_g
+
     def lookup_diagonal(self, bkg_index, colors, refmags):
         """
         """
@@ -158,6 +179,10 @@ class ColorBackground(object):
         col_index = np.clip(np.searchsorted(bkg['colbins'], colors - bkg['colbinsize']), 0, bkg['colbins'].size - 1)
 
         return bkg['bc'][refmagindex, col_index] / bkg['n'][refmagindex]
+
+    def get_colrange(self, bkg_index):
+        bkg = self.bkgs[bkg_index * 100 + bkg_index]
+        return bkg['colrange']
 
     def lookup_offdiag(self, bkg_index1, bkg_index2, colors1, colors2, refmags):
         """
