@@ -139,6 +139,11 @@ class Configuration(object):
     chisq_max = ConfigField(default=20.0, required=True)
     npzbins = ConfigField(default=21, required=True)
 
+    mstar_survey = ConfigField(default='sdss')
+    mstar_band = ConfigField(default='i03')
+
+    calib_lumfunc_alpha = ConfigField(default=-1.0, required=True)
+
     zlambda_pivot = ConfigField(default=30.0, required=True)
     zlambda_binsize = ConfigField(default=0.002, required=True)
     zlambda_maxiter = ConfigField(default=20, required=True)
