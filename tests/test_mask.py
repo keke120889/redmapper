@@ -32,8 +32,6 @@ class MaskTestCase(unittest.TestCase):
         finds if an array of (RA,DEC) pairs are in or out
         of the mask. TODO
 
-        Next test the set_radmask() function. TODO
-
         """
         file_path = "data_for_tests"
         conf_filename = "testconfig.yaml"
