@@ -31,19 +31,36 @@ class RedSequenceColorPar(object):
         (maximum range)
 
     """
-    def __init__(self, filename, zbinsize=None, minsig=0.01, fine=False, zrange=None):
+    def __init__(self, filename, zbinsize=None, minsig=0.01, fine=False, zrange=None, config=None):
 
-        pars,hdr=fitsio.read(filename,ext=1,header=True)
-        try:
-            limmag = hdr['LIMMAG']
-            if (zrange is None):
-                zrange = np.array([hdr['ZRANGE0'],hdr['ZRANGE1']])
-            alpha = hdr['ALPHA']
-            mstar_survey = hdr['MSTARSUR']
-            mstar_band = hdr['MSTARBAN']
-            ncol = hdr['NCOL']
-        except:
-            raise ValueError("Missing field from parameter header.")
+        if filename is None:
+            if config is None:
+                raise ValueError("Must have either filename or config")
+            limmag = config.limmag_catalog
+            if zrange is None:
+                zrange = config.zrange
+            alpha = config.calib_lumfunc_alpha
+            mstar_survey = config.mstar_survey
+            mstar_band = config.mstar_band
+            ncol = config.nmag - 1
+
+            # A compromize zbinsize
+            zbinsize = 0.001
+
+            has_file = False
+        else:
+            pars,hdr=fitsio.read(filename,ext=1,header=True)
+            try:
+                limmag = hdr['LIMMAG']
+                if (zrange is None):
+                    zrange = np.array([hdr['ZRANGE0'],hdr['ZRANGE1']])
+                alpha = hdr['ALPHA']
+                mstar_survey = hdr['MSTARSUR']
+                mstar_band = hdr['MSTARBAN']
+                ncol = hdr['NCOL']
+            except:
+                raise ValueError("Missing field from parameter header.")
+            has_file = True
 
         if len(zrange) != 2:
             raise ValueError("zrange must have 2 elements");
@@ -65,22 +82,23 @@ class RedSequenceColorPar(object):
         nmag = ncol + 1
         self.nmag = nmag
 
-        bvalues=np.zeros(nmag)
-        do_lupcorr = False
-        try:
-            for i in xrange(nmag):
-                bvalues[i] = hdr['BVALUE%1d' % (i+1)]
-            do_lupcorr = True
-        except:
-            bvalues[:] = 0.0
-
-        try:
-            ref_ind = hdr['REF_IND']
-        except:
+        if has_file:
+            bvalues=np.zeros(nmag)
+            do_lupcorr = False
             try:
-                ref_ind = hdr['I_IND']
+                for i in xrange(nmag):
+                    bvalues[i] = hdr['BVALUE%1d' % (i+1)]
+                do_lupcorr = True
             except:
-                raise ValueError("Need REF_IND or I_IND")
+                bvalues[:] = 0.0
+
+            try:
+                ref_ind = hdr['REF_IND']
+            except:
+                try:
+                    ref_ind = hdr['I_IND']
+                except:
+                    raise ValueError("Need REF_IND or I_IND")
 
         nz = np.round((zrange[1]-zrange[0])/zbinsize).astype('i4') #nr of bins
         self.z = zbinsize*np.arange(nz) + zrange[0]                #z bins
@@ -99,6 +117,7 @@ class RedSequenceColorPar(object):
         refmagbinsize=0.01
         if (lowzmode):
             refmagrange=np.array([10.0,limmag],dtype='f4')
+            # FIXME
             lumrefmagrange=np.array([10.0,ms(zrange[1])-2.5*np.log10(0.1)])
         else:
             refmagrange=np.array([12.0,limmag],dtype='f4')
@@ -115,108 +134,109 @@ class RedSequenceColorPar(object):
         self.refmaginteger = (self.refmagbins*self.refmagbinscale).astype(np.int64)
         self.lumrefmaginteger = (self.lumrefmagbins*self.refmagbinscale).astype(np.int64)
 
-        # is this an old or new structure?
-        if 'PIVOTMAG_Z' in pars.dtype.names:
-            refmag_name = 'REFMAG'
-            pivotmag_name = 'PIVOTMAG'
-        else :
-            refmag_name = 'IMAG'
-            pivotmag_name = 'REFMAG'
+        if has_file:
+            # is this an old or new structure?
+            if 'PIVOTMAG_Z' in pars.dtype.names:
+                refmag_name = 'REFMAG'
+                pivotmag_name = 'PIVOTMAG'
+            else :
+                refmag_name = 'IMAG'
+                pivotmag_name = 'REFMAG'
 
-        # mark the extrapolated values
-        self.extrapolated = np.zeros(nz,dtype=np.bool_)
-        loz,=np.where(self.z < np.min(pars[pivotmag_name+'_Z']))
-        hiz,=np.where(self.z > np.max(pars[pivotmag_name+'_Z']))
-        if (loz.size > 0) : self.extrapolated[loz] = True
-        if (hiz.size > 0) : self.extrapolated[hiz] = True
+            # mark the extrapolated values
+            self.extrapolated = np.zeros(nz,dtype=np.bool_)
+            loz,=np.where(self.z < np.min(pars[pivotmag_name+'_Z']))
+            hiz,=np.where(self.z > np.max(pars[pivotmag_name+'_Z']))
+            if (loz.size > 0) : self.extrapolated[loz] = True
+            if (hiz.size > 0) : self.extrapolated[hiz] = True
 
-        # set the pivotmag
-        spl=CubicSpline(pars[0][pivotmag_name+'_Z'],pars[0][pivotmag_name])
-        self.pivotmag = spl(self.z)
+            # set the pivotmag
+            spl=CubicSpline(pars[0][pivotmag_name+'_Z'],pars[0][pivotmag_name])
+            self.pivotmag = spl(self.z)
 
-        # and the max/min refmag
-        spl=CubicSpline(pars[0][pivotmag_name+'_Z'], pars[0]['MAX'+refmag_name])
-        self.maxrefmag = spl(self.z)
-        spl=CubicSpline(pars[0][pivotmag_name+'_Z'], pars[0]['MIN'+refmag_name])
-        self.minrefmag = spl(self.z)
+            # and the max/min refmag
+            spl=CubicSpline(pars[0][pivotmag_name+'_Z'], pars[0]['MAX'+refmag_name])
+            self.maxrefmag = spl(self.z)
+            spl=CubicSpline(pars[0][pivotmag_name+'_Z'], pars[0]['MIN'+refmag_name])
+            self.minrefmag = spl(self.z)
 
-        # c/slope
-        self.c = np.zeros((nz,ncol),dtype=np.float64)
-        self.slope = np.zeros((nz,ncol),dtype=np.float64)
-        for j in xrange(ncol):
-            jstring='%02d' % (j)
-            spl=CubicSpline(pars[0]['Z'+jstring],pars[0]['C'+jstring])
-            self.c[:,j] = spl(self.z)
-            spl=CubicSpline(pars[0]['ZS'+jstring],pars[0]['SLOPE'+jstring])
-            self.slope[:,j] = spl(self.z)
+            # c/slope
+            self.c = np.zeros((nz,ncol),dtype=np.float64)
+            self.slope = np.zeros((nz,ncol),dtype=np.float64)
+            for j in xrange(ncol):
+                jstring='%02d' % (j)
+                spl=CubicSpline(pars[0]['Z'+jstring],pars[0]['C'+jstring])
+                self.c[:,j] = spl(self.z)
+                spl=CubicSpline(pars[0]['ZS'+jstring],pars[0]['SLOPE'+jstring])
+                self.slope[:,j] = spl(self.z)
 
-        # sigma/covmat
-        self.sigma = np.zeros((ncol,ncol,nz),dtype=np.float64)
-        self.covmat = np.zeros((ncol,ncol,nz),dtype=np.float64)
+            # sigma/covmat
+            self.sigma = np.zeros((ncol,ncol,nz),dtype=np.float64)
+            self.covmat = np.zeros((ncol,ncol,nz),dtype=np.float64)
 
-        # diagonals
-        for j in xrange(ncol):
-            spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,j,:])
-            self.sigma[j,j,:] = spl(self.z)
+            # diagonals
+            for j in xrange(ncol):
+                spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,j,:])
+                self.sigma[j,j,:] = spl(self.z)
 
-            self.covmat[j,j,:] = self.sigma[j,j,:]*self.sigma[j,j,:]
+                self.covmat[j,j,:] = self.sigma[j,j,:]*self.sigma[j,j,:]
 
-        # off-diagonals
-        for j in xrange(ncol):
-            for k in xrange(j+1,ncol):
-                spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,k,:])
-                self.sigma[j,k,:] = spl(self.z)
+            # off-diagonals
+            for j in xrange(ncol):
+                for k in xrange(j+1,ncol):
+                    spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,k,:])
+                    self.sigma[j,k,:] = spl(self.z)
 
-                too_high,=np.where(self.sigma[j,k,:] > 0.9)
-                if (too_high.size > 0):
-                    self.sigma[j,k,too_high] = 0.9
-                too_low,=np.where(self.sigma[j,k,:] < -0.9)
-                if (too_low.size > 0):
-                    self.sigma[j,k,too_low] = -0.9
+                    too_high,=np.where(self.sigma[j,k,:] > 0.9)
+                    if (too_high.size > 0):
+                        self.sigma[j,k,too_high] = 0.9
+                    too_low,=np.where(self.sigma[j,k,:] < -0.9)
+                    if (too_low.size > 0):
+                        self.sigma[j,k,too_low] = -0.9
 
-                self.sigma[k,j,:] = self.sigma[j,k,:]
+                    self.sigma[k,j,:] = self.sigma[j,k,:]
 
-                self.covmat[j,k,:] = self.sigma[k,j,:] * self.sigma[j,j,:] * self.sigma[k,k,:]
-                self.covmat[k,j,:] = self.covmat[j,k,:]
+                    self.covmat[j,k,:] = self.sigma[k,j,:] * self.sigma[j,j,:] * self.sigma[k,k,:]
+                    self.covmat[k,j,:] = self.covmat[j,k,:]
 
-        # volume factor
-        spl=CubicSpline(pars[0]['VOLUME_FACTOR_Z'],pars[0]['VOLUME_FACTOR'])
-        self.volume_factor = spl(self.z)
+            # volume factor
+            spl=CubicSpline(pars[0]['VOLUME_FACTOR_Z'],pars[0]['VOLUME_FACTOR'])
+            self.volume_factor = spl(self.z)
 
-        # corrections
-        spl=CubicSpline(pars[0]['CORR_Z'],pars[0]['CORR'])
-        self.corr = spl(self.z)
-        spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR_SLOPE'])
-        self.corr_slope = spl(self.z)
+            # corrections
+            spl=CubicSpline(pars[0]['CORR_Z'],pars[0]['CORR'])
+            self.corr = spl(self.z)
+            spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR_SLOPE'])
+            self.corr_slope = spl(self.z)
 
-        spl=CubicSpline(pars[0]['CORR_Z'],pars[0]['CORR2'])
-        self.corr2 = spl(self.z)
-        spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR2_SLOPE'])
-        self.corr2_slope = spl(self.z)
+            spl=CubicSpline(pars[0]['CORR_Z'],pars[0]['CORR2'])
+            self.corr2 = spl(self.z)
+            spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR2_SLOPE'])
+            self.corr2_slope = spl(self.z)
 
-        if 'CORR_R' in pars.dtype.names:
-            # protect against stupidity
-            if (pars[0]['CORR_R'][0] <= 0.0) :
+            if 'CORR_R' in pars.dtype.names:
+                # protect against stupidity
+                if (pars[0]['CORR_R'][0] <= 0.0) :
+                    self.corr_r = np.ones(nz)
+                else:
+                    spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR_R'])
+                    self.corr_r = spl(self.z)
+
+                test,=np.where(self.corr_r < 0.5)
+                if (test.size > 0) : self.corr_r[test] = 0.5
+
+                if (pars[0]['CORR2_R'][0] <= 0.0):
+                    self.corr2_r = np.ones(nz)
+                else:
+                    spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR2_R'])
+                    self.corr2_r = spl(self.z)
+
+                test,=np.where(self.corr2_r < 0.5)
+                if (test.size > 0) : self.corr2_r[test] = 0.5
+
+            else :
                 self.corr_r = np.ones(nz)
-            else:
-                spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR_R'])
-                self.corr_r = spl(self.z)
-
-            test,=np.where(self.corr_r < 0.5)
-            if (test.size > 0) : self.corr_r[test] = 0.5
-
-            if (pars[0]['CORR2_R'][0] <= 0.0):
                 self.corr2_r = np.ones(nz)
-            else:
-                spl=CubicSpline(pars[0]['CORR_SLOPE_Z'],pars[0]['CORR2_R'])
-                self.corr2_r = spl(self.z)
-
-            test,=np.where(self.corr2_r < 0.5)
-            if (test.size > 0) : self.corr2_r[test] = 0.5
-
-        else :
-            self.corr_r = np.ones(nz)
-            self.corr2_r = np.ones(nz)
 
         # mstar
         # create LUT
@@ -229,33 +249,34 @@ class RedSequenceColorPar(object):
             f=10.**(0.4*(self.alpha+1.0)*(self._mstar[i]-self.lumrefmagbins))*np.exp(-10.**(0.4*(self._mstar[i]-self.lumrefmagbins)))
             self.lumnorm[:,i] = refmagbinsize*np.cumsum(f)
 
-        # lupcorr (annoying!)
-        self.lupcorr = np.zeros((self.refmagbins.size,nz,ncol),dtype='f8')
-        if (do_lupcorr):
-            bnmgy = bvalues*1e9
+        if has_file:
+            # lupcorr (annoying!)
+            self.lupcorr = np.zeros((self.refmagbins.size,nz,ncol),dtype='f8')
+            if (do_lupcorr):
+                bnmgy = bvalues*1e9
 
-            for i in xrange(nz):
-                mags = np.zeros((self.refmagbins.size,nmag))
-                lups = np.zeros((self.refmagbins.size,nmag))
+                for i in xrange(nz):
+                    mags = np.zeros((self.refmagbins.size,nmag))
+                    lups = np.zeros((self.refmagbins.size,nmag))
 
-                mags[:,ref_ind] = self.refmagbins
+                    mags[:,ref_ind] = self.refmagbins
 
-                # go redward
-                for j in xrange(ref_ind+1,nmag):
-                    mags[:,j] = mags[:,j-1] - (self.c[i,j-1]+self.slope[i,j-1]*(mags[:,ref_ind]-self.pivotmag[i]))
-                # blueward
-                for j in xrange(ref_ind-1,-1,-1):
-                    mags[:,j] = mags[:,j+1] + (self.c[i,j]+self.slope[i,j]*(mags[:,ref_ind]-self.pivotmag[i]))
+                    # go redward
+                    for j in xrange(ref_ind+1,nmag):
+                        mags[:,j] = mags[:,j-1] - (self.c[i,j-1]+self.slope[i,j-1]*(mags[:,ref_ind]-self.pivotmag[i]))
+                    # blueward
+                    for j in xrange(ref_ind-1,-1,-1):
+                        mags[:,j] = mags[:,j+1] + (self.c[i,j]+self.slope[i,j]*(mags[:,ref_ind]-self.pivotmag[i]))
 
-                # and the luptitude conversion
-                for j in xrange(nmag):
-                    flux = 10.**((mags[:,j]-22.5)/(-2.5))
-                    lups[:,j] = 2.5*np.log10(1.0/bvalues[j]) - np.arcsinh(0.5*flux/bnmgy[j])/(0.4*np.log(10.0))
+                    # and the luptitude conversion
+                    for j in xrange(nmag):
+                        flux = 10.**((mags[:,j]-22.5)/(-2.5))
+                        lups[:,j] = 2.5*np.log10(1.0/bvalues[j]) - np.arcsinh(0.5*flux/bnmgy[j])/(0.4*np.log(10.0))
 
-                magcol = mags[:,0:ncol] - mags[:,1:ncol+1]
-                lupcol = lups[:,0:ncol] - lups[:,1:ncol+1]
+                    magcol = mags[:,0:ncol] - mags[:,1:ncol+1]
+                    lupcol = lups[:,0:ncol] - lups[:,1:ncol+1]
 
-                self.lupcorr[:,i,:] = lupcol - magcol
+                    self.lupcorr[:,i,:] = lupcol - magcol
 
         # set top overflow bins to very large number
         self.z[self.z.size-1] = 1000.0
