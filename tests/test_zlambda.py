@@ -55,14 +55,11 @@ class ClusterZlambdaTestCase(unittest.TestCase):
 
         #Set up the mask
         mask = HPMask(cluster.config) #Create the mask
-
-        #mpc_scale = np.radians(1.) * cluster.cosmo.Dl(0, cluster.z) / (1 + cluster.z)**2
-        mpc_scale = cluster.mpc_scale
-        mask.set_radmask(cluster, mpc_scale)
+        mask.set_radmask(cluster)
 
         #depthstr
         depthstr = DepthMap(cluster.config)
-        depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, mpc_scale)
+        depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, cluster.mpc_scale)
 
         cluster.neighbors.dist = np.degrees(cluster.neighbors.r/cluster.cosmo.Dl(0,cluster.redshift))
 
@@ -75,19 +72,13 @@ class ClusterZlambdaTestCase(unittest.TestCase):
 
         z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.redshift, mask, calc_err=True, calcpz=True)
 
-        #testing.assert_almost_equal(self.cluster.z_lambda, 0.22816455)
-        #testing.assert_almost_equal(cluster.z_lambda, 0.227865)
         testing.assert_almost_equal(cluster.z_lambda, 0.22700983)
-        #testing.assert_almost_equal(self.cluster.z_lambda_err, 0.00632813)
-        #testing.assert_almost_equal(cluster.z_lambda_err,0.00630833)
         testing.assert_almost_equal(cluster.z_lambda_err, 0.00448909596)
 
 
         # zlambda_err test
         z_lambda_err = zlam._zlambda_calc_gaussian_err(cluster.z_lambda)
 
-        #testing.assert_almost_equal(z_lambda_err, 0.00897011)
-        #testing.assert_almost_equal(z_lambda_err, 0.00894175)
         testing.assert_almost_equal(z_lambda_err, 0.006303830)
 
         # and test the correction on its own
@@ -101,8 +92,6 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         zlam_e_out = 0.00840213
 
         zlam_new, zlam_e_new = zlambda_corr.apply_correction(24.5, zlam_in, zlam_e_in)
-        #print(zlam_in, zlam_out, zlam_new)
-        #print(zlam_e_in, zlam_e_out, zlam_e_new)
 
         testing.assert_almost_equal(zlam_new, zlam_out, 5)
         testing.assert_almost_equal(zlam_e_new, zlam_e_out, 5)
