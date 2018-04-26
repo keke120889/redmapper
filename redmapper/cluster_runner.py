@@ -216,7 +216,7 @@ class ClusterRunner(object):
                 cluster.lim_limmag_hard = self.config.limmag_catalog
 
             # And survey masking (this may be a dummy)
-            self.mask.set_radmask(cluster, cluster.mpc_scale)
+            self.mask.set_radmask(cluster)
 
             # And compute maskfrac here...approximate first computation
             inside, = np.where(self.mask.maskgals.r < 1.0)
