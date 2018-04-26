@@ -131,6 +131,11 @@ class GalaxyCatalog(Catalog):
         galcol = self.mag[:,:-1] - self.mag[:,1:]
         return galcol
 
+    @property
+    def galcol_err(self):
+        galcol_err = np.sqrt(self.mag_err[:, :-1]**2. + self.mag_err[:, 1:]**2.)
+        return galcol_err
+
     def match_one(self, ra, dec, radius):
         """
         match an ra/dec to the galaxy catalog
