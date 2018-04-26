@@ -44,6 +44,25 @@ class ColorBackgroundTestCase(unittest.TestCase):
         py_outputs = cbkg.lookup_offdiag(1, 2, col1, col2, refmags)
         testing.assert_almost_equal(py_outputs, idl_bkg12, decimal=5)
 
+        # And a test sigma_g with the usehdrarea=True
+        cbkg2 = ColorBackground('%s/%s' % (file_path, file_name), usehdrarea=True)
+
+        col1 = np.array([0.572300, 1.39560, 1.0])
+        col2 = np.array([0.7894, 0.9564, 1.0])
+        refmags = np.array([17.587, 18.956, 25.0])
+
+        idl_sigma_g1 = np.array([123.382, 611.711, np.inf])
+        idl_sigma_g2 = np.array([8.48481, 82.8938, np.inf])
+
+        # Test color1
+        py_outputs = cbkg2.sigma_g_diagonal(1, col1, refmags)
+        testing.assert_almost_equal(py_outputs, idl_sigma_g1, decimal=3)
+
+        # Test color2
+        py_outputs = cbkg2.sigma_g_diagonal(2, col2, refmags)
+        testing.assert_almost_equal(py_outputs, idl_sigma_g2, decimal=3)
+
+
         #####################################################
         # Now a test of the generation of a color background
         conf_filename = 'testconfig.yaml'
