@@ -189,7 +189,7 @@ class RunPercolation(ClusterRunner):
 
             if i == 0:
                 # update the mask info...
-                self.mask.set_radmask(cluster, cluster.mpc_scale)
+                self.mask.set_radmask(cluster)
 
                 self.depthstr.calc_maskdepth(self.mask.maskgals,
                                              cluster.ra, cluster.dec, cluster.mpc_scale)
