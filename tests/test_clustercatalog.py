@@ -72,10 +72,9 @@ class ClusterCatalogTestCase(unittest.TestCase):
         testing.assert_equal(c1.neighbors.size, u1.size)
 
         # and compute the richness on the first one...
-        mpc_scale = np.radians(1.) * c0.cosmo.Dl(0, c0.z) / (1 + c0.z)**2
-        mask.set_radmask(c0, mpc_scale)
+        mask.set_radmask(c0)
 
-        depthstr.calc_maskdepth(mask.maskgals, c0.ra, c0.dec, mpc_scale)
+        depthstr.calc_maskdepth(mask.maskgals, c0.ra, c0.dec, c0.mpc_scale)
 
         richness = c0.calc_richness(mask)
 
@@ -89,4 +88,6 @@ class ClusterCatalogTestCase(unittest.TestCase):
 
         # and we're done
 
+if __name__=='__main__':
+    unittest.main()
 
