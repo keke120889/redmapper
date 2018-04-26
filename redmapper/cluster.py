@@ -11,7 +11,7 @@ import copy
 
 from .solver_nfw import Solver
 from .catalog import Catalog, Entry
-from .utilities import chisq_pdf, calc_theta_i
+from .utilities import chisq_pdf, calc_theta_i, MStar
 from .mask import HPMask
 from .chisq_dist import ChisqDist
 from .redsequence import RedSequenceColorPar
@@ -88,7 +88,7 @@ class Cluster(Entry):
     (TBD)
 
     """
-    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, neighbors=None, zredbkg=None):
+    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, cbkg=None, neighbors=None, zredbkg=None):
 
         if cat_vals is None:
             #cat_vals = np.zeros(1, dtype=[('RA', 'f8'),
@@ -115,6 +115,7 @@ class Cluster(Entry):
         self.config = config
         self.zredstr = zredstr
         self.bkg = bkg
+        self.cbkg = cbkg
         self.zredbkg = zredbkg
         self.set_neighbors(neighbors)
 
@@ -337,6 +338,12 @@ class Cluster(Entry):
         sigma_g = self.bkg.sigma_g_lookup(self._redshift, chisq, refmag)
         return 2. * np.pi * r * (sigma_g/self.mpc_scale**2.)
 
+    def calc_cbkg_density(self, r, col_index, col, refmag):
+        """
+        """
+        sigma_g = self.cbkg.sigma_g_diagonal(col_index, col, refmag)
+        return 2. * np.pi * r * (sigma_g / self.mpc_scale**2.)
+
     def calc_zred_bkg_density(self, r, zred, refmag):
         """
         Internal method to compute zred background filter
@@ -528,13 +535,139 @@ class Cluster(Entry):
 
         return lam_err
 
-    #def update_z(self, z_new):
-    #    self._redshift = z_new
-    #    _ = self.mstar(update=True)
-    #    _ = self.mpc_scale(update=True)#
+    def calc_richness_fit(self, mask, col_index, centcolor_in=None, rcut=0.5, mingal=5, sigint=0.05, calc_err=False):
+        """
+        Compute richness for a cluster by fitting the red sequence in a single color.
+        This is approximate and is used for the first iteration of training.
 
-    #def get_z(self):
-    #    return self._redshift
+        parameters
+        ----------
+        record_values: bool, optional, default=True
+           Save the cluster values to the object
+
+        returns
+        -------
+        lam: cluster richness
+        """
+
+        badlam = -10.0
+        s2p = np.sqrt(2. * np.pi)
+
+        maxmag = self.mstar - 2.5 * np.log10(self.config.lval_reference)
+        minmag = self.mstar - 2.5 * np.log10(20.0)
+
+        col = self.neighbors.galcol[:, col_index]
+        col_err = self.neighbors.galcol_err[:, col_index]
+        colrange = self.cbkg.get_colrange(col_index)
+
+        guse, = np.where((self.neighbors.refmag > minmag) &
+                         (self.neighbors.refmag < maxmag) &
+                         (self.neighbors.r < rcut) &
+                         (col > colrange[0]) &
+                         (col < colrange[1]))
+
+        if guse.size < mingal:
+            return badlam
+
+        if centcolor_in is None:
+            # We were not passed a probably central color
+            # Use the BCG (central) color as the peak guess
+            ind = np.argmin(self.neighbors.r)
+            test, = np.where(guse == ind)
+            if test.size == 0:
+                # Nominal BCG not in color range.  All bad!
+                return badlam
+
+            centcolor = col[ind]
+        else:
+            centcolor = centcolor_in
+
+        cerr = np.sqrt(col_err**2. + sigint**2.)
+        in2sig, = np.where((np.abs(col[guse] - centcolor) < 2. * cerr[guse]))
+        if in2sig.size < mingal:
+            return badlam
+
+        pivot = np.median(self.neighbors.refmag[guse])
+
+        fit = np.polyfit(self.neighbors.refmag[guse[in2sig]] - pivot,
+                         col[guse[in2sig]],
+                         1,
+                         w=1. / col_err[guse[in2sig]])
+        mpivot = fit[0]
+        bpivot = fit[1]
+
+        d = col - (mpivot * (self.neighbors.refmag - pivot) + bpivot)
+        d_err_net = np.sqrt(col_err**2. + sigint**2.)
+        d_wt = (1. / (s2p * d_err_net)) * np.exp(-(d**2.) / (2. * d_err_net**2.))
+
+        # The nfw filter as normal
+        nfw = self._calc_radial_profile()
+
+        theta_i = calc_theta_i(self.neighbors.refmag, self.neighbors.refmag_err, maxmag, self.config.limmag_catalog)
+        phi = self._calc_luminosity(maxmag)
+
+        ucounts = (2. * np.pi * self.neighbors.r) * d_wt * nfw * phi
+
+        bcounts = self.calc_cbkg_density(self.neighbors.r, col_index, col, self.neighbors.refmag)
+
+        cpars = mask.calc_maskcorr(self.mstar, maxmag, self.config.limmag_catalog)
+
+        try:
+            w = theta_i * self.neighbors.pfree
+        except AttributeError:
+            w = theta_i * np.ones_like(ucounts)
+
+        richness_obj = Solver(self.r0, self.beta, ucounts, bcounts, self.neighbors.r, w, cpars=cpars)
+
+        lam, p, pmem, rlam, theta_r = richness_obj.solve_nfw()
+
+        bar_pmem = np.sum(pmem**2.) / np.sum(pmem)
+
+        # reset
+        self.neighbors.theta_i[:] = 0.0
+        self.neighbors.theta_r[:] = 0.0
+        self.neighbors.p[:] = 0.0
+        self.neighbors.pcol[:] = 0.0
+        self.neighbors.pmem[:] = 0.0
+
+        if lam < 0.0:
+            lam_err = -1.0
+            self.scaleval = -1.0
+        else:
+            self.scaleval = np.absolute(lam / np.sum(pmem))
+
+            lam_unscaled = lam / self.scaleval
+
+            if calc_err:
+                lam_cerr = self.calc_lambdaerr(mask.maskgals, self.mstar,
+                                               lam, rlam, cval, self.config.dldr_gamma)
+                lam_err = np.sqrt((1. - bar_pmem) * lam_unscaled + lambda_cerr**2.)
+
+            # calculate pcol (color only)
+            ucounts = d_wt * phi
+            bcounts = (bcounts / (2. * np.pi * self.neighbors.r)) * np.pi * rlam**2.
+            pcol = ucounts * lam / (ucounts * lam + bcounts)
+            bad, = np.where((self.neighbors.r > rlam) | (self.neighbors.refmag > maxmag) |
+                            (self.neighbors.refmag > self.config.limmag_catalog))
+            pcol[bad] = 0.0
+
+            # And set the values
+            self.neighbors.theta_i[:] = theta_i
+            self.neighbors.theta_r[:] = theta_r
+            self.neighbors.p[:] = p
+            self.neighbors.pcol[:] = pcol
+            self.neighbors.pmem[:] = pmem
+
+        # Set values and return
+        self.Lambda = lam
+        self.r_lambda = rlam
+        if calc_err:
+            self.Lambda_e = lam_err
+        else:
+            self.Lambda_e = 0.0
+
+        return lam
+
     @property
     def redshift(self):
         return self._redshift
@@ -558,7 +691,14 @@ class Cluster(Entry):
         return self._mstar
 
     def _update_mstar(self):
+        # Either use the zredstr table, or if not available, do the (slow) interpolation
+        # directly
+        #if self.zredstr is not None:
         self._mstar = self.zredstr.mstar(self._redshift)
+        #else:
+        #    if self._MStar is None:
+        #        self._MStar = MStar(self.config.mstar_survey, self.config.mstar_band)
+        #    self._mstar = self._MStar(self._redshift)
 
     @property
     def mpc_scale(self):
@@ -566,22 +706,6 @@ class Cluster(Entry):
 
     def _update_mpc_scale(self):
         self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._redshift)
-
-    #def mstar(self, update=False):
-    #    """
-    #    """
-    #    if (self._mstar is None or update):
-    #        self._mstar = self.zredstr.mstar(self._redshift)
-
-    #    return self._mstar
-
-    #def mpc_scale(self, update=False):
-    #    """
-    #    """
-    #    if (self._mpc_scale is None or update):
-    #        self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._redshift)#
-
-    #    return self._mpc_scale
 
     def _compute_neighbor_r(self):
         if self.neighbors is not None and self._redshift is not None:
@@ -600,6 +724,7 @@ class Cluster(Entry):
                        config=self.config,
                        zredstr=self.zredstr,
                        bkg=self.bkg,
+                       cbkg=self.cbkg,
                        neighbors=self.neighbors)
 
 class ClusterCatalog(Catalog):
