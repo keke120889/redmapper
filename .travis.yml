@@ -21,7 +21,7 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
 # install packages
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy=1.11.3 scipy=0.19.0 nose
   - pip install -r requirements.txt
   - python setup.py install
 script: cd tests && nosetests
