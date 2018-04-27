@@ -19,6 +19,18 @@ from .zlambda import ZlambdaCorrectionPar
 from .cluster_runner import ClusterRunner
 from .utilities import chisq_pdf
 
+###################################################
+# Order of operations:
+#  __init__()
+#    _additional_initialization() [override this]
+#  run()
+#    _setup()
+#    _more_setup() [override this]
+#    _process_cluster() [override this]
+#    _postprocess() [override this]
+#  output()
+###################################################
+
 class RunLikelihoods(ClusterRunner):
     """
     """
@@ -63,6 +75,8 @@ class RunLikelihoods(ClusterRunner):
 
     def _process_cluster(self, cluster):
 
+        bad = False
+
         maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
 
         lam = cluster.calc_richness(self.mask)
@@ -74,7 +88,8 @@ class RunLikelihoods(ClusterRunner):
         if cluster.Lambda < self.config.likelihoods_minlambda or incut.size < 3:
             # this is a bad cluster
             self._reset_bad_values(cluster)
-            return
+            bad = True
+            return bad
 
         # compute the cluster member likelihood
         cluster.lnlamlike = (-cluster.Lambda / cluster.scaleval -
@@ -115,6 +130,8 @@ class RunLikelihoods(ClusterRunner):
             cluster.lnbcglike = np.log(phi_cen * g * fw)
 
             cluster.lnlike = cluster.lnbcglike + clsuter.lnlamlike
+
+        return bad
 
 
     def _postprocess(self):
