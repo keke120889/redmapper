@@ -17,6 +17,18 @@ from .zlambda import Zlambda
 from .zlambda import ZlambdaCorrectionPar
 from .cluster_runner import ClusterRunner
 
+###################################################
+# Order of operations:
+#  __init__()
+#    _additional_initialization() [override this]
+#  run()
+#    _setup()
+#    _more_setup() [override this]
+#    _process_cluster() [override this]
+#    _postprocess() [override this]
+#  output()
+###################################################
+
 class RunFirstPass(ClusterRunner):
     """
     """
@@ -172,3 +184,4 @@ class RunFirstPass(ClusterRunner):
             cluster.z = cluster.z_lambda
 
         # All done
+        return bad
