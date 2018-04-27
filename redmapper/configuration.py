@@ -48,6 +48,9 @@ class ConfigField(object):
     def reset(self):
         self._value = self._default
 
+    def set_length(self, length):
+        self._array_length = length
+
     def validate(self, name):
         if self._required:
             if self._value is None:
@@ -108,6 +111,7 @@ class Configuration(object):
     maskfile = ConfigField()
     depthfile = ConfigField()
     wcenfile = ConfigField()
+    redgalfile = ConfigField()
 
     outpath = ConfigField(default='./', required=True)
 
@@ -141,6 +145,18 @@ class Configuration(object):
 
     mstar_survey = ConfigField(default='sdss')
     mstar_band = ConfigField(default='i03')
+
+    calib_niter = ConfigField(default=3)
+    calib_zrange_cushion = ConfigField(default=0.05)
+
+    calib_colormem_r0 = ConfigField(default=0.5)
+    calib_colormem_beta = ConfigField(default=0.0)
+    calib_colormem_smooth = ConfigField(default=0.003)
+    calib_colormem_minlambda = ConfigField(default=10.0)
+    calib_colormem_zbounds = ConfigField(isArray=True, default=np.array([0.4]))
+    calib_colormem_colormodes = ConfigField(isArray=True, default=np.array([1]))
+    calib_pcut = ConfigField(default=0.3)
+    calib_color_pcut = ConfigField(default=0.7)
 
     calib_lumfunc_alpha = ConfigField(default=-1.0, required=True)
 
@@ -212,9 +228,6 @@ class Configuration(object):
         # get galaxy file stats
         gal_stats = self._galfile_stats()
 
-        #for key in gal_stats:
-        #    if gal_stats[key] is not None:
-        #        setattr(self, key, gal_stats[key])
         self._set_vars_from_dict(gal_stats, check_none=True)
 
         # Record the cluster dtype for convenience
@@ -238,6 +251,10 @@ class Configuration(object):
         self.member_dtype.extend([('MAG', 'f4', self.nmag),
                                   ('MAG_ERR', 'f4', self.nmag)])
         # also need pz stuff, etc, etc.  Will need to deal with defaults
+
+        # Calibration size checking
+        self._set_lengths(['calib_colormem_zbounds', 'calib_colormem_colormodes'],
+                          len(self.calib_colormem_zbounds))
 
         # will want to set defaults here...
         self.cosmo = Cosmo()
@@ -269,6 +286,12 @@ class Configuration(object):
             if key not in type(self).__dict__:
                 raise AttributeError("Unknown config variable: %s" % (key))
             setattr(self, key, d[key])
+
+    def _set_lengths(self, l, length):
+        for arr in l:
+            if arr not in type(self).__dict__:
+                raise AttributeError("Unknown config variable: %s" % (arr))
+            type(self).__dict__[arr].set_length(length)
 
 
     def _galfile_stats(self):
