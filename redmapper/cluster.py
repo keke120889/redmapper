@@ -754,6 +754,7 @@ class ClusterCatalog(Catalog):
         self.zredstr = kwargs.pop('zredstr', None)
         self.config = kwargs.pop('config', None)
         self.bkg = kwargs.pop('bkg', None)
+        self.cbkg = kwargs.pop('cbkg', None)
         self.zredbkg = kwargs.pop('zredbkg', None)
 
         if self.config is not None:
@@ -789,6 +790,7 @@ class ClusterCatalog(Catalog):
                            zredstr=self.zredstr,
                            config=self.config,
                            bkg=self.bkg,
+                           cbkg=self.cbkg,
                            zredbkg=self.zredbkg)
         else:
             return ClusterCatalog(self._ndarray.__getitem__(key),
@@ -797,4 +799,5 @@ class ClusterCatalog(Catalog):
                                   zredstr=self.zredstr,
                                   config=self.config,
                                   bkg=self.bkg,
+                                  cbkg=self.cbkg,
                                   zredbkg=self.zredbkg)
