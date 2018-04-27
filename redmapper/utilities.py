@@ -441,3 +441,30 @@ def cic(value, posx=None, nx=None, posy=None, ny=None, posz=None, nz=None, avera
         return field.reshape((ny, nx))
     else:
         return field.reshape((nz, ny, nx))
+
+#########################
+# MakeNodes
+#########################
+
+def make_nodes(zrange, nodesize, maxnode=None):
+    """
+    """
+
+    if maxnode is None:
+        maxnode = zrange[1]
+
+    # Start with a simple arange
+    nodes = np.arange(zrange[0], maxnode, nodesize)
+
+    # Should we extend the last bin?
+    if ((maxnode - nodes.max()) > (nodesize / 2. + 0.01)):
+        # one more node!
+        nodes = np.append(nodes, maxnode)
+    elif ~np.allclose(np.max(nodes), maxnode):
+        nodes[-1] = maxnode
+
+    # and finally check if maxnode was lower
+    if maxnode < zrange[1]:
+        nodes = np.append(nodes, zrange[1])
+
+    return nodes
