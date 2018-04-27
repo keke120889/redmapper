@@ -19,6 +19,18 @@ from .zlambda import ZlambdaCorrectionPar
 from .cluster_runner import ClusterRunner
 from . import centering
 
+###################################################
+# Order of operations:
+#  __init__()
+#    _additional_initialization() [override this]
+#  run()
+#    _setup()
+#    _more_setup() [override this]
+#    _process_cluster() [override this]
+#    _postprocess() [override this]
+#  output()
+###################################################
+
 class RunPercolation(ClusterRunner):
     """
     """
@@ -103,7 +115,7 @@ class RunPercolation(ClusterRunner):
         if cluster.neighbors.pfree[minind] < self.config.percolation_pbcg_cut:
             bad = True
             self._reset_bad_values()
-            return
+            return bad
 
         # calculate lambda (percolated) and update redshift.
         # we don't need error yet or radial masking (will need to modify runner code)
@@ -113,7 +125,7 @@ class RunPercolation(ClusterRunner):
         if lc.size < 2:
             bad = True
             self._reset_bad_values()
-            return
+            return bad
 
         lam = cluster.calc_richness(self.mask, index=lc, calc_err=False)
 
@@ -125,7 +137,7 @@ class RunPercolation(ClusterRunner):
             (incut.size < 3)):
             bad = True
             self._reset_bad_values()
-            return
+            return bad
 
         if not self.keepz:
             zlam = Zlambda(cluster)
@@ -136,14 +148,14 @@ class RunPercolation(ClusterRunner):
         if cluster.redshift < 0.0:
             bad = True
             self._reset_bad_values()
-            return
+            return bad
 
         # Grab the correct centering class here
         cent = reduce(getattr, self.config.centerclass.split('.'), sys.modules[__name__])(cluster)
         if not cent.find_center() or cent.ncent==0:
             bad = True
             self._reset_bad_values()
-            return
+            return bad
 
         # Record the centering values
         # update the cluster center!
@@ -185,7 +197,7 @@ class RunPercolation(ClusterRunner):
                 bad = True
             if bad:
                 self._reset_bad_values()
-                return
+                return bad
 
             if i == 0:
                 # update the mask info...
@@ -265,3 +277,4 @@ class RunPercolation(ClusterRunner):
 
 
         # Everything else should be taken care of by cluster_runner
+        return bad
