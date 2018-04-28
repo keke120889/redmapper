@@ -25,13 +25,10 @@ class FitterTestCase(unittest.TestCase):
 
         ecfitter = EcgmmFitter(ecgmmdata['DELTA'], ecgmmdata['GALCOLOR_ERR'])
         wt, mu, sigma = ecfitter.fit([0.2], [-0.5, 0.0], [0.2, 0.05], offset=0.5)
-        print(wt)
-        print(mu)
-        print(sigma)
 
-        testing.assert_almost_equal(wt, [0.56762756, 0.43237244], 2)
-        testing.assert_almost_equal(mu, [-0.3184651, -0.1168626], 2)
-        testing.assert_almost_equal(sigma, [0.15283837, 0.04078598], 2)
+        testing.assert_almost_equal(wt, [0.56762756, 0.43237244], 3)
+        testing.assert_almost_equal(mu, [-0.3184651, -0.1168626], 3)
+        testing.assert_almost_equal(sigma, [0.15283837, 0.04078598], 3)
 
         # Test make_nodes
         nodes = make_nodes([0.1,0.65], 0.05)
