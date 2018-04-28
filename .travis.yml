@@ -24,8 +24,7 @@ install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy nose
   - pip install -r requirements.txt
   - python setup.py install
-#script: cd tests && nosetests
-script: cd tests && python test_fitters.py
+script: cd tests && nosetests
 cache:
   pip: true
 
