@@ -37,7 +37,6 @@ class MedZFitter(object):
 class RedSequenceFitter(object):
     """
     """
-    # NOTE: we will add in probabilities and backgrounds as well (!)
     def __init__(self, mean_nodes,
                  redshifts, colors, errs, dmags=None, trunc=None,
                  slope_nodes=None, scatter_nodes=None, lupcorrs=None,
@@ -221,6 +220,77 @@ class RedSequenceFitter(object):
 
         return t
 
+class RedSequenceOffDiagonalFitter(object):
+    """
+    """
+    def __init__(self, nodes, redshifts, d1, d2, s1, s2, probs, bkgs):
+        self._nodes = np.atleast_1d(nodes)
+        self._redshifts = np.atleast_1d(redshifts)
+        self._d1 = np.atleast_1d(d1)
+        self._d2 = np.atleast_1d(d2)
+        self._s1 = np.atleast_1d(s1)
+        self._s2 = np.atleast_1d(s2)
+
+        self._c_int = np.zeros((self._redshifts.size, 2, 2))
+        # self._full_covmats = np.zeros((self._nodes.size, ncol, ncol))
+
+    def fit(self, p0):
+        """
+        """
+
+        pars = scipy.optimize.fmin(self, p0, disp=False)
+
+        return pars
+
+    def __call__(self, pars):
+        """
+        """
+
+        spl = CubicSpline(self._nodes, pars)
+        r = np.clip(spl(self_redshifts), -0.9, 0.9)
+
+        metrics = np.zeros((self._redshifts.size, 2, 2))
+        self._c_int[:, 0, 1] = r * self._s1 * self._s2
+        self._c_int[:, 1, 0] = self._c_int[:, 0, 1]
+
+        #self._full_covmats[:, self._j, self._k] = p * np.sqrt(self._covmats[:, self._j, self._j]) * np.sqrt(self._covmats[:, self._k, self._k])
+        #self._full_covmats[:, self._k, self._j] = self._covmats[:, self._j, self._k]
+
+        covmats = self._c_int + self._c_noise
+
+        dets = covmats[:, 0, 0] * covmats[:, 1, 1] - covmats[:, 0, 1] * covmats[:, 1, 0]
+
+        metrics[:, 0, 0] = covmats[:, 1, 1] / dets
+        metrics[:, 1, 1] = covmats[:, 0, 0] / dets
+        metrics[:, 1, 0] = -covmats[:, 0, 1] / dets
+        metrics[:, 0, 1] = -covmats[:, 1, 0] / dets
+
+        exponents = -0.5 * (metrics[:, 0, 0] * self._d1 * self._d1 +
+                            (metrics[:, 0, 1] + metrics[:, 1, 0]) * self._d1 * self._d2 +
+                            metrics[:, 1, 1] * self._d2 * self._d2)
+
+        gci = (dets**(-0.5) / (2. * np.pi)) * exp(exponents)
+
+        vals = np.log(self._probs * gci + (1. - self._probs ) * self._bkgs)
+
+        bad, = np.where(~np.isfinite(vals))
+        vals[bad] = -100
+
+        t=-(np.sum(vals) - np.sum(0.5 * (p / self._covmat_prior)**2.))
+
+        if ~np.isfinite(t):
+            t = 1e11
+        else:
+            wall = False
+            if (p.max() > 0.9 or p.min() < -0.9) :
+                wall = True
+
+                # Check for negative eigenvalues
+                
+
+            if wall:
+                t += 10000
+
 class EcgmmFitter(object):
     """
     """
@@ -247,7 +317,7 @@ class EcgmmFitter(object):
         else:
             self._bounds = bounds
 
-        pars = scipy.optimize.fmin(self, p0, disp=False)
+        pars = scipy.optimize.fmin(self, p0, disp=True)  ## FIXME
 
         wt = np.array([pars[0], 1.0 - pars[0]])
         mu = pars[1:3] - offset
