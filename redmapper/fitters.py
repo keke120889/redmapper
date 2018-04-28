@@ -317,7 +317,7 @@ class EcgmmFitter(object):
         else:
             self._bounds = bounds
 
-        pars = scipy.optimize.fmin(self, p0, disp=True)  ## FIXME
+        pars = scipy.optimize.fmin(self, p0, disp=True, xtol=0.0001, ftol=0.0081)  ## FIXME
 
         wt = np.array([pars[0], 1.0 - pars[0]])
         mu = pars[1:3] - offset
