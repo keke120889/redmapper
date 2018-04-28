@@ -16,6 +16,8 @@ class FitterTestCase(unittest.TestCase):
     def runTest(self):
         random.seed(seed=1000)
 
+        print(np.random.get_state())
+
         # Test Ecgmm Fitter
 
         file_path = 'data_for_tests'
