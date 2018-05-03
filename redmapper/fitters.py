@@ -223,20 +223,56 @@ class RedSequenceFitter(object):
 class RedSequenceOffDiagonalFitter(object):
     """
     """
-    def __init__(self, nodes, redshifts, d1, d2, s1, s2, probs, bkgs):
+    def __init__(self, nodes, redshifts, d1, d2, s1, s2, mag_errs, j, k, probs, bkgs, covmat_prior, min_eigenvalue=0.0):
         self._nodes = np.atleast_1d(nodes)
         self._redshifts = np.atleast_1d(redshifts)
         self._d1 = np.atleast_1d(d1)
         self._d2 = np.atleast_1d(d2)
         self._s1 = np.atleast_1d(s1)
         self._s2 = np.atleast_1d(s2)
+        self._probs = np.atleast_1d(probs)
+        self._bkgs = np.atleast_1d(bkgs)
 
-        self._c_int = np.zeros((self._redshifts.size, 2, 2))
-        # self._full_covmats = np.zeros((self._nodes.size, ncol, ncol))
+        if self._redshifts.size != self._d1.size:
+            raise ValueError("Number of redshifts must be equal to d1")
+        if self._redshifts.size != self._d2.size:
+            raise ValueError("Number of redshifts must be equal to d2")
+        if self._redshifts.size != self._s1.size:
+            raise ValueError("Number of redshifts must be equal to s1")
+        if self._redshifts.size != self._s2.size:
+            raise ValueError("Number of redshifts must be equal to s2")
+        if self._redshifts.size != self._probs.size:
+            raise ValueError("Number of redshifts must be equal to probs")
+        if self._redshifts.size != self._bkgs.size:
+            raise ValueError("Number of redshifts must be equal to bkgs")
 
-    def fit(self, p0):
+        self._j = j
+        self._k = k
+
+        if len(mag_errs.shape) != 2:
+            raise ValueError("mag_errs must be 2d")
+        if mag_errs.shape[0] != self._redshifts.size:
+            raise ValueError("Number of redshifts must be number of mag_errs")
+
+        self._covmat_prior = covmat_prior
+        self._min_eigenvalue = min_eigenvalue
+
+        self._c_int = np.zeros((2, 2, self._redshifts.size))
+        self._c_int[0, 0, :] = self._s1**2.
+        self._c_int[1, 1, :] = self._s2**2.
+
+        self._c_noise = np.zeros_like(self._c_int)
+        self._c_noise[0, 0, :] = mag_errs[:, j]**2. + mag_errs[:, j + 1]**2.
+        self._c_noise[1, 1, :] = mag_errs[:, k]**2. + mag_errs[:, k + 1]**2.
+        if k == (j + 1):
+            self._c_noise[0, 1, :] = -mag_errs[:, k]**2.
+            self._c_noise[1, 0, :] = self._c_noise[0, 1, :]
+
+    def fit(self, p0, full_covmats=None):
         """
         """
+
+        self._full_covmats = full_covmats
 
         pars = scipy.optimize.fmin(self, p0, disp=False)
 
@@ -247,49 +283,218 @@ class RedSequenceOffDiagonalFitter(object):
         """
 
         spl = CubicSpline(self._nodes, pars)
-        r = np.clip(spl(self_redshifts), -0.9, 0.9)
+        r = np.clip(spl(self._redshifts), -0.9, 0.9)
 
-        metrics = np.zeros((self._redshifts.size, 2, 2))
-        self._c_int[:, 0, 1] = r * self._s1 * self._s2
-        self._c_int[:, 1, 0] = self._c_int[:, 0, 1]
+        metrics = np.zeros((2, 2, self._redshifts.size))
+        self._c_int[0, 1, :] = r * self._s1 * self._s2
+        self._c_int[1, 0, :] = self._c_int[0, 1, :]
 
-        #self._full_covmats[:, self._j, self._k] = p * np.sqrt(self._covmats[:, self._j, self._j]) * np.sqrt(self._covmats[:, self._k, self._k])
-        #self._full_covmats[:, self._k, self._j] = self._covmats[:, self._j, self._k]
+        if self._full_covmats is not None:
+            self._full_covmats[self._j, self._k, :] = pars * np.sqrt(self._full_covmats[self._j, self._j, :]) * np.sqrt(self._full_covmats[self._k, self._k, :])
+            self._full_covmats[self._k, self._j, :] = self._full_covmats[self._j, self._k, :]
 
         covmats = self._c_int + self._c_noise
 
-        dets = covmats[:, 0, 0] * covmats[:, 1, 1] - covmats[:, 0, 1] * covmats[:, 1, 0]
+        dets = covmats[0, 0, :] * covmats[1, 1, :] - covmats[0, 1, :] * covmats[1, 0, :]
 
-        metrics[:, 0, 0] = covmats[:, 1, 1] / dets
-        metrics[:, 1, 1] = covmats[:, 0, 0] / dets
-        metrics[:, 1, 0] = -covmats[:, 0, 1] / dets
-        metrics[:, 0, 1] = -covmats[:, 1, 0] / dets
+        metrics[0, 0, :] = covmats[1, 1, :] / dets
+        metrics[1, 1, :] = covmats[0, 0, :] / dets
+        metrics[1, 0, :] = -covmats[0, 1, :] / dets
+        metrics[0, 1, :] = -covmats[1, 0, :] / dets
 
-        exponents = -0.5 * (metrics[:, 0, 0] * self._d1 * self._d1 +
-                            (metrics[:, 0, 1] + metrics[:, 1, 0]) * self._d1 * self._d2 +
-                            metrics[:, 1, 1] * self._d2 * self._d2)
+        exponents = -0.5 * (metrics[0, 0, :] * self._d1 * self._d1 +
+                            (metrics[0, 1, :] + metrics[1, 0, :]) * self._d1 * self._d2 +
+                            metrics[1, 1, :] * self._d2 * self._d2)
 
-        gci = (dets**(-0.5) / (2. * np.pi)) * exp(exponents)
+        gci = (dets**(-0.5) / (2. * np.pi)) * np.exp(exponents)
 
         vals = np.log(self._probs * gci + (1. - self._probs ) * self._bkgs)
 
         bad, = np.where(~np.isfinite(vals))
         vals[bad] = -100
 
-        t=-(np.sum(vals) - np.sum(0.5 * (p / self._covmat_prior)**2.))
+        t=-(np.sum(vals) - np.sum(0.5 * (pars / self._covmat_prior)**2.))
 
         if ~np.isfinite(t):
             t = 1e11
         else:
             wall = False
-            if (p.max() > 0.9 or p.min() < -0.9) :
+            if (pars.max() > 0.9 or pars.min() < -0.9) :
                 wall = True
 
                 # Check for negative eigenvalues
-                
-
+                if self._full_covmats is not None:
+                    for i in xrange(self._nodes.size):
+                        a = self._full_covmats[:, :, i]
+                        d = np.linalg.eigvalsh(a)
+                        if (np.min(d) < self._min_eigenvalue):
+                            wall = True
             if wall:
                 t += 10000
+
+        return t
+
+class CorrectionFitter(object):
+    """
+    """
+    def __init__(self, mean_nodes, redshifts, dzs, dz_errs,
+                 slope_nodes=None, r_nodes=None, bkg_nodes=None,
+                 probs=None, dmags=None, ws=None):
+        self._mean_nodes = np.atleast_1d(mean_nodes)
+        # Note that the slope_nodes are the default for the r, bkg as well
+        if slope_nodes is None:
+            self._slope_nodes = self._mean_nodes
+        else:
+            self._slope_nodes = np.atleast_1d(slope_nodes)
+        if r_nodes is None:
+            self._r_nodes = self._slope_nodes
+        else:
+            self._r_nodes = np.atleast_1d(r_nodes)
+        if bkg_nodes is None:
+            self._bkg_nodes = self._slope_nodes
+        else:
+            self._bkg_nodes = np.atleast_1d(bkg_nodes)
+
+        self._n_mean_nodes = self._mean_nodes.size
+        self._n_slope_nodes = self._slope_nodes.size
+        self._n_r_nodes = self._r_nodes.size
+        self._n_bkg_nodes = self._bkg_nodes.size
+
+        self._redshifts = np.atleast_1d(redshifts)
+        self._dzs = np.atleast_1d(dzs)
+        self._dz_errs = np.atleast_1d(dz_errs)
+
+        if self._redshifts.size != self._dzs.size:
+            raise ValueError("Number of redshifts must be equal to dzs")
+        if self._redshifts.size != self._dz_errs.size:
+            raise ValueError("Number of redshifts must be equal to dz_errs")
+
+        if probs is not None:
+            self._probs = np.atleast_1d(probs)
+            if self._redshifts.size != self._probs.size:
+                raise ValueError("Number of redshifts must be equal to probs")
+        else:
+            self._probs = np.ones_like(self._redshifts)
+
+        if dmags is not None:
+            self._dmags = np.atleast_1d(dmags)
+            if self._redshifts.size != self._dmags.size:
+                raise ValueError("Number of redshifts must be equal to dmags")
+        else:
+            self._dmags = np.zeros_like(self._redshifts)
+
+        if ws is not None:
+            self._ws = np.atleast_1d(ws)
+            if self._redshifts.size != self._ws.size:
+                raise ValueError("Number of redshifts must be equal to ws")
+        else:
+            self._ws = np.ones_like(self._redshifts)
+
+    def fit(self, p0_mean, p0_slope, p0_r, p0_bkg, fit_mean=False, fit_slope=False, fit_r=False, fit_bkg=False):
+        """
+        """
+        self._fit_mean = fit_mean
+        self._fit_slope = fit_slope
+        self._fit_r = fit_r
+        self._fit_bkg = fit_bkg
+
+        ctr = 0
+        p0 = np.array([])
+        if self._fit_mean:
+            self._mean_index = 0
+            ctr += self._n_mean_nodes
+            p0 = np.append(p0, p0_mean)
+        if self._fit_slope:
+            self._slope_index = ctr
+            ctr += self._n_slope_nodes
+            p0 = np.append(p0, p0_slope)
+        if self._fit_r:
+            self._r_index = ctr
+            ctr += self._n_r_nodes
+            p0 = np.append(p0, p0_r)
+        if self._fit_bkg:
+            self._bkg_index = ctr
+            ctr += self._n_bkg_nodes
+            p0 = np.append(p0, p0_bkg)
+
+        if ctr == 0:
+            raise ValueError("Must select at least one of fit_mean, fit_slope")
+
+        # Precompute
+        if not self._fit_mean:
+            spl = CubicSpline(self._mean_nodes, p0_mean)
+            self._gmean = spl(self._redshifts)
+        if not self._fit_slope:
+            spl = CubicSpline(self._slope_nodes, p0_slope)
+            self._gslope = spl(self._redshifts)
+        if not self._fit_r:
+            spl = CubicSpline(self._r_nodes, p0_r)
+            self._gr = np.clip(spl(self._redshifts), 0.5, None)
+        if not self._fit_bkg:
+            spl = CubicSpline(self._bkg_nodes, p0_bkg)
+            self._gbkg = spl(self._redshifts)
+            self._gci1 = (1. / np.sqrt(2. * np.pi * self._gbkg)) * np.exp(-self._dzs**2. / (2. * self._gbkg))
+
+        pars = scipy.optimize.fmin(self, p0, disp=False)
+
+        retval = []
+        if self._fit_mean:
+            retval.append(pars[self._mean_index: self._mean_index + self._n_mean_nodes])
+        if self._fit_slope:
+            retval.append(pars[self._slope_index: self._slope_index + self._n_slope_nodes])
+        if self._fit_r:
+            retval.append(pars[self._r_index: self._r_index + self._n_r_nodes])
+        if self._fit_bkg:
+            retval.append(pars[self._bkg_index: self._bkg_index + self._n_bkg_nodes])
+
+        return retval
+
+    def __call__(self, pars):
+        """
+        """
+
+        if self._fit_mean:
+            spl = CubicSpline(self._mean_nodes, pars[self._mean_index: self._mean_index + self._n_mean_nodes])
+            gmean = spl(self._redshifts)
+        else:
+            gmean = self._gmean
+
+        if self._fit_slope:
+            spl = CubicSpline(self._slope_nodes, pars[self._slope_index: self._slope_index + self._n_slope_nodes])
+            gslope = spl(self._redshifts)
+        else:
+            gslope = self._gslope
+
+        if self._fit_r:
+            spl = CubicSpline(self._r_nodes, pars[self._r_index: self._r_index + self._n_r_nodes])
+            gr = np.clip(spl(self._redshifts), 0.5, None)
+        else:
+            gr = self._gr
+
+        if self._fit_bkg:
+            if pars[self._bkg_index: self._bkg_index + self._n_bkg_nodes].min() < 0.0:
+                return 1e11
+            spl = CubicSpline(self._bkg_nodes, pars[self._bkg_index: self._bkg_index + self._n_bkg_nodes])
+            gbkg = spl(self._redshifts)
+            gci1 = (1. / np.sqrt(2. * np.pi * gbkg)) * np.exp(-self._dzs**2. / (2. * gbkg))
+        else:
+            gbkg = self._gbkg
+            gci1 = self._gci1
+
+        var0 = (gr * self._dz_errs)**2.
+        gci0 = (1. / np.sqrt(2. * np.pi * var0)) * np.exp(-(self._dzs - (gmean + gslope * self._dmags))**2. / (2. * var0))
+
+        vals = np.log(self._ws * (self._probs * gci0 + (1. - self._probs) * gci1))
+
+        t = -np.sum(vals)
+        if (~np.isfinite(t)):
+            t = 1e11
+        else:
+            if (gbkg.min() < 0.0) :
+                t += 10000
+
+        return t
+
 
 class EcgmmFitter(object):
     """
