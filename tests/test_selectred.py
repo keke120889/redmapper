@@ -11,9 +11,9 @@ import tempfile
 from numpy import random
 
 from redmapper.configuration import Configuration
-from redmapper.calibration.selectred import SelectRedGalaxies
+from redmapper.calibration.selectred import SelectSpecRedGalaxies
 
-class SelectRedTestCase(unittest.TestCase):
+class SelectSpecRedTestCase(unittest.TestCase):
     def test_selectred(self):
         file_path = 'data_for_tests'
         conf_filename = 'testconfig.yaml'
@@ -29,7 +29,7 @@ class SelectRedTestCase(unittest.TestCase):
         config.redgalfile = os.path.join(test_dir, 'test_redgals.fits')
         config.redgalmodelfile = os.path.join(test_dir, 'test_redgalmodels.fits')
 
-        selred = SelectRedGalaxies(config)
+        selred = SelectSpecRedGalaxies(config)
 
         selred.run()
 

@@ -13,7 +13,7 @@ from ..galaxy import GalaxyCatalog
 from ..catalog import Catalog
 from ..utilities import make_nodes, CubicSpline, interpol
 
-class SelectRedGalaxies(object):
+class SelectSpecRedGalaxies(object):
     """
     """
 
