@@ -6,6 +6,7 @@ import fitsio
 import copy
 from esutil.cosmology import Cosmo
 import numpy as np
+import re
 
 from .cluster import cluster_dtype_base, member_dtype_base
 from ._version import __version__
@@ -103,6 +104,7 @@ class Configuration(object):
     randfile = ConfigField()
     catfile = ConfigField()
     specfile = ConfigField()
+    specfile_train = ConfigField()
     outbase = ConfigField(required=True)
     parfile = ConfigField()
     bkgfile = ConfigField()
@@ -114,6 +116,7 @@ class Configuration(object):
     redgalfile = ConfigField()
 
     outpath = ConfigField(default='./', required=True)
+    plotpath = ConfigField(default='', required=True)
 
     border = ConfigField(default=0.0, required=True)
     hpix = ConfigField(default=0, required=True)
@@ -130,6 +133,7 @@ class Configuration(object):
     survey_mode = ConfigField(required=True)
     b = ConfigField(isArray=True)
     galfile_nside = ConfigField(required=True)
+    bands = ConfigField(required=True)
 
     zrange = ConfigField(isArray=True, array_length=2, required=True)
     lval_reference = ConfigField(default=0.2, required=True)
@@ -149,12 +153,26 @@ class Configuration(object):
     calib_niter = ConfigField(default=3)
     calib_zrange_cushion = ConfigField(default=0.05)
 
+    calib_redgal_template = ConfigField()
+    calib_refmag_nodesize = ConfigField(default=0.1)
+    calib_covmat_nodesize = ConfigField(default=0.15)
+    calib_covmat_min_eigenvalue = ConfigField(default=0.0001)
+    calib_covmat_prior = ConfigField(default=0.45)
+    calib_corr_nodesize = ConfigField(default=0.05)
+    calib_corr_slope_nodesize = ConfigField(default=0.1)
+    calib_corr_nocorrslope = ConfigField(default=True)
+    calib_corr_pcut = ConfigField(default=0.9)
+
+    calib_color_nsig = ConfigField(default=1.5)
+    calib_redspec_nsig = ConfigField(default=2.0)
+
     calib_colormem_r0 = ConfigField(default=0.5)
     calib_colormem_beta = ConfigField(default=0.0)
     calib_colormem_smooth = ConfigField(default=0.003)
     calib_colormem_minlambda = ConfigField(default=10.0)
     calib_colormem_zbounds = ConfigField(isArray=True, default=np.array([0.4]))
     calib_colormem_colormodes = ConfigField(isArray=True, default=np.array([1]))
+    calib_colormem_sigint = ConfigField(isArray=True, default=np.array([0.05]))
     calib_pcut = ConfigField(default=0.3)
     calib_color_pcut = ConfigField(default=0.7)
 
@@ -327,6 +345,17 @@ class Configuration(object):
             gal_stats['ref_ind'] = hdr.get(self.refmag.upper()+'_IND')
             gal_stats['b'] = None
             gal_stats['galfile_nside'] = 0
+            gal_stats['bands'] = [None]*gal_stats['nmag']
+
+            # figure out the bands...
+            for name in hdr:
+                m = re.search('(.*)_IND', name)
+                if m is None:
+                    continue
+                if m.groups()[0] == 'REF':
+                    continue
+                band = m.groups()[0].lower()
+                gal_stats['bands'][hdr[name]] = band
 
         else:
             # statistics are from the master table file
@@ -352,6 +381,21 @@ class Configuration(object):
             gal_stats['zeropoint'] = master['ZEROPOINT'][0]
             gal_stats['ref_ind'] = master[self.refmag.upper()+'_IND'][0]
             gal_stats['galfile_nside'] = master['NSIDE'][0]
+            gal_stats['bands'] = [None]*gal_stats['nmag']
+
+            # Figure out the bands...
+            for name in master.dtype.names:
+                m = re.search('(.*)_IND', name)
+                if m is None:
+                    continue
+                if m.groups()[0] == 'REF':
+                    continue
+                band = m.groups()[0].lower()
+                gal_stats['bands'][master[name][0]] = band
+
+        if any(x is None for x in gal_stats['bands']):
+            # Remove this, and use config values
+            gal_stats.pop('bands', None)
 
         return gal_stats
 
