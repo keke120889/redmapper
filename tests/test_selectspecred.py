@@ -11,7 +11,7 @@ import tempfile
 from numpy import random
 
 from redmapper.configuration import Configuration
-from redmapper.calibration.selectred import SelectSpecRedGalaxies
+from redmapper.calibration.selectspecred import SelectSpecRedGalaxies
 
 class SelectSpecRedTestCase(unittest.TestCase):
     def test_selectred(self):
