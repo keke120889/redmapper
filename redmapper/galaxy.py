@@ -79,8 +79,11 @@ class GalaxyCatalog(Catalog):
         # this will raise an exception if it's not there.
         hdr = fitsio.read_header(filename, ext=1)
         pixelated, fitsformat = hdr.get("PIXELS", 0), hdr.get("FITS", 0)
+
         if not pixelated:
-            return super(GalaxyCatalog, self).from_fits_file(filename)
+            cat = fitsio.read(filename, ext=1)
+            return cls(cat)
+
         # this is to keep us from trying to use old IDL galfiles
         if not fitsformat:
             raise ValueError("Input galfile must describe fits files.")
@@ -163,7 +166,7 @@ class GalaxyCatalog(Catalog):
 
         return indices, dists
 
-    def match_many(self, ras, decs, radius):
+    def match_many(self, ras, decs, radius, maxmatch=0):
         """
         match many ras/decs to the galaxy catalog
 
@@ -173,6 +176,8 @@ class GalaxyCatalog(Catalog):
         decs: input decs
         radius: float
            radius/radii in degrees
+        maxmatch: int, optional
+           set to 0 for multiple matches, or max number of matches
 
         returns
         -------
@@ -188,5 +193,5 @@ class GalaxyCatalog(Catalog):
         if self._htm_matcher is None:
             self._htm_matcher = Matcher(self.depth, self.ra, self.dec)
 
-        return self._htm_matcher.match(ras, decs, radius, maxmatch=0)
+        return self._htm_matcher.match(ras, decs, radius, maxmatch=maxmatch)
 
