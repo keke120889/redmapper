@@ -471,9 +471,120 @@ class RedSequenceCalibrator(object):
         else:
             probs = gals.pmem
 
-        
+        # Compute c, slope, and median and width for all galaxies/colors
+        ci = np.zeros((gals.size, ncol))
+        si = np.zeros_like(ci)
+        medci = np.zeros_like(ci)
+        medwidthi = np.zeros_like(ci)
+        gsig = np.zeros_like(ci)
 
+        for j in xrange(ncol):
+            spl = CubicSpline(self.pars._ndarray[self.ztag[j]],
+                              self.pars._ndarray[self.ctag[j]])
+            ci[:, j] = spl(gals.z)
+            spl = CubicSpline(self.pars._ndarray[self.zstag[j]],
+                              self.pars._ndarray[self.stag[j]])
+            si[:, j] = spl(gals.z)
+            spl = CubicSpline(self.pars.pivotmag_z, self.pars.medcol[:, j])
+            medci[:, i] = spl(gals.z)
+            spl = CubicSpline(self.pars.pivotmag_z, self.pars.medcol_width[:, j])
+            medwidthi[:, i] = spl(gals.z)
+            spl = CubicSpline(self.pars.covmat_z, self.pars.sigma[j, j, :])
+            gsig[:, i] = spl(gals.z)
 
+        if self.do_lupcorr:
+            mags = np.zeros((gals.size, self.config.nmag))
+            lups = np.zeros_like(mags)
+
+            mags[:, self.config.ref_ind] = gals.refmag
+
+            for j in xrange(self.config.ref_ind + 1, nmag):
+                mags[:, j] = mags[:, j - 1] - (ci[:, j - 1] + si[:, j - 1] * (gals.refmag - pivotmags))
+            for j in xrange(self.config.ref_ind - 1, -1, -1):
+                mags[:, j] = mags[:, j + 1] + (ci[:, j] + si[:, j] * (gals.refmag - pivotmags))
+
+            for j in xrange(self.config.nmag):
+                flux = 10.**((mags[:, j] - self.lupzp) / (-2.5))
+                lups[:, j] = 2.5 * np.log10(1.0 / self.config.b[j]) - np.asinh(0.5 * flux / self.bnmgy[j]) / (0.5 * np.log(10.0))
+
+            magcol = mags[:, :-1] - mags[:, 1:]
+            lupcol = lups[:, :-1] - lups[:, 1:]
+
+            lupcorr = lupcol - magcol
+        else:
+            lupcorr = np.zeros_like((gals.size, ncol))
+
+        template_col = np.zeros((gals.size, ncol))
+        gsig = np.zeros_like(template_col)
+        for j in xrange(ncol):
+            template_col[:, j] = ci[:, j] + si[:, j] * (gals.refmag - pivotmags) + lupcorr[:, j]
+
+        res = galcolor - template_col
+
+        # figure out order with a ranking based on the configured order
+        bits = 2**np.arange(ncol, dtype=np.int32)
+        covmat_rank = np.zeros((ncol * ncol - ncol) / 2, dtype=np.int32)
+        covmat_order = self.config.calib_color_order
+        ctr = 0
+        for j in xrange(ncol):
+            for k in xrange(j + 1, ncol):
+                covmat_rank[ctr] = bits[covmat_order[j]] + bits[covmat_order[k]]
+                ctr += 1
+
+        covmat_rank = np.sort(covmat_rank)
+
+        full_covmats = self.pars.covmat_amp.copy(deep=True)
+
+        for ctr in xrange(covmat_rank.size):
+            starttime = time.time()
+
+            j = -1
+            k = -1
+            for tctr in xrange(ncol):
+                if ((covmat_rank[ctr] & bits[tctr]) > 0):
+                    if j < 0:
+                        j = covmat_order[tctr]
+                    else:
+                        k = covmat_order[tctr]
+
+            # swap if necessary
+            if k < j:
+                temp = k
+                k = j
+                j = temp
+
+            print("Working on %d, %d" % (j, k))
+
+            u, = np.where((galcolor[:, j] > medci[:, j] - self.config.calib_color_nsig * medwidth[:, j]) &
+                          (galcolor[:, j] < medci[:, j] + self.config.calib_color_nsig * medwidth[:, j]) &
+                          (galcolor[:, k] > medci[:, k] - self.config.calib_color_nsig * medwidth[:, k]) &
+                          (galcolor[:, k] < medci[:, k] + self.config.calib_color_nsig * medwidth[:, k]))
+
+            bvals = self.bkg.lookup_offdiag(j, k, galcolor[:, j], galcolor[:, k], gals.refmag)
+
+            odfitter = RedSequenceOffDiagonalFitter(self.pars.covmat_z,
+                                                    gals.z[u],
+                                                    res[u, j], res[u, k],
+                                                    gsig[u, j], gsig[u, k],
+                                                    gals.mag_err[u, :],
+                                                    j, k,
+                                                    probs[u],
+                                                    bvals[u],
+                                                    self.config.calib_covmat_prior,
+                                                    min_eigenvalue=self.config.calib_covmat_min_eigenvalue)
+
+            rvals = odfitter.fit(np.zeros(self.pars.covmat_z.size), full_covmats=full_covmats)
+
+            self.pars.sigma[j, k, :] = rvals
+            self.pars.sigma[k, j, :] = rvals
+
+            self.pars.covmat_amp[j, k, :] = rvals * self.pars.sigma[j, j, :] * self.pars.sigma[k, k, :]
+            self.pars.covmat_amp[k, j, :] = self.pars.covmat_amp[j, k, :]
+
+            full_covmats[j, k, :] = self.pars.covmat_amp[j, k, :]
+            full_covmats[k, j, :] = self.pars.covmat_amp[k, j, :]
+
+            print("Done in %.2f seconds." % (time.time() - starttime))
 
     def _calc_volume_factor(self, zref):
         """
