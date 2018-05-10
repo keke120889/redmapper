@@ -139,6 +139,23 @@ class GalaxyCatalog(Catalog):
         galcol_err = np.sqrt(self.mag_err[:, :-1]**2. + self.mag_err[:, 1:]**2.)
         return galcol_err
 
+    def add_zred_fields(self):
+        """
+        """
+
+        zred_extra_dtype = [('ZRED', 'f4'),
+                            ('ZRED_E', 'f4'),
+                            ('ZRED2', 'f4'),
+                            ('ZRED2_E', 'f4'),
+                            ('ZRED_UNCORR', 'f4'),
+                            ('ZRED_UNCORR_E', 'f4'),
+                            ('LKHD', 'f4'),
+                            ('CHISQ', 'f4')]
+
+        dtype_augment = [dt for dt in zred_ztra_dtype if dt[0].lower() not in self.dtype.names]
+        if len(dtype_augment) > 0:
+            self.add_fields(dtype_augment)
+
     def match_one(self, ra, dec, radius):
         """
         match an ra/dec to the galaxy catalog
