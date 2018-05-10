@@ -3,7 +3,6 @@ from __future__ import division, absolute_import, print_function
 import os
 import numpy as np
 import fitsio
-import matplotlib.pyplot as plt
 from pkg_resources import resource_filename
 from pkg_resources import resource_exists
 
@@ -73,7 +72,7 @@ class SelectSpecRedGalaxies(object):
         ncol = self.config.nmag - 1
 
         # Make nodes
-        nodes = make_nodes(zrange, self.config.calib_refmag_nodesize)
+        nodes = make_nodes(zrange, self.config.calib_pivotmag_nodesize)
 
         # Temporary storage of output values
         medcol = np.zeros((nodes.size, ncol))
@@ -221,6 +220,7 @@ class SelectSpecRedGalaxies(object):
         fitsio.write(self.config.redgalmodelfile, model, clobber=True)
 
         # And make some plots!
+        import matplotlib.pyplot as plt
 
         for m in xrange(nmodes):
             j = self.config.calib_colormem_colormodes[m]
