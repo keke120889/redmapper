@@ -463,13 +463,52 @@ class RedSequenceColorPar(object):
             return chisq_dist.compute_chisq(chisq_mode=False)
         return chisq_dist.compute_chisq(chisq_mode=True)
 
+    def plot_redsequence_diag(self, fig, ind, bands):
+        """
+        """
 
-    def calculate_zred(self,blah):
+        not_extrap, = np.where(~self.extrapolated)
+
+        ax = fig.add_subplot(221)
+        ax.plot(self.z, self.c[:, ind], 'r--')
+        ax.plot(self.z[not_extrap], self.c[not_extrap, ind], 'r-')
+        ax.set_xlabel('Redshift')
+        ax.set_ylabel('<%s - %s>' % (bands[ind], bands[ind + 1]))
+
+        ax = fig.add_subplot(222)
+        ax.plot(self.z, self.slope[:, ind], 'r--')
+        ax.plot(self.z[not_extrap], self.slope[not_extrap, ind], 'r-')
+        ax.set_xlabel('Redshift')
+        ax.set_ylabel('(%s - %s) slope' % (bands[ind], bands[ind + 1]))
+
+        ax = fig.add_subplot(223)
+        ax.plot(self.z, self.sigma[ind, ind, :], 'r--')
+        ax.plot(self.z[not_extrap], self.sigma[ind, ind, not_extrap], 'r-')
+        ax.set_xlabel('Redshift')
+        ax.set_ylabel('(%s - %s) sigma' % (bands[ind], bands[ind + 1]))
+
+        fig.tight_layout()
+
+    def plot_redsequence_offdiags(self, fig, bands):
         """
-        Calculate zred.  Not written yet.
         """
-        # I think this can be housed here.  Not urgent.
-        pass
+
+        noff = (self.ncol * self.ncol - self.ncol) / 2
+
+        nrow = (noff + 1) / 2
+
+        not_extrap, = np.where(~self.extrapolated)
+
+        ctr = 1
+        for j in xrange(self.ncol):
+            for k in xrange(j + 1, self.ncol):
+                ax = fig.add_subplot(nrow, 2, ctr)
+                ax.plot(self.z, self.sigma[j, k, :], 'r--')
+                ax.plot(self.z[not_extrap], self.sigma[j, k, not_extrap], 'r-')
+                ax.set_xlabel('Redshift')
+                ax.set_ylabel('Corr %s-%s / %s-%s' % (bands[j], bands[j + 1], bands[k], band[k + 1]))
+
+        fig.tight_layout()
 
     def __repr__(self):
         return "Representation here."
