@@ -20,3 +20,4 @@ from .zred_color import ZredColor
 from .centering import Centering, CenteringWcenZred, CenteringBCG
 from .depthmap import DepthMap
 from .color_background import ColorBackground, ColorBackgroundGenerator
+from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter
