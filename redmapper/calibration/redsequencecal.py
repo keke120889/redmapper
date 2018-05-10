@@ -762,7 +762,7 @@ class RedSequenceCalibrator(object):
             fig.clf()
 
             zredstr.plot_redsequence_diag(fig, j, self.config.bands)
-            fig.savefig(os.path.join(self.config.fullplotpath,
+            fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
                                      '%s_%s-%s.png' % (self.config.outbase,
                                                        self.config.bands[j], self.config.bands[j + 1])))
             plt.close(fig)
@@ -770,7 +770,7 @@ class RedSequenceCalibrator(object):
         fig = plt.figure(figsize=(10, 6))
         fig.clf()
         zredstr.plot_redsequence_offdiags(fig, self.config.bands)
-        fig.savefig(os.path.join(self.config.fullplotpath,
+        fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
                                  '%s_offdiags.png' % (self.config.outbase)))
 
         # And two panel plot with
@@ -893,7 +893,7 @@ class RedSequenceCalibrator(object):
             ax.set_ylabel(ylabel_right)
 
             fig.tight_layout()
-            fig.savefig(os.path.join(self.config.fullplotpath,
+            fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
                                      '%s_%s_plots.png' % (self.config.outbase, modename)))
 
             plt.close(fig)
