@@ -778,5 +778,123 @@ class RedSequenceCalibrator(object):
         #  Right panel is zred vs z (whichever)
         # We need to do this for both zred and zred2.
 
-        
+        zbinsize = 0.02
+        pcut = 0.9
+        ntrial = 1000
+
+        mlim = zredstr.mstar(gals.zred) - 2.5 * np.log10(0.2)
+
+        use, = ((gals.pmem > pcut) &
+                (gals.refmag < mlim))
+
+        ugals = gals[use]
+
+        zbins = np.arange(self.config.zrange[0], self.config.zrange[1], zbinsize)
+
+        dtype = [('ztrue', 'f4'),
+                 ('zuse', 'f4'),
+                 ('delta', 'f4'),
+                 ('delta_err', 'f4'),
+                 ('delta_std', 'f4'),
+                 ('zuse_e', 'f4'),
+                 ('f_out', 'f4')]
+
+
+        # There are two modes to plot
+        for mode in xrange(2):
+            if mode == 0:
+                zuse = ugals.z
+                dzuse = ugals.zred - ugals.z
+                zuse_e = ugals.zred_e
+                xlabel = r'$z_{\mathrm{true}}$'
+                ylabel_left = r'$z_{\mathrm{red}} - z_{\mathrm{true}}$'
+                ylabel_right = r'$z_{\mathrm{red}}$'
+                xcol = 'ztrue'
+                modename = 'zred'
+            else:
+                zuse = ugals.zred2
+                dzuse = ugals.z - ugals.zred2
+                zuse_e = ugals.zred2_e
+                xlabel = r'$z_{\mathrm{red2}}$'
+                ylabel_left = r'$z_{\mathrm{true}} - z_{\mathrm{red2}}$'
+                ylabel_right = r'$z_{\mathrm{true}}$'
+                xcol = 'zuse'
+                modename = 'zred2'
+
+            zstr = np.zeros(zbins.size, dtype=dtype)
+
+            for i, z in enumerate(zbins):
+                # Get all the galaxies in the bin
+                u1, = np.where((zuse >= z) & (zuse < (z + zbinsize)))
+
+                if u1.size < 3:
+                    print('Warning: not enough galaxies in zbin: %.2f, %.2f' % (z, z + zbinsize))
+                    continue
+
+                med = np.median(dzuse[u1])
+                gsigma = 1.4826 * np.abs(dzuse[u1] - med) / zuse_e[u1]
+
+                u2, = np.where(np.abs(gsigma) < 3.0)
+                if u2.size < 3:
+                    print('Warning: not enough galaxies in zbin: %.2f, %.2f' % (z, z + zbinsize))
+
+                use = u1[u2]
+
+                zstr['ztrue'][i] = np.median(ugals.z[use])
+                zstr['zuse'][i] = np.median(zuse[use])
+                zstr['delta'][i] = np.median(dzuse[use])
+
+                barr = np.zeros(ntrial)
+                for t in xrange(ntrial):
+                    r = np.random.choice(dzuse[use], replace=True)
+                    barr[t] = np.median(r)
+
+                # Error on median as determined from bootstrap resampling
+                zstr['delta_err'][i] = np.std(barr)
+
+                # The typical error
+                zstr['delta_std'][i] = 1.4826 * np.median(np.abs(dzuse[use] - zstr['delta'][i]))
+
+                # And outliers ...
+                u4, = np.where(np.abs(dzuse[u1] - zstr['delta'][i]) > 4.0 * zstr['delta_std'][i])
+                zstr['f_out'][i] = float(u4.size) / float(u1.size)
+
+                zstr['zuse_e'][i] = np.median(zuse_e[use])
+
+            # Cut out bins that didn't get a fit
+            cut, = np.where(zstr['ztrue'] > 0.0)
+            zstr = zstr[cut]
+
+            # Now we can make the plots
+            fig = plt.figure(figsize=(10, 6))
+            fig.clf()
+
+            # Left panel is offset, scatter, etc.
+            ax = fig.add_subplot(121)
+            ax.errorbar(zstr[xcol], zstr['delta'], yerr=zstr['delta_err'], 'k^')
+            ax.plot(self.config.zrange, [0.0, 0.0], 'k:')
+            ax.plot(zstr[xcol], zstr['delta_std'], 'r-')
+            ax.plot(zstr[xcol], zstr['zuse_e'], 'b-')
+            ax.plot(zstr[xcol], zstr['f_out'], 'm-')
+            ax.set_xlim(self.config.zrange)
+            ax.set_ylim(-0.05, 0.05)
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel_left)
+
+            ax = fig.add_subplot(122)
+            if mode == 0:
+                ax.hexbin(ugals.z, ugals.zred, bins='log')
+            else:
+                ax.hexbin(ugals.zred2, ugals.z, bins='log')
+            ax.plot(self.config.zrange, self.config.zrange, 'r--')
+            ax.set_xlim(self.config.zrange)
+            ax.set_ylim(self.config.zrange)
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel_right)
+
+            fig.tight_layout()
+            fig.savefig(os.path.join(self.config.fullplotpath,
+                                     '%s_%s_plots.png' % (self.config.outbase, modename)))
+
+            plt.close(fig)
 
