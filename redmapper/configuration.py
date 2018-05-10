@@ -7,6 +7,7 @@ import copy
 from esutil.cosmology import Cosmo
 import numpy as np
 import re
+import os
 
 from .cluster import cluster_dtype_base, member_dtype_base
 from ._version import __version__
@@ -153,8 +154,9 @@ class Configuration(object):
     calib_niter = ConfigField(default=3)
     calib_zrange_cushion = ConfigField(default=0.05)
 
+    calib_use_pcol = ConfigField(default=True)
     calib_redgal_template = ConfigField()
-    calib_refmag_nodesize = ConfigField(default=0.1)
+    calib_pivotmag_nodesize = ConfigField(default=0.1)
     calib_covmat_nodesize = ConfigField(default=0.15)
     calib_covmat_min_eigenvalue = ConfigField(default=0.0001)
     calib_covmat_prior = ConfigField(default=0.45)
@@ -162,6 +164,7 @@ class Configuration(object):
     calib_corr_slope_nodesize = ConfigField(default=0.1)
     calib_corr_nocorrslope = ConfigField(default=True)
     calib_corr_pcut = ConfigField(default=0.9)
+
 
     calib_color_nsig = ConfigField(default=1.5)
     calib_redspec_nsig = ConfigField(default=2.0)
