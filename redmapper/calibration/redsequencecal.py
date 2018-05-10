@@ -755,14 +755,28 @@ class RedSequenceCalibrator(object):
         # And a combined
         #  All off-diagonal r value plots
 
-        fig = plt.figure(figsize=(10,6))
+        zredstr = RedSequenceColorPar(self.config.parfile, zbinsize=0.005)
+
+        for j in xrange(self.ncol):
+            fig = plt.figure(figsize=(10, 6))
+            fig.clf()
+
+            zredstr.plot_redsequence_diag(fig, j, self.config.bands)
+            fig.savefig(os.path.join(self.config.fullplotpath,
+                                     '%s_%s-%s.png' % (self.config.outbase,
+                                                       self.config.bands[j], self.config.bands[j + 1])))
+            plt.close(fig)
+
+        fig = plt.figure(figsize=(10, 6))
         fig.clf()
-
-
-        plt.close(fig)
+        zredstr.plot_redsequence_offdiags(fig, self.config.bands)
+        fig.savefig(os.path.join(self.config.fullplotpath,
+                                 '%s_offdiags.png' % (self.config.outbase)))
 
         # And two panel plot with
         #  left panel is offset, scatter, outliers as f(z)
         #  Right panel is zred vs z (whichever)
         # We need to do this for both zred and zred2.
+
+        
 
