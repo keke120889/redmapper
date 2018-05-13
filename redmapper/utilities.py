@@ -45,7 +45,7 @@ class MStar(object):
         except:
             raise IOError("Could not find mstar resource mstar_%s_%s.fit" % (self.survey, self.band))
         try:
-            self._mstar_arr = fitsio.read(self.mstar_file,ext=1)
+            self._mstar_arr = fitsio.read(self.mstar_file, ext=1, upper=True)
         except:
             raise IOError("Could not find mstar file mstar_%s_%s.fit" % (self.survey, self.band))
 
@@ -450,21 +450,23 @@ def make_nodes(zrange, nodesize, maxnode=None):
     """
     """
 
-    if maxnode is None:
-        maxnode = zrange[1]
+    if maxnode is None or maxnode < 0.0:
+        _maxnode = zrange[1]
+    else:
+        _maxnode = np.clip(maxnode, 0.0, zrange[1])
 
     # Start with a simple arange
-    nodes = np.arange(zrange[0], maxnode, nodesize)
+    nodes = np.arange(zrange[0], _maxnode, nodesize)
 
     # Should we extend the last bin?
-    if ((maxnode - nodes.max()) > (nodesize / 2. + 0.01)):
+    if ((_maxnode - nodes.max()) > (nodesize / 2. + 0.01)):
         # one more node!
-        nodes = np.append(nodes, maxnode)
-    elif ~np.allclose(np.max(nodes), maxnode):
-        nodes[-1] = maxnode
+        nodes = np.append(nodes, _maxnode)
+    elif ~np.allclose(np.max(nodes), _maxnode):
+        nodes[-1] = _maxnode
 
     # and finally check if maxnode was lower
-    if maxnode < zrange[1]:
+    if _maxnode < zrange[1]:
         nodes = np.append(nodes, zrange[1])
 
     return nodes
