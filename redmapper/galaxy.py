@@ -81,7 +81,7 @@ class GalaxyCatalog(Catalog):
         pixelated, fitsformat = hdr.get("PIXELS", 0), hdr.get("FITS", 0)
 
         if not pixelated:
-            cat = fitsio.read(filename, ext=1)
+            cat = fitsio.read(filename, ext=1, upper=True)
             return cls(cat)
 
         # this is to keep us from trying to use old IDL galfiles
@@ -89,7 +89,7 @@ class GalaxyCatalog(Catalog):
             raise ValueError("Input galfile must describe fits files.")
 
         # now we can read in the galaxy table summary file...
-        tab = fitsio.read(filename, ext=1)
+        tab = fitsio.read(filename, ext=1, upper=True)
         nside_tab = tab[0]['NSIDE']
         if nside > nside_tab:
             raise ValueError("""Requested nside (%d) must not be larger than
@@ -117,13 +117,13 @@ class GalaxyCatalog(Catalog):
                 _, indices = esutil.numpy_util.match(inhpix, tab[0]['HPIX'])
 
         # create the catalog array to read into
-        elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]].decode()),ext=1, rows=0)
+        elt = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][indices[0]].decode()),ext=1, rows=0, upper=True)
         cat = np.zeros(np.sum(tab[0]['NGALS'][indices]), dtype=elt.dtype)
 
         # read the files
         ctr = 0
         for index in indices:
-            cat[ctr : ctr+tab[0]['NGALS'][index]] = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][index].decode()), ext=1)
+            cat[ctr : ctr+tab[0]['NGALS'][index]] = fitsio.read('%s/%s' % (path, tab[0]['FILENAMES'][index].decode()), ext=1, upper=True)
             ctr += tab[0]['NGALS'][index]
         # In the IDL version this is trimmed to the precise boundary requested.
         # that's easy in simplepix.  Not sure how to do in healpix.
@@ -152,7 +152,7 @@ class GalaxyCatalog(Catalog):
                             ('LKHD', 'f4'),
                             ('CHISQ', 'f4')]
 
-        dtype_augment = [dt for dt in zred_ztra_dtype if dt[0].lower() not in self.dtype.names]
+        dtype_augment = [dt for dt in zred_extra_dtype if dt[0].lower() not in self.dtype.names]
         if len(dtype_augment) > 0:
             self.add_fields(dtype_augment)
 
