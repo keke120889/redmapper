@@ -772,7 +772,7 @@ class ClusterCatalog(Catalog):
     def from_catfile(cls, filename, **kwargs):
         """
         """
-        cat = fitsio.read(filename, ext=1)
+        cat = fitsio.read(filename, ext=1, upper=True)
 
         return cls(cat, **kwargs)
 
