@@ -56,3 +56,9 @@ lnw_sat_sigma: 0.273727
 lnw_sat_mean: 0.0310334
 lnw_fg_sigma: 0.283303
 lnw_fg_mean: -0.278723
+
+calib_color_nodesizes: [0.05, 0.05, 0.05, 0.05]
+calib_slope_nodesizes: [0.1, 0.1, 0.1, 0.1]
+calib_color_maxnodes: [0.4, -1.0, -1.0, -1.0]
+calib_covmat_maxnodes: [0.5, -1.0, -1.0, -1.0]
+calib_color_order: [1, 2, 3, 0]
