@@ -126,7 +126,7 @@ class HPMask(Mask):
     def __init__(self, config):
         # record for posterity
         self.maskfile = config.maskfile
-        maskinfo, hdr = fitsio.read(config.maskfile, ext=1, header=True)
+        maskinfo, hdr = fitsio.read(config.maskfile, ext=1, header=True, upper=True)
         # maskinfo converted to a catalog (array of Entrys)
         maskinfo = Catalog(maskinfo)
         nside_mask = hdr['NSIDE']
