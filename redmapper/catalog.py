@@ -56,14 +56,14 @@ class DataObject(object):
         Returns:
             DataObject, properly constructed.
         """
-        array = fitsio.read(filename, ext=ext)
+        array = fitsio.read(filename, ext=ext, upper=True)
         return cls(array)
 
     @classmethod
     def from_fits_ext(cls, fits_ext):
         """
         """
-        array = fits_ext.read()
+        array = fits_ext.read(upper=True)
         return cls(array)
 
     @classmethod
@@ -93,6 +93,14 @@ class DataObject(object):
         array = np.zeros(self._ndarray.size, newdtype)
         self._lower_array(array)
         self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
+
+    def to_fits_file(self, filename, clobber=False, header=None):
+        if self._ndarray.size == 1:
+            temp_array = np.zeros(1, dtype=self._ndarray.dtype)
+            temp_array[0] = self._ndarray
+            fitsio.write(filename, temp_array, clobber=clobber, header=header)
+        else:
+            fitsio.write(filename, self._ndarray, clobber=clobber, header=header)
 
     def _lower_array(self, array):
         names = list(array.dtype.names)
