@@ -12,6 +12,7 @@ from ..redsequence import RedSequenceColorPar
 from ..color_background import ColorBackground
 from ..galaxy import GalaxyCatalog
 from ..catalog import Catalog, Entry
+from ..zred_color import ZredColor
 from ..utilities import make_nodes, CubicSpline, interpol
 
 class RedSequenceCalibrator(object):
@@ -26,7 +27,7 @@ class RedSequenceCalibrator(object):
 
         self._galfile = galfile
 
-    def run(self):
+    def run(self, doRaise=True):
         """
         """
 
@@ -40,6 +41,9 @@ class RedSequenceCalibrator(object):
             use, = np.where((gals.z > self.config.zrange[0]) &
                             (gals.z < self.config.zrange[1]) &
                             (gals.pmem > self.config.calib_pcut))
+
+        if use.size == 0:
+            raise RuntimeError("No good galaxies in %s!" % (self._galfile))
 
         gals = gals[use]
 
@@ -97,13 +101,13 @@ class RedSequenceCalibrator(object):
 
             node_dict[self.ztag[j]] = make_nodes(self.config.zrange, self.config.calib_color_nodesizes[j],
                                                  maxnode=self.config.calib_color_maxnodes[j])
-            node_dict[self.zstag[j]] = make_nodes(self.config.zrane, self.config.calib_slope_nodesizes[j],
+            node_dict[self.zstag[j]] = make_nodes(self.config.zrange, self.config.calib_slope_nodesizes[j],
                                                   maxnode=self.config.calib_color_maxnodes[j])
 
             dtype.extend([(self.ztag[j], 'f4', node_dict[self.ztag[j]].size),
                           (self.ctag[j], 'f4', node_dict[self.ztag[j]].size),
                           (self.zstag[j], 'f4', node_dict[self.zstag[j]].size),
-                          (self.stag[j], 'f4', node_dict[self.stag[j]].size)])
+                          (self.stag[j], 'f4', node_dict[self.zstag[j]].size)])
 
         # Make the pars ... and fill them with the defaults
         self.pars = Entry(np.zeros(1, dtype=dtype))
@@ -133,12 +137,12 @@ class RedSequenceCalibrator(object):
         self.bkg = ColorBackground(self.config.bkgfile_color)
 
         # And prepare for luptitude corrections
-        if self.config.b[0] = 0.0:
+        if self.config.b[0] == 0.0:
+            self.do_lupcorr = False
+        else:
             self.do_lupcorr = True
             self.bnmgy = self.config.b * 1e9
             self.lupzp = 22.5
-        else:
-            self.do_lupcorr = False
 
         # Compute pivotmags
         self._calc_pivotmags(colgals)
@@ -147,13 +151,13 @@ class RedSequenceCalibrator(object):
         self._calc_medcols(colgals)
 
         # Compute diagonal parameters
-        self._calc_diagonal_pars(gals)
+        self._calc_diagonal_pars(gals, doRaise=doRaise)
 
         # Compute off-diagonal parameters
-        self._calc_offdiagonal_pars(gals)
+        self._calc_offdiagonal_pars(gals, doRaise=doRaise)
 
         # Compute volume factor
-        self._calc_volume_factor()
+        self._calc_volume_factor(self.config.zrange[1])
 
         # Write out the parameter file
         self.save_pars(self.config.parfile, clobber=False)
@@ -163,10 +167,10 @@ class RedSequenceCalibrator(object):
         self._calc_zreds(gals, do_correction=False)
 
         # Compute correction (mode1)
-        self._calc_correction(gals)
+        self._calc_corrections(gals)
 
         # Compute correction (mode2)
-        self._calc_correction(gals, mode2=True)
+        self._calc_corrections(gals, mode2=True)
 
         # And re-save the parameter file
         self.save_pars(self.config.parfile, clobber=True)
@@ -175,10 +179,12 @@ class RedSequenceCalibrator(object):
         # Later will want this parallelized, I think
         self._calc_zreds(gals, do_correction=True)
 
+        # FIXME: want to save zreds (and just zreds!)
+
         # Make diagnostic plots
         self._make_diagnostic_plots(gals)
 
-    def _compute_startvals(self, nodes, z, val, err=None, median=False, fit=False, mincomp=3):
+    def _compute_startvals(self, nodes, z, val, xval=None, err=None, median=False, fit=False, mincomp=3):
         """
         """
 
@@ -232,9 +238,9 @@ class RedSequenceCalibrator(object):
                     mvals[i] = np.median(val[u])
                     scvals[i] = np.median(np.abs(val[u] - mvals[i]))
                 else:
-                    fit = least_squares(_linfunc, [0.0, 0.0],  loss='soft_l1', args=(z[u], val[u]))
-                    cvals[i] = fit[1]
-                    svals[i] = np.clip(fit[0], None, 0.0)
+                    fit = least_squares(_linfunc, [0.0, 0.0],  loss='soft_l1', args=(xval[u], val[u]))
+                    cvals[i] = fit.x[1]
+                    svals[i] = np.clip(fit.x[0], None, 0.0)
 
                 if err is not None:
                     evals[i] = np.median(err[u])
@@ -244,7 +250,7 @@ class RedSequenceCalibrator(object):
         else:
             return cvals, svals, evals
 
-    def _compute_single_lupcorr(self, cvals, svals, gals, dmags, mags, lups, mind, sign):
+    def _compute_single_lupcorr(self, j, cvals, svals, gals, dmags, mags, lups, mind, sign):
         spl = CubicSpline(self.pars._ndarray[self.ztag[j]], cvals)
         cv = spl(gals.z)
         spl = CubicSpline(self.pars._ndarray[self.zstag[j]], svals)
@@ -253,7 +259,7 @@ class RedSequenceCalibrator(object):
         mags[:, mind] = mags[:, mind + sign] + sign * (cv + sv * dmags)
 
         flux = 10.**((mags[:, mind] - self.lupzp) / (-2.5))
-        lups[:, mind] = 2.5 * np.log10(1.0 / self.config.b[mind]) - np.asinh(0.5 * flux / self.bnmgy[mind]) / (0.4 * np.log(10.0))
+        lups[:, mind] = 2.5 * np.log10(1.0 / self.config.b[mind]) - np.arcsinh(0.5 * flux / self.bnmgy[mind]) / (0.4 * np.log(10.0))
 
         magcol = mags[:, j] - mags[:, j + 1]
         lupcol = lups[:, j] - lups[:, j + 1]
@@ -271,7 +277,7 @@ class RedSequenceCalibrator(object):
         # With binning, approximate the positions for starting the fit
         pivmags = np.zeros_like(self.pars.pivotmag_z)
 
-        for i in xrange(rvals.size):
+        for i in xrange(pivmags.size):
             pivmags, _ = self._compute_startvals(self.pars.pivotmag_z, gals.z, gals.refmag, median=True)
 
         medfitter = MedZFitter(self.pars.pivotmag_z, gals.z, gals.refmag)
@@ -313,7 +319,7 @@ class RedSequenceCalibrator(object):
             self.pars.medcol[:, j] = mvals
             self.pars.medcol_width[:, j] = 1.4826 * scvals
 
-    def _calc_diagonal_pars(self, gals):
+    def _calc_diagonal_pars(self, gals, doRaise=True):
         """
         """
 
@@ -348,7 +354,7 @@ class RedSequenceCalibrator(object):
                 sign_indices[c] = -1
                 mind_indices[c] = j
                 c += 1
-            for j in xrange(self.config.ref_ind - 1, 0, -1):
+            for j in xrange(self.config.ref_ind - 2, -1, -1):
                 col_indices[c] = j
                 sign_indices[c] = 1
                 mind_indices[c] = j
@@ -358,7 +364,7 @@ class RedSequenceCalibrator(object):
 
             mags[:, self.config.ref_ind] = gals.mag[:, self.config.ref_ind]
             flux = 10.**((mags[:, self.config.ref_ind] - self.lupzp) / (-2.5))
-            lups[:, self.config.ref_ind] = 2.5 * np.log10(1.0 / self.config.b[self.config.ref_ind]) - np.asinh(0.5 * flux / bnmgy[self.config.ref_ind]) / (0.4 * np.log(10.0))
+            lups[:, self.config.ref_ind] = 2.5 * np.log10(1.0 / self.config.b[self.config.ref_ind]) - np.arcsinh(0.5 * flux / self.bnmgy[self.config.ref_ind]) / (0.4 * np.log(10.0))
         else:
             col_indices = np.arange(ncol)
             sign_indices = np.ones(ncol, dtype=np.int32)
@@ -397,43 +403,45 @@ class RedSequenceCalibrator(object):
             trunc[0, :] = med[u] - self.config.calib_color_nsig * sc[u]
             trunc[1, :] = med[u] + self.config.calib_color_nsig * sc[u]
 
+            dmags = gals.refmag - pivotmags
+
             # And the starting values...
             # Note that this returns the slope values (svals) at the nodes from the cvals
             # but these might not be the same nodes, so we have to approximate
-            cvals_temp, svals_temp, _ = self.compute_startvals(self.pars._ndarray[self.ztag[j]],
-                                                                        gals.z[u], col[u],
-                                                                        fit=True, mincomp=5)
+            cvals_temp, svals_temp, _ = self._compute_startvals(self.pars._ndarray[self.ztag[j]],
+                                                                gals.z[u], col[u],
+                                                                xval=dmags[u],
+                                                                fit=True, mincomp=5)
             cvals[:] = cvals_temp
-            inds = np.searchsorted(self.pars._ndarray[self.ztag[i]],
+            inds = np.searchsorted(self.pars._ndarray[self.ztag[j]],
                                    self.pars._ndarray[self.zstag[j]])
             svals[:] = svals_temp[inds]
 
-            dmags = gals.refmag - pivotmags
 
             # And do the luptitude correction if necessary.
             if self.do_lupcorr:
-                lupcorr = self._compute_single_lupcorr(cvals, svals, gals, dmags, mags, lups, mind, sign)
+                lupcorr = self._compute_single_lupcorr(j, cvals, svals, gals, dmags, mags, lups, mind, sign)
             else:
                 lupcorr = np.zeros(gals.size)
 
             # We fit in stages: first the mean, then the slope, then the scatter,
             # and finally all three
 
-            rsfitter = RedSequenceFitter(self.pars._ndarray[self.ztag[i]],
+            rsfitter = RedSequenceFitter(self.pars._ndarray[self.ztag[j]],
                                          gals.z[u], col[u], col_err[u],
                                          dmags=dmags[u],
-                                         trunc=trunc[:, u],
+                                         trunc=trunc,
                                          slope_nodes=self.pars._ndarray[self.zstag[j]],
                                          scatter_nodes=self.pars.covmat_z,
                                          lupcorrs=lupcorr[u],
                                          probs=probs[u],
-                                         bkgs=self.bkg.lookup_diagonal(j, col[u], gals.refmag[u]))
+                                         bkgs=self.bkg.lookup_diagonal(j, col[u], gals.refmag[u], doRaise=doRaise))
 
             # fit the mean
             cvals, = rsfitter.fit(cvals, svals, scvals, fit_mean=True)
             # Update the lupcorr...
             if self.do_lupcorr:
-                rsfitter._lupcorrs[:] = self._compute_single_lupcorr(cvals, svals, gals, dmags, mags, lups, mind, sign)[u]
+                rsfitter._lupcorrs[:] = self._compute_single_lupcorr(j, cvals, svals, gals, dmags, mags, lups, mind, sign)[u]
             # fit the slope
             svals, = rsfitter.fit(cvals, svals, scvals, fit_slope=True)
             # fit the scatter
@@ -451,7 +459,7 @@ class RedSequenceCalibrator(object):
             # And print the time taken
             print('Done in %.2f seconds.' % (time.time() - starttime))
 
-    def _calc_offdiagonal_pars(self, gals):
+    def _calc_offdiagonal_pars(self, gals, doRaise=True):
         """
         """
         # The routine to compute the off-diagonal elements
@@ -486,11 +494,11 @@ class RedSequenceCalibrator(object):
                               self.pars._ndarray[self.stag[j]])
             si[:, j] = spl(gals.z)
             spl = CubicSpline(self.pars.pivotmag_z, self.pars.medcol[:, j])
-            medci[:, i] = spl(gals.z)
+            medci[:, j] = spl(gals.z)
             spl = CubicSpline(self.pars.pivotmag_z, self.pars.medcol_width[:, j])
-            medwidthi[:, i] = spl(gals.z)
+            medwidthi[:, j] = spl(gals.z)
             spl = CubicSpline(self.pars.covmat_z, self.pars.sigma[j, j, :])
-            gsig[:, i] = spl(gals.z)
+            gsig[:, j] = spl(gals.z)
 
         if self.do_lupcorr:
             mags = np.zeros((gals.size, self.config.nmag))
@@ -498,24 +506,23 @@ class RedSequenceCalibrator(object):
 
             mags[:, self.config.ref_ind] = gals.refmag
 
-            for j in xrange(self.config.ref_ind + 1, nmag):
+            for j in xrange(self.config.ref_ind + 1, self.config.nmag):
                 mags[:, j] = mags[:, j - 1] - (ci[:, j - 1] + si[:, j - 1] * (gals.refmag - pivotmags))
             for j in xrange(self.config.ref_ind - 1, -1, -1):
                 mags[:, j] = mags[:, j + 1] + (ci[:, j] + si[:, j] * (gals.refmag - pivotmags))
 
             for j in xrange(self.config.nmag):
                 flux = 10.**((mags[:, j] - self.lupzp) / (-2.5))
-                lups[:, j] = 2.5 * np.log10(1.0 / self.config.b[j]) - np.asinh(0.5 * flux / self.bnmgy[j]) / (0.5 * np.log(10.0))
+                lups[:, j] = 2.5 * np.log10(1.0 / self.config.b[j]) - np.arcsinh(0.5 * flux / self.bnmgy[j]) / (0.5 * np.log(10.0))
 
             magcol = mags[:, :-1] - mags[:, 1:]
             lupcol = lups[:, :-1] - lups[:, 1:]
 
             lupcorr = lupcol - magcol
         else:
-            lupcorr = np.zeros_like((gals.size, ncol))
+            lupcorr = np.zeros((gals.size, ncol))
 
         template_col = np.zeros((gals.size, ncol))
-        gsig = np.zeros_like(template_col)
         for j in xrange(ncol):
             template_col[:, j] = ci[:, j] + si[:, j] * (gals.refmag - pivotmags) + lupcorr[:, j]
 
@@ -523,7 +530,7 @@ class RedSequenceCalibrator(object):
 
         # figure out order with a ranking based on the configured order
         bits = 2**np.arange(ncol, dtype=np.int32)
-        covmat_rank = np.zeros((ncol * ncol - ncol) / 2, dtype=np.int32)
+        covmat_rank = np.zeros((ncol * ncol - ncol) // 2, dtype=np.int32)
         covmat_order = self.config.calib_color_order
         ctr = 0
         for j in xrange(ncol):
@@ -533,7 +540,7 @@ class RedSequenceCalibrator(object):
 
         covmat_rank = np.sort(covmat_rank)
 
-        full_covmats = self.pars.covmat_amp.copy(deep=True)
+        full_covmats = self.pars.covmat_amp.copy()
 
         for ctr in xrange(covmat_rank.size):
             starttime = time.time()
@@ -555,12 +562,12 @@ class RedSequenceCalibrator(object):
 
             print("Working on %d, %d" % (j, k))
 
-            u, = np.where((galcolor[:, j] > medci[:, j] - self.config.calib_color_nsig * medwidth[:, j]) &
-                          (galcolor[:, j] < medci[:, j] + self.config.calib_color_nsig * medwidth[:, j]) &
-                          (galcolor[:, k] > medci[:, k] - self.config.calib_color_nsig * medwidth[:, k]) &
-                          (galcolor[:, k] < medci[:, k] + self.config.calib_color_nsig * medwidth[:, k]))
+            u, = np.where((galcolor[:, j] > medci[:, j] - self.config.calib_color_nsig * medwidthi[:, j]) &
+                          (galcolor[:, j] < medci[:, j] + self.config.calib_color_nsig * medwidthi[:, j]) &
+                          (galcolor[:, k] > medci[:, k] - self.config.calib_color_nsig * medwidthi[:, k]) &
+                          (galcolor[:, k] < medci[:, k] + self.config.calib_color_nsig * medwidthi[:, k]))
 
-            bvals = self.bkg.lookup_offdiag(j, k, galcolor[:, j], galcolor[:, k], gals.refmag)
+            bvals = self.bkg.lookup_offdiag(j, k, galcolor[:, j], galcolor[:, k], gals.refmag, doRaise=doRaise)
 
             odfitter = RedSequenceOffDiagonalFitter(self.pars.covmat_z,
                                                     gals.z[u],
@@ -604,21 +611,21 @@ class RedSequenceCalibrator(object):
 
         hdr = fitsio.FITSHDR()
         hdr['NCOL'] = self.config.nmag - 1
-        hdr['MSTARBUR'] = self.config.mstar_survey
+        hdr['MSTARSUR'] = self.config.mstar_survey
         hdr['MSTARBAN'] = self.config.mstar_band
         hdr['LIMMAG'] = self.config.limmag_catalog
         # Saved with arbitrary cushion that seems to work well
         hdr['ZRANGE0'] = np.clip(self.config.zrange[0] - 0.07, 0.01, None)
         hdr['ZRANGE1'] = self.config.zrange[1] + 0.07
-        hdr['ALPHA'] = self.config.calib_lumfunc_alpha0
+        hdr['ALPHA'] = self.config.calib_lumfunc_alpha
         hdr['ZBINFINE'] = self.config.zredc_binsize_fine
         hdr['ZBINCOAR'] = self.config.zredc_binsize_coarse
         hdr['LOWZMODE'] = 0
         hdr['REF_IND'] = self.config.ref_ind
-        for j in xrange(self.config.b):
-            hdr['BVALUE%d' % (j + 1)] = self.config.b[j]
+        for j, b in enumerate(self.config.b):
+            hdr['BVALUE%d' % (j + 1)] = b
 
-        fitsio.write(filename, self.pars._ndarray, header=hdr, clobber=clobber)
+        self.pars.to_fits_file(filename, header=hdr, clobber=clobber)
 
     def _calc_zreds(self, gals, do_correction=True):
         """
@@ -677,7 +684,7 @@ class RedSequenceCalibrator(object):
             if i == 0:
                 zlo = self.pars.corr_slope_z[0]
             else:
-                zlo = (self.pars.corr_slope_z[i - 1] + pars.corr_slope_z[i]) / 2.
+                zlo = (self.pars.corr_slope_z[i - 1] + self.pars.corr_slope_z[i]) / 2.
             if i == (self.pars.corr_slope_z.size - 1):
                 zhi = self.pars.corr_slope_z[i]
             else:
@@ -693,8 +700,8 @@ class RedSequenceCalibrator(object):
                     bkg_cvals[i] = bkg_cvals[i - 1]
             else:
                 st = np.argsort(probs[guse[u]])
-                uu = u[st[0:nu/2]]
-            bkg_cvals[i] = np.std(gals.z[guse[uu]] - gals.zred[guse[uu]])**2.
+                uu = u[st[0:u.size // 2]]
+                bkg_cvals[i] = np.std(gals.z[guse[uu]] - gals.zred[guse[uu]])**2.
 
         if mode2:
             print("Fitting zred2 corrections...")
@@ -710,7 +717,7 @@ class RedSequenceCalibrator(object):
                                       slope_nodes=self.pars.corr_slope_z,
                                       probs=np.clip(probs[guse], None, 0.99),
                                       dmags=gals.refmag[guse] - pivotmags[guse],
-                                      ws=w[guse])
+                                      ws=w)
 
         # self.config.calib_corr_nocorrslope
         # first fit the mean
@@ -757,7 +764,7 @@ class RedSequenceCalibrator(object):
 
         zredstr = RedSequenceColorPar(self.config.parfile, zbinsize=0.005)
 
-        for j in xrange(self.ncol):
+        for j in xrange(self.config.nmag - 1):
             fig = plt.figure(figsize=(10, 6))
             fig.clf()
 
@@ -784,8 +791,8 @@ class RedSequenceCalibrator(object):
 
         mlim = zredstr.mstar(gals.zred) - 2.5 * np.log10(0.2)
 
-        use, = ((gals.pmem > pcut) &
-                (gals.refmag < mlim))
+        use, = np.where((gals.pmem > pcut) &
+                        (gals.refmag < mlim))
 
         ugals = gals[use]
 
@@ -871,7 +878,7 @@ class RedSequenceCalibrator(object):
 
             # Left panel is offset, scatter, etc.
             ax = fig.add_subplot(121)
-            ax.errorbar(zstr[xcol], zstr['delta'], yerr=zstr['delta_err'], 'k^')
+            ax.errorbar(zstr[xcol], zstr['delta'], yerr=zstr['delta_err'], fmt='k^')
             ax.plot(self.config.zrange, [0.0, 0.0], 'k:')
             ax.plot(zstr[xcol], zstr['delta_std'], 'r-')
             ax.plot(zstr[xcol], zstr['zuse_e'], 'b-')
