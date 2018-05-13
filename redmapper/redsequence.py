@@ -49,7 +49,7 @@ class RedSequenceColorPar(object):
 
             has_file = False
         else:
-            pars,hdr=fitsio.read(filename,ext=1,header=True)
+            pars,hdr=fitsio.read(filename, ext=1, header=True, upper=True)
             try:
                 limmag = hdr['LIMMAG']
                 if (zrange is None):
@@ -470,19 +470,19 @@ class RedSequenceColorPar(object):
         not_extrap, = np.where(~self.extrapolated)
 
         ax = fig.add_subplot(221)
-        ax.plot(self.z, self.c[:, ind], 'r--')
+        ax.plot(self.z[: -1], self.c[: -1, ind], 'r--')
         ax.plot(self.z[not_extrap], self.c[not_extrap, ind], 'r-')
         ax.set_xlabel('Redshift')
         ax.set_ylabel('<%s - %s>' % (bands[ind], bands[ind + 1]))
 
         ax = fig.add_subplot(222)
-        ax.plot(self.z, self.slope[:, ind], 'r--')
+        ax.plot(self.z[: -1], self.slope[: -1, ind], 'r--')
         ax.plot(self.z[not_extrap], self.slope[not_extrap, ind], 'r-')
         ax.set_xlabel('Redshift')
         ax.set_ylabel('(%s - %s) slope' % (bands[ind], bands[ind + 1]))
 
         ax = fig.add_subplot(223)
-        ax.plot(self.z, self.sigma[ind, ind, :], 'r--')
+        ax.plot(self.z[: -1], self.sigma[ind, ind, : -1], 'r--')
         ax.plot(self.z[not_extrap], self.sigma[ind, ind, not_extrap], 'r-')
         ax.set_xlabel('Redshift')
         ax.set_ylabel('(%s - %s) sigma' % (bands[ind], bands[ind + 1]))
@@ -503,10 +503,11 @@ class RedSequenceColorPar(object):
         for j in xrange(self.ncol):
             for k in xrange(j + 1, self.ncol):
                 ax = fig.add_subplot(nrow, 2, ctr)
-                ax.plot(self.z, self.sigma[j, k, :], 'r--')
+                ax.plot(self.z[: -1], self.sigma[j, k, : -1], 'r--')
                 ax.plot(self.z[not_extrap], self.sigma[j, k, not_extrap], 'r-')
                 ax.set_xlabel('Redshift')
-                ax.set_ylabel('Corr %s-%s / %s-%s' % (bands[j], bands[j + 1], bands[k], band[k + 1]))
+                ax.set_ylabel('Corr %s-%s / %s-%s' % (bands[j], bands[j + 1], bands[k], bands[k + 1]))
+                ctr += 1
 
         fig.tight_layout()
 
