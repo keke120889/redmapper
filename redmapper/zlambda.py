@@ -455,7 +455,7 @@ class ZlambdaCorrectionPar(object):
 
         self.zlambda_pivot = zlambda_pivot
 
-        pars = fitsio.read(parfile, ext=1)
+        pars = fitsio.read(parfile, ext=1, upper=True)
 
         nbins = np.round((zrange[1] - zrange[0])/zbinsize).astype(np.int32)
         self.z = zbinsize*np.arange(nbins) + zrange[0]
