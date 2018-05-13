@@ -157,6 +157,10 @@ class Configuration(object):
     calib_use_pcol = ConfigField(default=True)
     calib_redgal_template = ConfigField()
     calib_pivotmag_nodesize = ConfigField(default=0.1)
+    calib_color_nodesizes = ConfigField(isArray=True, default=np.array([0.05]))
+    calib_slope_nodesizes = ConfigField(isArray=True, default=np.array([0.1]))
+    calib_color_maxnodes = ConfigField(isArray=True, default=np.array([-1.0]))
+    calib_covmat_maxnodes = ConfigField(isArray=True, default=np.array([-1.0]))
     calib_covmat_nodesize = ConfigField(default=0.15)
     calib_covmat_min_eigenvalue = ConfigField(default=0.0001)
     calib_covmat_prior = ConfigField(default=0.45)
@@ -164,7 +168,7 @@ class Configuration(object):
     calib_corr_slope_nodesize = ConfigField(default=0.1)
     calib_corr_nocorrslope = ConfigField(default=True)
     calib_corr_pcut = ConfigField(default=0.9)
-
+    calib_color_order = ConfigField(isArray=True, default=np.array([-1]))
 
     calib_color_nsig = ConfigField(default=1.5)
     calib_redspec_nsig = ConfigField(default=2.0)
@@ -180,6 +184,9 @@ class Configuration(object):
     calib_color_pcut = ConfigField(default=0.7)
 
     calib_lumfunc_alpha = ConfigField(default=-1.0, required=True)
+
+    zredc_binsize_fine = ConfigField(default=0.0001)
+    zredc_binsize_coarse = ConfigField(default=0.005)
 
     zlambda_pivot = ConfigField(default=30.0, required=True)
     zlambda_binsize = ConfigField(default=0.002, required=True)
@@ -276,6 +283,9 @@ class Configuration(object):
         # Calibration size checking
         self._set_lengths(['calib_colormem_zbounds', 'calib_colormem_colormodes'],
                           len(self.calib_colormem_zbounds))
+        self._set_lengths(['calib_color_nodesizes', 'calib_slope_nodesizes',
+                           'calib_color_maxnodes', 'calib_covmat_maxnodes',
+                           'calib_color_order'], self.nmag - 1)
 
         # will want to set defaults here...
         self.cosmo = Cosmo()
@@ -364,7 +374,7 @@ class Configuration(object):
             # statistics are from the master table file
             gal_stats['galfile_pixelized'] = True
 
-            master=fitsio.read(self.galfile,ext=1)
+            master=fitsio.read(self.galfile, ext=1, upper=True)
 
             mode = master['MODE'][0].rstrip().decode()
             if (mode == 'SDSS'):
