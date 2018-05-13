@@ -25,7 +25,7 @@ class DepthMap(object):
         # record for posterity
         self.depthfile = config.depthfile
 
-        depthinfo, hdr = fitsio.read(self.depthfile, ext=1, header=True)
+        depthinfo, hdr = fitsio.read(self.depthfile, ext=1, header=True, upper=True)
         # convert into catalog for convenience...
         depthinfo = Catalog(depthinfo)
 
