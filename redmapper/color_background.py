@@ -170,10 +170,16 @@ class ColorBackground(object):
 
         return sigma_g
 
-    def lookup_diagonal(self, bkg_index, colors, refmags):
+    def lookup_diagonal(self, bkg_index, colors, refmags, doRaise=True):
         """
         """
-        bkg = self.bkgs[bkg_index * 100 + bkg_index]
+        try:
+            bkg = self.bkgs[bkg_index * 100 + bkg_index]
+        except KeyError:
+            if doRaise:
+                raise KeyError("Could not find a color background for %d" % (bkg_index))
+            else:
+                return np.zeros(colors.size)
 
         refmagindex = np.clip(np.searchsorted(bkg['refmagbins'], refmags - bkg['refmagbinsize']), 0, bkg['refmagbins'].size - 1)
         col_index = np.clip(np.searchsorted(bkg['colbins'], colors - bkg['colbinsize']), 0, bkg['colbins'].size - 1)
@@ -184,14 +190,20 @@ class ColorBackground(object):
         bkg = self.bkgs[bkg_index * 100 + bkg_index]
         return bkg['colrange']
 
-    def lookup_offdiag(self, bkg_index1, bkg_index2, colors1, colors2, refmags):
+    def lookup_offdiag(self, bkg_index1, bkg_index2, colors1, colors2, refmags, doRaise=True):
         """
         """
         key = bkg_index1 * 100 + bkg_index2
         if key not in self.bkgs:
             key = bkg_index2 * 100 + bkg_index1
 
-        bkg = self.bkgs[key]
+        try:
+            bkg = self.bkgs[key]
+        except KeyError:
+            if doRaise:
+                raise KeyError("Could not find a color background for %d, %d" % (bkg_index1, bkg_index1))
+            else:
+                return np.zeros(colors1.size)
 
         refmagindex = np.clip(np.searchsorted(bkg['refmagbins'], refmags - bkg['refmagbinsize']), 0, bkg['refmagbins'].size - 1)
         col_index1 = np.clip(np.searchsorted(bkg['col1bins'], colors1 - bkg['col1binsize']), 0, bkg['col1bins'].size - 1)
