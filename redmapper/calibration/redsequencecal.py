@@ -399,9 +399,7 @@ class RedSequenceCalibrator(object):
 
             u, = np.where((galcolor[:, j] > (med - self.config.calib_color_nsig * sc)) &
                           (galcolor[:, j] < (med + self.config.calib_color_nsig * sc)))
-            trunc = np.zeros((2, u.size))
-            trunc[0, :] = med[u] - self.config.calib_color_nsig * sc[u]
-            trunc[1, :] = med[u] + self.config.calib_color_nsig * sc[u]
+            trunc = self.config.calib_color_nsig * sc[u]
 
             dmags = gals.refmag - pivotmags
 
