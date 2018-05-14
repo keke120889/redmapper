@@ -112,16 +112,14 @@ class FitterTestCase(unittest.TestCase):
 
         nsig = 1.5
         ok, = np.where(np.abs(fitdata['GALCOLOR'] - m) < (nsig * mscat))
-        trunc = np.zeros((2, ok.size))
-        trunc[0, :] = m[ok] - nsig * mscat[ok]
-        trunc[1, :] = m[ok] + nsig * mscat[ok]
+        trunc = nsig * mscat[ok]
         rsfitter = RedSequenceFitter(nodes, fitdata['Z'][ok],
                                      fitdata['GALCOLOR'][ok], fitdata['GALCOLOR_ERR'][ok],
                                      dmags=fitdata['REFMAG'][ok] - np.median(fitdata['REFMAG'][ok]),
                                      trunc=trunc)
         meanpars3, = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_mean=True)
 
-        testing.assert_almost_equal(meanpars3, [0.93506074, 1.09253144, 1.27999684], 5)
+        testing.assert_almost_equal(meanpars3, [0.93794242, 1.0925605, 1.27758869], 5)
 
 
     def test_off_diagonal_fitter(self):
