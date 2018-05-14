@@ -116,6 +116,8 @@ class Configuration(object):
     wcenfile = ConfigField()
     redgalfile = ConfigField()
 
+    calib_nproc = ConfigField(default=1, required=True)
+
     outpath = ConfigField(default='./', required=True)
     plotpath = ConfigField(default='', required=True)
 
@@ -187,6 +189,11 @@ class Configuration(object):
 
     zredc_binsize_fine = ConfigField(default=0.0001)
     zredc_binsize_coarse = ConfigField(default=0.005)
+
+    bkg_chisqbinsize = ConfigField(default=0.5)
+    bkg_refmagbinsize = ConfigField(default=0.2)
+    bkg_zbinsize = ConfigField(default=0.02)
+    bkg_deepmode = ConfigField(default=False)
 
     zlambda_pivot = ConfigField(default=30.0, required=True)
     zlambda_binsize = ConfigField(default=0.002, required=True)
