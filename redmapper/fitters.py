@@ -65,11 +65,9 @@ class RedSequenceFitter(object):
             raise ValueError("Number of redshifts must be equal to errs")
 
         if trunc is not None:
-            self._trunc = np.atleast_2d(trunc)
-            if len(self._trunc.shape) != 2:
-                raise ValueError("trunc must be a 2xn_redshifts array")
-            if self._trunc.shape[0] != 2 or self._trunc.shape[1] != self._redshifts.size:
-                raise ValueError("trunc must be a 2xn_redshifts array")
+            self._trunc = np.atleast_1d(trunc)
+            if self._redshifts.size != self._trunc.size:
+                raise ValueError("Number of redshifts must be equal to truncs")
         else:
             self._trunc = None
 
@@ -111,12 +109,14 @@ class RedSequenceFitter(object):
             raise ValueError("If you supply probs you must also supply bkgs")
 
     def fit(self, p0_mean, p0_slope, p0_scatter,
-            fit_mean=False, fit_slope=False, fit_scatter=False):
+            fit_mean=False, fit_slope=False, fit_scatter=False,
+            min_scatter=0.0):
         """
         """
         self._fit_mean = fit_mean
         self._fit_slope = fit_slope
         self._fit_scatter = fit_scatter
+        self._min_scatter = min_scatter
 
         if not self._has_dmags and self._fit_slope:
             raise ValueError("Can only do fit_slope if dmags were supplied")
@@ -150,9 +150,8 @@ class RedSequenceFitter(object):
             spl = CubicSpline(self._scatter_nodes, p0_scatter)
             self._gsig = np.sqrt(np.clip(spl(self._redshifts), 0.001, None)**2. + self._err2s)
 
-        if not self._fit_mean and not self._fit_scatter and self._trunc is not None:
-            self._phi_b = 0.5 * (1. + special.erf((self._trunc[1, :] - self._gmean) / self._gsig))
-            self._phi_a = 0.5 * (1. + special.erf((self._trunc[0, :] - self._gmean) / self._gsig))
+        if not self._fit_scatter and self._trunc is not None:
+            self._phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
 
         pars = scipy.optimize.fmin(self, p0, disp=False)
 
@@ -186,14 +185,14 @@ class RedSequenceFitter(object):
         if self._fit_scatter:
             # We are fitting the scatter
             spl = CubicSpline(self._scatter_nodes, pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
-            self._gsig = np.sqrt(np.clip(spl(self._redshifts), 0.001, None)**2. + self._err2s)
+            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + self._err2s)
 
-        if (self._fit_mean or self._fit_scatter) and self._trunc is not None:
-            phi_b = 0.5 * (1. + special.erf((self._trunc[1, :] - gmean) / self._gsig))
-            phi_a = 0.5 * (1. + special.erf((self._trunc[0, :] - gmean) / self._gsig))
+        if self._fit_scatter and self._trunc is not None:
+            phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
         elif self._trunc is not None:
-            phi_b = self._phi_b
-            phi_a = self._phi_a
+            phi_bma = self._phi_bma
+        else:
+            phi_bma = 1.0
 
         if self._has_dmags:
             model_color = gmean + gslope * self._dmags + self._lupcorrs
@@ -204,10 +203,10 @@ class RedSequenceFitter(object):
 
         phi = (1. / self._gsig) * (1. / np.sqrt(2. * np.pi)) * np.exp(-0.5 * xi**2.)
 
-        if (self._trunc is not None):
-            gci = phi / (phi_b - phi_a)
-        else:
-            gci = phi
+        with np.warnings.catch_warnings():
+            np.warnings.simplefilter("ignore")
+            # This might have a divide-by-zero, that's okay, we check later.
+            gci = phi / phi_bma
 
         if self._has_probs:
             # Use probabilities and bkgs
@@ -216,7 +215,15 @@ class RedSequenceFitter(object):
             # No probabilities or bkgs
             vals = np.log(gci)
 
+        bad, = np.where(~np.isfinite(vals))
+        vals[bad] = -100.0
+
         t = -np.sum(vals)
+
+        # artificially hit a wall if scatter goes too low
+        if self._fit_scatter:
+            if pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes].min() < self._min_scatter:
+                t += 10000
 
         return t
 
