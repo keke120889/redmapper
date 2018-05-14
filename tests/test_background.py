@@ -4,14 +4,18 @@ from past.builtins import xrange
 import unittest
 import numpy.testing as testing
 import numpy as np
+import os
 import fitsio
+import tempfile
+import shutil
 
-from redmapper import Background
+from redmapper import Background, BackgroundGenerator
+from redmapper import Configuration
 from redmapper import ZredBackground
 
 class BackgroundTestCase(unittest.TestCase):
 
-    def runTest(self):
+    def test_readbkg(self):
         """
         Part one of this file checks that the background file
         exists and is formatted correctly.
@@ -74,6 +78,35 @@ class BackgroundTestCase(unittest.TestCase):
         idl_outputs = np.array([710.17102,1000.1127,1718.0394])
         py_outputs = zredbkg.sigma_g_lookup(zred, refmag)
         testing.assert_almost_equal(py_outputs, idl_outputs, decimal=3)
+
+    def test_generatebkg(self):
+        config_file = os.path.join('data_for_tests', 'testconfig.yaml')
+
+        config = Configuration(config_file)
+
+        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = test_dir
+
+        config.bkgfile = os.path.join(config.outpath, '%s_testbkg.fit' % (config.outbase))
+        config.zrange = [0.1, 0.2]
+
+        gen = BackgroundGenerator(config)
+        gen.run(clobber=True)
+
+        self.assertTrue(os.path.isfile(config.bkgfile))
+
+        bkg = fitsio.read(config.bkgfile, ext='CHISQBKG')
+
+        # Some spot-testing...
+        testing.assert_equal(bkg[0]['sigma_g'].shape, (48, 40, 5))
+        testing.assert_equal(bkg[0]['sigma_lng'].shape, (48, 40, 5))
+        testing.assert_almost_equal(bkg[0]['sigma_g'][30, 20, 2], 2.8444533)
+        testing.assert_almost_equal(bkg[0]['sigma_g'][30, 10, 3], 7.4324579)
+        testing.assert_almost_equal(bkg[0]['sigma_lng'][30, 10, 3], 3.7618985)
+        testing.assert_almost_equal(bkg[0]['sigma_lng'][45, 10, 3], 0.0)
+
+        if os.path.exists(test_dir):
+            shutil.rmtree(test_dir, True)
 
 
 if __name__=='__main__':
