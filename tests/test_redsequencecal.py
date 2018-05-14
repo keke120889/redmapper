@@ -53,9 +53,13 @@ class SelectRedSequenceCalTestCase(unittest.TestCase):
         testing.assert_almost_equal(pars[0]['pivotmag'], np.array([17.11333275, 18.5870018]), 5)
         testing.assert_almost_equal(pars[0]['medcol'], np.array([[1.89056611, 0.92165649, 0.40067941, 0.33493668],
                                                                  [2.00396729, 1.23734939, 0.47769779, 0.32707551]]), 5)
-        testing.assert_almost_equal(pars[0]['c01'], np.array([0.92390829, 1.07899368, 1.23799872]), 5)
-        testing.assert_almost_equal(pars[0]['slope01'], np.array([-0.00473213, -0.02403165]), 5)
-        testing.assert_almost_equal(pars[0]['covmat_amp'][1:3, 1:3, :], np.array([[[0.0006989, 0.0017012], [-0.00118965, -0.000662]], [[-0.00118965, -0.000662 ], [0.0025, 0.0025]]]), 5)
+        testing.assert_almost_equal(pars[0]['c01'], np.array([0.92372364, 1.07900822, 1.23833561]), 5)
+        testing.assert_almost_equal(pars[0]['slope01'], np.array([-0.00433907, -0.02314611]), 5)
+        testing.assert_almost_equal(pars[0]['covmat_amp'][1: 3, 1: 3, :],
+                                    np.array([[[0.00137495, 0.00360158],
+                                               [-0.00014885, 0.00035394]],
+                                              [[-0.00014885, 0.00035394],
+                                               [0.00034374, 0.00048195]]]), 5)
 
         if os.path.exists(test_dir):
             shutil.rmtree(test_dir, True)
