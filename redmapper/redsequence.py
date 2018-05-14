@@ -31,12 +31,15 @@ class RedSequenceColorPar(object):
         (maximum range)
 
     """
-    def __init__(self, filename, zbinsize=None, minsig=0.01, fine=False, zrange=None, config=None):
+    def __init__(self, filename, zbinsize=None, minsig=0.01, fine=False, zrange=None, config=None, limmag=None):
 
         if filename is None:
             if config is None:
                 raise ValueError("Must have either filename or config")
-            limmag = config.limmag_catalog
+            if limmag is None:
+                limmag = config.limmag_catalog
+            else:
+                limmag = limmag
             if zrange is None:
                 zrange = config.zrange
             alpha = config.calib_lumfunc_alpha
@@ -51,7 +54,10 @@ class RedSequenceColorPar(object):
         else:
             pars,hdr=fitsio.read(filename, ext=1, header=True, upper=True)
             try:
-                limmag = hdr['LIMMAG']
+                if limmag is None:
+                    limmag = hdr['LIMMAG']
+                else:
+                    limmag = limmag
                 if (zrange is None):
                     zrange = np.array([hdr['ZRANGE0'],hdr['ZRANGE1']])
                 alpha = hdr['ALPHA']
