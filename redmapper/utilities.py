@@ -470,3 +470,11 @@ def make_nodes(zrange, nodesize, maxnode=None):
         nodes = np.append(nodes, zrange[1])
 
     return nodes
+
+
+# for multiprocessing classes
+def _pickle_method(m):
+    if m.im_self is None:
+        return getattr, (m.im_class, m.im_func.func_name)
+    else:
+        return getattr, (m.im_self, m.im_func.func_name)
