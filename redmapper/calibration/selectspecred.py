@@ -154,9 +154,7 @@ class SelectSpecRedGalaxies(object):
             nsig = 1.5
             u, = np.where(np.abs(galcolor[:, j] - med) < nsig * width)
 
-            trunc = np.zeros((2, u.size))
-            trunc[0, :] = med[u] - nsig * width[u]
-            trunc[1, :] = med[u] + nsig * width[u]
+            trunc = nsig * width[u]
             rsfitter = RedSequenceFitter(nodes, gals.z[u], galcolor[u, j], galcolor_err[u, j],
                                          trunc=trunc)
 
