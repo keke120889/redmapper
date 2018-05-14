@@ -226,6 +226,7 @@ class ColorBackgroundGenerator(object):
         # Check if it's already there...
         if not clobber and os.path.isfile(self.config.bkgfile_color):
             print("Found %s and clobber is False" % (self.config.bkgfile_color))
+            return
 
         # read in the galaxies
         gals = GalaxyCatalog.from_galfile(self.config.galfile,
