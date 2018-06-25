@@ -5,8 +5,10 @@ import unittest
 import numpy.testing as testing
 import numpy as np
 import fitsio
+import esutil
 
 import redmapper
+from redmapper.utilities import CubicSpline, sample_from_pdf
 
 class SplineTestCase(unittest.TestCase):
     def runTest(self):
@@ -22,12 +24,29 @@ class SplineTestCase(unittest.TestCase):
 
         # will want to add error checking and exceptions to CubicSpline
 
-        spl=redmapper.utilities.CubicSpline(xx, yy)
+        spl=CubicSpline(xx, yy)
         vals=spl(np.array([0.01, 0.44, 0.55, 0.665]))
 
         # these numbers are also from redMaPPer 6.3.1, DR8
         testing.assert_almost_equal(vals,np.array([14.648017,19.792828,19.973761,20.301322],dtype=np.float64),decimal=6)
 
+        # Test the pdf inverter
+        def power(x, exp=1.0):
+            return x ** exp
+
+        np.random.seed(seed=1000)
+        vals = sample_from_pdf(power, [0.0, 10.0], 0.001, 10000, exp=1.0)
+        h = esutil.stat.histogram(vals, min=0.0, max=10.0-0.003, more=True, binsize=0.1)
+        fit = np.polyfit(np.log10(h['center']), np.log10(h['hist']), 1)
+        # first component should be ~1 for a log-log plot
+        testing.assert_almost_equal(fit[0], 0.9836134)
+
+        vals = sample_from_pdf(power, [0.0, 10.0], 0.001, 10000, exp=2.0)
+        h = esutil.stat.histogram(vals, min=0.0, max=10.0-0.003, more=True, binsize=0.1)
+        ok, = np.where(h['hist'] > 10.0)
+        fit = np.polyfit(np.log10(h['center'][ok]), np.log10(h['hist'][ok]), 1)
+        # first component should be ~2 for a log-log plot
+        testing.assert_almost_equal(fit[0], 1.98994079)
 
 class MStarTestCase(unittest.TestCase):
     def runTest(self):

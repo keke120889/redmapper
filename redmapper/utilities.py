@@ -471,6 +471,28 @@ def make_nodes(zrange, nodesize, maxnode=None):
 
     return nodes
 
+#######################
+## Sample from a pdf
+#######################
+
+def sample_from_pdf(f, ran, step, nsamp, **kwargs):
+    """
+    """
+
+    x = np.arange(ran[0], ran[1], step)
+    pdf = f(x, **kwargs)
+    pdf /= np.sum(pdf)
+    cdf = np.cumsum(pdf)
+    cdfi = (cdf * x.size).astype(np.int32)
+
+    rand = (np.random.uniform(size=nsamp) * x.size).astype(np.int32)
+
+    samples = np.zeros(nsamp)
+    for i in xrange(nsamp):
+        test, = np.where(cdfi >= rand[i])
+        samples[i] = x[test[0]]
+
+    return samples
 
 # for multiprocessing classes
 def _pickle_method(m):
