@@ -247,6 +247,17 @@ class RunPercolation(ClusterRunner):
 
         # and we're done with the iteration loop
 
+        # Compute connectivity factor w
+        minind = np.argmin(cluster.neighbors.r)
+        u, = np.where((cluster.neighbors.r > cluster.neighbors.r[minind]) &
+                      (cluster.neighbors.r < cluster.r_lambda) &
+                      (cluster.neighbors.p > 0.0))
+        lum = 10.**((cluster.mstar - cluster.neighbors.refmag[u]) / 2.5)
+        if self.config.wcen_uselum:
+            cluster.w = np.log(np.sum(cluster.neighbors.p[u] * lum / np.sqrt(cluster.neighbors.r[u]**2. + self.config.wcen_rsoft**2.)) / ((1./cluster.r_lambda) * np.sum(cluster.neighbors.p[u] * lum)))
+        else:
+            cluster.w = np.log(np.sum(cluster.neighbors.p[u] / np.sqrt(cluster.neighbors.r[u]**2. + self.config.wcen_rsoft**2.)) / ((1./cluster.r_lambda) * np.sum(cluster.neighbors.p[u])))
+
         # We need to compute richness for other possible centers!
         cluster.lambda_cent[0] = cluster.Lambda
         cluster.zlambda_cent[0] = cluster.z_lambda
