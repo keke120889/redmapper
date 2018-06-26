@@ -238,7 +238,7 @@ class RedSequenceCalibrator(object):
                     mvals[i] = np.median(val[u])
                     scvals[i] = np.median(np.abs(val[u] - mvals[i]))
                 else:
-                    fit = least_squares(_linfunc, [0.0, 0.0],  loss='soft_l1', args=(xval[u], val[u]))
+                    fit = least_squares(_linfunc, [0.0, 0.0], loss='soft_l1', args=(xval[u], val[u]))
                     cvals[i] = fit.x[1]
                     svals[i] = np.clip(fit.x[0], None, 0.0)
 
