@@ -129,12 +129,20 @@ class WcenCalibrator(object):
         self.randsatcatfile = randsatcatfile
         self.iteration = iteration
 
-    def run(self):
+    def run(self, testing=False):
         """
         """
 
         # Calibrate the brightest galaxy from the schechter function
-        self._schechter_montecarlo_calib()
+        if self.config.phi1_mmstar_m < -1000.0:
+            # Need to run the schechter calibration
+            self._schechter_montecarlo_calib(testing=testing)
+        else:
+            # We have the numbers already
+            self.phi1_mmstar_m = self.config.phi1_mmstar_m
+            self.phi1_mmstar_slope = self.config.phi1_mmstar_slope
+            self.phi1_msig_m = self.config.phi1_msig_m
+            self.phi1_msig_slope = self.config.phi1_msig_slope
 
         # Read in the parameters (fine steps)
         zredstr = RedSequenceColorPar(self.config.parfile, fine=True)
@@ -239,39 +247,52 @@ class WcenCalibrator(object):
         wp = cwfitter.fit(p0)
 
         # and save this...
-        wcenstr = np.zeros(1, dtype=[('DELTA0', 'f8'),
-                                     ('DELTA1', 'f8'),
-                                     ('SIGMA_M', 'f8'),
-                                     ('PIVOT', 'f8'),
-                                     ('LNW_FG_MEAN', 'f8'),
-                                     ('LNW_FG_SIGMA', 'f8'),
-                                     ('LNW_SAT_MEAN', 'f8'),
-                                     ('LNW_SAT_SIGMA', 'f8'),
-                                     ('LNW_CEN_MEAN', 'f8'),
-                                     ('LNW_CEN_SIGMA', 'f8')])
-        wcenstr['DELTA0'] = p[0]
-        wcenstr['DELTA1'] = p[1]
-        wcenstr['SIGMA_M'] = p[2]
-        wcenstr['PIVOT'] = self.config.wcen_pivot
-        wcenstr['LNW_FG_MEAN'] = self.config.lnw_fg_mean
-        wcenstr['LNW_FG_SIGMA'] = self.config.lnw_fg_sigma
-        wcenstr['LNW_SAT_MEAN'] = self.config.lnw_sat_mean
-        wcenstr['LNW_SAT_SIGMA'] = self.config.lnw_sat_sigma
-        wcenstr['LNW_CEN_MEAN'] = wp[0]
-        wcenstr['LNW_CEN_SIGMA'] = wp[1]
+        wcenstr = np.zeros(1, dtype=[('delta0', 'f8'),
+                                     ('delta1', 'f8'),
+                                     ('sigma_m', 'f8'),
+                                     ('pivot', 'f8'),
+                                     ('lnw_fg_mean', 'f8'),
+                                     ('lnw_fg_sigma', 'f8'),
+                                     ('lnw_sat_mean', 'f8'),
+                                     ('lnw_sat_sigma', 'f8'),
+                                     ('lnw_cen_mean', 'f8'),
+                                     ('lnw_cen_sigma', 'f8'),
+                                     ('phi1_mmstar_m', 'f8'),
+                                     ('phi1_mmstar_slope', 'f8'),
+                                     ('phi1_msig_m', 'f8'),
+                                     ('phi1_msig_slope', 'f8')])
+        wcenstr['delta0'] = p[0]
+        wcenstr['delta1'] = p[1]
+        wcenstr['sigma_m'] = p[2]
+        wcenstr['pivot'] = self.config.wcen_pivot
+        wcenstr['lnw_fg_mean'] = self.config.lnw_fg_mean
+        wcenstr['lnw_fg_sigma'] = self.config.lnw_fg_sigma
+        wcenstr['lnw_sat_mean'] = self.config.lnw_sat_mean
+        wcenstr['lnw_sat_sigma'] = self.config.lnw_sat_sigma
+        wcenstr['lnw_cen_mean'] = wp[0]
+        wcenstr['lnw_cen_sigma'] = wp[1]
+        wcenstr['phi1_mmstar_m'] = self.phi1_mmstar_m
+        wcenstr['phi1_mmstar_slope'] = self.phi1_mmstar_m
+        wcenstr['phi1_msig_m'] = self.phi1_msig_m
+        wcenstr['phi1_msig_slope'] = self.phi1_msig_slope
 
         fitsio.write(self.config.wcenfile, wcenstr, clobber=True)
 
-
-
-
-    def _schechter_montecarlo_calib(self):
+    def _schechter_montecarlo_calib(self, testing=False):
         """
         Calibrate the brightest galaxy sampled from a schechter function with a simple
         monte carlo
         """
 
-        nmag = 100000
+        if testing:
+            nmag = 1000
+            ntrial = 100
+            nlambdas = 3
+        else:
+            nmag = 100000
+            ntrial = 5000
+            nlambdas = 9
+
         mag = np.zeros(nmag)
 
         mstar = 0.0
@@ -286,8 +307,6 @@ class WcenCalibrator(object):
         # We want to sample lambda galaxies from a schechter function...
         # And figure out the 3 brightest galaxies (m1, m2, m3)
 
-        ntrial = 5000
-        nlambdas = 9
         lambdas = np.linspace(20, 100, num=nlambdas, dtype=np.int32)
 
         m1 = np.zeros((nlambdas, ntrial))
