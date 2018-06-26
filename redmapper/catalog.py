@@ -74,7 +74,7 @@ class DataObject(object):
         try:
             return self._ndarray[attr.lower()]
         except:
-            return object.__getattr__(attr)
+            return object.__getattribute__(self, attr)
 
     def __setattr__(self, attr, val):
         if attr == '_ndarray':
@@ -159,7 +159,7 @@ class Entry(DataObject):
             #return self._ndarray[attr.lower()][0]
             return self._ndarray[attr.lower()]
         except:
-            return object.__getattr__(attr)
+            return object.__getattribute__(self, attr)
 
 
 class Catalog(DataObject):
