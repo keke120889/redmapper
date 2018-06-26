@@ -208,6 +208,7 @@ class Configuration(object):
     wcen_zred_chisq_max = ConfigField(default=100.0, required=True)
     wcen_minlambda = ConfigField(default=10.0, required=True)
     wcen_maxlambda = ConfigField(default=100.0, required=True)
+    wcen_cal_zrange = ConfigField(isArray=True, default=np.array([0.0,1.0]))
     wcen_pivot = ConfigField(default=30.0, required=True)
     wcen_uselum = ConfigField(default=True, required=True)
     wcen_Delta0 = ConfigField(required=False)
