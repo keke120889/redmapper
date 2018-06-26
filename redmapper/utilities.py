@@ -500,3 +500,69 @@ def _pickle_method(m):
         return getattr, (m.im_class, m.im_func.func_name)
     else:
         return getattr, (m.im_self, m.im_func.func_name)
+
+
+def histoGauss(ax, array):
+    """
+    Plot a histogram and fit a Gaussian to it.  Modeled after IDL histogauss.pro.
+
+    parameters
+    ----------
+    ax: Plot axis object, may be None
+    array: float array to plot
+
+    returns
+    -------
+    coeff: tuple (A, mu, sigma)
+    """
+
+    import scipy.optimize
+    import esutil
+
+    q13 = np.percentile(array,[25,75])
+    binsize=2*(q13[1] - q13[0])*array.size**(-1./3.)
+
+    hist=esutil.stat.histogram(array,binsize=binsize,more=True)
+
+    p0=[array.size,
+        np.median(array),
+        np.std(array)]
+
+    try:
+        with np.warnings.catch_warnings():
+            np.warnings.simplefilter("ignore")
+
+            # This fit might throw a warning, which we don't need now.
+            # Note that in the future if we use the output from this fit in an
+            # automated way we'll need to tell the parent that we didn't converge
+            coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, hist['center'],
+                                                        hist['hist'], p0=p0)
+    except:
+        # set to starting values...
+        coeff = p0
+
+    hcenter=hist['center']
+    hhist=hist['hist']
+
+    rangeLo = coeff[1] - 5*coeff[2]
+    rangeHi = coeff[1] + 5*coeff[2]
+
+    lo,=np.where(hcenter < rangeLo)
+    ok,=np.where(hcenter > rangeLo)
+    hhist[ok[0]] += np.sum(hhist[lo])
+
+    hi,=np.where(hcenter > rangeHi)
+    ok,=np.where(hcenter < rangeHi)
+    hhist[ok[-1]] += np.sum(hhist[hi])
+
+    if ax is not None:
+        ax.plot(hcenter[ok],hhist[ok],'b-',linewidth=3)
+        ax.set_xlim(rangeLo,rangeHi)
+
+        xvals=np.linspace(rangeLo,rangeHi,1000)
+        yvals=gaussFunction(xvals,*coeff)
+
+        ax.plot(xvals,yvals,'k--',linewidth=3)
+        ax.locator_params(axis='x',nbins=6)  # hmmm
+
+    return coeff
