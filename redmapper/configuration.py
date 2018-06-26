@@ -211,15 +211,19 @@ class Configuration(object):
     wcen_cal_zrange = ConfigField(isArray=True, default=np.array([0.0,1.0]))
     wcen_pivot = ConfigField(default=30.0, required=True)
     wcen_uselum = ConfigField(default=True, required=True)
-    wcen_Delta0 = ConfigField(required=False)
-    wcen_Delta1 = ConfigField(required=False)
-    wcen_sigma_m = ConfigField(required=False)
-    lnw_cen_sigma = ConfigField(required=False)
-    lnw_cen_mean = ConfigField(required=False)
-    lnw_sat_sigma = ConfigField(required=False)
-    lnw_sat_mean = ConfigField(required=False)
-    lnw_fg_sigma = ConfigField(required=False)
-    lnw_fg_mean = ConfigField(required=False)
+    wcen_Delta0 = ConfigField(required=False, default=-9999.0)
+    wcen_Delta1 = ConfigField(required=False, default=-9999.0)
+    wcen_sigma_m = ConfigField(required=False, default=-9999.0)
+    lnw_cen_sigma = ConfigField(required=False, default=-9999.0)
+    lnw_cen_mean = ConfigField(required=False, default=-9999.0)
+    lnw_sat_sigma = ConfigField(required=False, default=-9999.0)
+    lnw_sat_mean = ConfigField(required=False, default=-9999.0)
+    lnw_fg_sigma = ConfigField(required=False, default=-9999.0)
+    lnw_fg_mean = ConfigField(required=False, default=-9999.0)
+    phi1_mmstar_m = ConfigField(required=False, default=-9999.0)
+    phi1_mmstar_slope = ConfigField(required=False, default=-9999.0)
+    phi1_msig_m = ConfigField(required=False, default=-9999.0)
+    phi1_msig_slope = ConfigField(required=False, default=-9999.0)
 
     firstpass_r0 = ConfigField(default=0.5, required=True)
     firstpass_beta = ConfigField(default=0.0, required=True)
@@ -263,8 +267,12 @@ class Configuration(object):
 
         # get galaxy file stats
         gal_stats = self._galfile_stats()
-
         self._set_vars_from_dict(gal_stats, check_none=True)
+
+        # Get wcen numbers if available
+        wcen_vals = self._wcen_vals()
+        if wcen_vals is not None:
+            self._set_vars_from_dict(wcen_vals)
 
         # Record the cluster dtype for convenience
         self.cluster_dtype = copy.copy(cluster_dtype_base)
@@ -420,4 +428,33 @@ class Configuration(object):
 
         return gal_stats
 
+    def _wcen_vals(self):
+        """
+        Load in wcen values from config if available
+        """
 
+        if self.wcenfile is None or not os.path.isfile(self.wcenfile):
+            # We don't have wcen info to load
+            return None
+
+        wcen = fitsio.read(self.wcenfile, ext=1, lower=True)
+
+        vals = {'wcen_Delta0': wcen[0]['delta0'],
+                'wcen_Delta1': wcen[0]['delta1'],
+                'wcen_sigma_m': wcen[0]['sigma_m'],
+                'wcen_pivot': wcen[0]['pivot'],
+                'lnw_fg_mean': wcen[0]['lnw_fg_mean'],
+                'lnw_fg_sigma': wcen[0]['lnw_fg_sigma'],
+                'lnw_sat_mean': wcen[0]['lnw_sat_mean'],
+                'lnw_sat_sigma': wcen[0]['lnw_sat_sigma'],
+                'lnw_cen_mean': wcen[0]['lnw_cen_mean'],
+                'lnw_cen_sigma': wcen[0]['lnw_cen_sigma']}
+
+        # New wcen files also record the phi1 information
+        if 'phi1_mmstar_m' in wcen[0].dtype.names:
+            vals['phi1_mmstar_m'] = wcen[0]['phi1_mmstar_m']
+            vals['phi1_mmstar_slope'] = wcen[0]['phi1_mmstar_m']
+            vals['phi1_msig_m'] = wcen[0]['phi1_msig_m']
+            vals['phi1_msig_slope'] = wcen[0]['phi1_msig_slope']
+
+        return vals
