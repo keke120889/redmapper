@@ -117,8 +117,8 @@ class ZredColor(object):
                     minindex = good[0] - neighbors if good[0] - neighbors >= 0 else 0
                     maxindex = good[0] - 1 if good[0] - 1 >= 0 else 0
                 else:
-                    maxindex = good[-1] + neighbors if good[-1] + neighbors <= nz else nz
-                    minindex = good[-1] + 1 if good[-1] + 1 <= nz else nz
+                    maxindex = good[-1] + neighbors if good[-1] + neighbors < nz else nz-1
+                    minindex = good[-1] + 1 if good[-1] + 1 < nz else nz-1
 
                 zbins = np.arange(minindex, maxindex + 1)
                 to_run, = np.where(lndist[zbins] < -1e10)
