@@ -8,17 +8,21 @@ import fitsio
 import copy
 from numpy import random
 import time
+import tempfile
+import shutil
+import os
 
 from redmapper import Configuration
 from redmapper import GalaxyCatalog
 from redmapper import RedSequenceColorPar
 from redmapper import ZredColor
+from redmapper import ZredRunCatalog, ZredRunPixels
 
 class ZredTestCase(unittest.TestCase):
     """
     """
 
-    def runTest(self):
+    def test_zred(self):
 
         file_path = 'data_for_tests'
 
@@ -74,3 +78,86 @@ class ZredTestCase(unittest.TestCase):
         delta_zred2_e = galaxies.zred2_e[use] - galaxies_input.zred2_e[use]
         use2, = np.where(np.abs(delta_zred2_e) < 1e-3)
         testing.assert_array_less(0.98, float(use2.size) / float(delta_zred2_e.size))
+
+    def test_zred_runcat(self):
+        """
+        Test the running of a single fits catalog file through the zred runner
+        """
+
+        file_path = 'data_for_tests'
+        configfile = 'testconfig.yaml'
+
+        config = Configuration(os.path.join(file_path, configfile))
+
+        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = test_dir
+        outfile = os.path.join(test_dir, 'test_zred_out.fits')
+
+        tab = fitsio.read(config.galfile, ext=1)
+        galfile = os.path.join(os.path.dirname(config.galfile), tab[0]['FILENAMES'][0])
+
+        zredRuncat = ZredRunCatalog(config)
+
+        zredRuncat.run(galfile, outfile)
+
+        # This exercises the reading code
+        gals = GalaxyCatalog.from_galfile(galfile, zredfile=outfile)
+
+        self.assertGreater(np.min(gals.zred), 0.0)
+        self.assertGreater(np.min(gals.chisq), 0.0)
+        self.assertLess(np.max(gals.lkhd), 0.0)
+        testing.assert_array_almost_equal(gals.zred[0: 3],
+                                          np.array([0.10292412, 0.19617805, 0.13324176]))
+
+        if os.path.exists(test_dir):
+            shutil.rmtree(test_dir, True)
+
+    def test_zred_runpixels(self):
+        """
+        Test the running of a pixelized catalog
+        """
+
+        file_path = 'data_for_tests'
+        configfile = 'testconfig.yaml'
+
+        config = Configuration(os.path.join(file_path, configfile))
+
+        config.hpix = 2163
+        config.nside = 64
+        config.border = 0.0
+
+        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.zredfile = os.path.join(test_dir, 'zreds', 'testing_zreds_master_table.fit')
+
+        # FIXME: try an illegal one...
+
+        zredRunpix = ZredRunPixels(config)
+        zredRunpix.run()
+
+        # Check that the zred file has been built...
+
+        self.assertTrue(os.path.isfile(config.zredfile))
+
+        # Read in just the galaxies...
+        gals0 = GalaxyCatalog.from_galfile(config.galfile, nside=config.nside, hpix=config.hpix, border=config.border)
+
+        # And with the zreds...
+        gals = GalaxyCatalog.from_galfile(config.galfile, zredfile=config.zredfile, nside=config.nside, hpix=config.hpix, border=config.border)
+
+        # Confirm they're the same galaxies...
+        testing.assert_array_almost_equal(gals0.ra, gals.ra)
+
+        # Confirm the zreds are okay
+        self.assertGreater(np.min(gals.zred), 0.0)
+        self.assertGreater(np.min(gals.chisq), 0.0)
+        self.assertLess(np.max(gals.lkhd), 0.0)
+
+        # Spot check a few
+        testing.assert_array_almost_equal(gals.zred[0: 3],
+                                          np.array([0.10292412, 0.19617805, 0.13324176]))
+        if os.path.exists(test_dir):
+            shutil.rmtree(test_dir, True)
+
+
+if __name__=='__main__':
+    unittest.main()
