@@ -482,7 +482,7 @@ class CorrectionFitter(object):
             if pars[self._bkg_index: self._bkg_index + self._n_bkg_nodes].min() < 0.0:
                 return 1e11
             spl = CubicSpline(self._bkg_nodes, pars[self._bkg_index: self._bkg_index + self._n_bkg_nodes])
-            gbkg = spl(self._redshifts)
+            gbkg = np.clip(spl(self._redshifts), 1e-10, None)
             gci1 = (1. / np.sqrt(2. * np.pi * gbkg)) * np.exp(-self._dzs**2. / (2. * gbkg))
         else:
             gbkg = self._gbkg
