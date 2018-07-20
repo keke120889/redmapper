@@ -45,6 +45,8 @@ limmag_catalog: 21.5
 #zlambda_correct_internal: False
 zlambda_epsilon: 0.005
 
+calib_nproc: 2
+
 calib_redgal_template: bc03_colors_sdss.fit
 
 wcen_Delta0: -1.39479
