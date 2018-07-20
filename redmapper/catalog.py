@@ -8,37 +8,25 @@ from numpy.lib.recfunctions import merge_arrays
 class DataObject(object):
     """Abstract base class to encapsulate info from FITS files."""
 
-    def __init__(self, array):
-        """Constructs DataObject from array.
+    def __init__(self, *arrays):
+        """Constructs DataObject from arbitrary number of ndarrays.
 
-        The array can have an arbitrary number of fields.  Field names
-        must not have spaces, and will be changed to lower case.
+        Each ndarray can have an arbitrary number of fields. Field
+        names should all be capitalized and words in multi-word field 
+        names should be separated by underscores if necessary. ndarrays
+        have a 'size' property---their sizes should all be equivalent.
 
-        parameters
-        ----------
-        array: numpy ndarray
+        Args:
+            arrays (numpy.ndarray): ndarrays with equivalent sizes.
         """
+        for array in arrays:
+            self._lower_array(array)
 
-        self._lower_array(array)
+        if len(arrays) == 1:
+            self._ndarray = arrays[0]
+        else:
+            self._ndarray = merge_arrays(arrays, flatten=True)
 
-        self._ndarray = array
-
-
-    #def __init__(self, *arrays):
-    #    """Constructs DataObject from arbitrary number of ndarrays.
-
-    #    Each ndarray can have an arbitrary number of fields. Field
-    #    names should all be capitalized and words in multi-word field 
-    #    names should be separated by underscores if necessary. ndarrays
-    #    have a 'size' property---their sizes should all be equivalent.
-
-    #    Args:
-    #        arrays (numpy.ndarray): ndarrays with equivalent sizes.
-    #    """
-    #    for array in arrays:
-    #        self._lower_array(array)
-
-    #    self._ndarray = merge_arrays(arrays, flatten=True)
 
 
     @classmethod
@@ -56,7 +44,7 @@ class DataObject(object):
         Returns:
             DataObject, properly constructed.
         """
-        array = fitsio.read(filename, ext=ext, rows=rows, upper=True)
+        array = fitsio.read(filename, ext=ext, rows=rows, lower=True, trim_strings=True)
         return cls(array)
 
     @classmethod
