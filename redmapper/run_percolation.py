@@ -17,7 +17,7 @@ from .depthmap import DepthMap
 from .zlambda import Zlambda
 from .zlambda import ZlambdaCorrectionPar
 from .cluster_runner import ClusterRunner
-from . import centering
+from .centering import CenteringBCG, CenteringWcenZred
 
 ###################################################
 # Order of operations:
@@ -35,7 +35,7 @@ class RunPercolation(ClusterRunner):
     """
     """
 
-    def _additional_intialization(self, **kwargs):
+    def _additional_initialization(self, **kwargs):
         self.runmode = 'percolation'
         self.read_zreds = True
         self.zreds_required = True
@@ -50,12 +50,12 @@ class RunPercolation(ClusterRunner):
                                                bkg=self.bkg,
                                                cosmo=self.cosmo)
 
-        keepz = kwargs.pop('keepz', False)
-        keepid = kwargs.pop('keepid', False)
-        specseed = kwargs.pop('specseed', False)
+        self.keepz = kwargs.pop('keepz', False)
+        self.keepid = kwargs.pop('keepid', False)
+        self.specseed = kwargs.pop('specseed', False)
 
         zrange=copy.copy(self.config.zrange)
-        if keepz:
+        if self.keepz:
             zrange[0] -= self.config.calib_zrange_cushion
             zrange[0] = zrange[0] if zrange[0] > 0.05 else 0.05
             zrange[1] += self.config.calib_zrange_cushion
@@ -67,13 +67,17 @@ class RunPercolation(ClusterRunner):
 
         # How to bail if use.size == 0?  Need a framework for fail...
 
-        if keepid:
+        if self.keepid:
             st = np.argsort(self.cat.mem_match_id[use])
         else:
             # Reverse sort by total likelihood
             st = np.argsort(self.cat.lnlike[use])[::-1]
+            self.cat.mem_match_id[:] = 0
 
         self.cat = self.cat[use[st]]
+
+        # This preserves previously set ids
+        self._generate_mem_match_ids()
 
         self.cat.ra_orig = self.cat.ra
         self.cat.dec_orig = self.cat.dec
@@ -114,17 +118,17 @@ class RunPercolation(ClusterRunner):
 
         if cluster.neighbors.pfree[minind] < self.config.percolation_pbcg_cut:
             bad = True
-            self._reset_bad_values()
+            self._reset_bad_values(cluster)
             return bad
 
         # calculate lambda (percolated) and update redshift.
         # we don't need error yet or radial masking (will need to modify runner code)
 
         # in order to do centering, we need to go to 2*rlambda + cushion.
-        lc, = np.where(cluster.neighbors.r < 2.05 * self.r0 * (self.Lambda/100.)**self.beta)
+        lc, = np.where(cluster.neighbors.r < 2.05 * self.r0 * (cluster.Lambda/100.)**self.beta)
         if lc.size < 2:
             bad = True
-            self._reset_bad_values()
+            self._reset_bad_values(cluster)
             return bad
 
         lam = cluster.calc_richness(self.mask, index=lc, calc_err=False)
@@ -136,7 +140,7 @@ class RunPercolation(ClusterRunner):
         if ((cluster.Lambda/cluster.scaleval < self.config.percolation_minlambda) or
             (incut.size < 3)):
             bad = True
-            self._reset_bad_values()
+            self._reset_bad_values(cluster)
             return bad
 
         if not self.keepz:
@@ -147,14 +151,14 @@ class RunPercolation(ClusterRunner):
 
         if cluster.redshift < 0.0:
             bad = True
-            self._reset_bad_values()
+            self._reset_bad_values(cluster)
             return bad
 
         # Grab the correct centering class here
         cent = reduce(getattr, self.config.centerclass.split('.'), sys.modules[__name__])(cluster)
-        if not cent.find_center() or cent.ncent==0:
+        if not cent.find_center() or cent.ngood==0:
             bad = True
-            self._reset_bad_values()
+            self._reset_bad_values(cluster)
             return bad
 
         # Record the centering values
@@ -167,15 +171,15 @@ class RunPercolation(ClusterRunner):
         #  (this is typical, but not required for a centering module)
         if cent.index[0] >= 0:
             # check order of index
-            cluster.mag[:] = self.neighbors.mag[cent.index[0], :]
-            cluster.mag_err[:] = self.neighbors.mag[cent.index[0], :]
-            cluster.refmag = self.neighbors.refmag[cent.index[0]]
-            cluster.refmag_err = self.neighbors.refmag_err[cent.index[0]]
-            cluster.ebv_mean = self.neighbors.ebv[cent.index[0]]
-            if self.read_zreds:
-                cluster.zred = self.neighbors.zred[cent.index[0]]
-                cluster.zred_e = self.neighbors.zred_e[cent.index[0]]
-                cluster.zred_chisq = self.neighbors.zred_chisq[cent.index[0]]
+            cluster.mag[:] = cluster.neighbors.mag[cent.index[0], :]
+            cluster.mag_err[:] = cluster.neighbors.mag[cent.index[0], :]
+            cluster.refmag = cluster.neighbors.refmag[cent.index[0]]
+            cluster.refmag_err = cluster.neighbors.refmag_err[cent.index[0]]
+            cluster.ebv_mean = cluster.neighbors.ebv[cent.index[0]]
+            if self.did_read_zreds:
+                cluster.zred = cluster.neighbors.zred[cent.index[0]]
+                cluster.zred_e = cluster.neighbors.zred_e[cent.index[0]]
+                cluster.zred_chisq = cluster.neighbors.chisq[cent.index[0]]
 
             cluster.id_cent[:] = cluster.neighbors.id[cent.index]
 
@@ -196,7 +200,7 @@ class RunPercolation(ClusterRunner):
             if cluster.redshift < 0.0:
                 bad = True
             if bad:
-                self._reset_bad_values()
+                self._reset_bad_values(cluster)
                 return bad
 
             if i == 0:
@@ -206,17 +210,17 @@ class RunPercolation(ClusterRunner):
                 self.depthstr.calc_maskdepth(self.mask.maskgals,
                                              cluster.ra, cluster.dec, cluster.mpc_scale)
 
-            rmask = self.rmask_0 * (self.Lambda/100.)**self.rmask_beta * ((1. + cluster.redshift) / (1. + self.rmask_zpivot))**self.rmask_gamma
+            rmask = self.rmask_0 * (cluster.Lambda/100.)**self.rmask_beta * ((1. + cluster.redshift) / (1. + self.rmask_zpivot))**self.rmask_gamma
 
             if rmask < cluster.r_lambda:
                 rmask = cluster.r_lambda
 
             if i == (self.config.percolation_niter - 1):
                 # this is the last iteration, make sure we go out to the mask radius
-                lc, = np.where(cluster.r < 1.1 * rmask)
+                lc, = np.where(cluster.neighbors.r < 1.1 * rmask)
             else:
                 # previous iteration -- leave cushion for getting bigger
-                lc, = np.where(cluster.r < 2.0 * cluster.r_lambda)
+                lc, = np.where(cluster.neighbors.r < 2.0 * cluster.r_lambda)
 
             if lc.size < 2:
                 bad = True
@@ -245,6 +249,11 @@ class RunPercolation(ClusterRunner):
                 bad = True
                 continue
 
+        if bad:
+            # Kick out here, just in case it went bad on last iter...
+            self._reset_bad_values(cluster)
+            return bad
+
         # and we're done with the iteration loop
 
         # Compute connectivity factor w
@@ -252,6 +261,11 @@ class RunPercolation(ClusterRunner):
         u, = np.where((cluster.neighbors.r > cluster.neighbors.r[minind]) &
                       (cluster.neighbors.r < cluster.r_lambda) &
                       (cluster.neighbors.p > 0.0))
+        if u.size == 0:
+            # This is another way to get a bad cluster
+            self._reset_bad_values(cluster)
+            return bad
+
         lum = 10.**((cluster.mstar - cluster.neighbors.refmag[u]) / 2.5)
         if self.config.wcen_uselum:
             cluster.w = np.log(np.sum(cluster.neighbors.p[u] * lum / np.sqrt(cluster.neighbors.r[u]**2. + self.config.wcen_rsoft**2.)) / ((1./cluster.r_lambda) * np.sum(cluster.neighbors.p[u] * lum)))
