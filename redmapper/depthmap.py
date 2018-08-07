@@ -39,8 +39,8 @@ class DepthMap(object):
         self.eff = hdr['EFF']
 
         self.config_area = config.area
-        self.submask_hpix = config.hpix
-        self.submask_nside = config.nside
+        self.submask_hpix = config.d.hpix
+        self.submask_nside = config.d.nside
         self.submask_border = config.border
         self.galfile_nside = config.galfile_nside
 
