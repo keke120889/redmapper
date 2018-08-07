@@ -133,6 +133,11 @@ class Zlambda(object):
                     pzdone, z_lambda, z_lambda_e = self._zlambda_calc_pz_and_check(z_lambda, wtvals_mod, r_lambda, maxmag)
             else:
                 z_lambda_e = -1.0
+                if calcpz:
+                    # Put in dummy values for pzbins/pz
+                    self.pzbins = np.zeros(self.config.npzbins)
+                    self.pz = np.zeros_like(self.pzbins)
+
                 pzdone = True
 
         # apply correction if necessary...
