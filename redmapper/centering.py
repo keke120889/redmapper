@@ -59,8 +59,8 @@ class CenteringBCG(Centering):
         mind = np.argmin(self.cluster.neighbors.refmag[use])
 
         self.maxind = use[mind]
-        self.ra = self.cluster.neighbors.ra[self.maxind]
-        self.dec = self.cluster.neighbors.dec[self.maxind]
+        self.ra = np.array([self.cluster.neighbors.ra[self.maxind]])
+        self.dec = np.array([self.cluster.neighbors.dec[self.maxind]])
         self.ngood = 1
         self.index[0] = self.maxind
         self.p_cen[0] = 1.0
