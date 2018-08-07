@@ -4,6 +4,7 @@ from past.builtins import xrange
 import fitsio
 import numpy as np
 import esutil
+import os
 from esutil.cosmology import Cosmo
 
 from .configuration import Configuration
@@ -45,8 +46,10 @@ class ClusterRunner(object):
         # Generic defaults
         self.read_zreds = False
         self.zreds_required = False
+        self.did_read_zreds = False
         self.use_colorbkg = False
         self.use_parfile = True
+        self._filename = None
 
         # Will want to add stuff to check that everything needed is present?
 
@@ -131,10 +134,24 @@ class ClusterRunner(object):
         # Use self.read_zreds to know if we should read them!
         # And self.zreds_required to know if we *must* read them
 
+        if self.read_zreds:
+            zredfile = self.config.zredfile
+        else:
+            zredfile = None
+
+        if self.zreds_required and zredfile is None:
+            raise RuntimeError("zreds are required, but zredfile is None")
+
         self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
-                                               nside=self.config.nside,
-                                               hpix=self.config.hpix,
-                                               border=self.config.border)
+                                               nside=self.config.d.nside,
+                                               hpix=self.config.d.hpix,
+                                               border=self.config.border,
+                                               zredfile=zredfile)
+
+        # If the zredfile is not None and we didn't raise an exception,
+        # then we successfully read in the zreds
+        if zredfile is not None:
+            self.did_read_zreds = True
 
         # default limiting luminosity
         self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
@@ -275,7 +292,10 @@ class ClusterRunner(object):
                 # compute updated maskfrac (always)
                 inside, = np.where(self.mask.maskgals.r < cluster.r_lambda)
                 bad, = np.where(self.mask.maskgals.mark[inside] == 0)
-                cluster.maskfrac = float(bad.size) / float(inside.size)
+                if inside.size == 0:
+                    cluster.maskfrac = 1.0
+                else:
+                    cluster.maskfrac = float(bad.size) / float(inside.size)
 
                 # compute additional dlambda bits (if desired)
                 if self.do_lam_plusminus:
@@ -377,7 +397,7 @@ class ClusterRunner(object):
         # And crop down members?
         # FIXME
 
-    def output(self, savemembers=True, withversion=True, clobber=False):
+    def output(self, savemembers=True, withversion=True, clobber=False, outbase=None):
         """
         """
 
@@ -385,14 +405,29 @@ class ClusterRunner(object):
         # It will save the underlying _ndarrays of the Cluster and
         # (optionally) Member catalogs.
 
-        fname_base = self.config.outbase
+        if outbase is None:
+            outbase = self.config.d.outbase
+
+        fname_base = os.path.join(self.config.outpath, outbase)
 
         if withversion:
             fname_base += '_redmapper_' + self.config.version
 
         fname_base += '_' + self.filetype
 
-        fitsio.write(fname_base + '.fit', self.cat._ndarray, clobber=clobber)
+        self._filename = fname_base + '.fit'
+
+        fitsio.write(self._filename, self.cat._ndarray, clobber=clobber)
 
         if savemembers:
             fitsio.write(fname_base + '_members.fit', self.members._ndarray, clobber=clobber)
+
+        return
+
+    @property
+    def filename(self):
+        if self._filename is None:
+            # Return the unversioned, default filename
+            return os.path.join(self.config.outpath, '%s_%s.fit' % (self.config.d.outbase, self.filetype))
+        else:
+            return self._filename
