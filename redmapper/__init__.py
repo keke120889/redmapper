@@ -16,9 +16,13 @@ from .galaxy import Galaxy, GalaxyCatalog
 from .mask import Mask, HPMask, get_mask
 from .zlambda import Zlambda, ZlambdaCorrectionPar
 from .cluster_runner import ClusterRunner
+from .run_firstpass import RunFirstPass
+from .run_likelihoods import RunLikelihoods
+from .run_percolation import RunPercolation
 from .zred_color import ZredColor
 from .centering import Centering, CenteringWcenZred, CenteringBCG
 from .depthmap import DepthMap
 from .color_background import ColorBackground, ColorBackgroundGenerator
 from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter
 from .zred_runner import ZredRunCatalog, ZredRunPixels
+from .redmapper_run import RedmapperRun
