@@ -19,7 +19,7 @@ lval_reference: 0.2
 mask_mode: 3
 rsig: 0.05
 dldr_gamma: 0.6
-percolation_minlambda: 0.3
+percolation_minlambda: 3.0
 zlambda_maxiter: 20.
 zlambda_tol: 0.0002
 zlambda_parab_step: 0.002
