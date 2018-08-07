@@ -38,8 +38,8 @@ class SelectSpecRedGalaxies(object):
 
         # first, we read the galaxies
         gals = GalaxyCatalog.from_galfile(self.config.galfile,
-                                          nside=self.config.nside,
-                                          hpix=self.config.hpix,
+                                          nside=self.config.d.nside,
+                                          hpix=self.config.d.hpix,
                                           border=self.config.border)
 
         # and we need the spectra
@@ -238,7 +238,7 @@ class SelectSpecRedGalaxies(object):
             ax.set_xlim(self.config.zrange)
 
             fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
-                                     '%s_redgals_%s-%s.png' % (self.config.outbase,
+                                     '%s_redgals_%s-%s.png' % (self.config.d.outbase,
                                                                self.config.bands[j],
                                                                self.config.bands[j + 1])))
             plt.close(fig)
