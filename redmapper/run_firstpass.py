@@ -33,7 +33,7 @@ class RunFirstPass(ClusterRunner):
     """
     """
 
-    def _additional_initializations(self, specmode=False):
+    def _additional_initialization(self, specmode=False):
         # This is the runmode and where we get the mask/radius config vars from
         self.runmode = 'firstpass'
 
@@ -45,12 +45,16 @@ class RunFirstPass(ClusterRunner):
         else:
             self.filetype = 'firstpass'
 
+    # FIXME: This needs to specify args here?
     def _more_setup(self, *args, **kwargs):
 
         incat = None
+
+        # Check if there's a seedfile
         try:
             incat = Catalog.from_fits_file(self.config.seedfile)
         except:
+            # If there's no seedfile, it's okay if it's not specmode and we have zreds
             if self.specmode:
                 raise RuntimeError("Must have config.seedfile for run_firstpass in specmode.")
             elif not self.did_read_zreds:
@@ -71,7 +75,7 @@ class RunFirstPass(ClusterRunner):
             self.cat.refmag_err = incat.refmag_err
             self.cat.zred = incat.zred
             self.cat.zred_e = incat.zred_e
-            self.cat.chisq = incat.chisq
+            self.cat.chisq = incat.zred_chisq
             self.cat.ebv_mean = incat.ebv
             self.cat.z_spec_init = incat.zspec
 
@@ -167,12 +171,16 @@ class RunFirstPass(ClusterRunner):
                     self._reset_bad_values(cluster)
                     continue
 
-                #cluster.update_z(z_lambda)
                 cluster.redshift = z_lambda
 
-        cluster.z_lambda = z_lambda
-        cluster.z_lambda_e = z_lambda_e
-        cluster.z_lambda_niter = zlam.niter
+        if bad:
+            cluster.z_lambda = -1.0
+            cluster.z_lambda_e = -1.0
+            cluster.z_lambda_niter = 0
+        else:
+            cluster.z_lambda = z_lambda
+            cluster.z_lambda_e = z_lambda_e
+            cluster.z_lambda_niter = zlam.niter
 
         cind = np.argmin(cluster.neighbors.r)
         cluster.chisq = cluster.neighbors.chisq[cind]
