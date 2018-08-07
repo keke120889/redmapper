@@ -87,7 +87,7 @@ class BackgroundTestCase(unittest.TestCase):
         test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
         config.outpath = test_dir
 
-        config.bkgfile = os.path.join(config.outpath, '%s_testbkg.fit' % (config.outbase))
+        config.bkgfile = os.path.join(config.outpath, '%s_testbkg.fit' % (config.d.outbase))
         config.zrange = [0.1, 0.2]
 
         gen = BackgroundGenerator(config)

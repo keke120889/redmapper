@@ -39,7 +39,7 @@ class SelectSpecRedTestCase(unittest.TestCase):
         self.assertTrue(os.path.isfile(config.redgalfile))
         self.assertTrue(os.path.isfile(config.redgalmodelfile))
         self.assertTrue(os.path.isfile(os.path.join(config.outpath, config.plotpath,
-                                                    '%s_redgals_g-r.png' % (config.outbase))))
+                                                    '%s_redgals_g-r.png' % (config.d.outbase))))
 
         redgals = fitsio.read(config.redgalfile, ext=1)
         redgalmodel = fitsio.read(config.redgalmodelfile, ext=1)

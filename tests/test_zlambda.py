@@ -75,7 +75,6 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         testing.assert_almost_equal(cluster.z_lambda, 0.22700983)
         testing.assert_almost_equal(cluster.z_lambda_err, 0.00448909596)
 
-
         # zlambda_err test
         z_lambda_err = zlam._zlambda_calc_gaussian_err(cluster.z_lambda)
 

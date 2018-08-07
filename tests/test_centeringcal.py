@@ -28,7 +28,7 @@ class CenteringCalibratorTestCase(unittest.TestCase):
         test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
         config.outpath = test_dir
 
-        config.wcenfile = os.path.join(config.outpath, '%s_testwcen.fit' % (config.outbase))
+        config.wcenfile = os.path.join(config.outpath, '%s_testwcen.fit' % (config.d.outbase))
 
         # Get repeatability here
         random.seed(seed=1000)

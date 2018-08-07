@@ -91,4 +91,4 @@ class CenteringWcenZredTestCase(unittest.TestCase):
         testing.assert_array_equal(cent.index, tempcat[0]['USE'][tempcat[0]['GOOD']])
 
         # Also will need to test BCG centering!
-        
+

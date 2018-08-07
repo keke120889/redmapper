@@ -122,8 +122,8 @@ class ZredTestCase(unittest.TestCase):
 
         config = Configuration(os.path.join(file_path, configfile))
 
-        config.hpix = 2163
-        config.nside = 64
+        config.d.hpix = 2163
+        config.d.nside = 64
         config.border = 0.0
 
         test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
@@ -139,10 +139,10 @@ class ZredTestCase(unittest.TestCase):
         self.assertTrue(os.path.isfile(config.zredfile))
 
         # Read in just the galaxies...
-        gals0 = GalaxyCatalog.from_galfile(config.galfile, nside=config.nside, hpix=config.hpix, border=config.border)
+        gals0 = GalaxyCatalog.from_galfile(config.galfile, nside=config.d.nside, hpix=config.d.hpix, border=config.border)
 
         # And with the zreds...
-        gals = GalaxyCatalog.from_galfile(config.galfile, zredfile=config.zredfile, nside=config.nside, hpix=config.hpix, border=config.border)
+        gals = GalaxyCatalog.from_galfile(config.galfile, zredfile=config.zredfile, nside=config.d.nside, hpix=config.d.hpix, border=config.border)
 
         # Confirm they're the same galaxies...
         testing.assert_array_almost_equal(gals0.ra, gals.ra)

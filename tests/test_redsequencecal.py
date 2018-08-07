@@ -28,7 +28,7 @@ class SelectRedSequenceCalTestCase(unittest.TestCase):
         test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
         config.outpath = test_dir
 
-        config.parfile = os.path.join(config.outpath, '%s_testpars.fit' % (config.outbase))
+        config.parfile = os.path.join(config.outpath, '%s_testpars.fit' % (config.d.outbase))
 
         gal_filename = 'test_dr8_trainredseq_gals.fit'
         galfile = os.path.join(file_path, gal_filename)
@@ -39,13 +39,13 @@ class SelectRedSequenceCalTestCase(unittest.TestCase):
         # make sure that the pars and the plots were made
         self.assertTrue(os.path.isfile(config.parfile))
         for i in xrange(config.nmag - 1):
-            plotfile = os.path.join(config.outpath, config.plotpath, '%s_%s-%s.png' % (config.outbase, config.bands[i], config.bands[i + 1]))
+            plotfile = os.path.join(config.outpath, config.plotpath, '%s_%s-%s.png' % (config.d.outbase, config.bands[i], config.bands[i + 1]))
             self.assertTrue(plotfile)
-        plotfile = os.path.join(config.outpath, config.plotpath, '%s_zred_plots.png' % (config.outbase))
+        plotfile = os.path.join(config.outpath, config.plotpath, '%s_zred_plots.png' % (config.d.outbase))
         self.assertTrue(plotfile)
-        plotfile = os.path.join(config.outpath, config.plotpath, '%s_zred2_plots.png' % (config.outbase))
+        plotfile = os.path.join(config.outpath, config.plotpath, '%s_zred2_plots.png' % (config.d.outbase))
         self.assertTrue(plotfile)
-        plotfile = os.path.join(config.outpath, config.plotpath, '%s_offdiags.png' % (config.outbase))
+        plotfile = os.path.join(config.outpath, config.plotpath, '%s_offdiags.png' % (config.d.outbase))
         self.assertTrue(plotfile)
 
         # Read in the pars and check numbers
