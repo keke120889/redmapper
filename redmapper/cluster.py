@@ -448,8 +448,8 @@ class Cluster(Entry):
             lam_unscaled = lam / self.scaleval
 
             if calc_err:
-                lam_cerr = self.calc_lambdaerr(mask.maskgals, self.mstar,
-                                               lam, rlam, cval, self.config.dldr_gamma)
+                lam_cerr = self.calc_lambdacerr(mask.maskgals, self.mstar,
+                                                lam, rlam, pmem, cval, self.config.dldr_gamma)
                 lam_err = np.sqrt((1-bar_pmem) * lam_unscaled * self.scaleval**2. + lam_cerr**2.)
 
             # calculate pcol -- color only.  Don't need to worry about nfw norm!
@@ -478,21 +478,22 @@ class Cluster(Entry):
 
         return lam
 
-    def calc_lambdaerr(self, maskgals, mstar, lam, rlam, cval, gamma):
+    def calc_lambdacerr(self, maskgals, mstar, lam, rlam, pmem, cval, gamma):
         """
-        Calculate richness error
+        Calculate richness error from masking
 
         parameters
         ----------
         maskgals : maskgals object
         lam      : Richness
         rlam     :
+        pmem
         cval     :
         gamma    : Local slope of the richness profile of galaxy clusters
 
         returns
         -------
-        lam_err
+        lam_cerr
 
         """
         dof = self.zredstr.ncol
@@ -521,18 +522,18 @@ class Cluster(Entry):
         refmag_for_bcounts = np.copy(refmag)
         refmag_for_bcounts[faint] = limmag-0.01
 
-        bcounts = self.calc_bkg_density(r, chisq , refmag_for_bcounts)
+        bcounts = self.calc_bkg_density(r, chisq, refmag_for_bcounts)
 
         out, = np.where((refmag > limmag) | (mark == 0))
 
         if out.size == 0 or cval < 0.01:
             lam_err = 0.0
         else:
-            p_out       = lam*ucounts[out]/(lam*ucounts[out]+bcounts[out])
-            varc0       = (1./lam)*(1./use.size)*np.sum(p_out)
-            sigc        = np.sqrt(varc0 - varc0**2.)
-            k           = lam**2./np.sum(lambda_p**2.)
-            lam_err  = k*sigc/(1.-self.beta*gamma)
+            p_out = lam*ucounts[out] / (lam*ucounts[out] + bcounts[out])
+            varc0 = (1./lam) * (1./use.size) * np.sum(p_out)
+            sigc = np.sqrt(varc0 - varc0**2.)
+            k = lam**2. / np.sum(pmem**2.)
+            lam_err = k*sigc/(1. - self.beta*gamma)
 
         return lam_err
 
@@ -640,8 +641,8 @@ class Cluster(Entry):
             lam_unscaled = lam / self.scaleval
 
             if calc_err:
-                lam_cerr = self.calc_lambdaerr(mask.maskgals, self.mstar,
-                                               lam, rlam, cval, self.config.dldr_gamma)
+                lam_cerr = self.calc_lambdacerr(mask.maskgals, self.mstar,
+                                               lam, rlam, pmem, cval, self.config.dldr_gamma)
                 lam_err = np.sqrt((1. - bar_pmem) * lam_unscaled + lambda_cerr**2.)
 
             # calculate pcol (color only)
@@ -779,7 +780,7 @@ class ClusterCatalog(Catalog):
 
     @classmethod
     def zeros(cls, size, **kwargs):
-        return cls(np.zeros(size, dtype=cluster_dtype_base))
+        return cls(np.zeros(size, dtype=cluster_dtype_base), **kwargs)
 
     def __getitem__(self, key):
         if isinstance(key, int):
