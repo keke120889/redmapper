@@ -129,7 +129,7 @@ class ZredRunPixels(object):
         self.zredc = ZredColor(zredstr, adaptive=True)
 
         self.galtable = Entry.from_fits_file(self.config.galfile)
-        indices = list(get_subpixel_indices(self.galtable, hpix=self.config.hpix, border=self.config.border, nside=self.config.nside))
+        indices = list(get_subpixel_indices(self.galtable, hpix=self.config.d.hpix, border=self.config.border, nside=self.config.d.nside))
 
         pool = Pool(processes=self.config.calib_nproc)
         retvals = pool.map(self._worker, indices, chunksize=1)
