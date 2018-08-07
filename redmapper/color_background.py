@@ -230,8 +230,8 @@ class ColorBackgroundGenerator(object):
 
         # read in the galaxies
         gals = GalaxyCatalog.from_galfile(self.config.galfile,
-                                          nside=self.config.nside,
-                                          hpix=self.config.hpix,
+                                          nside=self.config.d.nside,
+                                          hpix=self.config.d.hpix,
                                           border=self.config.border)
 
         # Generate ranges based on the data
