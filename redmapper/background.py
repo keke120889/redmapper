@@ -373,11 +373,11 @@ class BackgroundGenerator(object):
         if self.config.galfile_pixelized:
             master = Entry.from_fits_file(self.config.galfile)
 
-            if (self.config.hpix > 0):
+            if (self.config.d.hpix > 0):
                 # We need to take a sub-region
                 theta, phi = hp.pix2ang(master.nside, master.hpix)
-                ipring_big = hp.ang2pix(self.config.nside, theta, phi)
-                subreg_indices, = np.where(ipring_big == self.config.hpix)
+                ipring_big = hp.ang2pix(self.config.d.nside, theta, phi)
+                subreg_indices, = np.where(ipring_big == self.config.d.hpix)
             else:
                 subreg_indices = np.arange(master.hpix.size)
 
