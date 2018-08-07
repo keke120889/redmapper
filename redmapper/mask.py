@@ -135,10 +135,10 @@ class HPMask(Mask):
         hpix_ring = maskinfo.hpix if nest != 1 else hp.nest2ring(nside_mask, maskinfo.hpix)
 
         # if we have a sub-region of the sky, cut down the mask to save memory
-        if config.hpix > 0:
+        if config.d.hpix > 0:
             border = np.radians(config.border) + hp.nside2resol(nside_mask)
-            theta, phi = hp.pix2ang(config.nside, config.hpix)
-            radius = np.sqrt(2) * (hp.nside2resol(config.nside)/2. + border)
+            theta, phi = hp.pix2ang(config.d.nside, config.d.hpix)
+            radius = np.sqrt(2) * (hp.nside2resol(config.d.nside)/2. + border)
             pixint = hp.query_disc(nside_mask, hp.ang2vec(theta, phi),
                                    radius, inclusive=False)
             suba, subb = esutil.numpy_util.match(pixint, hpix_ring)
