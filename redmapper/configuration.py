@@ -96,6 +96,17 @@ def read_yaml(filename):
 
     return outdict
 
+class DuplicatableConfig(object):
+    """
+    Class to hold instances of variables that need to be duplicated for parallelism.
+    """
+
+    def __init__(self, config):
+        self.outbase = config.outbase
+        self.hpix = config.hpix
+        self.nside = config.nside
+
+
 class Configuration(object):
     version = ConfigField(default=__version__, required=True)
 
@@ -115,8 +126,10 @@ class Configuration(object):
     depthfile = ConfigField()
     wcenfile = ConfigField()
     redgalfile = ConfigField()
+    seedfile = ConfigField()
 
     calib_nproc = ConfigField(default=1, required=True)
+    calib_run_nproc = ConfigField(default=1, required=True)
 
     outpath = ConfigField(default='./', required=True)
     plotpath = ConfigField(default='', required=True)
@@ -211,9 +224,9 @@ class Configuration(object):
     wcen_cal_zrange = ConfigField(isArray=True, default=np.array([0.0,1.0]))
     wcen_pivot = ConfigField(default=30.0, required=True)
     wcen_uselum = ConfigField(default=True, required=True)
-    wcen_Delta0 = ConfigField(required=False, default=-9999.0)
-    wcen_Delta1 = ConfigField(required=False, default=-9999.0)
-    wcen_sigma_m = ConfigField(required=False, default=-9999.0)
+    wcen_Delta0 = ConfigField(required=False, default=0.0)
+    wcen_Delta1 = ConfigField(required=False, default=0.0)
+    wcen_sigma_m = ConfigField(required=False, default=0.0)
     lnw_cen_sigma = ConfigField(required=False, default=-9999.0)
     lnw_cen_mean = ConfigField(required=False, default=-9999.0)
     lnw_sat_sigma = ConfigField(required=False, default=-9999.0)
@@ -309,6 +322,9 @@ class Configuration(object):
         # Finally, we can validate...
         self.validate()
 
+        # Now set the duplicatable config parameters...
+        self.d = DuplicatableConfig(self)
+
     def validate(self):
         """
         """
@@ -318,6 +334,9 @@ class Configuration(object):
                 type(self).__dict__[var].validate(var)
             except AttributeError:
                 pass
+
+    def copy(self):
+        return copy.deepcopy(self)
 
     def _reset_vars(self):
         for var in type(self).__dict__:
