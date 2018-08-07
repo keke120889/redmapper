@@ -768,7 +768,7 @@ class RedSequenceCalibrator(object):
 
             zredstr.plot_redsequence_diag(fig, j, self.config.bands)
             fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
-                                     '%s_%s-%s.png' % (self.config.outbase,
+                                     '%s_%s-%s.png' % (self.config.d.outbase,
                                                        self.config.bands[j], self.config.bands[j + 1])))
             plt.close(fig)
 
@@ -776,7 +776,7 @@ class RedSequenceCalibrator(object):
         fig.clf()
         zredstr.plot_redsequence_offdiags(fig, self.config.bands)
         fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
-                                 '%s_offdiags.png' % (self.config.outbase)))
+                                 '%s_offdiags.png' % (self.config.d.outbase)))
 
         # And two panel plot with
         #  left panel is offset, scatter, outliers as f(z)
@@ -899,7 +899,7 @@ class RedSequenceCalibrator(object):
 
             fig.tight_layout()
             fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
-                                     '%s_%s_plots.png' % (self.config.outbase, modename)))
+                                     '%s_%s_plots.png' % (self.config.d.outbase, modename)))
 
             plt.close(fig)
 
