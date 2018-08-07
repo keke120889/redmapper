@@ -35,16 +35,25 @@ class RunLikelihoods(ClusterRunner):
     """
     """
 
-    def _additional_initializations(self):
+    def _additional_initialization(self):
         self.runmode = 'likelihoods'
 
-        self.read_zreds = False
-        self.zreds_required = False
+        if self.config.likelihoods_use_zred:
+            self.read_zreds = True
+            self.zreds_required = True
+        else:
+            self.read_zreds = False
+            self.zreds_required = False
+
         self.filetype = 'like'
 
     def _more_setup(self, *args, **kwargs):
 
-        self.cat = Catalog.from_fits_file(self.config.catfile)
+        self.cat = ClusterCatalog.from_catfile(self.config.catfile,
+                                               zredstr=self.zredstr,
+                                               config=self.config,
+                                               bkg=self.bkg,
+                                               cosmo=self.cosmo)
 
         keepz = kwargs.pop('keepz', False)
 
@@ -101,8 +110,8 @@ class RunLikelihoods(ClusterRunner):
             cluster.lnbcglike = 0.0
         else:
             # First phi_cen
-            mbar = (cluster.mstar + self.config.wcen_delta0 +
-                    self.config.wcen_delta1 * np.log(cluster.Lambda / self.config.wcen_pivot))
+            mbar = (cluster.mstar + self.config.wcen_Delta0 +
+                    self.config.wcen_Delta1 * np.log(cluster.Lambda / self.config.wcen_pivot))
             phi_cen = ((1. / (np.sqrt(2. * np.pi) * self.config.wcen_sigma_m)) *
                        np.exp(-0.5 * (cluster.neighbors.refmag[minrind] - mbar)**2. / self.config.wcen_sigma_m**2.))
 
@@ -111,7 +120,7 @@ class RunLikelihoods(ClusterRunner):
                 if self.zlambda_corr is not None:
                     zrmod = interpol(self.zlambda_corr.zred_uncorr, self.zlambda_corr.z, cluster.get_z())
                 else:
-                    zrmod = cluster.get_z()
+                    zrmod = cluster.redshift
 
                 g = ((1./(np.sqrt(2. * np.pi) * cluster.neighbors.zred_e[minrind])) *
                      np.exp(-0.5 * (cluster.neighbors.zred[minrind] - zrmod)**2. / cluster.neighbors.zred_e[minrind]**2.))
@@ -122,14 +131,14 @@ class RunLikelihoods(ClusterRunner):
             # and the w filter
             lum = 10.**((cluster.mstar - cluster.neighbors.refmag) / 2.5)
             u, = np.where((cluster.neighbors.r > 1e-5) & (cluster.neighbors.pmem > 0.0))
-            w = np.alog(np.sum(cluster.neighbors.pmem[u] * lum[u] /
+            w = np.log(np.sum(cluster.neighbors.pmem[u] * lum[u] /
                                np.sqrt(cluster.neighbors.r[u]**2. + self.config.wcen_rsoft**2.)) / ((1. / cluster.r_lambda) * np.sum(cluster.neighbors.pmem[u] * lum[u])))
             sig = self.config.lnw_cen_sigma / np.sqrt(((np.clip(cluster.Lambda, None, self.config.wcen_maxlambda)) / cluster.scaleval) / self.config.wcen_pivot)
             fw = (1. / (np.sqrt(2. * np.pi) * sig)) * np.exp(-0.5 * (np.log(w) - self.config.lnw_cen_mean)**2. / (sig**2.))
 
             cluster.lnbcglike = np.log(phi_cen * g * fw)
 
-            cluster.lnlike = cluster.lnbcglike + clsuter.lnlamlike
+            cluster.lnlike = cluster.lnbcglike + cluster.lnlamlike
 
         return bad
 
