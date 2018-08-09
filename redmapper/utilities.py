@@ -31,6 +31,57 @@ def gaussFunction(x, *p):
    A, mu, sigma = p
    return A*np.exp(-(x-mu)**2./(2.*sigma**2))
 
+def schechter_pdf(x, alpha=-1.0, mstar=0.0):
+    """Unnormalized schechter pdf"""
+    pdf = 10.**(0.4*(alpha + 1.0) * (mstar - x)) * np.exp(-10.**(0.4 * (mstar - x)))
+    return pdf
+
+def nfw_pdf(x, rscale=0.15, corer=0.1, radfactor=False):
+    """Unnormalized projected nfw pdf"""
+
+    xscale = x / rscale
+    corex = corer / rscale
+
+    sigx = np.zeros(x.size)
+
+    low, = np.where(xscale < corex)
+    mid, = np.where((xscale >= corex) & (xscale <= 0.999))
+    high, = np.where((xscale >= 1.001) & (xscale < 10.0 / rscale))
+    other, = np.where((xscale > 0.999) & (xscale < 1.001))
+
+    if low.size > 0:
+        arg = np.sqrt((1. - corex)/(1. + corex))
+        pre = 2./(np.sqrt(1. - corex**2))
+        front = 1./(corex**2. - 1)
+        sigx[low] = front * (1. - pre*0.5*np.log((1. + arg)/(1. - arg)))
+
+    if mid.size > 0:
+        arg = np.sqrt((1. - xscale[mid])/(1. + xscale[mid]))
+        pre = 2./(np.sqrt(1. - xscale[mid]**2.))
+        front = 1./(xscale[mid]**2. - 1.)
+        sigx[mid] = front * (1. - pre*0.5*np.log((1. + arg)/(1. - arg)))
+
+    if high.size > 0:
+        arg = np.sqrt((xscale[high] - 1.)/(xscale[high] + 1.))
+        pre = 2./(np.sqrt(xscale[high]**2 - 1.))
+        front = 1./(xscale[high]**2 - 1)
+        sigx[high] = front * (1. - pre*np.arctan(arg))
+
+    if other.size > 0:
+        xlo, xhi = 0.999, 1.001
+        arglo, arghi = np.sqrt((1 - xlo)/(1 + xlo)), np.sqrt((xhi - 1)/(xhi + 1))
+        prelo, prehi = 2./np.sqrt(1.-xlo**2), 2./np.sqrt(xhi**2 - 1)
+        frontlo, fronthi = 1./(xlo**2 - 1), 1./(xhi**2 - 1)
+        testlo = frontlo * (1. - prelo*0.5*np.log((1 + arglo)/(1 - arglo)))
+        testhi = fronthi * (1. - prehi*np.arctan(arghi))
+        sigx[other] = (testlo + testhi)/2.
+
+    if radfactor:
+        sigx *= (2. * np.pi * x)
+
+    return sigx
+
+
 
 ######################################
 ## mstar LUT code
@@ -566,3 +617,49 @@ def histoGauss(ax, array):
         ax.locator_params(axis='x',nbins=6)  # hmmm
 
     return coeff
+
+##################
+## Create a lock
+##################
+
+def make_lockfile(lockfile, block=False, maxtry=300, waittime=2):
+    """
+    """
+
+    import os
+    import tempfile
+    import time
+
+    tf = tempfile.mkstemp(prefix='', dir=os.path.dirname(lockfile))
+    tempfilename = tf[1]
+    os.close(tf[0])
+
+    if not block:
+        # Non-blocking
+        try:
+            os.link(tempfilename, lockfile)
+            os.unlink(tempfilename)
+            # We successfully got the lock
+            return True
+        except:
+            os.unlink(tempfilename)
+            # We did not get the lock; return anyway
+            return False
+    else:
+        # Blocking ... wait to get the lock up to maxtry
+
+        ctr = 0
+        locked = False
+        while (ctr < maxtry) and (not locked):
+            try:
+                os.link(tempfilename, lockfile)
+                os.unlink(tempfilename)
+                locked = True
+            except:
+                ctr += 1
+                time.sleep(waittime)
+
+        if not locked:
+            os.unlink(tempfilename)
+
+        return locked
