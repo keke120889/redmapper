@@ -9,8 +9,8 @@ from scipy import interpolate
 from .chisq_dist import ChisqDist
 from .chisq_dist import compute_chisq
 from .catalog import Catalog
-from .utilities import CubicSpline
-from .utilities import MStar
+from .utilities import CubicSpline, MStar
+from .utilities import schechter_pdf
 
 class RedSequenceColorPar(object):
     """
@@ -252,7 +252,7 @@ class RedSequenceColorPar(object):
         self.lumnorm = np.zeros((self.lumrefmagbins.size,nz))
         self.alpha = alpha
         for i in xrange(nz):
-            f=10.**(0.4*(self.alpha+1.0)*(self._mstar[i]-self.lumrefmagbins))*np.exp(-10.**(0.4*(self._mstar[i]-self.lumrefmagbins)))
+            f = schechter_pdf(self.lumrefmagbins, alpha=self.alpha, mstar=self._mstar[i])
             self.lumnorm[:,i] = refmagbinsize*np.cumsum(f)
 
         if has_file:
