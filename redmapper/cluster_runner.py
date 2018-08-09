@@ -130,7 +130,6 @@ class ClusterRunner(object):
         self.cosmo = self.config.cosmo
 
         # read in the galaxies
-        # WILL NEED TO TRACK IF READING ZREDS
         # Use self.read_zreds to know if we should read them!
         # And self.zreds_required to know if we *must* read them
 
@@ -152,6 +151,10 @@ class ClusterRunner(object):
         # then we successfully read in the zreds
         if zredfile is not None:
             self.did_read_zreds = True
+
+        # If we don't have a depth map, get ready to compute local depth
+        if self.depthstr is None:
+            self.depthlim = DepthLim(gals.refmag, gals.refmag_err)
 
         # default limiting luminosity
         self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
@@ -263,8 +266,9 @@ class ClusterRunner(object):
 
                 if self.depthstr is None:
                     # must approximate the limiting magnitude
-                    # will get this from my des_depth functions...
-                    raise RuntimeError("No depthstr Must be implemented!!!!")
+
+                    self.depthlim.calc_maskdepth(self.mask.maskgals,
+                                                 cluster.neighbors.refmag, cluster.neighbors.refmag_err)
                 else:
                     # get from the depth structure
                     self.depthstr.calc_maskdepth(self.mask.maskgals,
