@@ -6,6 +6,7 @@ import healpy as hp
 import numpy as np
 from healpy import pixelfunc
 import esutil
+import scipy.optimize
 
 from .utilities import astro_to_sphere
 from .catalog import Catalog, Entry
@@ -126,22 +127,12 @@ class DepthMap(object):
         # compute ra and dec based on maskgals
         ras = ra + (maskgals.x/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
         decs = dec + maskgals.y/(mpc_scale*3600.)
-        #theta = (90.0 - decs)*np.pi/180.
-        #phi = ras*np.pi/180.
 
         maskgals.w[:] = self.w
         maskgals.eff = None
         maskgals.limmag[:] = unseen
         maskgals.zp[0] = self.zp
         maskgals.nsig[0] = self.nsig
-
-        #theta, phi = astro_to_sphere(ras, decs)
-        #ipring = hp.ang2pix(self.nside, theta, phi)
-        #ipring_offset = np.clip(ipring - self.offset, 0, self.ntot-1)
-
-        #maskgals.limmag = self.limmag[self.hpix_to_index[ipring_offset]]
-        #maskgals.exptime = self.exptime[self.hpix_to_index[ipring_offset]]
-        #maskgals.m50 = self.m50[self.hpix_to_index[ipring_offset]]
 
         maskgals.limmag, maskgals.exptime, maskgals.m50 = self.get_depth_values(ras, decs)
 
@@ -212,4 +203,6 @@ class DepthMap(object):
         areas[~lo] = carea[carea.size - inds[~lo]]
 
         return areas
+
+
 
