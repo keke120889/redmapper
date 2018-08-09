@@ -11,7 +11,7 @@ import copy
 
 from .solver_nfw import Solver
 from .catalog import Catalog, Entry
-from .utilities import chisq_pdf, calc_theta_i, MStar
+from .utilities import chisq_pdf, calc_theta_i, MStar, schechter_pdf, nfw_pdf
 from .mask import HPMask
 from .chisq_dist import ChisqDist
 from .redsequence import RedSequenceColorPar
@@ -250,41 +250,7 @@ class Cluster(Entry):
         if idx is None:
             idx = np.arange(len(self.neighbors))
 
-        corer = 0.1
-        x, corex = self.neighbors.r[idx]/rscale, corer/rscale
-        sigx = np.zeros(self.neighbors.r[idx].size)
-
-        low, = np.where(x < corex)
-        mid, = np.where((x >= corex) & (x < 1.0))
-        high, = np.where((x >= 1.0) & (x < 10.0/rscale))
-        other, = np.where((x > 0.999) & (x < 1.001))
-
-        if low.size > 0:
-            arg = np.sqrt((1. - corex)/(1. + corex))
-            pre = 2./(np.sqrt(1. - corex**2))
-            front = 1./(corex**2 - 1)
-            sigx[low] = front * (1. - pre*0.5*np.log((1.+arg)/(1.-arg)))
-
-        if mid.size > 0:
-            arg = np.sqrt((1. - x[mid])/(1. + x[mid]))
-            pre = 2./(np.sqrt(1. - x[mid]**2))
-            front = 1./(x[mid]**2 - 1.)
-            sigx[mid] = front * (1. - pre*0.5*np.log((1.+arg)/(1.-arg)))
-
-        if high.size > 0:
-            arg = np.sqrt((x[high] - 1.)/(x[high] + 1.))
-            pre = 2./(np.sqrt(x[high]**2 - 1.))
-            front = 1./(x[high]**2 - 1)
-            sigx[high] = front * (1. - pre*np.arctan(arg))
-
-        if other.size > 0:
-            xlo, xhi = 0.999, 1.001
-            arglo, arghi = np.sqrt((1-xlo)/(1+xlo)), np.sqrt((xhi-1)/(xhi+1))
-            prelo, prehi = 2./np.sqrt(1.-xlo**2), 2./np.sqrt(xhi**2 - 1)
-            frontlo, fronthi = 1./(xlo**2 - 1), 1./(xhi**2 - 1)
-            testlo = frontlo * (1 - prelo*0.5*np.log((1+arglo)/(1-arglo)))
-            testhi = fronthi * (1 - prehi*np.arctan(arghi))
-            sigx[other] = (testlo + testhi)/2.
+        sigx = nfw_pdf(self.neighbors.r[idx], rscale=rscale)
 
         return sigx
 
@@ -315,10 +281,8 @@ class Cluster(Entry):
         refind = self.zredstr.lumrefmagindex(normmag)
         normalization = self.zredstr.lumnorm[refind, zind]
         mstar = self.zredstr.mstar(self._redshift)
-        phi_term_a = 10. ** (0.4 * (self.zredstr.alpha+1.)
-                                 * (mstar-self.neighbors.refmag[idx]))
-        phi_term_b = np.exp(-10. ** (0.4 * (mstar-self.neighbors.refmag[idx])))
-        return phi_term_a * phi_term_b / normalization
+        phi = schechter_pdf(self.neighbors.refmag[idx], alpha=self.zredstr.alpha, mstar=mstar)
+        return phi / normalization
 
     def calc_bkg_density(self, r, chisq, refmag):
         """
