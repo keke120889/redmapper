@@ -26,3 +26,5 @@ from .color_background import ColorBackground, ColorBackgroundGenerator
 from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter
 from .zred_runner import ZredRunCatalog, ZredRunPixels
 from .redmapper_run import RedmapperRun
+from .depth_fitting import DepthLim
+
