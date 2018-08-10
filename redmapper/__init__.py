@@ -19,6 +19,7 @@ from .cluster_runner import ClusterRunner
 from .run_firstpass import RunFirstPass
 from .run_likelihoods import RunLikelihoods
 from .run_percolation import RunPercolation
+from .run_colormem import RunColormem
 from .zred_color import ZredColor
 from .centering import Centering, CenteringWcenZred, CenteringBCG
 from .depthmap import DepthMap
