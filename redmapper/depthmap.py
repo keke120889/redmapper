@@ -153,11 +153,12 @@ class DepthMap(object):
                 maskgals.m50[bd] = mean(maskgals.m50[ok])
             else:
                 # very bad
-                raise RuntimeError("This shouldn't get here...")
-                #ok, = np.where(self.limmag > 0.0)
-                #maskgals.limmag = self.limmag_default
-                #maskgals.exptime = depthstr.exptime_default
-                #maskgals.m50 = depthstr.m50_default
+                maskgals.limmag[:] = 0.0
+                maskgals.exptime[:] = 1000.0
+                maskgals.m50[:] = 0.0
+                #raise RuntimeError("This shouldn't get here...")
+                print("Warning ...")
+
 
     def calc_areas(self, mags):
         """
