@@ -65,7 +65,9 @@ class RunFirstPass(ClusterRunner):
                                             zredstr=self.zredstr,
                                             config=self.config,
                                             bkg=self.bkg,
-                                            cosmo=self.cosmo)
+                                            cosmo=self.cosmo,
+                                            r0=self.r0,
+                                            beta=self.beta)
 
             self.cat.ra = incat.ra
             self.cat.dec = incat.dec
