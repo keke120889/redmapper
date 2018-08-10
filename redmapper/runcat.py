@@ -36,7 +36,9 @@ class RunCatalog(ClusterRunner):
                                                zredstr=self.zredstr,
                                                config=self.config,
                                                bkg=self.bkg,
-                                               cosmo=self.cosmo)
+                                               cosmo=self.cosmo,
+                                               r0=self.r0,
+                                               beta=self.beta)
 
         # check if we need to generate mem_match_ids
         self._generate_mem_match_ids()
