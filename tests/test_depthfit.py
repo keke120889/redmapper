@@ -36,8 +36,8 @@ class DepthFitTestCase(unittest.TestCase):
         # This has been inspected that it makes sense.
         # Also, one should really be using a depth map
 
-        testing.assert_almost_equal(dlim.initpars['EXPTIME'], 104.782066)
-        testing.assert_almost_equal(dlim.initpars['LIMMAG'], 20.64819717)
+        testing.assert_almost_equal(dlim.initpars['EXPTIME'], 104.782066, 3)
+        testing.assert_almost_equal(dlim.initpars['LIMMAG'], 20.64819717, 3)
 
         # And take a subpixel
 
@@ -51,8 +51,8 @@ class DepthFitTestCase(unittest.TestCase):
 
         pars, fail = calcErrorModel(gals.refmag, gals.refmag_err, calcErr=False)
 
-        testing.assert_almost_equal(pars['EXPTIME'], 63.73879623)
-        testing.assert_almost_equal(pars['LIMMAG'], 20.68231583)
+        testing.assert_almost_equal(pars['EXPTIME'], 63.73879623, 3)
+        testing.assert_almost_equal(pars['LIMMAG'], 20.68231583, 3)
 
         # And make sure the maskgals are getting the right constant value
         testing.assert_almost_equal(pars['EXPTIME'], mask.maskgals.exptime.min())
