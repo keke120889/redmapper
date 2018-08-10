@@ -53,7 +53,9 @@ class RunLikelihoods(ClusterRunner):
                                                zredstr=self.zredstr,
                                                config=self.config,
                                                bkg=self.bkg,
-                                               cosmo=self.cosmo)
+                                               cosmo=self.cosmo,
+                                               r0=self.r0,
+                                               beta=self.beta)
 
         keepz = kwargs.pop('keepz', False)
 

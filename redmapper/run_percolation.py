@@ -48,7 +48,9 @@ class RunPercolation(ClusterRunner):
                                                zredstr=self.zredstr,
                                                config=self.config,
                                                bkg=self.bkg,
-                                               cosmo=self.cosmo)
+                                               cosmo=self.cosmo,
+                                               r0=self.r0,
+                                               beta=self.beta)
 
         self.keepz = kwargs.pop('keepz', False)
         self.keepid = kwargs.pop('keepid', False)
