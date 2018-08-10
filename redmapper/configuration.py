@@ -126,6 +126,7 @@ class Configuration(object):
     depthfile = ConfigField()
     wcenfile = ConfigField()
     redgalfile = ConfigField()
+    redgalmodelfile = ConfigField()
     seedfile = ConfigField()
 
     calib_nproc = ConfigField(default=1, required=True)
@@ -198,7 +199,7 @@ class Configuration(object):
     calib_colormem_smooth = ConfigField(default=0.003)
     calib_colormem_minlambda = ConfigField(default=10.0)
     calib_colormem_zbounds = ConfigField(isArray=True, default=np.array([0.4]))
-    calib_colormem_colormodes = ConfigField(isArray=True, default=np.array([1]))
+    calib_colormem_colormodes = ConfigField(isArray=True, default=np.array([1, 2]))
     calib_colormem_sigint = ConfigField(isArray=True, default=np.array([0.05]))
     calib_pcut = ConfigField(default=0.3)
     calib_color_pcut = ConfigField(default=0.7)
@@ -315,8 +316,8 @@ class Configuration(object):
         # also need pz stuff, etc, etc.  Will need to deal with defaults
 
         # Calibration size checking
-        self._set_lengths(['calib_colormem_zbounds', 'calib_colormem_colormodes'],
-                          len(self.calib_colormem_zbounds))
+        self._set_lengths(['calib_colormem_colormodes', 'calib_colormem_sigint'],
+                          len(self.calib_colormem_zbounds) + 1)
         self._set_lengths(['calib_color_nodesizes', 'calib_slope_nodesizes',
                            'calib_color_maxnodes', 'calib_covmat_maxnodes',
                            'calib_color_order'], self.nmag - 1)
