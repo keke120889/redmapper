@@ -663,3 +663,13 @@ def make_lockfile(lockfile, block=False, maxtry=300, waittime=2):
             os.unlink(tempfilename)
 
         return locked
+
+def redmapper_filename(config, filetype):
+    """
+    """
+
+    import os
+
+    return os.path.join(config.outpath,
+                        '%s_%s.fit' % (config.d.outbase, filetype))
+
