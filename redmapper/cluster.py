@@ -66,6 +66,7 @@ member_dtype_base = [('MEM_MATCH_ID', 'i4'),
                      ('R', 'f4'),
                      ('P', 'f4'),
                      ('PFREE', 'f4'),
+                     ('PCOL', 'f4'),
                      ('THETA_I', 'f4'),
                      ('THETA_R', 'f4'),
                      ('REFMAG', 'f4'),
@@ -533,6 +534,7 @@ class Cluster(Entry):
                          (col < colrange[1]))
 
         if guse.size < mingal:
+            self.scaleval = -1.0
             return badlam
 
         if centcolor_in is None:
@@ -551,6 +553,7 @@ class Cluster(Entry):
         cerr = np.sqrt(col_err**2. + sigint**2.)
         in2sig, = np.where((np.abs(col[guse] - centcolor) < 2. * cerr[guse]))
         if in2sig.size < mingal:
+            self.scaleval = -1.0
             return badlam
 
         pivot = np.median(self.neighbors.refmag[guse])
