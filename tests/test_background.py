@@ -83,6 +83,7 @@ class BackgroundTestCase(unittest.TestCase):
         config_file = os.path.join('data_for_tests', 'testconfig.yaml')
 
         config = Configuration(config_file)
+        config.calib_nproc = 1
 
         test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
         config.outpath = test_dir
