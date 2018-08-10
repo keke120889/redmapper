@@ -30,7 +30,7 @@ class SelectSpecRedTestCase(unittest.TestCase):
         config.outpath = test_dir
 
         config.redgalfile = os.path.join(test_dir, 'test_redgals.fits')
-        config.redgalmodelfile = os.path.join(test_dir, 'test_redgalmodels.fits')
+        config.redgalmodelfile = os.path.join(test_dir, 'test_redgalmodel.fits')
 
         selred = SelectSpecRedGalaxies(config)
         selred.run()
