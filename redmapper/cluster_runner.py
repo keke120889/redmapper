@@ -10,6 +10,7 @@ from esutil.cosmology import Cosmo
 from .configuration import Configuration
 from .cluster import ClusterCatalog
 from .background import Background
+from .color_background import ColorBackground
 from .mask import get_mask
 from .galaxy import GalaxyCatalog
 from .catalog import Catalog
@@ -63,6 +64,8 @@ class ClusterRunner(object):
         self.runmode = None
         self.filetype = None
 
+        raise RuntimeError("Method _additional_initialization requires override")
+
     def _setup(self):
         """
         """
@@ -96,7 +99,7 @@ class ClusterRunner(object):
 
         # read in background
         if self.use_colorbkg:
-            self.cbkg = ColorBackground(self.config.bkgfile_color)
+            self.cbkg = ColorBackground(self.config.bkgfile_color, usehdrarea=True)
             self.bkg = None
         else:
             self.bkg = Background(self.config.bkgfile)
@@ -224,7 +227,7 @@ class ClusterRunner(object):
         # at the moment, we are doing the matching once per cluster.
         # if this proves too slow we can prematch bulk clusters as in the IDL code
 
-        if self.do_percolation_masking:
+        if self.do_percolation_masking or self.doublerun:
             self.pgal = np.zeros(self.gals.size, dtype=np.float32)
 
         self.members = None
@@ -372,12 +375,14 @@ class ClusterRunner(object):
                     mem_temp.r[:] = cluster.neighbors.r[memuse]
                     mem_temp.p[:] = cluster.neighbors.p[memuse]
                     mem_temp.pfree[:] = pfree_temp[memuse]
+                    mem_temp.pcol[:] = cluster.neighbors.pcol[memuse]
                     mem_temp.theta_i[:] = cluster.neighbors.theta_i[memuse]
                     mem_temp.theta_r[:] = cluster.neighbors.theta_r[memuse]
                     mem_temp.refmag[:] = cluster.neighbors.refmag[memuse]
                     mem_temp.refmag_err[:] = cluster.neighbors.refmag_err[memuse]
-                    # mem_temp.zred[:] = cluster.neighbors.zred[memuse]
-                    # mem_temp.zred_e[:] = cluster.neighbors.zred_e[memuse]
+                    if (self.did_read_zreds):
+                        mem_temp.zred[:] = cluster.neighbors.zred[memuse]
+                        mem_temp.zred_e[:] = cluster.neighbors.zred_e[memuse]
                     mem_temp.chisq[:] = cluster.neighbors.chisq[memuse]
                     mem_temp.ebv[:] = cluster.neighbors.ebv[memuse]
                     mem_temp.mag[:, :] = cluster.neighbors.mag[memuse, :]
