@@ -31,11 +31,9 @@ class Mask(object):
 
     def __init__(self, config):
         self.config = config
-        try:
-            self.read_maskgals(config.maskgalfile)
-        except:
-            # this could throw a ValueError or AttributeError
-            self.gen_maskgals()
+
+        # This will generate a maskgalfile if necessary
+        self.read_maskgals(config.maskgalfile)
 
     def calc_radmask(self, *args, **kwargs): pass
     def read_maskgals(self, maskgalfile):
