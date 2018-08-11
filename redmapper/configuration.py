@@ -200,7 +200,7 @@ class Configuration(object):
     calib_colormem_minlambda = ConfigField(default=10.0)
     calib_colormem_zbounds = ConfigField(isArray=True, default=np.array([0.4]))
     calib_colormem_colormodes = ConfigField(isArray=True, default=np.array([1, 2]))
-    calib_colormem_sigint = ConfigField(isArray=True, default=np.array([0.05]))
+    calib_colormem_sigint = ConfigField(isArray=True, default=np.array([0.05, 0.03]))
     calib_pcut = ConfigField(default=0.3)
     calib_color_pcut = ConfigField(default=0.7)
 
