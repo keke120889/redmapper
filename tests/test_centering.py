@@ -77,7 +77,7 @@ class CenteringWcenZredTestCase(unittest.TestCase):
         cluster.scaleval = tempcat[0]['SCALEVAL']
 
         corr_filename = 'test_dr8_zlambdacorr.fit'
-        zlambda_corr = ZlambdaCorrectionPar(file_path + '/' + corr_filename, 30.0)
+        zlambda_corr = ZlambdaCorrectionPar(file_path + '/' + corr_filename, zlambda_pivot=30.0)
 
         # And the meat of it...
 

@@ -10,7 +10,7 @@ import fitsio
 
 from .utilities import gaussFunction
 from .utilities import CubicSpline
-
+from .catalog import Entry
 
 class Zlambda(object):
     """
@@ -442,32 +442,55 @@ class Zlambda(object):
 class ZlambdaCorrectionPar(object):
     """
     """
-    def __init__(self, parfile, zlambda_pivot, zrange=None, zbinsize=None):
-        parfile = parfile
+    def __init__(self, parfile=None, pars=None, zrange=None, zbinsize=None, zlambda_pivot=None):
 
-        if not os.path.isfile(parfile):
-            raise IOError("Could not find ZlambdaCorrectionPar file %s" % (parfile))
+        # We can either send in a parfile or the actual pars (used in calibration)
 
-        hdr = fitsio.read_header(parfile, ext=1)
+        if parfile is None and pars is None:
+            raise RuntimeError("Must supply either parfile or pars")
 
-        if zrange is None:
-            zrange = [hdr['ZRANGE0'], hdr['ZRANGE1']]
-        self.zrange = zrange
+        if parfile is not None:
+            # We have specified a parfile
+            if not os.path.isfile(parfile):
+                raise IOError("Could not find ZlambdaCorrectionPar file %s" % (parfile))
 
-        if zbinsize is None:
-            zbinsize = hdr['ZBINSIZE']
-        self.zbinsize = zbinsize
+            hdr = fitsio.read_header(parfile, ext=1)
 
-        self.zlambda_pivot = zlambda_pivot
+            if zrange is None:
+                zrange = [hdr['ZRANGE0'], hdr['ZRANGE1']]
+            self.zrange = zrange
 
-        pars = fitsio.read(parfile, ext=1, upper=True)
+            if zbinsize is None:
+                zbinsize = hdr['ZBINSIZE']
+            self.zbinsize = zbinsize
+
+            if zlambda_pivot is None:
+                zlambda_pivot = hdr['ZLAMPIV']
+            self.zlambda_pivot = zlambda_pivot
+
+            pars = Entry.from_fits_file(parfile, ext=1)
+
+        else:
+            if zrange is None:
+                raise ValueError("Must specify zrange with a par structure")
+            self.zrange = zrange
+
+            if zbinsize is None:
+                raise ValueError("Must specify zbinsize with a par structure")
+            self.zbinsize = zbinsize
+
+            if zlambda_pivot is None:
+                raise ValueError("Must specify zlambda_pivot with a par structure")
+            self.zlambda_pivot = zlambda_pivot
 
         nbins = np.round((zrange[1] - zrange[0])/zbinsize).astype(np.int32)
         self.z = zbinsize*np.arange(nbins) + zrange[0]
 
         self.niter = 1
-        if 'NITER_TRUE' in pars.dtype.names:
-            self.niter = pars[0]['NITER_TRUE']
+        try:
+            self.niter = pars.niter_true
+        except:
+            pass
 
         self.extrapolated = np.zeros_like(self.z, dtype=np.bool)
 
@@ -475,36 +498,33 @@ class ZlambdaCorrectionPar(object):
         self.slope = np.zeros_like(self.offset)
         self.scatter = np.zeros_like(self.offset)
 
-        loz, = np.where(self.z < pars[0]['OFFSET_Z'][0])
-        hiz, = np.where(self.z > pars[0]['OFFSET_Z'][-1])
+        loz, = np.where(self.z < pars.offset_z[0])
+        hiz, = np.where(self.z > pars.offset_z[-1])
 
         self.extrapolated[loz] = True
         self.extrapolated[hiz] = True
 
         if self.niter == 1:
-            spl = CubicSpline(pars[0]['OFFSET_Z'], pars[0]['OFFSET_TRUE'])
+            spl = CubicSpline(pars.offset_z, pars.offset_true)
             self.offset[0, :] = spl(self.z)
 
-            spl = CubicSpline(pars[0]['SLOPE_Z'], pars[0]['SLOPE_TRUE'])
+            spl = CubicSpline(pars.slope_z, pars.slope_true)
             self.slope[0, :] = spl(self.z)
 
-            spl = CubicSpline(pars[0]['SLOPE_Z'], pars[0]['SCATTER_TRUE'])
+            spl = CubicSpline(pars.slope_z, pars.scatter_true)
             self.scatter[0, :] = np.clip(spl(self.z), 0.001, None)
         else:
             for i in xrange(self.niter):
-                spl = CubicSpline(pars[0]['OFFSET_Z'], pars[0]['OFFSET_TRUE'][:, i])
+                spl = CubicSpline(pars.offset_z, pars.offset_true[:, i])
                 self.offset[i, :] = spl(self.z)
 
-                spl = CubicSpline(pars[0]['SLOPE_Z'], pars[0]['SLOPE_TRUE'][:, i])
+                spl = CubicSpline(pars.slope_z, pars.slope_true[:, i])
                 self.slope[i, :] = spl(self.z)
 
-                spl = CubicSpline(pars[0]['SLOPE_Z'], pars[0]['SCATTER_TRUE'][:, i])
+                spl = CubicSpline(pars.slope_z, pars.scatter_true[:, i])
                 self.scatter[i, :] = np.clip(spl(self.z), 0.001, None)
 
-        spl = CubicSpline(pars[0]['OFFSET_Z'], pars[0]['ZRED_CORR'])
-        self.zred_corr = spl(self.z)
-
-        spl = CubicSpline(pars[0]['OFFSET_Z'], pars[0]['ZRED_UNCORR'])
+        spl = CubicSpline(pars.offset_z, pars.zred_uncorr)
         self.zred_uncorr = spl(self.z)
 
     def apply_correction(self, lam, zlam, zlam_e, pzbins=None, pzvals=None, noerr=False):

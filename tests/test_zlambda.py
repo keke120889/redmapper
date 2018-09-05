@@ -83,7 +83,7 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         # and test the correction on its own
         corr_filename = 'test_dr8_zlambdacorr.fit'
 
-        zlambda_corr = ZlambdaCorrectionPar(file_path + '/' + corr_filename, 30.0)
+        zlambda_corr = ZlambdaCorrectionPar(file_path + '/' + corr_filename, zlambda_pivot=30.0)
 
         zlam_in = 0.227865
         zlam_e_in = 0.00629995
