@@ -124,7 +124,7 @@ class Cluster(Entry):
         self._mstar = None
         self._mpc_scale = None
 
-        if self.z > 0.0:
+        if self.z > 0.0 and self.zredstr is not None:
             self.redshift = self.z
         else:
             self._redshift = None
