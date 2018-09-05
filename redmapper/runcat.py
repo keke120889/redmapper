@@ -51,6 +51,8 @@ class RunCatalog(ClusterRunner):
         self.do_lam_plusminus = True
         self.match_centers_to_galaxies = True
         self.record_members = True
+        self.do_correct_zlambda = True
+        self.do_pz = True
 
         # this is the minimum luminosity to consider
         # this is here to speed up computations.
@@ -125,11 +127,6 @@ class RunCatalog(ClusterRunner):
                 cluster.redshift = cluster.z_lambda
             else:
                 done = True
-
-        if not bad and self.zlambda_corr is not None:
-            self.zlambda_corr.apply_correction(cluster.Lambda,
-                                               cluster.z_lambda, cluster.z_lambda_e,
-                                               pzbins=cluster.pzbins, pzvals=cluster.pz)
 
         return bad
 
