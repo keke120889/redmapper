@@ -113,8 +113,8 @@ class ClusterRunner(object):
 
         # And correction parameters
         try:
-            self.zlambda_corr = ZlambdaCorrectionPar(self.config.zlambdafile,
-                                                     self.config.zlambda_pivot)
+            self.zlambda_corr = ZlambdaCorrectionPar(parfile=self.config.zlambdafile,
+                                                     zlambda_pivot=self.config.zlambda_pivot)
         except:
             self.zlambda_corr = None
 
@@ -171,6 +171,8 @@ class ClusterRunner(object):
         self.min_lambda = -1.0
         self.record_members = False
         self.doublerun = False
+        self.do_correct_zlambda = False
+        self.do_pz = False
 
     def _more_setup(self, *args, **kwargs):
         # This is to be overridden if necessary
@@ -295,6 +297,22 @@ class ClusterRunner(object):
                 if bad_cluster:
                     # This is a bad cluster and we can't continue
                     continue
+
+                if self.do_correct_zlambda and self.zlambda_corr is not None:
+                    if self.do_pz:
+                        zlam, zlam_e, pzbins, pzvals = self.zlambda_corr.apply_correction(cluster.Lambda,
+                                                                                          cluster.z_lambda,
+                                                                                          cluster.z_lambda_e,
+                                                                                          pzbins=cluster.pzbins,
+                                                                                          pzvals=cluster.pz)
+                        cluster.pzbins = pzbins
+                        cluster.pzvals = pzvals
+                    else:
+                        zlam, zlam_e = self.zlambda_corr.apply_correction(cluster.Lambda,
+                                                                          cluster.z_lambda,
+                                                                          cluster.z_lambda_e)
+                    cluster.z_lambda = zlam
+                    cluster.z_lambda_e = zlam_e
 
                 # compute updated maskfrac (always)
                 inside, = np.where(self.mask.maskgals.r < cluster.r_lambda)

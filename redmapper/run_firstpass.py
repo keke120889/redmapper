@@ -131,6 +131,8 @@ class RunFirstPass(ClusterRunner):
         self.do_lam_plusminus = False
         self.match_centers_to_galaxies = False
         self.do_percolation_masking = False
+        self.do_correct_zlambda = False
+        self.do_pz = False
 
         #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
 

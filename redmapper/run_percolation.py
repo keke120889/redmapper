@@ -87,6 +87,8 @@ class RunPercolation(ClusterRunner):
         self.do_percolation_masking = True
         self.do_lam_plusminus = True
         self.record_members = True
+        self.do_correct_zlambda = True
+        self.do_pz = True
 
         self.use_memradius = False
         if self.config.percolation_memradius > 1.0:
