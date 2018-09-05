@@ -74,6 +74,8 @@ class RunLikelihoods(ClusterRunner):
         self.do_lam_plusminux = False
         self.match_centers_to_galaxies = False
         self.record_members = False
+        self.do_correct_zlambda = False
+        self.do_pz = False
 
         #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
 
@@ -119,10 +121,12 @@ class RunLikelihoods(ClusterRunner):
 
             # And the zred or chisq filter
             if self.config.likelihoods_use_zred:
+                # We use "z_lambda" here because this is specifically a correction on z_lambda
+                # (but should be equal to cluster.redshift)
                 if self.zlambda_corr is not None:
-                    zrmod = interpol(self.zlambda_corr.zred_uncorr, self.zlambda_corr.z, cluster.get_z())
+                    zrmod = interpol(self.zlambda_corr.zred_uncorr, self.zlambda_corr.z, cluster.z_lambda)
                 else:
-                    zrmod = cluster.redshift
+                    zrmod = cluster.z_lambda
 
                 g = ((1./(np.sqrt(2. * np.pi) * cluster.neighbors.zred_e[minrind])) *
                      np.exp(-0.5 * (cluster.neighbors.zred[minrind] - zrmod)**2. / cluster.neighbors.zred_e[minrind]**2.))
