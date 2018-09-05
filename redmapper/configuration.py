@@ -204,6 +204,12 @@ class Configuration(object):
     calib_pcut = ConfigField(default=0.3)
     calib_color_pcut = ConfigField(default=0.7)
 
+    calib_zlambda_nodesize = ConfigField(default=0.04)
+    calib_zlambda_slope_nodesize = ConfigField(default=0.1)
+    calib_zlambda_minlambda = ConfigField(default=20.0)
+    calib_zlambda_clean_nsig = ConfigField(default=5.0)
+    calib_zlambda_correct_niter = ConfigField(default=3)
+
     calib_lumfunc_alpha = ConfigField(default=-1.0, required=True)
 
     zredc_binsize_fine = ConfigField(default=0.0001)
