@@ -9,7 +9,7 @@ import fitsio
 import tempfile
 import shutil
 
-from redmapper import Background, BackgroundGenerator
+from redmapper import Background, BackgroundGenerator, ZredBackgroundGenerator
 from redmapper import Configuration
 from redmapper import ZredBackground
 
@@ -108,6 +108,47 @@ class BackgroundTestCase(unittest.TestCase):
 
         if os.path.exists(test_dir):
             shutil.rmtree(test_dir, True)
+
+    def test_generatezredbkg(self):
+        """
+        """
+
+        config_file = os.path.join('data_for_tests', 'testconfig.yaml')
+
+        config = Configuration(config_file)
+
+        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = test_dir
+
+        config.bkgfile = os.path.join(config.outpath, '%s_testbkg.fit' % (config.d.outbase))
+        config.zrange = [0.1, 0.2]
+
+        # First test without a zred file ...
+        gen = ZredBackgroundGenerator(config)
+        self.assertRaises(RuntimeError, gen.run)
+
+        # And now fix it ...
+        config.zredfile = os.path.join('data_for_tests', 'zreds_test', 'dr8_test_zreds_master_table.fit')
+
+        gen = ZredBackgroundGenerator(config)
+        gen.run(clobber=True)
+
+
+        self.assertTrue(os.path.isfile(config.bkgfile))
+
+        zbkg = fitsio.read(config.bkgfile, ext='ZREDBKG')
+
+        # Some spot-testing...
+        # (The numbers have been checked to be consistent with the full run tested above
+        #  but can't be directly compared because this is much noisier)
+        testing.assert_equal(zbkg[0]['sigma_g'].shape, (48, 10))
+        testing.assert_almost_equal(zbkg[0]['sigma_g'][30, 5], 620.0223999, decimal=5)
+        testing.assert_almost_equal(zbkg[0]['sigma_g'][47, 8], 30501.8398438, decimal=5)
+        testing.assert_almost_equal(zbkg[0]['sigma_g'][30, 0], 384.3362732, decimal=5)
+
+        if os.path.exists(test_dir):
+            shutil.rmtree(test_dir, True)
+
 
 
 if __name__=='__main__':

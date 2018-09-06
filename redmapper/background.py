@@ -6,6 +6,7 @@ import numpy as np
 import healpy as hp
 import time
 import copy
+import os
 
 import multiprocessing
 from multiprocessing import Pool
@@ -253,11 +254,10 @@ class BackgroundGenerator(object):
 
         if not clobber:
             if os.path.isfile(self.config.bkgfile):
-                fits = fitsio.FITS(self.config.bkgfile)
-                if 'CHISQBKG' in [ext.get_extname() for ext in fits[1: ]]:
-                    print("CHISQBKG already in %s and clobber is False" % (self.config.bkgfile))
-                    return
-                fits.close()
+                with fitsio.FITS(self.config.bkgfile) as fits:
+                    if 'CHISQBKG' in [ext.get_extname() for ext in fits[1: ]]:
+                        print("CHISQBKG already in %s and clobber is False" % (self.config.bkgfile))
+                        return
 
         # get the ranges
         self.refmagrange = np.array([12.0, self.config.limmag_catalog])
@@ -331,27 +331,26 @@ class BackgroundGenerator(object):
                  ('sigma_g', 'f4', sigma_g.shape),
                  ('sigma_lng', 'f4', sigma_lng.shape)]
 
-        chisq_bkg = np.zeros(1, dtype=dtype)
-        chisq_bkg[0]['zbins'] = self.zbins
-        chisq_bkg[0]['zrange'] = self.config.zrange
-        chisq_bkg[0]['zbinsize'] = self.config.bkg_zbinsize
-        chisq_bkg[0]['chisq_index'] = 0
-        chisq_bkg[0]['refmag_index'] = 1
-        chisq_bkg[0]['chisqbins'] = self.chisqbins
-        chisq_bkg[0]['chisqrange'] = self.chisqrange
-        chisq_bkg[0]['chisqbinsize'] = self.config.bkg_chisqbinsize
-        chisq_bkg[0]['lnchisqbins'] = self.lnchisqbins
-        chisq_bkg[0]['lnchisqrange'] = self.lnchisqrange
-        chisq_bkg[0]['lnchisqbinsize'] = self.lnchisqbinsize
-        chisq_bkg[0]['areas'] = self.areas
-        chisq_bkg[0]['refmagbins'] = self.refmagbins
-        chisq_bkg[0]['refmagrange'] = self.refmagrange
-        chisq_bkg[0]['refmagbinsize'] = self.config.bkg_refmagbinsize
-        chisq_bkg[0]['sigma_g'] = sigma_g
-        chisq_bkg[0]['sigma_lng'] = sigma_lng
+        chisq_bkg = Entry(np.zeros(1, dtype=dtype))
+        chisq_bkg.zbins[:] = self.zbins
+        chisq_bkg.zrange[:] = self.config.zrange
+        chisq_bkg.zbinsize = self.config.bkg_zbinsize
+        chisq_bkg.chisq_index = 0
+        chisq_bkg.refmag_index = 1
+        chisq_bkg.chisqbins[:] = self.chisqbins
+        chisq_bkg.chisqrange[:] = self.chisqrange
+        chisq_bkg.chisqbinsize = self.config.bkg_chisqbinsize
+        chisq_bkg.lnchisqbins[:] = self.lnchisqbins
+        chisq_bkg.lnchisqrange[:] = self.lnchisqrange
+        chisq_bkg.lnchisqbinsize = self.lnchisqbinsize
+        chisq_bkg.areas[:] = self.areas
+        chisq_bkg.refmagbins[:] = self.refmagbins
+        chisq_bkg.refmagrange[:] = self.refmagrange
+        chisq_bkg.refmagbinsize = self.config.bkg_refmagbinsize
+        chisq_bkg.sigma_g[:, :] = sigma_g
+        chisq_bkg.sigma_lng[:, :] = sigma_lng
 
-        fitsio.write(self.config.bkgfile, chisq_bkg, extname='CHISQBKG', clobber=clobber)
-
+        chisq_bkg.to_fits_file(self.config.bkgfile, extname='CHISQBKG', clobber=clobber)
 
 
     def _worker(self, zbinmark):
@@ -486,4 +485,148 @@ class BackgroundGenerator(object):
                                                             time.time() - starttime))
 
         return (zbinmark, sigma_g_sub, sigma_lng_sub)
+
+class ZredBackgroundGenerator(object):
+    """
+    """
+
+    def __init__(self, config):
+        self.config = config
+
+    def run(self, clobber=False, natatime=100000):
+        """
+        """
+
+        if not os.path.isfile(self.config.zredfile):
+            raise RuntimeError("Must run ZredBackgroundGenerator with a zred file")
+
+        if not clobber:
+            if os.path.isfile(self.config.bkgfile):
+                with fitsio.FITS(self.config.bkgfile) as fits:
+                    if 'ZREDBKG' in [ext.get_extname() for ext in fits[1: ]]:
+                        print("ZREDBKG already in %s and clobber is False" % (self.config.bkgfile))
+                        return
+
+        # Read in zred parameters
+        zredstr = RedSequenceColorPar(self.config.parfile, fine=True, zrange=self.config.zrange)
+
+        # Set ranges
+        refmagrange = np.array([12.0, self.config.limmag_catalog])
+        nrefmagbins = np.ceil((refmagrange[1] - refmagrange[0]) / self.config.bkg_refmagbinsize).astype(np.int32)
+        refmagbins = np.arange(nrefmagbins) * self.config.bkg_refmagbinsize + refmagrange[0]
+
+        zredrange = np.array([zredstr.z[0], zredstr.z[-2] + (zredstr.z[1] - zredstr.z[0])])
+        nzredbins = np.ceil((zredrange[1] - zredrange[0]) / self.config.bkg_zredbinsize).astype(np.int32)
+        zredbins = np.arange(nzredbins) * self.config.bkg_zredbinsize + zredrange[0]
+
+        # Compute the areas...
+        # This takes into account the configured sub-region
+        depthstr = DepthMap(self.config)
+        areas = depthstr.calc_areas(refmagbins)
+
+        maxchisq = self.config.wcen_zred_chisq_max
+
+        # Prepare pixels (if necessary) and count galaxies
+
+        if not self.config.galfile_pixelized:
+            raise ValueError("Only pixelized galfiles are supported at this moment.")
+
+        master = Entry.from_fits_file(self.config.galfile)
+
+        if self.config.d.hpix > 0:
+            # We need to take a sub-region
+            theta, phi = hp.pix2ang(master.nside, master.hpix)
+            ipring_big = hp.ang2pix(self.config.d.nside, theta, phi)
+            subreg_indices, = np.where(ipring_bin == self.config.d.hpix)
+        else:
+            subreg_indices = np.arange(master.hpix.size)
+
+        ngal = np.sum(master.ngals[subreg_indices])
+        npix = subreg_indices.size
+
+        starttime = time.time()
+
+        nmag = self.config.nmag
+        ncol = nmag - 1
+
+        zreds = np.zeros(ngal, dtype=np.float32) - 1.0
+        refmags = np.zeros(ngal, dtype=np.float32)
+
+        zbinmid = np.median(np.arange(zredstr.z.size, dtype=np.int32))
+
+        # Loop
+        ctr = 0
+        p = 0
+        while ((ctr < ngal) and (p < npix)):
+            if master.ngals[subreg_indices[p]] == 0:
+                p += 1
+                continue
+
+            gals = GalaxyCatalog.from_galfile(self.config.galfile, nside=master.nside,
+                                              hpix=master.hpix[subreg_indices[p]],
+                                              border=0.0,
+                                              zredfile=self.config.zredfile)
+
+            use, = np.where(gals.chisq < maxchisq)
+
+            if use.size > 0:
+                lo = ctr
+                hi = ctr + use.size
+
+                inds = np.arange(lo, hi, dtype=np.int64)
+
+                refmags[inds] = gals.refmag[use]
+                zreds[inds] = gals.zred[use]
+
+            ctr += master.ngals[subreg_indices[p]]
+            p += 1
+
+        # Compute cic
+        sigma_g = np.zeros((nrefmagbins, nzredbins))
+
+        binsizes = self.config.bkg_refmagbinsize * self.config.bkg_zredbinsize
+
+        use, = np.where((zreds >= zredrange[0]) & (zreds < zredrange[1]) &
+                        (refmags > refmagrange[0]) & (refmags < refmagrange[1]))
+
+        zredpos = (zreds[use] - zredrange[0]) * nzredbins / (zredrange[1] - zredrange[0])
+        refmagpos = (refmags[use] - refmagrange[0]) * nrefmagbins / (refmagrange[1] - refmagrange[0])
+
+        value = np.ones(use.size)
+
+        field = cic(value, zredpos, nzredbins, refmagpos, nrefmagbins, isolated=True)
+
+        sigma_g[:, :] = field
+
+        for j in range(nzredbins):
+            sigma_g[:, j] = np.clip(field[:, j], 0.1, None) / (areas * binsizes)
+
+        print("Finished zred background in %.2f seconds" % (time.time() - starttime))
+
+        # save it
+
+        dtype = [('zredbins', 'f4', zredbins.size),
+                 ('zredrange', 'f4', zredrange.size),
+                 ('zredbinsize', 'f4'),
+                 ('zred_index', 'i2'),
+                 ('refmag_index', 'i2'),
+                 ('refmagbins', 'f4', refmagbins.size),
+                 ('refmagrange', 'f4', refmagrange.size),
+                 ('refmagbinsize', 'f4'),
+                 ('areas', 'f4', areas.size),
+                 ('sigma_g', 'f4', sigma_g.shape)]
+
+        zred_bkg = Entry(np.zeros(1, dtype=dtype))
+        zred_bkg.zredbins[:] = zredbins
+        zred_bkg.zredrange[:] = zredrange
+        zred_bkg.zredbinsize = self.config.bkg_zredbinsize
+        zred_bkg.zred_index = 0
+        zred_bkg.refmag_index = 1
+        zred_bkg.refmagbins[:] = refmagbins
+        zred_bkg.refmagrange[:] = refmagrange
+        zred_bkg.refmagbinsize = self.config.bkg_refmagbinsize
+        zred_bkg.areas[:] = areas
+        zred_bkg.sigma_g[:, :] = sigma_g
+
+        zred_bkg.to_fits_file(self.config.bkgfile, extname='ZREDBKG', clobber=clobber)
 

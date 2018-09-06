@@ -218,6 +218,7 @@ class Configuration(object):
     bkg_chisqbinsize = ConfigField(default=0.5)
     bkg_refmagbinsize = ConfigField(default=0.2)
     bkg_zbinsize = ConfigField(default=0.02)
+    bkg_zredbinsize = ConfigField(default=0.01)
     bkg_deepmode = ConfigField(default=False)
 
     zlambda_pivot = ConfigField(default=30.0, required=True)
@@ -489,3 +490,15 @@ class Configuration(object):
             vals['phi1_msig_slope'] = wcen[0]['phi1_msig_slope']
 
         return vals
+
+    @property
+    def zrange_cushioned(self):
+        zrange_cushioned = self.zrange.copy()
+        zrange_cushioned[0] = np.clip(zrange_cushioned[0] - self.calib_zrange_cushion, 0.05, None)
+        zrange_cushioned[1] += self.calib_zrange_cushion
+        return zrange_cushioned
+
+    def redmapper_filename(self, filetype, paths=None):
+        return os.path.join(self.outpath,
+                            '%s_%s.fit' % (self.d.outbase, filetype))
+

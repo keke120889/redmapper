@@ -10,7 +10,7 @@ from .solver_nfw import Solver
 from .catalog import DataObject, Entry, Catalog
 from .redsequence import RedSequenceColorPar
 from .chisq_dist import compute_chisq
-from .background import Background, ZredBackground, BackgroundGenerator
+from .background import Background, ZredBackground, BackgroundGenerator, ZredBackgroundGenerator
 from .cluster import Cluster, ClusterCatalog
 from .galaxy import Galaxy, GalaxyCatalog
 from .mask import Mask, HPMask, get_mask
