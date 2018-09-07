@@ -136,4 +136,4 @@ class RunColormem(ClusterRunner):
         savemem.to_fits_file(self.config.zmemfile)
 
         # This should get a better name...
-        self.cat.to_fits_file('colorcat.fit')
+        self.cat.to_fits_file(self.config.redmapper_filename('colorcat'))
