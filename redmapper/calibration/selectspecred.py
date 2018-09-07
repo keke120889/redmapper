@@ -58,9 +58,7 @@ class SelectSpecRedGalaxies(object):
         gals.z = spec[i0].z
 
         # Set the redshift range
-        zrange = self.config.zrange.copy()
-        zrange[0] = np.clip(zrange[0] - self.config.calib_zrange_cushion, 0.05, None)
-        zrange[1] += self.config.calib_zrange_cushion
+        zrange = self.config.zrange_cushioned
 
         use, = np.where((gals.z > zrange[0]) & (gals.z < zrange[1]) &
                         (gals.refmag < self.config.limmag_ref))
