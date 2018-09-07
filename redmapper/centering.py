@@ -105,6 +105,7 @@ class CenteringWcenZred(Centering):
 
         u, = np.where(self.cluster.neighbors.p > 0.0)
 
+        # This is the maximum radius in units of degrees (r_lambda is Mpc; mpc_scale is Mpc / degree)
         maxrad = 1.1 * self.cluster.r_lambda / self.cluster.mpc_scale
 
         htm_matcher = esutil.htm.Matcher(self.cluster.neighbors.depth,
@@ -255,12 +256,71 @@ class CenteringWcenZred(Centering):
 
         self.ra[0: good.size] = self.cluster.neighbors.ra[use[good]]
         self.dec[0: good.size] = self.cluster.neighbors.dec[use[good]]
+        self.maxind = use[good[0]]
         self.index[0: good.size] = use[good]
         self.p_cen[0: good.size] = Pcen[good]
         self.q_cen[0: good.size] = Qcen[good]
         self.p_fg[0: good.size] = Pfg
         self.p_sat[0: good.size] = Psat
         self.p_c[0: good.size] = Pcen_basic[good]
+
+        return True
+
+class CenteringRandom(Centering):
+
+    def find_center(self):
+
+        r = self.cluster.r_lambda * np.sqrt(np.random.random(size=1))
+        phi = 2. * np.pi * np.random.random(size=1)
+
+        x = r * np.cos(phi) / (self.cluster.mpc_scale)
+        y = r * np.sin(phi) / (self.cluster.mpc_scale)
+
+        ra_cen = self.cluster.ra + x / np.cos(np.radians(self.cluster.dec))
+        dec_cen = self.cluster.dec + y
+
+        self.ra[0] = ra_cen
+        self.dec[0] = dec_cen
+        self.ngood = 1
+        self.index[0] = -1
+        self.maxind = -1
+        self.p_cen[0] = 1.0
+        self.q_cen[0] = 1.0
+        self.p_sat[0] = 0.0
+        self.p_fg[0] = 0.0
+        self.p_c[0] = 1.0
+
+        return True
+
+
+class CenteringRandomSatellite(Centering):
+
+    def find_center(self):
+
+        st = np.argsort(self.cluster.neighbors.pmem)[::-1]
+
+        pdf = self.cluster.neighbors.pmem[st]
+        pdf /= np.sum(pdf)
+        cdf = np.cumsum(pdf)
+        cdfi = (cdf * st.size).astype(np.int32)
+
+        rand = (np.random.uniform(size=1) * st.size).astype(np.int32)
+        ind = np.where(cdfi >= rand[0])[0][0]
+        maxind = st[ind]
+
+        ra_cen = self.cluster.neighbors.ra[maxind]
+        dec_cen = self.cluster.neighbors.dec[maxind]
+
+        self.ra[0] = ra_cen
+        self.dec[0] = dec_cen
+        self.index[0] = maxind
+        self.maxind = maxind
+        self.ngood = 1
+        self.p_cen[0] = 1.0
+        self.q_cen[0] = 1.0
+        self.p_sat[0] = 0.0
+        self.p_fg[0] = 0.0
+        self.p_c[0] = 1.0
 
         return True
 
