@@ -255,6 +255,7 @@ class Configuration(object):
     firstpass_beta = ConfigField(default=0.0, required=True)
     firstpass_niter = ConfigField(default=2, required=True)
     firstpass_minlambda = ConfigField(default=3.0, required=True)
+    firstpass_centerclass = ConfigField(default='CenteringBCG', required=True)
 
     likelihoods_r0 = ConfigField(default=1.0, required=True)
     likelihoods_beta = ConfigField(default=0.2, required=True)
@@ -296,9 +297,7 @@ class Configuration(object):
         self._set_vars_from_dict(gal_stats, check_none=True)
 
         # Get wcen numbers if available
-        wcen_vals = self._wcen_vals()
-        if wcen_vals is not None:
-            self._set_vars_from_dict(wcen_vals)
+        self.set_wcen_vals()
 
         # Record the cluster dtype for convenience
         self.cluster_dtype = copy.copy(cluster_dtype_base)
@@ -459,6 +458,14 @@ class Configuration(object):
             gal_stats.pop('bands', None)
 
         return gal_stats
+
+    def set_wcen_vals(self):
+        """
+        """
+
+        wcen_vals = self._wcen_vals()
+        if wcen_vals is not None:
+            self._set_vars_from_dict(wcen_vals)
 
     def _wcen_vals(self):
         """
