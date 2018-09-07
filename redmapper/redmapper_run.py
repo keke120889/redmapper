@@ -55,13 +55,25 @@ class RedmapperRun(object):
         # run each individual one
         self.config.d.nside = nside_split
 
-        pool = Pool(processes=self.config.calib_run_nproc)
-        if self.specmode:
-            retvals = pool.map(self._spec_worker, pixels_split, chunksize=1)
+        orig_seedfile = self.config.seedfile
+        self.config.seedfile = seedfile
+
+        if not self.single_pixel:
+            pool = Pool(processes=self.config.calib_run_nproc)
+            if self.specmode:
+                retvals = pool.map(self._spec_worker, pixels_split, chunksize=1)
+            else:
+                retvals = pool.map(self._worker, pixels_split, chunksize=1)
+            pool.close()
+            pool.join()
         else:
-            retvals = pool.map(self._worker, pixels_split, chunksize=1)
-        pool.close()
-        pool.join()
+            if self.specmode:
+                retval = self._spec_worker(pixels_split)
+            else:
+                retval = self._spec_worker(pixels_split)
+
+        # Reset the seedfile
+        self.config.seedfile = orig_seedfile
 
         # Consolidate (if necessary)
         if not self.single_pixel:
@@ -69,12 +81,19 @@ class RedmapperRun(object):
             likefiles = [x[2] for x in retvals]
             percfiles = [x[3] for x in retvals]
 
-            self._consolidate(pixnums, percfiles, 'final', members=True, check=check)
+            finalfile = self._consolidate(pixnums, percfiles, 'final', members=True, check=check)
 
             if consolidate_like:
-                self._consolidate(pixnums, likefiles, 'like', members=False, check=check)
+                likefile = self._consolidate(pixnums, likefiles, 'like', members=False, check=check)
+        else:
+            finalfile = retval[2]
+            likefile = retval[3]
 
         # And done
+        if consolidate_like:
+            return (finalfile, likefile)
+        else:
+            return finalfile
 
     def _get_pixel_splits(self):
         """
@@ -131,8 +150,11 @@ class RedmapperRun(object):
         """
         """
 
-        outfile = os.path.join(self.config.outpath, '%s_%s.fit' % (self.config.d.outbase, filetype))
-        memfile = os.path.join(self.config.outpath, '%s_%s_members.fit' % (self.config.d.outbase, filetype))
+        outfile = self.config.redmapper_filename(filetype)
+        memfile = self.config.redmapper_filename(filetype+'_members')
+
+        #outfile = os.path.join(self.config.outpath, '%s_%s.fit' % (self.config.d.outbase, filetype))
+        #memfile = os.path.join(self.config.outpath, '%s_%s_members.fit' % (self.config.d.outbase, filetype))
 
         if check:
             outfile_there = os.path.isfile(outfile)
@@ -222,8 +244,12 @@ class RedmapperRun(object):
         # that already happened
         fitsio.write(outfile, ubercat._ndarray, clobber=True)
 
+        ## FIXME: to_fits_file
+
         if members:
             fitsio.write(memfile, ubermem._ndarray, clobber=True)
+
+        return outfile
 
     def _worker(self, pixnum):
 
