@@ -189,7 +189,6 @@ class Cluster(Entry):
             raise ValueError("A GalaxyCatalog object must be specified.")
 
         if megaparsec:
-            #radius_degrees = np.degrees(radius / self.cosmo.Da(0.0, self._redshift))
             radius_degrees = radius / self.mpc_scale
         else:
             radius_degrees = radius
@@ -644,8 +643,6 @@ class Cluster(Entry):
     @redshift.setter
     def redshift(self, value):
         self._redshift = value
-        #_ = self.mstar(update=True)
-        #_ = self.mpc_scale(update=True)
         self._update_mstar()
         self._update_mpc_scale()
         self._compute_neighbor_r()
@@ -671,9 +668,15 @@ class Cluster(Entry):
 
     @property
     def mpc_scale(self):
+        """
+        Angular scaling in units of Mpc / degree
+        """
         return self._mpc_scale
 
     def _update_mpc_scale(self):
+        """
+        Compute the scaling, in units of Mpc / degree
+        """
         self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._redshift)
 
     def _compute_neighbor_r(self):
