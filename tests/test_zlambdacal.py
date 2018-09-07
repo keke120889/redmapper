@@ -24,11 +24,11 @@ class ZLambdaCalTestCase(unittest.TestCase):
 
         config.zrange = [0.1, 0.2]
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
 
         config.catfile = os.path.join(file_path, 'test_zlamcal_cat.fit')
-        config.zlambdafile = os.path.join(test_dir, 'test_zlambdafile.fits')
+        config.zlambdafile = os.path.join(self.test_dir, 'test_zlambdafile.fits')
 
         zlambdacal = ZLambdaCalibrator(config, corrslope=False)
         zlambdacal.run()
@@ -67,9 +67,13 @@ class ZLambdaCalTestCase(unittest.TestCase):
                                                                       0.14075805,
                                                                       0.2043011]))
 
-        # Clean up
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
 
 if __name__=='__main__':
     unittest.main()

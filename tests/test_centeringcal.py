@@ -25,8 +25,8 @@ class CenteringCalibratorTestCase(unittest.TestCase):
         randcatfile = os.path.join(file_path, 'test_dr8_randcat.fit')
         randsatcatfile = os.path.join(file_path, 'test_dr8_randsatcat.fit')
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
 
         config.wcenfile = os.path.join(config.outpath, '%s_testwcen.fit' % (config.d.outbase))
 
@@ -63,8 +63,14 @@ class CenteringCalibratorTestCase(unittest.TestCase):
         testing.assert_almost_equal(config.lnw_cen_mean, 0.21916480960693957, 5)
         testing.assert_almost_equal(config.lnw_cen_sigma, 0.13680977279433526, 5)
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
+
 
 if __name__=='__main__':
     unittest.main()

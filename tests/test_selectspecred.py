@@ -26,11 +26,11 @@ class SelectSpecRedTestCase(unittest.TestCase):
         config.specfile_train = os.path.join(file_path, 'test_dr8_trainred_spec.fit')
         config.zrange = [0.1,0.2]
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix="TestRedmapper-")
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix="TestRedmapper-")
+        config.outpath = self.test_dir
 
-        config.redgalfile = os.path.join(test_dir, 'test_redgals.fits')
-        config.redgalmodelfile = os.path.join(test_dir, 'test_redgalmodel.fits')
+        config.redgalfile = os.path.join(self.test_dir, 'test_redgals.fits')
+        config.redgalmodelfile = os.path.join(self.test_dir, 'test_redgalmodel.fits')
 
         selred = SelectSpecRedGalaxies(config)
         selred.run()
@@ -56,8 +56,13 @@ class SelectSpecRedTestCase(unittest.TestCase):
         testing.assert_almost_equal(redgalmodel['MEDCOL_WIDTH'][0][:, 1],
                                     np.array([0.02155463, 0.04549022, 0.01675996]), 5)
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
 
 
 if __name__=='__main__':

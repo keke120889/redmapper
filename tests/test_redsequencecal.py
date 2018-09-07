@@ -25,8 +25,8 @@ class SelectRedSequenceCalTestCase(unittest.TestCase):
 
         config.zrange = [0.1, 0.2]
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
 
         config.parfile = os.path.join(config.outpath, '%s_testpars.fit' % (config.d.outbase))
 
@@ -61,8 +61,13 @@ class SelectRedSequenceCalTestCase(unittest.TestCase):
                                               [[-0.00014885, 0.00035394],
                                                [0.00034374, 0.00048195]]]), 5)
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
 
 if __name__=='__main__':
     unittest.main()

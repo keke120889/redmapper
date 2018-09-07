@@ -89,9 +89,9 @@ class ZredTestCase(unittest.TestCase):
 
         config = Configuration(os.path.join(file_path, configfile))
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
-        outfile = os.path.join(test_dir, 'test_zred_out.fits')
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
+        outfile = os.path.join(self.test_dir, 'test_zred_out.fits')
 
         tab = fitsio.read(config.galfile, ext=1)
         galfile = os.path.join(os.path.dirname(config.galfile), tab[0]['FILENAMES'][0])
@@ -109,9 +109,6 @@ class ZredTestCase(unittest.TestCase):
         testing.assert_array_almost_equal(gals.zred[0: 3],
                                           np.array([0.10292412, 0.19617805, 0.13324176]))
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
-
     def test_zred_runpixels(self):
         """
         Test the running of a pixelized catalog
@@ -126,8 +123,8 @@ class ZredTestCase(unittest.TestCase):
         config.d.nside = 64
         config.border = 0.0
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.zredfile = os.path.join(test_dir, 'zreds', 'testing_zreds_master_table.fit')
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.zredfile = os.path.join(self.test_dir, 'zreds', 'testing_zreds_master_table.fit')
 
         # FIXME: try an illegal one...
 
@@ -155,8 +152,14 @@ class ZredTestCase(unittest.TestCase):
         # Spot check a few
         testing.assert_array_almost_equal(gals.zred[0: 3],
                                           np.array([0.10292412, 0.19617805, 0.13324176]))
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
 
 
 if __name__=='__main__':
