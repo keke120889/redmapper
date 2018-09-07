@@ -118,15 +118,15 @@ class DepthMap(object):
         maskgals: Object holding mask galaxy parameters
         ra: Right ascention of cluster
         dec: Declination of cluster
-        mpc_scale: scaling to go from mpc to degrees (check units) at cluster redshift
+        mpc_scale: scaling in Mpc / degree at cluster redshift
 
         """
 
         unseen = hp.pixelfunc.UNSEEN
 
         # compute ra and dec based on maskgals
-        ras = ra + (maskgals.x/(mpc_scale*3600.))/np.cos(dec*np.pi/180.)
-        decs = dec + maskgals.y/(mpc_scale*3600.)
+        ras = ra + (maskgals.x/mpc_scale)/np.cos(dec*np.pi/180.)
+        decs = dec + maskgals.y/mpc_scale
 
         maskgals.w[:] = self.w
         maskgals.eff = None
@@ -136,23 +136,24 @@ class DepthMap(object):
 
         maskgals.limmag, maskgals.exptime, maskgals.m50 = self.get_depth_values(ras, decs)
 
-        bd, = np.where(maskgals.limmag < 0.0)
-        ok = np.delete(np.copy(maskgals.limmag), bd)
-        nok = ok.size
 
-        if (bd.size > 0):
+        bd = (maskgals.limmag < 0.0)
+        ok = ~bd
+        nok = ok.sum()
+
+        if (bd.sum() > 0):
             if (nok >= 3):
                 # fill them in
-                maskgals.limmag[bd] = median(maskgals.limmag[ok])
-                maskgals.exptime[bd] = median(maskgals.exptime[ok])
-                maskgals.m50[bd] = median(maskgals.m50[ok])
+                maskgals.limmag[bd] = np.median(maskgals.limmag[ok])
+                maskgals.exptime[bd] = np.median(maskgals.exptime[ok])
+                maskgals.m50[bd] = np.median(maskgals.m50[ok])
             elif (nok > 0):
                 # fill with mean
-                maskgals.limmag[bd] = mean(maskgals.limmag[ok])
-                maskgals.exptime[bd] = mean(maskgals.exptime[ok])
-                maskgals.m50[bd] = mean(maskgals.m50[ok])
+                maskgals.limmag[bd] = np.mean(maskgals.limmag[ok])
+                maskgals.exptime[bd] = np.mean(maskgals.exptime[ok])
+                maskgals.m50[bd] = np.mean(maskgals.m50[ok])
             else:
-                # very bad
+                # very bad (nok == 0)
                 maskgals.limmag[:] = 0.0
                 maskgals.exptime[:] = 1000.0
                 maskgals.m50[:] = 0.0

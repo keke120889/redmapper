@@ -17,19 +17,6 @@ from redmapper import HPMask
 from redmapper import DepthMap
 from redmapper.utilities import calc_theta_i
 
-#import matplotlib.pyplot as plt
-
-#class BackgroundStub(Background):
-
-#    def __init__(self, filename):
-#        obkg = Entry.from_fits_file(filename)
-#        self.refmagbins = obkg.refmagbins
-#        self.chisqbins = obkg.chisqbins
-#        self.lnchisqbins = obkg.lnchisqbins
-#        self.zbins = obkg.zbins
-#        self.sigma_g = obkg.sigma_g
-#        self.sigma_lng = obkg.sigma_lng
-
 class ClusterTestCase(unittest.TestCase):
     """
     This file tests multiple features of the cluster object.
@@ -41,6 +28,8 @@ class ClusterTestCase(unittest.TestCase):
         """
 
         # all new...
+
+        random.seed(seed=12345)
 
         file_path = 'data_for_tests'
 
@@ -125,8 +114,9 @@ class ClusterTestCase(unittest.TestCase):
 
         # these are regression tests.  Various mask issues make the matching
         #  to idl for the time being
-        testing.assert_almost_equal(cluster.Lambda, 23.86299324)
-        testing.assert_almost_equal(cluster.lambda_e, 2.4780307)
+        #testing.assert_almost_equal(cluster.Lambda, 23.86299324)
+        testing.assert_almost_equal(cluster.Lambda, 24.366407, 5)
+        testing.assert_almost_equal(cluster.lambda_e, 2.5137918, 5)
 
         #testing.assert_almost_equal(cluster.neighbors.theta_i,
         #                            neighbors.theta_i, 3)

@@ -23,6 +23,7 @@ class RuncatTestCase(unittest.TestCase):
     """
     """
     def runTest(self):
+        random.seed(seed=12345)
 
         file_path = 'data_for_tests'
         conffile = 'testconfig.yaml'
@@ -36,26 +37,19 @@ class RuncatTestCase(unittest.TestCase):
         runcat.run(do_percolation_masking=False)
 
         testing.assert_equal(runcat.cat.mem_match_id, [1, 2, 3])
-        testing.assert_almost_equal(runcat.cat.Lambda, [ 23.86299324,  17.3491192, 13.36757088])
-        #testing.assert_almost_equal(runcat.cat.lambda_e, [ 2.47804546,  2.00936174, 2.4651196])
-        testing.assert_almost_equal(runcat.cat.lambda_e, [ 2.47804546,  2.0184479, 2.4651196])
-        #testing.assert_almost_equal(runcat.cat.z_lambda, [ 0.22786506,  0.32121494, 0.22311865])
-        testing.assert_almost_equal(runcat.cat.z_lambda, [ 0.22786506, 0.3215729 , 0.22311865])
+        testing.assert_almost_equal(runcat.cat.Lambda, [24.4121723, 26.8987331, 13.3675709])
+        testing.assert_almost_equal(runcat.cat.lambda_e, [2.5175705, 4.8441205, 2.4651196])
+        testing.assert_almost_equal(runcat.cat.z_lambda, [0.2278651, 0.3226278, 0.2231186])
 
-        #testing.assert_almost_equal(runcat.cat.z_lambda_e, [ 0.00629484,  0.01389629, 0.00969736])
-        testing.assert_almost_equal(runcat.cat.z_lambda_e, [ 0.00629484,  0.0139078, 0.00969736])
+        testing.assert_almost_equal(runcat.cat.z_lambda_e, [0.0062949, 0.013563, 0.0096974])
 
         runcat.run(do_percolation_masking=True)
 
         testing.assert_equal(runcat.cat.mem_match_id, [1, 2, 3])
-        #testing.assert_almost_equal(runcat.cat.Lambda, [ 23.86299324,  17.39488411, -1.0])
-        testing.assert_almost_equal(runcat.cat.Lambda, [ 23.86299324,  17.3491192, -1.0])
-        #testing.assert_almost_equal(runcat.cat.lambda_e, [ 2.47804546,  2.00936174, -1.0])
-        testing.assert_almost_equal(runcat.cat.lambda_e, [ 2.47804546,  2.0184479, -1.0])
-        #testing.assert_almost_equal(runcat.cat.z_lambda, [ 0.22786506,  0.32121494, -1.0])
-        testing.assert_almost_equal(runcat.cat.z_lambda, [ 0.22786506,  0.3215729, -1.0])
-        #testing.assert_almost_equal(runcat.cat.z_lambda_e, [ 0.00629484,  0.01389629, -1.0])
-        testing.assert_almost_equal(runcat.cat.z_lambda_e, [ 0.00629484,  0.0139078, -1.0])
+        testing.assert_almost_equal(runcat.cat.Lambda, [24.4121723, 26.8529682, -1.0])
+        testing.assert_almost_equal(runcat.cat.lambda_e, [2.5175705, 4.8369522, -1.0])
+        testing.assert_almost_equal(runcat.cat.z_lambda, [0.2278651, 0.3226319, -1.0])
+        testing.assert_almost_equal(runcat.cat.z_lambda_e, [0.0062967, 0.013576, -1.0])
 
 if __name__=='__main__':
     unittest.main()

@@ -91,10 +91,10 @@ class MaskTestCase(unittest.TestCase):
         config.mask_mode = 0
         mask = get_mask(config)
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
 
-        maskgalfile = os.path.join(test_dir, 'testmaskgal.fit')
+        maskgalfile = os.path.join(self.test_dir, 'testmaskgal.fit')
 
         random.seed(seed=12345)
 
@@ -132,8 +132,13 @@ class MaskTestCase(unittest.TestCase):
         testing.assert_almost_equal(maskgals['nin_orig'][0, 0: 3], [2213., 2663., 3066.])
         testing.assert_almost_equal(maskgals['nin'][0, 0: 3], [2203.3347168, 2651.54467773, 3062.44628906])
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
 
 
 if __name__=='__main__':

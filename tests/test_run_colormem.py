@@ -28,13 +28,16 @@ class RunColormemTestCase(unittest.TestCase):
     """
 
     def test_run_colormem(self):
+
+        random.seed(seed=12345)
+
         file_path = 'data_for_tests'
         configfile = 'testconfig.yaml'
 
         config = Configuration(os.path.join(file_path, configfile))
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
 
         # First, we need the red galaxy model
 
@@ -59,11 +62,17 @@ class RunColormemTestCase(unittest.TestCase):
 
         cat = fitsio.read(config.zmemfile, ext=1)
 
-        testing.assert_equal(cat.size, 31)
-        testing.assert_array_almost_equal(cat['pcol'][0:3], np.array([0.90800124, 0.90229154, 0.71797204]))
+        testing.assert_equal(cat.size, 29)
+        testing.assert_array_almost_equal(cat['pcol'][0:3], np.array([0.954438, 0.908371, 0.72123]))
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
+
 
 if __name__=='__main__':
     unittest.main()

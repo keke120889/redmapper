@@ -26,6 +26,8 @@ class ClusterCatalogTestCase(unittest.TestCase):
     """
     def runTest(self):
 
+        random.seed(seed=12345)
+
         file_path = 'data_for_tests'
         conffile = 'testconfig.yaml'
 
@@ -84,7 +86,8 @@ class ClusterCatalogTestCase(unittest.TestCase):
         testing.assert_equal(c0.scaleval, cat.scaleval[0])
 
         # And make sure the numbers are correct
-        testing.assert_almost_equal(richness, 23.86299324)
+        #testing.assert_almost_equal(richness, 23.86299324)
+        testing.assert_almost_equal(richness, 24.4121723)
 
         # and we're done
 

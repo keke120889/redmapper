@@ -18,6 +18,8 @@ from redmapper import RedSequenceColorPar
 
 class ClusterFitTestCase(unittest.TestCase):
     def runTest(self):
+        random.seed(seed=12345)
+
         file_path = 'data_for_tests'
         conf_filename = 'testconfig.yaml'
         config = Configuration(file_path + '/' + conf_filename)
@@ -47,11 +49,11 @@ class ClusterFitTestCase(unittest.TestCase):
         depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, cluster.mpc_scale)
 
         lam = cluster.calc_richness_fit(mask, 1, centcolor_in=1.36503, calc_err=False)
-        testing.assert_almost_equal(lam, 16.00668, decimal=5)
-        testing.assert_almost_equal(cluster.neighbors.pcol[0:4], np.array([0.94186046, 0.0, 0.06276466, 0.1593690]), 5)
+        testing.assert_almost_equal(lam, 16.174486160, decimal=5)
+        testing.assert_almost_equal(cluster.neighbors.pcol[0:4], np.array([0.94243, 0., 0.06338, 0.16077]), 5)
 
         lam = cluster.calc_richness_fit(mask, 1, calc_err=False)
-        testing.assert_almost_equal(lam, 16.00668, decimal=5)
+        testing.assert_almost_equal(lam, 16.2049961, decimal=5)
 
 
 if __name__=='__main__':

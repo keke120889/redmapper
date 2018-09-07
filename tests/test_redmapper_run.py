@@ -25,13 +25,15 @@ class RedmapperRunTestCase(unittest.TestCase):
 
     def test_redmapper_run(self):
 
+        random.seed(seed=12345)
+
         file_path = 'data_for_tests'
         configfile = 'testconfig.yaml'
 
         config = Configuration(os.path.join(file_path, configfile))
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
 
         # First, test the splitting
         config.calib_run_nproc = 4
@@ -51,7 +53,7 @@ class RedmapperRunTestCase(unittest.TestCase):
         config.zredfile = os.path.join(file_path, 'zreds_test', 'dr8_test_zreds_master_table.fit')
 
         redmapper_run = RedmapperRun(config)
-        redmapper_run.run(specmode=True, consolidate_like=True)
+        redmapper_run.run(specmode=True, consolidate_like=True, seedfile=config.seedfile)
 
         # Now let's check that we got the final file...
         self.assertTrue(os.path.isfile(os.path.join(config.outpath, '%s_final.fit' % (config.d.outbase))))
@@ -63,15 +65,20 @@ class RedmapperRunTestCase(unittest.TestCase):
         # Spot checks to look for regressions
         testing.assert_equal(cat.size, 27)
         self.assertGreater(cat.Lambda.min(), 3.0)
-        testing.assert_array_almost_equal(cat.Lambda[0: 3], np.array([22.41377068, 17.94406319, 7.73848534]))
+        testing.assert_array_almost_equal(cat.Lambda[0: 3], np.array([24.137583, 17.94406319, 7.73848534]))
 
         # And check that the members are all accounted for...
         mem = Catalog.from_fits_file(os.path.join(config.outpath, '%s_final_members.fit' % (config.d.outbase)))
         a, b = esutil.numpy_util.match(cat.mem_match_id, mem.mem_match_id)
         testing.assert_equal(a.size, mem.size)
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
 
 if __name__=='__main__':
     unittest.main()

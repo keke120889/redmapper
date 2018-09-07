@@ -193,8 +193,8 @@ class Mask(object):
         """
 
         # note this probably can be in the superclass, no?
-        ras = cluster.ra + self.maskgals.x/(cluster.mpc_scale*SEC_PER_DEG)/np.cos(np.radians(cluster.dec))
-        decs = cluster.dec + self.maskgals.y/(cluster.mpc_scale*SEC_PER_DEG)
+        ras = cluster.ra + self.maskgals.x/(cluster.mpc_scale)/np.cos(np.radians(cluster.dec))
+        decs = cluster.dec + self.maskgals.y/(cluster.mpc_scale)
         self.maskgals.mark = self.compute_radmask(ras,decs)
 
     def calc_maskcorr(self, mstar, maxmag, limmag):
