@@ -85,8 +85,8 @@ class BackgroundTestCase(unittest.TestCase):
         config = Configuration(config_file)
         config.calib_nproc = 1
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
 
         config.bkgfile = os.path.join(config.outpath, '%s_testbkg.fit' % (config.d.outbase))
         config.zrange = [0.1, 0.2]
@@ -106,8 +106,8 @@ class BackgroundTestCase(unittest.TestCase):
         testing.assert_almost_equal(bkg[0]['sigma_lng'][30, 10, 3], 3.7618985)
         testing.assert_almost_equal(bkg[0]['sigma_lng'][45, 10, 3], 0.0)
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+        #if os.path.exists(test_dir):
+        #    shutil.rmtree(test_dir, True)
 
     def test_generatezredbkg(self):
         """
@@ -117,8 +117,8 @@ class BackgroundTestCase(unittest.TestCase):
 
         config = Configuration(config_file)
 
-        test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
-        config.outpath = test_dir
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+        config.outpath = self.test_dir
 
         config.bkgfile = os.path.join(config.outpath, '%s_testbkg.fit' % (config.d.outbase))
         config.zrange = [0.1, 0.2]
@@ -146,8 +146,13 @@ class BackgroundTestCase(unittest.TestCase):
         testing.assert_almost_equal(zbkg[0]['sigma_g'][47, 8], 30501.8398438, decimal=5)
         testing.assert_almost_equal(zbkg[0]['sigma_g'][30, 0], 384.3362732, decimal=5)
 
-        if os.path.exists(test_dir):
-            shutil.rmtree(test_dir, True)
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
 
 
 
