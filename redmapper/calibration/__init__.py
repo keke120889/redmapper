@@ -4,3 +4,4 @@ from .selectspecred import SelectSpecRedGalaxies
 from .redsequencecal import RedSequenceCalibrator
 from .centeringcal import WcenCalibrator
 from .zlambdacal import ZLambdaCalibrator
+from .selectspecseeds import SelectSpecSeeds
