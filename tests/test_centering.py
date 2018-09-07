@@ -5,11 +5,12 @@ import unittest
 import numpy.testing as testing
 import numpy as np
 import fitsio
+import os
 from numpy import random
 
 from redmapper import Cluster
 from redmapper import Configuration
-from redmapper import CenteringWcenZred
+from redmapper import CenteringWcenZred, CenteringBCG, CenteringRandom, CenteringRandomSatellite
 from redmapper import GalaxyCatalog
 from redmapper import RedSequenceColorPar
 from redmapper import Background
@@ -17,18 +18,89 @@ from redmapper import ZredBackground
 from redmapper import ZlambdaCorrectionPar
 
 
-class CenteringWcenZredTestCase(unittest.TestCase):
-    def runTest(self):
+class CenteringTestCase(unittest.TestCase):
+
+    def test_wcenzred(self):
+        file_path = 'data_for_tests'
+
+        cluster = self._setup_cluster()
+        tempcat = fitsio.read(os.path.join(file_path, 'test_wcen_zred_data.fit'))
+
+        corr_filename = 'test_dr8_zlambdacorr.fit'
+        zlambda_corr = ZlambdaCorrectionPar(os.path.join(file_path, 'test_dr8_zlambdacorr.fit'), zlambda_pivot=30.0)
+        zlambda_corr = ZlambdaCorrectionPar(file_path + '/' + corr_filename, zlambda_pivot=30.0)
+
+        # And the meat of it...
+
+        cent = CenteringWcenZred(cluster, zlambda_corr=zlambda_corr)
+        cent.find_center()
+
+        testing.assert_almost_equal(cent.p_cen, tempcat[0]['PCEN'][tempcat[0]['GOOD']], 5)
+        testing.assert_almost_equal(cent.q_cen, tempcat[0]['QCEN'][tempcat[0]['GOOD']], 4)
+        testing.assert_almost_equal(cent.p_sat, tempcat[0]['PSAT'], 4)
+        testing.assert_almost_equal(cent.p_fg, tempcat[0]['PFG'], 4)
+        testing.assert_array_equal(cent.index, tempcat[0]['USE'][tempcat[0]['GOOD']])
+
+    def test_bcg(self):
+        # Also will need to test BCG centering!
+
+        cluster = self._setup_cluster()
+
+        cent = CenteringBCG(cluster)
+        cent.find_center()
+
+        self.assertEqual(cent.maxind, 72)
+        self.assertEqual(cent.ngood, 1)
+        testing.assert_almost_equal(cent.ra, 150.55890608)
+        testing.assert_almost_equal(cent.dec, 20.53794937)
+        testing.assert_almost_equal(cent.p_cen[0], 1.0)
+        testing.assert_almost_equal(cent.q_cen[0], 1.0)
+        testing.assert_almost_equal(cent.p_sat[0], 0.0)
+
+    def test_random(self):
+
+        random.seed(seed=12345)
+
+        cluster = self._setup_cluster()
+
+        cent = CenteringRandom(cluster)
+        cent.find_center()
+
+        self.assertEqual(cent.maxind, -1)
+        self.assertEqual(cent.ngood, 1)
+        testing.assert_almost_equal(cent.ra[0], 150.57049502423266)
+        testing.assert_almost_equal(cent.dec[0], 20.604521924053167)
+        testing.assert_almost_equal(cent.p_cen[0], 1.0)
+        testing.assert_almost_equal(cent.q_cen[0], 1.0)
+        testing.assert_almost_equal(cent.p_sat[0], 0.0)
+
+    def test_randsat(self):
+
+        random.seed(seed=12345)
+
+        cluster = self._setup_cluster()
+
+        cent = CenteringRandomSatellite(cluster)
+        cent.find_center()
+
+        # Confirmed that the distribution is correct, this just checks for regression
+
+        self.assertEqual(cent.maxind, 721)
+        self.assertEqual(cent.ngood, 1)
+        testing.assert_almost_equal(cent.ra[0], 150.67510227)
+        testing.assert_almost_equal(cent.dec[0], 20.48011092)
+        testing.assert_almost_equal(cent.p_cen[0], 1.0)
+        testing.assert_almost_equal(cent.q_cen[0], 1.0)
+        testing.assert_almost_equal(cent.p_sat[0], 0.0)
+
+    def _setup_cluster(self):
         file_path = 'data_for_tests'
 
         cluster = Cluster()
 
-        conf_filename = 'testconfig.yaml'
-        cluster.config = Configuration(file_path + '/' + conf_filename)
+        cluster.config = Configuration(os.path.join(file_path, 'testconfig.yaml'))
 
-        filename = 'test_wcen_zred_data.fit'
-
-        tempcat = fitsio.read(file_path + '/' + filename, ext=1)
+        tempcat = fitsio.read(os.path.join(file_path, 'test_wcen_zred_data.fit'))
 
         temp_neighbors = np.zeros(tempcat[0]['RAS'].size,
                                   dtype = [('RA', 'f8'),
@@ -63,11 +135,10 @@ class CenteringWcenZredTestCase(unittest.TestCase):
         cluster.set_neighbors(neighbors)
 
         zred_filename = 'test_dr8_pars.fit'
-        cluster.zredstr = RedSequenceColorPar(file_path + '/' + zred_filename, fine=True)
+        cluster.zredstr = RedSequenceColorPar(os.path.join(file_path, 'test_dr8_pars.fit'), fine=True, zrange=[0.25, 0.35])
 
-        bkg_filename = 'test_bkg.fit'
-        cluster.bkg = Background('%s/%s' % (file_path, bkg_filename))
-        cluster.zredbkg = ZredBackground('%s/%s' % (file_path, bkg_filename))
+        cluster.bkg = Background(os.path.join(file_path, 'test_bkg.fit'))
+        cluster.zredbkg = ZredBackground(os.path.join(file_path, 'test_bkg.fit'))
 
         cluster.redshift = tempcat[0]['ZCLUSTER']
         cluster.ra = tempcat[0]['RAC']
@@ -76,19 +147,8 @@ class CenteringWcenZredTestCase(unittest.TestCase):
         cluster.Lambda = tempcat[0]['LAMBDA']
         cluster.scaleval = tempcat[0]['SCALEVAL']
 
-        corr_filename = 'test_dr8_zlambdacorr.fit'
-        zlambda_corr = ZlambdaCorrectionPar(file_path + '/' + corr_filename, zlambda_pivot=30.0)
+        return cluster
 
-        # And the meat of it...
 
-        cent = CenteringWcenZred(cluster, zlambda_corr=zlambda_corr)
-        cent.find_center()
-
-        testing.assert_almost_equal(cent.p_cen, tempcat[0]['PCEN'][tempcat[0]['GOOD']], 5)
-        testing.assert_almost_equal(cent.q_cen, tempcat[0]['QCEN'][tempcat[0]['GOOD']], 4)
-        testing.assert_almost_equal(cent.p_sat, tempcat[0]['PSAT'], 4)
-        testing.assert_almost_equal(cent.p_fg, tempcat[0]['PFG'], 4)
-        testing.assert_array_equal(cent.index, tempcat[0]['USE'][tempcat[0]['GOOD']])
-
-        # Also will need to test BCG centering!
-
+if __name__=='__main__':
+    unittest.main()
