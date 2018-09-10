@@ -243,6 +243,8 @@ class RunPercolation(ClusterRunner):
                 zlam = Zlambda(cluster)
                 z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.redshift, self.mask,
                                                          calc_err=True, calcpz=True)
+                cluster.z_lambda = z_lambda
+                cluster.z_lambda_e = z_lambda_e
                 cluster.pzbins[:] = zlam.pzbins
                 cluster.pz[:] = zlam.pz
 
