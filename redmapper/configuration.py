@@ -506,6 +506,14 @@ class Configuration(object):
         return zrange_cushioned
 
     def redmapper_filename(self, filetype, paths=None):
-        return os.path.join(self.outpath,
-                            '%s_%s.fit' % (self.d.outbase, filetype))
+        if paths is None:
+            return os.path.join(self.outpath,
+                                '%s_%s.fit' % (self.d.outbase, filetype))
+        else:
+            if type(paths) is not list and type(paths) is not tuple:
+                raise ValueError("paths must be a list or tuple")
+            pars = [self.outpath]
+            pars.extend(paths)
+            pars.append('%s_%s.fit' % (self.d.outbase, filetype))
+            return os.path.join(*pars)
 
