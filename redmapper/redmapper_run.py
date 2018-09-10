@@ -41,7 +41,7 @@ class RedmapperRun(object):
         self.config.cosmo = None
 
     def run(self, specmode=False, specseed=None, seedfile=None, check=True,
-            percolation_only=False, consolidate_like=False):
+            percolation_only=False, consolidate_like=False, keepz=False):
         """
         """
 
@@ -49,45 +49,42 @@ class RedmapperRun(object):
         self.seedfile = seedfile
         self.check = check
         self.percolation_only = percolation_only
+        self.keepz = keepz
 
-        self.single_pixel, nside_split, pixels_split = self._get_pixel_splits()
+        if self.specmode and not self.keepz:
+            raise RuntimeError("Must set keepz=True when specmode=True")
+        if self.percolation_only and self.specmode:
+            raise RuntimeError("Cannot set both percolation_only=True and specmode=True")
+
+        nside_split, pixels_split = self._get_pixel_splits()
 
         # run each individual one
         self.config.d.nside = nside_split
 
         orig_seedfile = self.config.seedfile
-        self.config.seedfile = seedfile
-
-        if not self.single_pixel:
-            pool = Pool(processes=self.config.calib_run_nproc)
-            if self.specmode:
-                retvals = pool.map(self._spec_worker, pixels_split, chunksize=1)
-            else:
-                retvals = pool.map(self._worker, pixels_split, chunksize=1)
-            pool.close()
-            pool.join()
+        if seedfile is not None:
+            # Use the specified seedfile if desired
+            self.config.seedfile = seedfile
+        pool = Pool(processes=self.config.calib_run_nproc)
+        if self.percolation_only:
+            retvals = pool.map(self._percolation_only_worker, pixels_split, chunksize=1)
         else:
-            if self.specmode:
-                retval = self._spec_worker(pixels_split)
-            else:
-                retval = self._spec_worker(pixels_split)
+            retvals = pool.map(self._worker, pixels_split, chunksize=1)
+        pool.close()
+        pool.join()
 
         # Reset the seedfile
         self.config.seedfile = orig_seedfile
 
-        # Consolidate (if necessary)
-        if not self.single_pixel:
-            pixnums = [x[0] for x in retvals]
-            likefiles = [x[2] for x in retvals]
-            percfiles = [x[3] for x in retvals]
+        # Consolidate (adds additional mask cuts)
+        hpixels = [x[0] for x in retvals]
+        likefiles = [x[2] for x in retvals]
+        percfiles = [x[3] for x in retvals]
 
-            finalfile = self._consolidate(pixnums, percfiles, 'final', members=True, check=check)
+        finalfile = self._consolidate(hpixels, percfiles, 'final', members=True, check=check)
 
-            if consolidate_like:
-                likefile = self._consolidate(pixnums, likefiles, 'like', members=False, check=check)
-        else:
-            finalfile = retval[2]
-            likefile = retval[3]
+        if consolidate_like:
+            likefile = self._consolidate(hpixels, likefiles, 'like', members=False, check=check)
 
         # And done
         if consolidate_like:
@@ -100,7 +97,7 @@ class RedmapperRun(object):
         """
 
         if self.config.calib_run_nproc == 1:
-            return (True, 0, 0)
+            return (self.config.d.nside, [self.config.d.hpix])
 
         tab = Entry.from_fits_file(self.config.galfile, ext=1)
 
@@ -144,17 +141,14 @@ class RedmapperRun(object):
         nside_split = nside_splits[test[-1]]
         pixels_split = pixels_splits[test[-1]]
 
-        return (False, nside_split, pixels_split)
+        return (nside_split, pixels_split)
 
-    def _consolidate(self, pixnums, filenames, filetype, members=False, check=True):
+    def _consolidate(self, hpixels, filenames, filetype, members=False, check=True):
         """
         """
 
         outfile = self.config.redmapper_filename(filetype)
         memfile = self.config.redmapper_filename(filetype+'_members')
-
-        #outfile = os.path.join(self.config.outpath, '%s_%s.fit' % (self.config.d.outbase, filetype))
-        #memfile = os.path.join(self.config.outpath, '%s_%s_members.fit' % (self.config.d.outbase, filetype))
 
         if check:
             outfile_there = os.path.isfile(outfile)
@@ -180,16 +174,20 @@ class RedmapperRun(object):
 
         ubermem = None
 
-        for pixnum, f in zip(pixnums, filenames):
+        for hpix, f in zip(hpixels, filenames):
             cat = Catalog.from_fits_file(f, ext=1)
 
             # Cut to minlambda, maxfrac, and within a pixel
             theta = (90.0 - cat.dec) * np.pi / 180.
             phi = cat.ra * np.pi / 180.
 
-            ipring = hp.ang2pix(self.config.d.nside, theta, phi)
+            if self.config.d.nside > 0:
+                ipring = hp.ang2pix(self.config.d.nside, theta, phi)
+            else:
+                # Set all the pixels to 0
+                ipring = np.zeros(cat.size, dtype=np.int32)
 
-            use, = np.where((ipring == pixnum) &
+            use, = np.where((ipring == hpix) &
                             (cat.maskfrac < self.config.max_maskfrac) &
                             (cat.Lambda / cat.scaleval > self.config.percolation_minlambda))
 
@@ -242,82 +240,63 @@ class RedmapperRun(object):
         # And write out...
         # We can clobber because if it was already there and we wanted to check
         # that already happened
-        fitsio.write(outfile, ubercat._ndarray, clobber=True)
-
-        ## FIXME: to_fits_file
+        ubercat.to_fits_file(outfile, clobber=True)
 
         if members:
-            fitsio.write(memfile, ubermem._ndarray, clobber=True)
+            ubermem.to_fits_file(memfile, clobber=True)
 
         return outfile
 
-    def _worker(self, pixnum):
+    def _worker(self, hpix):
+
+        print("Running on pixel %d" % (hpix))
 
         # Not sure what to do with cosmo...
         config = self.config.copy()
         config.cosmo = Cosmo(H0=self._H0, omega_l=self._omega_l, omega_m=self._omega_m)
 
         # Set the specific config stuff here
-        config.pixnum = pixnum
+        config.d.hpix = hpix
 
-        if not self.single_pixel:
-            config.d.outbase = '%s_%05d' % (self.config.d.outbase, pixnum)
+        config.d.outbase = '%s_%05d' % (self.config.d.outbase, hpix)
 
         # Need to add checks about success, and whether a file was output
         #  (especially border pixels in sims)
+        firstpass = RunFirstPass(config, specmode=self.specmode)
 
-        firstpass = RunFirstPass(config, specmode=False)
-        if os.path.isfile(firstpass.filename) or not self.check:
-            # Need to set config.seedfile if necessary
-            firstpass.run()
+        if not os.path.isfile(firstpass.filename) or not self.check:
+            firstpass.run(keepz=self.keepz)
             firstpass.output(savemembers=False, withversion=False, clobber=True)
 
         config.catfile = firstpass.filename
-        # unsure about writing out logging/comments here in parallel bit
 
         like = RunLikelihoods(config)
-        if os.path.isfile(like.filename) or not self.check:
-            like.run()
+
+        if not os.path.isfile(like.filename) or not self.check:
+            like.run(keepz=self.keepz)
             like.output(savemembers=False, withversion=False, clobber=True)
 
         config.catfile = like.filename
 
         perc = RunPercolation(config)
-        if os.path.isfile(perc.filename) or not self.check:
-            perc.run()
+
+        if not os.path.isfile(perc.filename) or not self.check:
+            perc.run(keepz=self.keepz)
             perc.output(savemembers=True, withversion=False, clobber=True)
 
-        return (pixnum, firstpass.filename, like.filename, perc.filename)
+        return (hpix, firstpass.filename, like.filename, perc.filename)
 
-    def _spec_worker(self, pixnum):
-
+    def _percolation_only_worker(self, hpix):
         config = self.config.copy()
         config.cosmo = Cosmo(H0=self._H0, omega_l=self._omega_l, omega_m=self._omega_m)
 
-        config.pixnum = pixnum
+        config.d.hpix = hpix
 
-        if not self.single_pixel:
-            config.d.outbase = '%s_%05d' % (self.config.d.outbase, pixnum)
+        config.d.outbase = '%s_%05d' % (self.config.d.outbase, hpix)
 
-        firstpass = RunFirstPass(config, specmode=True)
-        if not os.path.isfile(firstpass.filename) or not self.check:
-            firstpass.run()
-            firstpass.output(savemembers=False, withversion=False, clobber=True)
-
-        config.catfile = firstpass.filename
-
-        like = RunLikelihoods(config)
-        if not os.path.isfile(like.filename) or not self.check:
-            like.run(keepz=True)
-            like.output(savemembers=False, withversion=False, clobber=True)
-
-        config.catfile = like.filename
-
-        config.percolation_niter = 1
         perc = RunPercolation(config)
-        if not os.path.isfile(perc.filename) or not self.check:
-            perc.run(keepz=True)
+        if os.path.isfile(perc.filename) or not self.check:
+            perc.run(keepz=self.keepz)
             perc.output(savemembers=True, withversion=False, clobber=True)
 
-        return (pixnum, firstpass.filename, like.filename, perc.filename)
-
+        return (hpix, None, None, perc.filename)
