@@ -82,13 +82,16 @@ class DataObject(object):
         self._lower_array(array)
         self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
 
-    def to_fits_file(self, filename, clobber=False, header=None, extname=None):
+    def to_fits_file(self, filename, clobber=False, header=None, extname=None, indices=None):
         if self._ndarray.size == 1:
             temp_array = np.zeros(1, dtype=self._ndarray.dtype)
             temp_array[0] = self._ndarray
             fitsio.write(filename, temp_array, clobber=clobber, header=header, extname=extname)
         else:
-            fitsio.write(filename, self._ndarray, clobber=clobber, header=header, extname=extname)
+            if indices is None:
+                fitsio.write(filename, self._ndarray, clobber=clobber, header=header, extname=extname)
+            else:
+                fitsio.write(filename, self._ndarray[indices], clobber=clobber, header=header, extname=extname)
 
     def _lower_array(self, array):
         names = list(array.dtype.names)

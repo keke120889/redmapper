@@ -9,7 +9,7 @@ from pkg_resources import resource_exists
 from ..configuration import Configuration
 from ..fitters import MedZFitter, RedSequenceFitter, EcgmmFitter
 from ..galaxy import GalaxyCatalog
-from ..catalog import Catalog
+from ..catalog import Catalog, Entry
 from ..utilities import make_nodes, CubicSpline, interpol
 
 class SelectSpecRedGalaxies(object):
@@ -199,9 +199,26 @@ class SelectSpecRedGalaxies(object):
         # Output the red galaxies
         use, = np.where(mark)
 
-        fitsio.write(self.config.redgalfile, gals[use]._ndarray, clobber=True)
+        ## FIXME
+        #fitsio.write(self.config.redgalfile, gals[use]._ndarray, clobber=True)
+        gals.to_fits_file(self.config.redgalfile, indices=use, clobber=True)
 
         # Output the model
+        ## FIXME
+        model = Entry(np.zeros(1, dtype=[('nodes', 'f4', nodes.size),
+                                         ('meancol', 'f4', meancol.shape),
+                                         ('meancol_scatter', 'f4', meancol_scatter.shape),
+                                         ('medcol', 'f4', medcol.shape),
+                                         ('medcol_width', 'f4', medcol_width.shape)]))
+        model.nodes = nodes
+        model.meancol = meancol
+        model.meancol_scatter = meancol_scatter
+        model.medcol = medcol
+        model.medcol_width = medcol_width
+
+        model.to_fits_file(self.config.redgalmodelfile, clobber=True)
+
+        """
         model = np.zeros(1, dtype=[('NODES', 'f4', nodes.size),
                                    ('MEANCOL', 'f4', meancol.shape),
                                    ('MEANCOL_SCATTER', 'f4', meancol_scatter.shape),
@@ -214,7 +231,7 @@ class SelectSpecRedGalaxies(object):
         model['MEDCOL_WIDTH'] = medcol_width
 
         fitsio.write(self.config.redgalmodelfile, model, clobber=True)
-
+        """
         # And make some plots!
         import matplotlib.pyplot as plt
 
@@ -235,8 +252,6 @@ class SelectSpecRedGalaxies(object):
             ax.set_title('Red Training Galaxies')
             ax.set_xlim(self.config.zrange)
 
-            fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
-                                     '%s_redgals_%s-%s.png' % (self.config.d.outbase,
-                                                               self.config.bands[j],
-                                                               self.config.bands[j + 1])))
+            redmapper_name = 'redgals_%s-%s' % (self.config.bands[j], self.config.bands[j + 1])
+            fig.savefig(self.config.redmapper_filename(redmapper_name, paths=(self.config.plotpath,), filetype='png'))
             plt.close(fig)
