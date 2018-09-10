@@ -42,18 +42,20 @@ class RedmapperRunTestCase(unittest.TestCase):
 
         splits = redmapper_run._get_pixel_splits()
 
-        self.assertFalse(splits[0])
-        self.assertEqual(splits[1], 64)
-        testing.assert_array_equal(splits[2], np.array([2163, 2296, 2297, 2434]))
-
+        self.assertEqual(splits[0], 64)
+        testing.assert_array_equal(splits[1], np.array([2163, 2296, 2297, 2434]))
 
         # Now, this will just run on 1 but will test consolidation code
         config.calib_run_nproc = 2
+        # Note you need these to be set to get same answer with nproc = 1 because
+        # of mask rounding
+        # config.d.hpix = 570
+        # config.d.nside = 32
         config.seedfile = os.path.join(file_path, 'test_dr8_specseeds.fit')
         config.zredfile = os.path.join(file_path, 'zreds_test', 'dr8_test_zreds_master_table.fit')
 
         redmapper_run = RedmapperRun(config)
-        redmapper_run.run(specmode=True, consolidate_like=True, seedfile=config.seedfile)
+        redmapper_run.run(specmode=True, consolidate_like=True, keepz=True, seedfile=config.seedfile)
 
         # Now let's check that we got the final file...
         self.assertTrue(os.path.isfile(os.path.join(config.outpath, '%s_final.fit' % (config.d.outbase))))
@@ -65,7 +67,7 @@ class RedmapperRunTestCase(unittest.TestCase):
         # Spot checks to look for regressions
         testing.assert_equal(cat.size, 27)
         self.assertGreater(cat.Lambda.min(), 3.0)
-        testing.assert_array_almost_equal(cat.Lambda[0: 3], np.array([24.137583, 17.94406319, 7.73848534]))
+        testing.assert_array_almost_equal(cat.Lambda[0: 3], np.array([24.061308, 17.94406319, 7.73848534]))
 
         # And check that the members are all accounted for...
         mem = Catalog.from_fits_file(os.path.join(config.outpath, '%s_final_members.fit' % (config.d.outbase)))
