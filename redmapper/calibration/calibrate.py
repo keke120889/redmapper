@@ -125,7 +125,7 @@ class RedmapperCalibrationIteration(object):
 
         # Compute zreds based on the type of galaxy file
         if self.config.galfile_pixelized:
-            self.config.zredfile = self.config.redmapper_filename('zreds_master_table', paths=self.config.d.outbase)
+            self.config.zredfile = self.config.redmapper_filename('zreds_master_table', paths=(self.config.d.outbase))
         else:
             self.config.zredfile = self.config.redmapper_filename('zreds')
 
@@ -208,7 +208,7 @@ class RedmapperCalibrationIteration(object):
             self.config.zlambdafile = None
 
             redmapper_run = RedmapperRun(self.config)
-            redmapper_run.run(specmode=True, consolidate_like=True, seedfile=iter_seedfile)
+            redmapper_run.run(specmode=True, keepz=True, consolidate_like=True, seedfile=iter_seedfile)
 
         # If it's the first iteration, calibrate random and satellite w functions
         if iteration == 1:
@@ -231,7 +231,10 @@ class RedmapperCalibrationIteration(object):
 
                 sublcat.to_fits_file(sublikefile)
 
-            catfile_for_rand_calib = self.config.redmapper_filename('rand_final')
+            outbase = self.config.d.outbase
+
+            self.config.d.outbase = '%s_rand' % (outbase)
+            catfile_for_rand_calib = self.config.redmapper_filename('final')
             if os.path.isfile(catfile_for_rand_calib):
                 print('%s already there.  Skipping...' % (catfile_for_rand_calib))
             else:
@@ -240,14 +243,10 @@ class RedmapperCalibrationIteration(object):
                 self.config.centerclass = 'CenteringRandom'
 
                 redmapper_run = RedmapperRun(self.config)
-                ## FIXME: need "keepz" option to be passed
-                redmapper_run.run(check=True, percolation_only=True)
+                redmapper_run.run(check=True, percolation_only=True, keepz=True)
 
-                # redmapper_run needs to return a filename, I think???
-                ## FIXME
-                # Make sure it's actually writing it out, and trace filename!
-
-            catfile_for_randsat_calib = self.config.redmapper_filename('randsat_final')
+            self.config.d.outbase = '%s_randsat' % (outbase)
+            catfile_for_randsat_calib = self.config.redmapper_filename('final')
             if os.path.isfile(catfile_for_randsat_calib):
                 print('%s already there.  Skipping...' % (catfile_for_randsat_calib))
             else:
@@ -255,7 +254,10 @@ class RedmapperCalibrationIteration(object):
                 self.config.centerclass = 'CenteringRandomSatellite'
 
                 redmapper_run = RedmapperRun(self.config)
-                redmapper_run.run(check=True, percolation_only=True) ## FIXME
+                redmapper_run.run(check=True, percolation_only=True, keepz=True)
+
+            # Reset outbase
+            self.config.d.outbase = outbase
 
         # Calibrate wcen
         self.config.centerclass = centerclass
