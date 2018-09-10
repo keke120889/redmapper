@@ -254,7 +254,6 @@ class ClusterRunner(object):
 
             for cluster in self.cat:
                 # Note that the cluster is set with .z if available! (which becomes ._z)
-
                 maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
                 cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True, maxmag=maxmag)
 
@@ -412,7 +411,6 @@ class ClusterRunner(object):
                     else:
                         self.members.append(mem_temp)
 
-
         self._postprocess()
 
     def _postprocess(self):
@@ -444,10 +442,10 @@ class ClusterRunner(object):
 
         self._filename = fname_base + '.fit'
 
-        fitsio.write(self._filename, self.cat._ndarray, clobber=clobber)
+        self.cat.to_fits_file(self._filename, clobber=clobber)
 
         if savemembers:
-            fitsio.write(fname_base + '_members.fit', self.members._ndarray, clobber=clobber)
+            self.members.to_fits_file(fname_base + '_members.fit', clobber=clobber)
 
         return
 
@@ -455,6 +453,6 @@ class ClusterRunner(object):
     def filename(self):
         if self._filename is None:
             # Return the unversioned, default filename
-            return os.path.join(self.config.outpath, '%s_%s.fit' % (self.config.d.outbase, self.filetype))
+            return self.config.redmapper_filename(self.filetype)
         else:
             return self._filename
