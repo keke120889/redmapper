@@ -4,6 +4,7 @@ from past.builtins import xrange
 import fitsio
 import numpy as np
 import esutil
+import os
 
 from .cluster import ClusterCatalog
 from .catalog import Catalog
@@ -50,15 +51,19 @@ class RunFirstPass(ClusterRunner):
 
         incat = None
 
+        self.keepz = kwargs.pop('keepz', False)
+
         # Check if there's a seedfile
-        try:
+        if os.path.isfile(self.config.seedfile):
+            print("Firstpass using seedfile: %s" % (self.config.seedfile))
             incat = Catalog.from_fits_file(self.config.seedfile)
-        except:
-            # If there's no seedfile, it's okay if it's not specmode and we have zreds
+        else:
             if self.specmode:
                 raise RuntimeError("Must have config.seedfile for run_firstpass in specmode.")
             elif not self.did_read_zreds:
                 raise RuntimeError("Must have config.seedfile for run_firstpass with no zreds.")
+            print("Firstpass using zreds as input")
+
         if incat is not None:
             # generate a cluster catalog from incat
             self.cat = ClusterCatalog.zeros(incat.size,
@@ -175,7 +180,8 @@ class RunFirstPass(ClusterRunner):
                     self._reset_bad_values(cluster)
                     continue
 
-                cluster.redshift = z_lambda
+                if not self.keepz:
+                    cluster.redshift = z_lambda
 
         if bad:
             cluster.z_lambda = -1.0
