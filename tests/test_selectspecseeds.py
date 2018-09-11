@@ -20,7 +20,6 @@ from redmapper import Configuration
 from redmapper import GalaxyCatalog
 from redmapper.calibration import SelectSpecSeeds
 from redmapper import Catalog
-from redmapper.utilities import redmapper_filename
 
 class RunSelectSpecSeedsTestCase(unittest.TestCase):
     """

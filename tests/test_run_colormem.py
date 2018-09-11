@@ -21,7 +21,6 @@ from redmapper import GalaxyCatalog
 from redmapper import RunColormem
 from redmapper.calibration import SelectSpecRedGalaxies
 from redmapper import Catalog
-from redmapper.utilities import redmapper_filename
 
 class RunColormemTestCase(unittest.TestCase):
     """
@@ -44,14 +43,14 @@ class RunColormemTestCase(unittest.TestCase):
         config.specfile_train = os.path.join(file_path, 'test_dr8_spec.fit')
         config.zrange = [0.1,0.2]
 
-        config.redgalfile = redmapper_filename(config, 'test_redgals')
-        config.redgalmodelfile = redmapper_filename(config, 'test_redgalmodel')
+        config.redgalfile = config.redmapper_filename('test_redgals')
+        config.redgalmodelfile = config.redmapper_filename('test_redgalmodel')
 
         selred = SelectSpecRedGalaxies(config)
         selred.run()
 
         # Main test...
-        config.zmemfile = redmapper_filename(config, 'test_zmem')
+        config.zmemfile = config.redmapper_filename('test_zmem')
 
         rcm = RunColormem(config)
         rcm.run()
