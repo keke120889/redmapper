@@ -128,6 +128,7 @@ class Configuration(object):
     redgalfile = ConfigField()
     redgalmodelfile = ConfigField()
     seedfile = ConfigField()
+    zmemfile = ConfigField()
 
     calib_nproc = ConfigField(default=1, required=True)
     calib_run_nproc = ConfigField(default=1, required=True)
@@ -176,6 +177,8 @@ class Configuration(object):
     calib_zrange_cushion = ConfigField(default=0.05)
 
     calib_use_pcol = ConfigField(default=True)
+    calib_smooth = ConfigField(default=0.003)
+    calib_minlambda = ConfigField(default=5.0)
     calib_redgal_template = ConfigField()
     calib_pivotmag_nodesize = ConfigField(default=0.1)
     calib_color_nodesizes = ConfigField(isArray=True, default=np.array([0.05]))
