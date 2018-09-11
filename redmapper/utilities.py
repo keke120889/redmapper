@@ -664,12 +664,23 @@ def make_lockfile(lockfile, block=False, maxtry=300, waittime=2):
 
         return locked
 
+"""
 def redmapper_filename(config, filetype):
-    """
-    """
+
 
     import os
 
     return os.path.join(config.outpath,
                         '%s_%s.fit' % (config.d.outbase, filetype))
+"""
+def read_members(catfile):
+    import os
 
+    from .galaxy import GalaxyCatalog
+
+    memfile = '%s_members.fit' % (catfile.rstrip('.fit'))
+
+    if not os.path.isfile(memfile):
+        raise RuntimeError("Could not find member file %s" % (memfile))
+
+    return GalaxyCatalog.from_fits_file(memfile)
