@@ -16,6 +16,8 @@ from .zlambdacal import ZLambdaCalibrator
 from ..zred_runner import ZredRunCatalog, ZredRunPixels
 from ..background import BackgroundGenerator, ZredBackgroundGenerator
 from ..redmapper_run import RedmapperRun
+from ..zlambda import ZlambdaCorrectionPar
+from ..plotting import SpecPlot
 
 
 class RedmapperCalibrator(object):
@@ -80,9 +82,9 @@ class RedmapperCalibrator(object):
         if os.path.isfile(self.config.seedfile):
             print("%s already there.  Skipping..." % (self.config.seedfile))
         else:
-            print("Generating spectroscopic seeds...")
+            print("Generating spectroscopic seeds (training spec)...")
             sss = SelectSpecSeeds(self.config)
-            sss.run()
+            sss.run(usetrain=True)
 
         calib_iteration = RedmapperCalibIteration(self.config)
 
@@ -91,13 +93,57 @@ class RedmapperCalibrator(object):
             calib_iteration.run(iteration)
 
             # Clean out the members
+            # Note that the outbase is still the modified version
+            redmapper_name = 'zmem_pgt%4.2f_lamgt%02d' % (self.config.calib_pcut, int(self.config.calib_minlambda))
+            self.config.zmemfile = self.config.redmapper_filename(redmapper_name)
+            if os.path.isfile(self.config.zmemfile):
+                print("%s already there.  Skipping..." % (self.config.zmemfile))
+            else:
+                print("Preparing members for next calibration...")
+                ## FIXME
+                prep_members = PrepMembers(self.config)
+                prep_members.run()
 
-            # Generate a new seedfile if this is the first iteration
+            # Reset outbase here
+            self.config.d.outbase = self.config.outbase
 
-        # Run the final final iteration
+            if iteration == 1:
+                # If this is the first iteration, generate a new seedfile
+                new_seedfile = self.config.redmapper_filename('cut_specseeds')
+                if os.path.isfile(new_seedfile):
+                    print("%s already there.  Skipping..." % (new_seedfile))
+                else:
+                    print("Generating cut specseeds...")
+                    seeds = GalaxyCatalog.from_fits_file(self.config.seedfile)
+                    cat = GalaxyCatalog.from_fits_file(self.config.catfile)
 
-        # Output a configuration file 
+                    use, = np.where(cat.Lambda > self.config.percolation_minlambda)
 
+                    i0, i1 = seeds.match_many(cat.ra[use], cat.dec[use], 0.5/3600., maxmatch=1)
+                    seeds.to_fits_file(new_seedfile, indices=i1)
+
+                self.config.seedfile = new_seedfile
+
+        # Prep for final iteration
+
+        # Generate full specseeds...
+        self.config.seedfile = self.config.redmapper_filename('specseeds')
+
+        if os.path.isfile(self.config.seedfile):
+            print("%s already there.  Skipping..." % (self.config.seedfile))
+        else:
+            print("Generating spectroscopic seeds (full spec)...")
+            sss = SelectSpecSeeds(self.config)
+            sss.run(useTrain=False)
+
+        calib_iteration_final = RedmapperCalibIterationFinal(self.config)
+        calib_iteration_final.run(self.config.calib_niter)
+
+        # Output a configuration file (later)
+
+        # Generate a full background (later)
+
+        # Run halos if desired (later)
 
 
 class RedmapperCalibrationIteration(object):
@@ -108,6 +154,8 @@ class RedmapperCalibrationIteration(object):
         self.config = config
 
     def run(self, iteration):
+        """
+        """
 
         # Generate the name of the parfile
         self.config.d.outbase = '%s_iter%d' % (self.config.outbase, iteration)
@@ -208,7 +256,10 @@ class RedmapperCalibrationIteration(object):
             self.config.zlambdafile = None
 
             redmapper_run = RedmapperRun(self.config)
-            redmapper_run.run(specmode=True, keepz=True, consolidate_like=True, seedfile=iter_seedfile)
+            catfile = redmapper_run.run(specmode=True, keepz=True, consolidate_like=True, seedfile=iter_seedfile)
+            # check that catfile is the same as finalfile?
+            if catfile != finalfile:
+                raise RuntimeError("The output catfile %s should be the same as finalfile %s" % (catfile, finalfile))
 
         # If it's the first iteration, calibrate random and satellite w functions
         if iteration == 1:
@@ -225,9 +276,9 @@ class RedmapperCalibrationIteration(object):
                 use, = np.where(pcat.Lambda > self.config.percolation_minlambda)
 
                 # matching...
-                lcat.match_many(pcat.ra[use], pcat.dec[use], 0.5/3600., maxmatch=1)
+                i0, i1 = lcat.match_many(pcat.ra[use], pcat.dec[use], 0.5/3600., maxmatch=1)
 
-                sublcat = lcat[m2]
+                sublcat = lcat[i1]
 
                 sublcat.to_fits_file(sublikefile)
 
@@ -284,4 +335,99 @@ class RedmapperCalibrationIteration(object):
             zlambdacal.run()
 
         # Make pretty plots showing performance
+        spec_plot = SpecPlot(self.config)
+        if os.path.isfile(spec_plot.filename):
+            print("%s already there.  Skipping..." % (spec_plot.filename))
+        else:
+            # We need to do a final run to apply the corrections, but this
+            # seems inefficient...
+
+            # Load in the catalog, apply the corrections, and make the plot.
+            cat = Catalog.from_fits_file(self.config.catfile)
+            use, = np.where(cat.Lambda > self.config.calib_zlambda_minlambda)
+            cat = cat[use]
+
+            zlambda_corr = ZlambdaCorrectionPar(parfile=self.config.zlambdafile,
+                                                zlambda_pivot=self.config.zlambda_pivot)
+
+            for cluster in cat:
+                zlam, zlam_e = zlambda_corr.apply_correction(cluster.Lambda, cluster.z_lambda, cluster.z_lambda_e)
+                cluster.z_lambda = zlam
+                cluster.z_lambda_e = zlam_e
+
+            spec_plot.plot_values(cat.z_spec_init, cat.z_lambda, cat.z_lambda_e, title=self.config.d.outbase)
+
+
+class RedmapperCalibrationIterationFinal(object):
+    """
+    """
+
+    def __init__(self, config):
+        self.config = config
+
+    def run(self, iteration):
+        """
+        """
+
+        # Generate the names
+        self.config.d.outbase = '%s_iter%db' % (self.config.outbase, iteration)
+
+        # Generate zreds for the specseeds
+        iter_seedfile = self.config.redmapper_filename('specseeds')
+
+        if os.path.isfile(iter_seedfile):
+            print('%s already there.  Skipping...'  % (iter_seedfile))
+        else:
+            seedzredfile = self.config.redmapper_filename('specseeds_zreds')
+            zredRuncat = ZredRunCatalog(self.config)
+            zredRuncat.run(self.config.seedfile, seedzredfile)
+
+            # Now combine seeds with zreds
+            seeds = Catalog.from_fits_file(self.config.seedfile, ext=1)
+            zreds = Catalog.from_fits_file(seedzredfile, ext=1)
+
+            seeds.zred = zreds.zred
+            seeds.zred_e = zreds.zred_e
+            seeds.zred_chisq = zreds.chisq
+
+            seeds.to_fits_file(iter_seedfile)
+
+        # Do the full run with these seeds
+        # and the previously calibrated zlambda correction (which is what's used)
+
+        finalfile = self.config.redmapper_filename('final')
+
+        if os.path.isfile(finalfile):
+            print('%s already there.  Skipping...' % (finalfile))
+        else:
+            redmapper_run = RedmapperRun(self.config)
+            catfile = redmapper_run.run(seedfile=iter_seedfile)
+            # check that catfile is the same as finalfile?
+            if catfile != finalfile:
+                raise RuntimeError("The output catfile %s should be the same as finalfile %s" % (catfile, finalfile))
+
+        self.config.catfile = finalfile
+
+        # And pretty plots
+        spec_plot = SpecPlot(self.config)
+        if os.path.isfile(spec_plot.filename):
+            print("%s already there.  Skipping..." % (spec_plot.filename))
+        else:
+            # We need to do a final run to apply the corrections, but this
+            # seems inefficient...
+
+            # Load in the catalog, apply the corrections, and make the plot.
+            cat = Catalog.from_fits_file(self.config.catfile)
+            use, = np.where(cat.Lambda > self.config.calib_zlambda_minlambda)
+            cat = cat[use]
+
+            zlambda_corr = ZlambdaCorrectionPar(parfile=self.config.zlambdafile,
+                                                zlambda_pivot=self.config.zlambda_pivot)
+
+            for cluster in cat:
+                zlam, zlam_e = zlambda_corr.apply_correction(cluster.Lambda, cluster.z_lambda, cluster.z_lambda_e)
+                cluster.z_lambda = zlam
+                cluster.z_lambda_e = zlam_e
+
+            spec_plot.plot_values(cat.z_spec_init, cat.z_lambda, cat.z_lambda_e, title=self.config.d.outbase)
 
