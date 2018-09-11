@@ -218,20 +218,6 @@ class SelectSpecRedGalaxies(object):
 
         model.to_fits_file(self.config.redgalmodelfile, clobber=True)
 
-        """
-        model = np.zeros(1, dtype=[('NODES', 'f4', nodes.size),
-                                   ('MEANCOL', 'f4', meancol.shape),
-                                   ('MEANCOL_SCATTER', 'f4', meancol_scatter.shape),
-                                   ('MEDCOL', 'f4', medcol.shape),
-                                   ('MEDCOL_WIDTH', 'f4', medcol_width.shape)])
-        model['NODES'] = nodes
-        model['MEANCOL'] = meancol
-        model['MEANCOL_SCATTER'] = meancol_scatter
-        model['MEDCOL'] = medcol
-        model['MEDCOL_WIDTH'] = medcol_width
-
-        fitsio.write(self.config.redgalmodelfile, model, clobber=True)
-        """
         # And make some plots!
         import matplotlib.pyplot as plt
 
