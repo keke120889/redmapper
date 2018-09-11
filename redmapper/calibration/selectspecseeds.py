@@ -19,7 +19,7 @@ class SelectSpecSeeds(object):
         else:
             self.config = conf
 
-    def run(self):
+    def run(self, usetrain=True):
         """
         """
 
@@ -37,8 +37,11 @@ class SelectSpecSeeds(object):
                                           border=self.config.border,
                                           zredfile=zredfile)
 
-        # Read in the spectroscopic catalog
-        spec = Catalog.from_fits_file(self.config.specfile_train)
+        # Read in the spectroscopic catalog (training or not)
+        if usetrain:
+            spec = Catalog.from_fits_file(self.config.specfile_train)
+        else:
+            spec = Catalog.from_fits_file(self.config.specfile)
 
         # Limit the redshift range
         zrange = self.config.zrange_cushioned
