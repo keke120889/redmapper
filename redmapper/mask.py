@@ -35,7 +35,16 @@ class Mask(object):
         # This will generate a maskgalfile if necessary
         self.read_maskgals(config.maskgalfile)
 
-    def calc_radmask(self, *args, **kwargs): pass
+    def compute_radmask(self, ra, dec):
+        _ra = np.atleast_1d(ra)
+        _dec = np.atleast_1d(dec)
+
+        if (_ra.size != _dec.size):
+            raise ValueError("ra, dec must be same length")
+
+        radmask = np.ones(_ra.size, dtype=np.bool_)
+        return radmask
+
     def read_maskgals(self, maskgalfile):
 
         make_maskgals = False
@@ -230,10 +239,7 @@ class Mask(object):
             raise ValueError('Survey limiting magnitude <= 0!')
             #Raise error here as this would lead to divide by zero if called.
 
-        #extract object for testing
-        #fitsio.write('test_data.fits', self.maskgals._ndarray)
-
-        if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and 
+        if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and
             np.amax(self.maskgals.m50) == 0):
             theta_i = calc_theta_i(mag, mag_err, maxmag, limmag)
         elif (self.maskgals.w[0] == 0):
