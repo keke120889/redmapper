@@ -73,13 +73,15 @@ class ClusterZlambdaTestCase(unittest.TestCase):
 
         #testing.assert_almost_equal(cluster.z_lambda, 0.22700983)
         # I am not sure why this isn't repeatable better than this
-        testing.assert_almost_equal(cluster.z_lambda,0.2270138, 4)
+        #testing.assert_almost_equal(cluster.z_lambda,0.2270138, 4)
+        testing.assert_almost_equal(cluster.z_lambda, 0.22666427, 6)
         testing.assert_almost_equal(cluster.z_lambda_err, 0.00443601, 4)
 
         # zlambda_err test
         z_lambda_err = zlam._zlambda_calc_gaussian_err(cluster.z_lambda)
 
-        testing.assert_almost_equal(z_lambda_err, 0.00615043, 5)
+        #testing.assert_almost_equal(z_lambda_err, 0.00615043, 5)
+        testing.assert_almost_equal(z_lambda_err, 0.0063738347, 5)
 
         # and test the correction on its own
         corr_filename = 'test_dr8_zlambdacorr.fit'
