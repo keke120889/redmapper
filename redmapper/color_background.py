@@ -4,6 +4,7 @@ from past.builtins import xrange
 import fitsio
 import numpy as np
 import esutil
+import os
 
 from .catalog import Entry
 from .utilities import interpol
