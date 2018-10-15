@@ -162,7 +162,11 @@ class SpecPlot(object):
                 spl[i, j] = use2.size
 
             p0 = [use.size, np.median(dzvec), np.std(dzvec)]
-            coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, dz, spl[i, :], p0=p0)
+            try:
+                coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, dz, spl[i, :], p0=p0)
+            except RuntimeError:
+                # set to the default?
+                coeff = p0
             spl[i, :] = spl[i, :] / coeff[0]
 
         maxdz = 0.5 * (z[1] - z[0])
@@ -191,4 +195,4 @@ class SpecPlot(object):
 
         z_map_smooth = scipy.ndimage.uniform_filter(z_map_values, size=5, mode='nearest')
 
-        return z_bins, z_map_zmooth
+        return z_bins, z_map_smooth
