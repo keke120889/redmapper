@@ -55,14 +55,14 @@ class RunFirstPass(ClusterRunner):
 
         # Check if there's a seedfile
         if os.path.isfile(self.config.seedfile):
-            print("Firstpass using seedfile: %s" % (self.config.seedfile))
+            print("%d: Firstpass using seedfile: %s" % (self.config.d.hpix, self.config.seedfile))
             incat = Catalog.from_fits_file(self.config.seedfile)
         else:
             if self.specmode:
                 raise RuntimeError("Must have config.seedfile for run_firstpass in specmode.")
             elif not self.did_read_zreds:
                 raise RuntimeError("Must have config.seedfile for run_firstpass with no zreds.")
-            print("Firstpass using zreds as input")
+            print("%d: Firstpass using zreds as input" % (self.config.d.hpix))
 
         if incat is not None:
             # generate a cluster catalog from incat
@@ -92,6 +92,10 @@ class RunFirstPass(ClusterRunner):
             else:
                 self.cat.z_init = incat.zred
                 self.cat.z = incat.zred
+
+            use, = np.where((self.cat.zred >= self.config.zrange[0]) &
+                            (self.cat.zred <= self.config.zrange[1]))
+            self.cat = self.cat[use]
         else:
             # we must not have a seedfile, and did_read_zreds
             # so generate a cluster catalog from self.gals
