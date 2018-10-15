@@ -17,7 +17,7 @@ from .depthmap import DepthMap
 from .zlambda import Zlambda
 from .zlambda import ZlambdaCorrectionPar
 from .cluster_runner import ClusterRunner
-from .utilities import chisq_pdf
+from .utilities import chisq_pdf, interpol
 
 ###################################################
 # Order of operations:
@@ -48,6 +48,8 @@ class RunLikelihoods(ClusterRunner):
         self.filetype = 'like'
 
     def _more_setup(self, *args, **kwargs):
+
+        print("%d: Likelihoods using catfile: %s" % (self.config.d.hpix, self.config.catfile))
 
         self.cat = ClusterCatalog.from_catfile(self.config.catfile,
                                                zredstr=self.zredstr,
@@ -84,7 +86,7 @@ class RunLikelihoods(ClusterRunner):
         cluster.lnbcglike = -1e11
         cluster.lnlike = -1e11
 
-        super(ClusterRunner, self)._reset_bad_values(cluster)
+        super(RunLikelihoods, self)._reset_bad_values(cluster)
 
     def _process_cluster(self, cluster):
 
