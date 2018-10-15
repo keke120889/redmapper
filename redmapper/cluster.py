@@ -152,6 +152,7 @@ class Cluster(Entry):
             neighbor_extra_dtype = [('R', 'f8'),
                                     ('DIST', 'f8'),
                                     ('CHISQ', 'f8'),
+                                    ('ZRED_CHISQ', 'f8'),
                                     ('PFREE', 'f8'),
                                     ('THETA_I', 'f8'),
                                     ('THETA_R', 'f8'),
@@ -167,6 +168,11 @@ class Cluster(Entry):
             if 'PFREE' in [dt[0] for dt in dtype_augment]:
                 # The PFREE is new, so we must set it to 1s
                 self.neighbors.pfree[:] = 1.0
+
+            if ('ZRED_CHISQ', 'f8') in dtype_augment:
+                # If we've had to add this, we want to copy the chisq values
+                # since they were from the "zred" side
+                self.neighbors.zred_chisq = self.neighbors.chisq
 
     def find_neighbors(self, radius, galcat, megaparsec=False, maxmag=None):
         """
@@ -353,14 +359,7 @@ class Cluster(Entry):
         else:
             idx = np.arange(len(self.neighbors))
 
-        #self.mstar = self.zredstr.mstar(self.z)
-
-        #maxmag = self.mstar(update=True) - 2.5*np.log10(self.config.lval_reference)
-        #self.neighbors.r = np.radians(self.neighbors.dist) * self.cosmo.Da(0, self._redshift)
         maxmag = self.mstar - 2.5 * np.log10(self.config.lval_reference)
-
-        # need to clip r at > 1e-6 or else you get a singularity
-        #self.neighbors.r[idx] = self.neighbors.r[idx].clip(min=1e-6)
 
         self.neighbors.chisq[idx] = self.zredstr.calculate_chisq(self.neighbors[idx], self._redshift)
         rho = chisq_pdf(self.neighbors.chisq[idx], self.zredstr.ncol)
@@ -376,7 +375,6 @@ class Cluster(Entry):
         cpars = mask.calc_maskcorr(self.mstar, maxmag, self.zredstr.limmag)
 
         try:
-            #w = theta_i * self.neighbors.wvals[idx]
             w = theta_i * self.neighbors.pfree[idx]
         except AttributeError:
             w = theta_i * np.ones_like(ucounts)
@@ -390,12 +388,6 @@ class Cluster(Entry):
         # pmem = p * pfree * theta_i * theta_r
         lam, p, pmem, rlam, theta_r = richness_obj.solve_nfw()
 
-        # error
-        bar_pmem = np.sum(pmem**2.0)/np.sum(pmem)
-        # cval = np.sum(cpars*rlam**np.arange(cpars.size, dtype=float)) > 0.0
-        cval = np.clip(np.sum(cpars * rlam**np.arange(cpars.size, dtype=float)),
-                       0.0, None)
-
         # reset before setting subsets
         self.neighbors.theta_i[:] = 0.0
         self.neighbors.theta_r[:] = 0.0
@@ -403,10 +395,17 @@ class Cluster(Entry):
         self.neighbors.pcol[:] = 0.0
         self.neighbors.pmem[:] = 0.0
 
-        if lam < 0.0:
+        # This also checks for crazy invalid values
+        if lam < 0.0 or pmem.max() == 0.0:
+            lam = -1.0
             lam_err = -1.0
             self.scaleval = -1.0
         else:
+            # Only do this computation if we have a valid measurement
+            bar_pmem = np.sum(pmem**2.0)/np.sum(pmem)
+            cval = np.clip(np.sum(cpars * rlam**np.arange(cpars.size, dtype=float)),
+                           0.0, None)
+
             self.scaleval = np.absolute(lam / np.sum(pmem))
 
             lam_unscaled = lam / self.scaleval
@@ -642,7 +641,11 @@ class Cluster(Entry):
 
     @redshift.setter
     def redshift(self, value):
-        self._redshift = value
+        if (value < 0.0):
+            raise ValueError("Cannot set redshift to < 0.0")
+
+        # This forces things to not blow up...
+        self._redshift = np.clip(value, 0.01, None)
         self._update_mstar()
         self._update_mpc_scale()
         self._compute_neighbor_r()
@@ -686,7 +689,9 @@ class Cluster(Entry):
 
 
     def copy(self):
-        return self.__copy__()
+        cluster = self.__copy__()
+        cluster.redshift = self.redshift
+        return cluster
 
     def __copy__(self):
         # This returns a copy of the cluster, and note that the neighbors will
