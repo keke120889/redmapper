@@ -66,7 +66,7 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(medscatpars, [0.02410464, 0.02747469, 0.03136519], 5)
 
         # And the red sequence fitter part
-        rsfitter = RedSequenceFitter(nodes, fitdata['Z'], fitdata['GALCOLOR'], fitdata['GALCOLOR_ERR'])
+        rsfitter = RedSequenceFitter(nodes, fitdata['Z'], fitdata['GALCOLOR'], fitdata['GALCOLOR_ERR'], use_scatter_prior=False)
         p0_mean = medpars
         p0_slope = np.zeros(nodes.size)
         p0_scatter = medscatpars * 1.4826
@@ -78,7 +78,7 @@ class FitterTestCase(unittest.TestCase):
         p0_mean = meanpars
         scatpars, = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_scatter=True)
 
-        testing.assert_almost_equal(scatpars, [0.03197381, 0.03500057, 0.04059801], 5)
+        testing.assert_almost_equal(scatpars, [0.03197, 0.035, 0.0406], 5)
 
         # Third, just the slope ... need to write this!
         p0_scatter = scatpars
@@ -97,7 +97,7 @@ class FitterTestCase(unittest.TestCase):
         meanpars2, slopepars2, scatpars2 = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_mean=True, fit_slope=True, fit_scatter=True)
 
         testing.assert_almost_equal(meanpars2, [0.94397328, 1.09101342, 1.26557143], 5)
-        testing.assert_almost_equal(slopepars2, [-0.01229146, -0.0158041 , -0.02707032], 5)
+        testing.assert_almost_equal(slopepars2, [-0.01229, -0.0158, -0.02707], 5)
         testing.assert_almost_equal(scatpars2, [0.03115847, 0.03430587, 0.03987611], 5)
 
         # Fifth, fit_mean with truncation
@@ -121,6 +121,13 @@ class FitterTestCase(unittest.TestCase):
 
         testing.assert_almost_equal(meanpars3, [0.93794242, 1.0925605, 1.27758869], 5)
 
+        # Finally, refit with scatter prior...
+        rsfitter._use_scatter_prior = True
+        meanpars3, slopepars3, scatpars3 = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_mean=True, fit_slope=True, fit_scatter=True)
+
+        testing.assert_almost_equal(meanpars3, [0.93837219, 1.09275066, 1.27600605], 5)
+        testing.assert_almost_equal(slopepars3, [-0.01066206, -0.01293863, -0.01642298], 5)
+        testing.assert_almost_equal(scatpars3, [0.03457, 0.04055158, 0.03840162], 5)
 
     def test_off_diagonal_fitter(self):
         file_path = 'data_for_tests'
@@ -193,7 +200,6 @@ class FitterTestCase(unittest.TestCase):
         pars_bkg, = corrfitter.fit(p0_mean, p0_slope, p0_r, p0_bkg, fit_bkg=True)
 
         testing.assert_almost_equal(pars_bkg, np.array([6.10995610e-10,   3.74807289e-04]), 5)
-
         p0_bkg = pars_bkg
         pars_mean, pars_r, pars_bkg = corrfitter.fit(p0_mean, p0_slope, p0_r, p0_bkg, fit_mean=True, fit_r=True, fit_bkg=True)
 
