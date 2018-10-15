@@ -24,7 +24,7 @@ class SelectSpecSeeds(object):
         """
 
         # Read in the galaxies, but check if we have zreds
-        if os.path.isfile(self.config.zredfile):
+        if self.config.zredfile is not None and os.path.isfile(self.config.zredfile):
             zredfile = self.config.zredfile
             has_zreds = True
         else:
@@ -33,7 +33,7 @@ class SelectSpecSeeds(object):
 
         gals = GalaxyCatalog.from_galfile(self.config.galfile,
                                           nside=self.config.d.nside,
-                                          hpix=self.config.h.hpix,
+                                          hpix=self.config.d.hpix,
                                           border=self.config.border,
                                           zredfile=zredfile)
 
@@ -64,8 +64,8 @@ class SelectSpecSeeds(object):
 
         cat = Catalog(np.zeros(use.size, dtype=[('ra', 'f8'),
                                                 ('dec', 'f8'),
-                                                ('model_mag', 'f4', self.config.nmag),
-                                                ('model_magerr', 'f4', self.config.nmag),
+                                                ('mag', 'f4', self.config.nmag),
+                                                ('mag_err', 'f4', self.config.nmag),
                                                 ('refmag', 'f4'),
                                                 ('refmag_err', 'f4'),
                                                 ('zred', 'f4'),
@@ -75,14 +75,14 @@ class SelectSpecSeeds(object):
                                                 ('ebv', 'f4')]))
         cat.ra[:] = gals.ra[use]
         cat.dec[:] = gals.dec[use]
-        cat.model_mag[:, :] = gals.model_mag[use, :]
-        cat.model_magerr[:, :] = gals.model_magerr[use, :]
+        cat.mag[:, :] = gals.mag[use, :]
+        cat.mag_err[:, :] = gals.mag_err[use, :]
         cat.refmag[:] = gals.refmag[use]
         cat.refmag_err[:] = gals.refmag_err[use]
         if (has_zreds):
             cat.zred[:] = gals.zred[use]
             cat.zred_e[:] = gals.zred_e[use]
-            cat.zred_chisq[:] = gals.zred_chisq[use]
+            cat.zred_chisq[:] = gals.chisq[use]
         else:
             cat.zred[:] = -1.0
             cat.zred_e[:] = -1.0
@@ -90,5 +90,5 @@ class SelectSpecSeeds(object):
         cat.zspec[:] = spec.z[use]
         cat.ebv[:] = gals.ebv[use]
 
-        cat.to_fits_file(self.config.specseeds)
+        cat.to_fits_file(self.config.seedfile)
 
