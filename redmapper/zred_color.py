@@ -33,7 +33,7 @@ class ZredColor(object):
         """
         """
 
-        nz = self.zredstr.z.size
+        nz = self.zredstr.z.size - 1
         refmagindex = self.zredstr.refmagindex(galaxy.refmag)
 
         if self.adaptive:
@@ -54,7 +54,7 @@ class ZredColor(object):
 
         lndist = np.zeros(nz) - 1e12
 
-        zbins = np.arange(zbinstart, zbinstop + step, step)
+        zbins = np.arange(zbinstart, zbinstop, step)
 
         # Mark the bins that are completely out of range
         # This last check makes sure we don't hit the overflow bin
@@ -99,7 +99,7 @@ class ZredColor(object):
 
         # move from log space to regular space
         maxlndist = np.max(lndist)
-        with np.errstate(invalid='ignore'):
+        with np.errstate(invalid='ignore', over='ignore'):
             dist = np.exp(lndist - maxlndist)
 
         # fix infinities and NaNs
@@ -126,7 +126,7 @@ class ZredColor(object):
                     zbins = zbins[to_run]
                     lndist[zbins] = self._calculate_lndist(galaxy, zbins)
 
-                    with np.errstate(invalid='ignore'):
+                    with np.errstate(invalid='ignore', over='ignore'):
                         dist[zbins] = np.exp(lndist[zbins] - maxlndist)
 
                     bad, = np.where(~np.isfinite(dist))
@@ -142,7 +142,8 @@ class ZredColor(object):
         ind_temp = np.argmax(dist[notextrap])
         ind = notextrap[ind_temp]
 
-        calcinds_base = np.arange(0, self.zredstr.z.size, step)
+        # This needs a -1 because the top redshift in zredstr is a high-end filler
+        calcinds_base = np.arange(0, nz, step)
 
         # Go from the peak and include all (every other point) that is > 1e-5.
         l, = np.where((calcinds_base <= ind) & (dist[calcinds_base] > 1e-5))
@@ -298,7 +299,7 @@ class ZredColor(object):
             lndist = self.zredstr.calculate_chisq(galaxy, zbins, z_is_index=True, calc_lkhd=(not self.use_chisq))
         else:
             # we have a single bin... hack this
-            lndist = self.zredstr.calculate_chisq(galaxy, np.array([zbins, zbins]), z_is_index=True, calc_lkhd=(not self.use_chisq))[0]
+            lndist = self.zredstr.calculate_chisq(galaxy, np.array([zbins[0], zbins[0]]), z_is_index=True, calc_lkhd=(not self.use_chisq))[0]
 
         if self.use_chisq:
             lndist *= -0.5
