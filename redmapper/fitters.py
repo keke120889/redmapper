@@ -40,7 +40,10 @@ class RedSequenceFitter(object):
     def __init__(self, mean_nodes,
                  redshifts, colors, errs, dmags=None, trunc=None,
                  slope_nodes=None, scatter_nodes=None, lupcorrs=None,
-                 probs=None, bkgs=None):
+                 probs=None, bkgs=None, scatter_max=None, use_scatter_prior=False):
+
+        self._use_scatter_prior = use_scatter_prior
+
         self._mean_nodes = np.atleast_1d(mean_nodes)
         if slope_nodes is None:
             self._slope_nodes = self._mean_nodes
@@ -105,12 +108,20 @@ class RedSequenceFitter(object):
         else:
             self._has_bkgs = False
 
+        if scatter_max is not None:
+            self._scatter_max = np.atleast_1d(scatter_max)
+            if self._scatter_max.size != self._n_scatter_nodes:
+                raise ValueError("Number of scatter_max must be equal to scatter_nodes")
+            self._has_scatter_max = True
+        else:
+            self._has_scatter_max = False
+
         if self._has_probs and not self._has_bkgs:
             raise ValueError("If you supply probs you must also supply bkgs")
 
     def fit(self, p0_mean, p0_slope, p0_scatter,
             fit_mean=False, fit_slope=False, fit_scatter=False,
-            min_scatter=0.0):
+            min_scatter=0.001):
         """
         """
         self._fit_mean = fit_mean
@@ -123,6 +134,7 @@ class RedSequenceFitter(object):
 
         ctr = 0
         p0 = np.array([])
+        bounds = []
         if self._fit_mean:
             self._mean_index = 0
             ctr += self._n_mean_nodes
@@ -148,7 +160,7 @@ class RedSequenceFitter(object):
             self._gslope = spl(self._redshifts)
         if not self._fit_scatter:
             spl = CubicSpline(self._scatter_nodes, p0_scatter)
-            self._gsig = np.sqrt(np.clip(spl(self._redshifts), 0.001, None)**2. + self._err2s)
+            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + self._err2s)
 
         if not self._fit_scatter and self._trunc is not None:
             self._phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
@@ -218,12 +230,18 @@ class RedSequenceFitter(object):
         bad, = np.where(~np.isfinite(vals))
         vals[bad] = -100.0
 
-        t = -np.sum(vals)
+        if self._fit_scatter and self._use_scatter_prior:
+            t = -(np.sum(vals) - np.sum(np.log(np.clip(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes], self._min_scatter, None))))
+        else:
+            t = -np.sum(vals)
 
-        # artificially hit a wall if scatter goes too low
+        # artificially hit a wall if scatter goes too low or too high
         if self._fit_scatter:
             if pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes].min() < self._min_scatter:
-                t += 10000
+                t += 100000
+            if self._has_scatter_max:
+                if np.min(self._scatter_max - pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes]) < 0.0:
+                    t += 100000
 
         return t
 
@@ -439,7 +457,7 @@ class CorrectionFitter(object):
             self._gr = np.clip(spl(self._redshifts), 0.5, None)
         if not self._fit_bkg:
             spl = CubicSpline(self._bkg_nodes, p0_bkg)
-            self._gbkg = spl(self._redshifts)
+            self._gbkg = np.clip(spl(self._redshifts), 1e-10, None)
             self._gci1 = (1. / np.sqrt(2. * np.pi * self._gbkg)) * np.exp(-self._dzs**2. / (2. * self._gbkg))
 
         pars = scipy.optimize.fmin(self, p0, disp=False)
@@ -491,14 +509,23 @@ class CorrectionFitter(object):
         var0 = (gr * self._dz_errs)**2.
         gci0 = (1. / np.sqrt(2. * np.pi * var0)) * np.exp(-(self._dzs - (gmean + gslope * self._dmags))**2. / (2. * var0))
 
-        vals = np.log(self._ws * (self._probs * gci0 + (1. - self._probs) * gci1))
-
-        t = -np.sum(vals)
-        if (~np.isfinite(t)):
+        vals = self._ws * (self._probs * gci0 + (1. - self._probs) * gci1)
+        test, = np.where(vals <= 0.0)
+        if test.size > 0:
+            # This is a bad bit of space
             t = 1e11
         else:
-            if (gbkg.min() < 0.0) :
-                t += 10000
+            vals = np.log(vals)
+
+            t = -np.sum(vals)
+
+            if (~np.isfinite(t)):
+                # It really should not get here.
+                t = 1e11
+            else:
+                # Make a little bit of a barrier here so the fitter goes to a happier place
+                if (gbkg.min() < 0.0) :
+                    t += 10000
 
         return t
 
