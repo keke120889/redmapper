@@ -58,6 +58,8 @@ class RedmapperRun(object):
 
         nside_split, pixels_split = self._get_pixel_splits()
 
+        print("Running on %d pixels" % (len(pixels_split)))
+
         # run each individual one
         self.config.d.nside = nside_split
 
@@ -67,9 +69,11 @@ class RedmapperRun(object):
             self.config.seedfile = seedfile
         pool = Pool(processes=self.config.calib_run_nproc)
         if self.percolation_only:
-            retvals = pool.map(self._percolation_only_worker, pixels_split, chunksize=1)
+            #retvals = pool.map(self._percolation_only_worker, pixels_split, chunksize=1)
+            retvals = map(self._percolation_only_worker, pixels_split)
         else:
-            retvals = pool.map(self._worker, pixels_split, chunksize=1)
+            #retvals = pool.map(self._worker, pixels_split, chunksize=1)
+            retvals = map(self._worker, pixels_split)
         pool.close()
         pool.join()
 
@@ -122,9 +126,9 @@ class RedmapperRun(object):
 
             # Which of these actually match the parent?
             if self.config.d.hpix > 0:
-                theta, phi = hp.pix2ang(self.config.d.nside, self.config.d.hpix)
-                hpix_test = hp.ang2pix(nside_test, theta, phi)
-                a, b = esutil.numpy_util.match(hpix_test, pixels)
+                theta, phi = hp.pix2ang(nside_test, pixels)
+                hpix_test = hp.ang2pix(self.config.d.nside, theta, phi)
+                a, b = esutil.numpy_util.match(self.config.d.hpix, hpix_test)
                 pixels = pixels[b]
 
             # And which of these match the galaxies?
@@ -267,6 +271,8 @@ class RedmapperRun(object):
         if not os.path.isfile(firstpass.filename) or not self.check:
             firstpass.run(keepz=self.keepz)
             firstpass.output(savemembers=False, withversion=False, clobber=True)
+        else:
+            print("Firstpass file %s already present.  Skipping..." % (firstpass.filename))
 
         config.catfile = firstpass.filename
 
@@ -275,6 +281,8 @@ class RedmapperRun(object):
         if not os.path.isfile(like.filename) or not self.check:
             like.run(keepz=self.keepz)
             like.output(savemembers=False, withversion=False, clobber=True)
+        else:
+            print("Likelihood file %s already present.  Skipping..." % (like.filename))
 
         config.catfile = like.filename
 
@@ -283,6 +291,8 @@ class RedmapperRun(object):
         if not os.path.isfile(perc.filename) or not self.check:
             perc.run(keepz=self.keepz)
             perc.output(savemembers=True, withversion=False, clobber=True)
+        else:
+            print("Percolation file %s already present.  Skipping..." % (perc.filename))
 
         return (hpix, firstpass.filename, like.filename, perc.filename)
 
@@ -295,7 +305,7 @@ class RedmapperRun(object):
         config.d.outbase = '%s_%05d' % (self.config.d.outbase, hpix)
 
         perc = RunPercolation(config)
-        if os.path.isfile(perc.filename) or not self.check:
+        if not os.path.isfile(perc.filename) or not self.check:
             perc.run(keepz=self.keepz)
             perc.output(savemembers=True, withversion=False, clobber=True)
 
