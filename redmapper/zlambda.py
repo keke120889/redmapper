@@ -59,41 +59,44 @@ class Zlambda(object):
 
         maxrad = 1.2 * self.cluster.r0 * 3.**self.cluster.beta
 
-        i = 0
         self.niter = 0
         pzdone = False
 
         if not calc_err:
             z_lambda_e = 0.0
 
-        for pi in xrange(2):
-            # skip second iteration if already done
+        # When running in p(z) mode, we might need a second iteration to zero-in on
+        # the peak redshift (because this has slightly greater sensitivity while
+        # being a bit slower, which we don't always need).
+        for pz_iter in xrange(2):
+            # skip second iteration if p(z) is converged
             if pzdone: break
 
-            #self.cluster._z = z_lambda
-            #self.cluster.update_z(z_lambda)
-            self.cluster.redshift = z_lambda
-
+            # This is the main iteration loop where we get consistency between
+            # the member selection / richness / and redshift
+            i = 0
             while i < self.config.zlambda_maxiter:
-                mpc_scale = np.radians(1.) * self.cosmo.Da(0, z_lambda)
-                r = self.cluster.neighbors.dist * mpc_scale
+                # Update the redshift, and it also updates the neighbor r's
+                self.cluster.redshift = z_lambda
 
-                in_r, = np.where(r < maxrad)
+                in_r, = np.where(self.cluster.neighbors.r < maxrad)
 
                 if in_r.size < 1:
+                    # Total fail, kick out
                     z_lambda = -1.0
                     break
 
-                # compute the richness here, but don't save to self.
+                # compute the richness here, but don't store it.
+                # This will compute neighbors.pcol which we can use for members to
+                # compute z_lambda
                 lam = self.cluster.calc_richness(mask, calc_err=False, index=in_r)
 
                 if lam < self.config.percolation_minlambda:
+                    # Total fail, kick out
                     z_lambda = -1.0
                     break
 
                 wtvals_mod = self.cluster.neighbors.pcol
-
-                r_lambda = self.cluster.r0 * (lam/100.)**self.cluster.beta
 
                 if maxmag_in is not None:
                    maxmag = (self.zredstr.mstar(z_lambda) -
@@ -103,22 +106,31 @@ class Zlambda(object):
 
                 # break if too few neighbors
                 if self.zlambda_fail:
-                    z_lambda_new = -1
+                    z_lambda = -1.0
+                    z_lambda_new = -1.0
                     break
                 else:
+                    # Compute the new z_lambda by fitting a parabola to the
+                    # likelihood surface near the input z_lambda
                     z_lambda_new = self._zlambda_calcz(z_lambda)
 
-                # check for convergence
-                if (np.abs(z_lambda_new-z_lambda) < self.config.zlambda_tol or 
-                    z_lambda_new < 0.0):
+                # check for convergence, but make sure we get at least 1 iteration
+                if (i > 0 and (np.abs(z_lambda_new-z_lambda) < self.config.zlambda_tol or
+                    z_lambda_new < 0.0)):
                     break
 
                 z_lambda = z_lambda_new
+
                 i += 1
 
+            # Record number of iterations
             self.niter = i
 
+            # If it's a valid z_lambda and we want to compute error...
             if z_lambda > 0.0 and calc_err:
+                # Set the redshift here, since it's valid
+                self.cluster.redshift = z_lambda
+
                 if not calcpz:
                     # regular Gaussian error
                     z_lambda_e = self._zlambda_calc_gaussian_err(z_lambda)
@@ -130,8 +142,11 @@ class Zlambda(object):
                     pzdone = True
                 else:
                     # Calculating p(z)
-                    pzdone, z_lambda, z_lambda_e = self._zlambda_calc_pz_and_check(z_lambda, wtvals_mod, r_lambda, maxmag)
+                    pzdone, z_lambda, z_lambda_e = self._zlambda_calc_pz_and_check(z_lambda, wtvals_mod, self.cluster.r_lambda, maxmag, convergence_warning=(pz_iter > 0))
+                    #if not pzdone and pz_iter > 0 and z_lambda < 0.4 and z_lambda > 0.15 and self.cluster_parent.Lambda > 20.0 and self.cluster_parent.scaleval < 2.0:
+                    #    asdljflkjasdf
             else:
+                # Invalid z_lambda, we're done here.
                 z_lambda_e = -1.0
                 if calcpz:
                     # Put in dummy values for pzbins/pz
@@ -140,11 +155,7 @@ class Zlambda(object):
 
                 pzdone = True
 
-        # apply correction if necessary...
-        if correction and z_lambda > 0.0:
-            #z_lambda, z_lambda_e = self.z_lambda_apply_correction()
-            pass
-
+        # If we are told to record the values in the parent cluster, do so here.
         if record_values:
             self.cluster_parent.z_lambda = z_lambda
             self.cluster_parent.z_lambda_err = z_lambda_e
@@ -172,15 +183,18 @@ class Zlambda(object):
         topfrac = self.config.zlambda_topfrac
 
         #we need the zrefmagbin
-        nzrefmag    = self.zredstr.refmagbins.size  #zredstr.refmagbins[0].size
+        nzrefmag    = self.zredstr.refmagbins.size
         zrefmagbin  = np.clip(np.around(nzrefmag*(self.cluster.neighbors.refmag -
                                                   self.zredstr.refmagbins[0])/
                                         (self.zredstr.refmagbins[nzrefmag-2] -
                                          self.zredstr.refmagbins[0])), 0, nzrefmag-1)
 
         ncount = topfrac*np.sum(wtvals)
+        # We need a check here for zero-weight members
+        # FIXME: change wtvals to pcol (or p)
         use,   = np.where((self.cluster.neighbors.r < maxrad) &
-                          (self.cluster.neighbors.refmag < maxmag))
+                          (self.cluster.neighbors.refmag < maxmag) &
+                          (wtvals > 0.0))
 
         if ncount < 3:
             ncount = 3
@@ -225,10 +239,9 @@ class Zlambda(object):
         z_lambda: output
         """
         nsteps = 10
-        steps = np.linspace(0., nsteps*self.config.zlambda_parab_step, num = nsteps,
-            dtype = np.float64)+z_lambda - self.config.zlambda_parab_step*(nsteps-1)/2
+        steps = self.config.zlambda_parab_step * np.arange(nsteps) + z_lambda - self.config.zlambda_parab_step * (nsteps - 1) / 2
         likes = np.zeros(nsteps)
-        for i in xrange(0, nsteps):
+        for i in xrange(nsteps):
              likes[i] = self._bracket_fn(steps[i])
         fit = np.polyfit(steps, likes, 2)
 
@@ -237,9 +250,8 @@ class Zlambda(object):
         else:
             z_lambda = -1.0
 
-        z_lambda = np.clip(z_lambda, (steps[0]-self.config.zlambda_parab_step),
-            (steps[nsteps-1]+self.config.zlambda_parab_step))
-        z_lambda = np.clip(z_lambda, self.zredstr.z[0], self.zredstr.z[-2])
+        z_lambda = np.clip(z_lambda, steps[0] - self.config.zlambda_parab_step,
+                           steps[-1] + self.config.zlambda_parab_step)
 
         return z_lambda
 
@@ -249,7 +261,7 @@ class Zlambda(object):
         bracketing function
         """
         likelihoods = self.zredstr.calculate_chisq(self.cluster.neighbors[self._zlambda_in_rad],
-                                                            z, calc_lkhd=True)
+                                                   z, calc_lkhd=True)
         t = -np.sum(self._zlambda_pw*likelihoods)
         return t
 
@@ -285,7 +297,7 @@ class Zlambda(object):
 
         return z_lambda_e
 
-    def _zlambda_calc_pz_and_check(self, z_lambda, wtvals, maxrad, maxmag):
+    def _zlambda_calc_pz_and_check(self, z_lambda, wtvals, maxrad, maxmag, convergence_warning=False):
         """
         Parent to set pz and pzbins, with checking
 
@@ -295,6 +307,7 @@ class Zlambda(object):
         wtvals: weights
         maxrad: maximum radius for considering neighbours
         maxmag: maximum magnitude for considering neighbours
+        convergence_warning: print warning if we haven't converged
         """
 
         # First do with fast mode
@@ -303,10 +316,11 @@ class Zlambda(object):
         pzdone = False
 
         # check for bad values, and do slow run if necessary...
-        if (((self.pz[0] / self.pz[(self.config.npzbins - 1) // 2] > 0.01) and
+        if (self.pz[(self.config.npzbins - 1) // 2] > 0.0 and
+            ((self.pz[0] / self.pz[(self.config.npzbins - 1) // 2] > 0.01) and
              (self.pzbins[0] >= (self.zredstr.z[0] + 0.01))) or
             ((self.pz[-1] >= self.pz[(self.config.npzbins-1) // 2] > 0.01) and
-             (self.pzbins[-1] <= (self.zredstr.z[-1] - 0.01)))):
+             (self.pzbins[-1] <= (self.zredstr.z[-2] - 0.01)))):
 
             self._zlambda_calc_pz(z_lambda, wtvals, maxrad, maxmag, slow=True)
 
@@ -318,23 +332,33 @@ class Zlambda(object):
             m = np.argmax(self.pz)
             p0 = np.array([self.pz[m], self.pzbins[m], 0.01])
 
-            coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction,
-                                                        self.pzbins,
-                                                        self.pz,
-                                                        p0=p0)
+            try:
+                coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction,
+                                                            self.pzbins,
+                                                            self.pz,
+                                                            p0=p0)
+            except:
+                # This was a failure, but this happens on marginal clusters
+                coeff = [-10.0, -10.0, -10.0]
+
             if coeff[2] > 0 or coeff[2] > 0.2:
                 z_lambda_e = coeff[2]
             else:
                 # revert to old school
-                z_lambda_e = self._zlambda_calc_err(z_lambda)
+                z_lambda_e = self._zlambda_calc_gaussian_err(z_lambda)
 
             # check peak of p(z)...
             pmind = np.argmax(self.pz)
             if (np.abs(self.pzbins[pmind] - z_lambda) < self.config.zlambda_tol):
                 pzdone = True
             else:
-                print('Warning: z_lambda / p(z) inconsistency detected.')
-                self.z_lambda = self.zlambda_pzbins[pmind]
+                if (convergence_warning):
+                    print('Warning: z_lambda / p(z) inconsistency detected.')
+                    #if ((z_lambda < 0.4) & (self.cluster_parent.Lambda > 20.0) & (self.cluster_parent.scaleval < 2.0) & (z_lambda > 0.15)):
+                    #    asdfjlsdfjkl
+
+                # Record the new peak z_lambda and kick back out saying that p(z) isn't done
+                z_lambda = self.pzbins[pmind]
                 pzdone = False
 
         return pzdone, z_lambda, z_lambda_e
@@ -361,7 +385,8 @@ class Zlambda(object):
             z_lambda_hi = scipy.optimize.minimize_scalar(self._delta_bracket_fn,
                                                          bracket=(z_lambda + 0.001, z_lambda + 0.15),
                                                          method='bounded',
-                                                         bounds=(z_lambda + 0.001, z_lambda + 0.15))
+                                                         bounds=(z_lambda + 0.001, z_lambda + 0.15),
+                                                         options={'xatol':1e-5})
 
             # we will not allow a dz smaller than 0.005
             dz = np.clip((z_lambda_hi.x - z_lambda), 0.005, 0.15)
@@ -380,11 +405,12 @@ class Zlambda(object):
 
             lowz = z_lambda - dztest
             ratio = 1.0
-            while (lowz >= np.min(self.zredstr.z) and (ratio > 0.01)):
+            while (lowz >= self.zredstr.z[0] and (ratio > 0.01)):
                 val = -self._bracket_fn(lowz)
 
                 ln_lkhd = val - pk
-                pz = np.exp(val - pk) * self.zredstr.volume_factor[self.zredstr.zindex(lowz)]
+                with np.errstate(over="raise"):
+                    pz = np.exp(val - pk) * self.zredstr.volume_factor[self.zredstr.zindex(lowz)]
 
                 ratio = pz/pz0
 
@@ -392,11 +418,11 @@ class Zlambda(object):
                     lowz -= dztest
 
             # clip to lower value
-            lowz = np.clip(lowz, np.min(self.zredstr.z), None)
+            lowz = np.clip(lowz, self.zredstr.z[0], None)
 
             highz = z_lambda + dztest
             ratio = 1.0
-            while (highz <= np.max(self.zredstr.z) and (ratio > 0.01)):
+            while (highz <= self.zredstr.z[-2] and ratio > 0.01):
                 val = -self._bracket_fn(highz)
 
                 ln_lkhd = val - pk
@@ -407,7 +433,7 @@ class Zlambda(object):
                 if ratio > 0.01:
                     highz += dztest
 
-            highz = np.clip(highz, None, np.amax(self.zredstr.z))
+            highz = np.clip(highz, None, self.zredstr.z[-2])
 
             pzbinsize = (highz - lowz)/(self.config.npzbins-1)
 
@@ -422,9 +448,6 @@ class Zlambda(object):
         ln_lkhd = np.zeros(self.config.npzbins)
         for i in xrange(self.config.npzbins):
             ln_lkhd[i] = -self._bracket_fn(pzbins[i])
-            #likelihoods = self.zredstr.calculate_chisq(self.neighbors[self._zlambda_in_rad],
-            #    pzbins[i], calc_lkhd=True)
-            #ln_lkhd[i] = np.sum(self._zlambda_pw*likelihoods)
 
         ln_lkhd = ln_lkhd - np.max(ln_lkhd)
         pz = np.exp(ln_lkhd) * self.zredstr.volume_factor[self.zredstr.zindex(pzbins)]
@@ -554,7 +577,7 @@ class ZlambdaCorrectionPar(object):
                 # modify width of bins by expansion, and also
                 # shift the center to the new zlam
 
-                offset = pzbins[(float(npzbins) - 1)/2.] - ozlam
+                offset = pzbins[int((float(npzbins) - 1)/2.)] - ozlam
 
                 opdz = pzbins[1] - pzbins[0]
                 pdz = opdz * np.sqrt(extra_err**2. + zlam_e**2.) / zlam_e
