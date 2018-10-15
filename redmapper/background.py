@@ -536,7 +536,7 @@ class ZredBackgroundGenerator(object):
         if self.config.d.hpix > 0:
             # We need to take a sub-region
             theta, phi = hp.pix2ang(master.nside, master.hpix)
-            ipring_big = hp.ang2pix(self.config.d.nside, theta, phi)
+            ipring_bin = hp.ang2pix(self.config.d.nside, theta, phi)
             subreg_indices, = np.where(ipring_bin == self.config.d.hpix)
         else:
             subreg_indices = np.arange(master.hpix.size)
