@@ -108,7 +108,7 @@ def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, refmagerr=N
         if (covmat.ndim != 3):
             raise ValueError("covmat must be 3 dimensions for mode 1")
         if (covmat.shape[2] != nz):
-            raise ValueError("Third dimension of covmat must be nz for mode 1")        
+            raise ValueError("Third dimension of covmat must be nz for mode 1")
         if (covmat.shape[0] != ncol or covmat.shape[1] != ncol):
             raise ValueError("covmat must be ncol x ncol x nz for mode 1")
 
