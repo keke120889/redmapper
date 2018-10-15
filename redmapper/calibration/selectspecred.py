@@ -23,6 +23,9 @@ class SelectSpecRedGalaxies(object):
             self.config = conf
 
         self._template_file = None
+        if self.config.calib_redgal_template is None:
+            raise RuntimeError("Cannot run SelectSpecRedGalaxies without a calib_redgal_template")
+
         module = __name__.split('.')[0]
         if resource_exists(module, 'data/initcolors/%s' % (self.config.calib_redgal_template)):
             self._template_file = resource_filename(module, 'data/initcolors/%s' % (self.config.calib_redgal_template))
@@ -56,6 +59,8 @@ class SelectSpecRedGalaxies(object):
         gals = gals[i1]
         gals.add_fields([('z', 'f4')])
         gals.z = spec[i0].z
+
+        print("Calibrating with %d galaxies with spectra in pixel %d" % (gals.size, self.config.d.hpix))
 
         # Set the redshift range
         zrange = self.config.zrange_cushioned
@@ -152,9 +157,11 @@ class SelectSpecRedGalaxies(object):
             nsig = 1.5
             u, = np.where(np.abs(galcolor[:, j] - med) < nsig * width)
 
+            # Here we don't do the scatter prior for consistency with old code.
+            # This maybe should be changed in the future.
             trunc = nsig * width[u]
             rsfitter = RedSequenceFitter(nodes, gals.z[u], galcolor[u, j], galcolor_err[u, j],
-                                         trunc=trunc)
+                                         trunc=trunc, use_scatter_prior=False)
 
             # fit just the mean...
             p0_mean = medcol[:, j]
@@ -199,12 +206,9 @@ class SelectSpecRedGalaxies(object):
         # Output the red galaxies
         use, = np.where(mark)
 
-        ## FIXME
-        #fitsio.write(self.config.redgalfile, gals[use]._ndarray, clobber=True)
         gals.to_fits_file(self.config.redgalfile, indices=use, clobber=True)
 
         # Output the model
-        ## FIXME
         model = Entry(np.zeros(1, dtype=[('nodes', 'f4', nodes.size),
                                          ('meancol', 'f4', meancol.shape),
                                          ('meancol_scatter', 'f4', meancol_scatter.shape),
@@ -228,7 +232,12 @@ class SelectSpecRedGalaxies(object):
             fig.clf()
             ax = fig.add_subplot(111)
 
-            ax.hexbin(gals.z[use], galcolor[use, j], bins='log')
+            st = np.argsort(galcolor[use, j])
+            extent = (gals.z[use].min(), gals.z[use].max(),
+                      galcolor[use[st[int(0.01*use.size)]], j],
+                      galcolor[use[st[int(0.99*use.size)]], j])
+
+            ax.hexbin(gals.z[use], galcolor[use, j], bins='log', extent=extent)
             xvals = np.arange(zrange[0], zrange[1], 0.01)
             spl = CubicSpline(nodes, meancol[:, j])
             ax.plot(xvals, spl(xvals), 'r-')
