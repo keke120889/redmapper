@@ -215,7 +215,7 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 	return -1;
     }
     memcpy(covmat_temp,covmat,sizeof(double)*ncol*ncol*ncalc);
-      
+
     // We can generate the C_obs matrix (cobsmat) just once
     gsl_matrix_set_identity(cobs);
     for (j=0;j<nmag;j++) {
