@@ -18,6 +18,8 @@ from redmapper.calibration.selectspecred import SelectSpecRedGalaxies
 
 class SelectSpecRedTestCase(unittest.TestCase):
     def test_selectred(self):
+        random.seed(seed=12345)
+
         file_path = 'data_for_tests'
         conf_filename = 'testconfig.yaml'
         config = Configuration(os.path.join(file_path, conf_filename))
@@ -46,13 +48,13 @@ class SelectSpecRedTestCase(unittest.TestCase):
 
         self.assertEqual(redgals.size, 1200)
         testing.assert_almost_equal(redgalmodel['meancol'][0][:, 1],
-                                    np.array([0.78117073, 1.08723211, 1.47198153]), 5)
+                                    np.array([0.78117, 1.08723, 1.47198]), 5)
         # These numbers have been updated for the symmetric truncation cut, which
         # looks like it works better.  An "upgrade" from the IDL code.
         testing.assert_almost_equal(redgalmodel['meancol_scatter'][0][:, 1],
                                     np.array([0.03419583, 0.04487272, 0.02891804]), 5)
         testing.assert_almost_equal(redgalmodel['medcol'][0][:, 1],
-                                    np.array([0.78392178, 1.08610117, 1.45235968]), 5)
+                                    np.array([0.78392, 1.0861, 1.45236]), 5)
         testing.assert_almost_equal(redgalmodel['medcol_width'][0][:, 1],
                                     np.array([0.02155463, 0.04549022, 0.01675996]), 5)
 
