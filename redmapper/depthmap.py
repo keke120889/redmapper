@@ -99,7 +99,7 @@ class DepthMap(object):
         """
         """
 
-        theta = (90.0 - decs) * np.pi / 180.
+        theta = np.clip((90.0 - decs) * np.pi / 180., -np.pi, np.pi)
         phi = ras * np.pi / 180.
 
         ipring_offset = np.clip(hp.ang2pix(self.nside, theta, phi) - self.offset,
@@ -154,11 +154,12 @@ class DepthMap(object):
                 maskgals.m50[bd] = np.mean(maskgals.m50[ok])
             else:
                 # very bad (nok == 0)
-                maskgals.limmag[:] = 0.0
+                # Set this to 1.0 so it'll get used but will give giant errors.
+                # And the cluster should be filtered
+                maskgals.limmag[:] = 1.0
                 maskgals.exptime[:] = 1000.0
                 maskgals.m50[:] = 0.0
-                #raise RuntimeError("This shouldn't get here...")
-                print("Warning ...")
+                print("Warning: Bad cluster in bad region...")
 
 
     def calc_areas(self, mags):
@@ -181,7 +182,8 @@ class DepthMap(object):
 
             hpix = np.arange(self.ntot) + self.offset
             theta, phi = hp.pix2ang(self.nside, hpix)
-            hpix_submask = hp.ang2pix(self.galfile_nside, theta, phi)
+            #hpix_submask = hp.ang2pix(self.galfile_nside, theta, phi)
+            hpix_submask = hp.ang2pix(self.submask_nside, theta, phi)
 
             use, = np.where(hpix_submask == self.submask_hpix)
         else:
