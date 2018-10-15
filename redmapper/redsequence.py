@@ -183,7 +183,7 @@ class RedSequenceColorPar(object):
             # diagonals
             for j in xrange(ncol):
                 spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,j,:])
-                self.sigma[j,j,:] = spl(self.z)
+                self.sigma[j,j,:] = np.clip(spl(self.z), minsig, None)
 
                 self.covmat[j,j,:] = self.sigma[j,j,:]*self.sigma[j,j,:]
 
@@ -408,30 +408,23 @@ class RedSequenceColorPar(object):
         -------
         chisqs: array of floats
         """
+
+        if calc_lkhd:
+            calc_chisq = False
+        else:
+            calc_chisq = True
+
         if z_is_index:
             zind = z
         else:
             zind = self.zindex(z)
         magind = self.refmagindex(galaxies.refmag)
-        #magind = self.refmagindex(galaxies._ndarray['REFMAG'])
         galcolor = galaxies.galcol
-        #chisq_dist = ChisqDist(self.covmat[:,:,zind], self.c[zind,:],
-        #                       self.slope[zind,:], self.pivotmag[zind],
-        #                       galaxies.refmag, galaxies.mag_err,
-        #                       galcolor, refmagerr=galaxies.refmag_err,
-        #                       lupcorr=self.lupcorr[magind,zind,:])
-        #chisq_dist = ChisqDist(self.covmat[:, :, zind], self.c[zind, :],
-        #                       self.slope[zind, :], self.pivotmag[zind],
-        #                       galaxies._ndarray['REFMAG'], galaxies._ndarray['MAG_ERR'][0],
-        #                       galcolor, refmagerr=galaxies._ndarray['REFMAG_ERR'],
-        #                       lupcorr=self.lupcorr[magind, zind, :])
-        #if calc_lkhd:
-        #    return chisq_dist.compute_chisq(chisq_mode=False)
-        #return chisq_dist.compute_chisq(chisq_mode=True)
-        if calc_lkhd:
-            calc_chisq = False
-        else:
-            calc_chisq = True
+
+        # Need to check if this is a single galaxy AND redshift
+        if np.atleast_1d(zind).size == 1 and len(galaxies) == 1:
+            zind = np.atleast_1d(zind)
+            magind = np.atleast_1d(magind)
 
         return compute_chisq(self.covmat[:,:,zind], self.c[zind,:],
                              self.slope[zind,:], self.pivotmag[zind],
