@@ -12,6 +12,7 @@ import scipy.interpolate as interpolate
 import fitsio
 from scipy.special import erf
 from numpy import random
+import warnings
 
 ###################################
 ## Useful constants/conversions ##
@@ -254,8 +255,11 @@ def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False,
             mag = 2.5*np.log10(1.0/b) - np.arcsinh(0.5*flux_new/bnmgy)/(0.4*np.log(10.0))
             mag_err = 2.5*noise_new/(2.0*bnmgy*np.log(10.0)*np.sqrt(1.0+(0.5*flux_new/bnmgy)**2.0))
         else:
-            mag = maskgals.zp[0]-2.5*np.log10(flux/maskgals.exptime)
-            mag_err = (2.5/np.log(10.0))*(noise/flux)
+            # Want to suppress warnings here (because we check for infinites below)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore")
+                mag = maskgals.zp[0]-2.5*np.log10(flux/maskgals.exptime)
+                mag_err = (2.5/np.log(10.0))*(noise/flux)
 
             bad, = np.where(np.isfinite(mag) == False)
             mag[bad] = 99.0
