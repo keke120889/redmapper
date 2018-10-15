@@ -40,7 +40,7 @@ class RedSequenceCalibrator(object):
         else:
             use, = np.where((gals.z > self.config.zrange[0]) &
                             (gals.z < self.config.zrange[1]) &
-                            (gals.pmem > self.config.calib_pcut))
+                            (gals.p > self.config.calib_pcut))
 
         if use.size == 0:
             raise RuntimeError("No good galaxies in %s!" % (self._galfile))
@@ -126,7 +126,7 @@ class RedSequenceCalibrator(object):
         if self.config.calib_use_pcol:
             coluse, = np.where(gals.pcol > self.config.calib_color_pcut)
         else:
-            coluse, = np.where(gals.pmem > self.config.calib_color_pcut)
+            coluse, = np.where(gals.p > self.config.calib_color_pcut)
 
         colgals = gals[coluse]
 
@@ -179,7 +179,9 @@ class RedSequenceCalibrator(object):
         # Later will want this parallelized, I think
         self._calc_zreds(gals, do_correction=True)
 
-        # FIXME: want to save zreds (and just zreds!)
+        # And want to save galaxies and zreds
+        zredfile = self._galfile.rstrip('.fit') + '_zreds.fit'
+        gals.to_fits_file(zredfile)
 
         # Make diagnostic plots
         self._make_diagnostic_plots(gals)
@@ -338,7 +340,7 @@ class RedSequenceCalibrator(object):
         if self.config.calib_use_pcol:
             probs = gals.pcol
         else:
-            probs = gals.pmem
+            probs = gals.p
 
         # Figure out the order of the colors for luptitude corrections
         mags = np.zeros((gals.size, self.config.nmag))
@@ -397,6 +399,12 @@ class RedSequenceCalibrator(object):
             spl = CubicSpline(self.pars.pivotmag_z, self.pars.medcol_width[:, j])
             sc = spl(gals.z)
 
+            # What is the maximum scatter in each node?
+            # This is based on the median fit, which does not include photometric
+            # error, and should always be larger.  This helps regularize the edges
+            # where things otherwise can run away.
+            scatter_max = spl(self.pars.covmat_z)
+
             u, = np.where((galcolor[:, j] > (med - self.config.calib_color_nsig * sc)) &
                           (galcolor[:, j] < (med + self.config.calib_color_nsig * sc)))
             trunc = self.config.calib_color_nsig * sc[u]
@@ -424,7 +432,6 @@ class RedSequenceCalibrator(object):
 
             # We fit in stages: first the mean, then the slope, then the scatter,
             # and finally all three
-
             rsfitter = RedSequenceFitter(self.pars._ndarray[self.ztag[j]],
                                          gals.z[u], col[u], col_err[u],
                                          dmags=dmags[u],
@@ -433,7 +440,8 @@ class RedSequenceCalibrator(object):
                                          scatter_nodes=self.pars.covmat_z,
                                          lupcorrs=lupcorr[u],
                                          probs=probs[u],
-                                         bkgs=self.bkg.lookup_diagonal(j, col[u], gals.refmag[u], doRaise=doRaise))
+                                         bkgs=self.bkg.lookup_diagonal(j, col[u], gals.refmag[u], doRaise=doRaise),
+                                         scatter_max=scatter_max, use_scatter_prior=True)
 
             # fit the mean
             cvals, = rsfitter.fit(cvals, svals, scvals, fit_mean=True)
@@ -447,6 +455,10 @@ class RedSequenceCalibrator(object):
             # fit combined
             cvals, svals, scvals = rsfitter.fit(cvals, svals, scvals,
                                                 fit_mean=True, fit_slope=True, fit_scatter=True)
+            # Re-fit...
+            #cvals, svals, scvals = rsfitter.fit(cvals, svals, scvals,
+            #                                    fit_mean=True, fit_slope=True, fit_scatter=True)
+
 
             # And record in the parameters
             self.pars._ndarray[self.ctag[j]] = cvals
@@ -475,7 +487,7 @@ class RedSequenceCalibrator(object):
         if self.config.calib_use_pcol:
             probs = gals.pcol
         else:
-            probs = gals.pmem
+            probs = gals.p
 
         # Compute c, slope, and median and width for all galaxies/colors
         ci = np.zeros((gals.size, ncol))
@@ -637,11 +649,14 @@ class RedSequenceCalibrator(object):
 
         gals.add_zred_fields()
 
+        starttime = time.time()
         for i, g in enumerate(gals):
             try:
                 zredc.compute_zred(g)
             except:
                 pass
+
+        print('Computed zreds in %.2f seconds.' % (time.time() - starttime))
 
     def _calc_corrections(self, gals, mode2=False):
         """
@@ -651,7 +666,7 @@ class RedSequenceCalibrator(object):
         if self.config.calib_use_pcol:
             probs = gals.pcol
         else:
-            probs = gals.pmem
+            probs = gals.p
 
         # Set a threshold removing 5% worst lkhd outliers
         st = np.argsort(gals.lkhd)
@@ -789,8 +804,9 @@ class RedSequenceCalibrator(object):
 
         mlim = zredstr.mstar(gals.zred) - 2.5 * np.log10(0.2)
 
-        use, = np.where((gals.pmem > pcut) &
-                        (gals.refmag < mlim))
+        use, = np.where((gals.p > pcut) &
+                        (gals.refmag < mlim) &
+                        (gals.zred < 2.0))
 
         ugals = gals[use]
 
@@ -888,9 +904,9 @@ class RedSequenceCalibrator(object):
 
             ax = fig.add_subplot(122)
             if mode == 0:
-                ax.hexbin(ugals.z, ugals.zred, bins='log')
+                ax.hexbin(ugals.z, ugals.zred, bins='log', extent=[self.config.zrange[0], self.config.zrange[1], self.config.zrange[0], self.config.zrange[1]])
             else:
-                ax.hexbin(ugals.zred2, ugals.z, bins='log')
+                ax.hexbin(ugals.zred2, ugals.z, bins='log', extent=[self.config.zrange[0], self.config.zrange[1], self.config.zrange[0], self.config.zrange[1]])
             ax.plot(self.config.zrange, self.config.zrange, 'r--')
             ax.set_xlim(self.config.zrange)
             ax.set_ylim(self.config.zrange)
