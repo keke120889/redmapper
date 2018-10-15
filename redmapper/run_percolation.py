@@ -17,7 +17,7 @@ from .depthmap import DepthMap
 from .zlambda import Zlambda
 from .zlambda import ZlambdaCorrectionPar
 from .cluster_runner import ClusterRunner
-from .centering import CenteringBCG, CenteringWcenZred
+from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite
 
 ###################################################
 # Order of operations:
@@ -39,15 +39,19 @@ class RunPercolation(ClusterRunner):
         self.runmode = 'percolation'
         self.read_zreds = True
         self.zreds_required = True
+        self.zredbkg_required = True
         self.filetype = 'final'
 
     def _more_setup(self, *args, **kwargs):
+
+        print("%d: Percolation using catfile: %s" % (self.config.d.hpix, self.config.catfile))
 
         # read in the catalog...
         self.cat = ClusterCatalog.from_catfile(self.config.catfile,
                                                zredstr=self.zredstr,
                                                config=self.config,
                                                bkg=self.bkg,
+                                               zredbkg=self.zredbkg,
                                                cosmo=self.cosmo,
                                                r0=self.r0,
                                                beta=self.beta)
@@ -151,12 +155,14 @@ class RunPercolation(ClusterRunner):
             zlam = Zlambda(cluster)
             z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.redshift, self.mask, calc_err=False, calcpz=False)
 
-            cluster.redshift = z_lambda
+            # Check that this is a valid solution before continuing
+            if z_lambda < 0.0:
+                bad = True
+                self._reset_bad_values(cluster)
+                return bad
 
-        if cluster.redshift < 0.0:
-            bad = True
-            self._reset_bad_values(cluster)
-            return bad
+            # Set the cluster redshift to z_lambda
+            cluster.redshift = z_lambda
 
         # Grab the correct centering class here
         cent = reduce(getattr, self.config.centerclass.split('.'), sys.modules[__name__])(cluster)
@@ -183,7 +189,7 @@ class RunPercolation(ClusterRunner):
             if self.did_read_zreds:
                 cluster.zred = cluster.neighbors.zred[cent.index[0]]
                 cluster.zred_e = cluster.neighbors.zred_e[cent.index[0]]
-                cluster.zred_chisq = cluster.neighbors.chisq[cent.index[0]]
+                cluster.zred_chisq = cluster.neighbors.zred_chisq[cent.index[0]]
 
             cluster.id_cent[:] = cluster.neighbors.id[cent.index]
 
@@ -248,10 +254,10 @@ class RunPercolation(ClusterRunner):
                 cluster.pzbins[:] = zlam.pzbins
                 cluster.pz[:] = zlam.pz
 
-            if not self.keepz:
-                cluster.redshift = z_lambda
+                if not self.keepz and z_lambda > 0.0:
+                    cluster.redshift = z_lambda
 
-            if cluster.redshift < 0.0:
+            if cluster.z_lambda < 0.0:
                 bad = True
                 continue
 
@@ -289,23 +295,23 @@ class RunPercolation(ClusterRunner):
                 cluster_temp.update_neighbors_dist()
 
                 clc, = np.where(cluster_temp.neighbors.r < 1.5*cluster.r_lambda)
-                lam = cluster_temp.calc_richness(self.mask, calc_err=False, idx=clc)
+                lam = cluster_temp.calc_richness(self.mask, calc_err=False, index=clc)
                 cluster.lambda_cent[ce] = lam
 
                 if ce == 1:
                     # For just the first alternate center compute z_lambda (for speed)
                     zlam = Zlambda(cluster_temp)
-                    z_lambda, _ = zlam.calc_zlambda(cluster.redshift, self.mask, calc_err=False, calpz=False)
+                    z_lambda, _ = zlam.calc_zlambda(cluster.redshift, self.mask, calc_err=False, calcpz=False)
                     cluster.zlambda_cent[ce] = z_lambda
 
             # And the overall average over the centers...
             cluster.lambda_c = np.sum(cluster.p_cen * cluster.lambda_cent)
-            cluster.lambda_ce = np.sqrt(np.sum(cluster.p_cen * cluster.lambda_cent**2.) - cluster.lambda_c**2.)
+            # Clip this at 0.0, to avoid rounding problems when there's just 1 possible center
+            cluster.lambda_ce = np.sqrt(np.clip(np.sum(cluster.p_cen * cluster.lambda_cent**2.) - cluster.lambda_c**2., 0.0, None))
         else:
             # There's just one possible center...
             cluster.lambda_c = cluster.Lambda
             cluster.lambda_ce = 0.0
-
 
         # Everything else should be taken care of by cluster_runner
         return bad
