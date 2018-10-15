@@ -9,7 +9,7 @@ from esutil.cosmology import Cosmo
 
 from .configuration import Configuration
 from .cluster import ClusterCatalog
-from .background import Background
+from .background import Background, ZredBackground
 from .color_background import ColorBackground
 from .mask import get_mask
 from .galaxy import GalaxyCatalog
@@ -48,6 +48,7 @@ class ClusterRunner(object):
         self.read_zreds = False
         self.zreds_required = False
         self.did_read_zreds = False
+        self.zredbkg_required = False
         self.use_colorbkg = False
         self.use_parfile = True
         self._filename = None
@@ -104,6 +105,11 @@ class ClusterRunner(object):
         else:
             self.bkg = Background(self.config.bkgfile)
             self.cbkg = None
+
+        if self.zredbkg_required:
+            self.zredbkg = ZredBackground(self.config.bkgfile)
+        else:
+            self.zredbkg = None
 
         # read in parameters
         if self.use_parfile:
@@ -252,7 +258,13 @@ class ClusterRunner(object):
                     self.do_percolation_masking = True
                     self.record_members = True
 
+            cctr = 0
+
             for cluster in self.cat:
+                if ((cctr % 1000) == 0):
+                    print("%d: Working on cluster %d of %d" % (self.config.d.hpix, cctr, self.cat.size))
+                cctr += 1
+
                 # Note that the cluster is set with .z if available! (which becomes ._z)
                 maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
                 cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True, maxmag=maxmag)
@@ -290,11 +302,16 @@ class ClusterRunner(object):
                 bad, = np.where(self.mask.maskgals.mark[inside] == 0)
                 cluster.maskfrac = float(bad.size) / float(inside.size)
 
-                # Note that _process_cluster has the index part maybe?
-                bad_cluster = self._process_cluster(cluster)
+                if cluster.maskfrac == 1.0 or cluster.lim_limmag <= 1.0:
+                    # This is a very bad cluster, and should not be used
+                    bad_cluster = True
+                else:
+                    # Do the cluster processing
+                    bad_cluster = self._process_cluster(cluster)
 
                 if bad_cluster:
                     # This is a bad cluster and we can't continue
+                    self._reset_bad_values(cluster)
                     continue
 
                 if self.do_correct_zlambda and self.zlambda_corr is not None:
@@ -325,22 +342,22 @@ class ClusterRunner(object):
                 if self.do_lam_plusminus:
                     cluster_temp = cluster.copy()
 
-                    #cluster_temp.z = cluster.z_lambda - self.config.zlambda_epsilon
-                    #cluster_temp.update_z(cluster.z_lambda - self.config.zlambda_epsilon)
                     cluster_temp.redshift = cluster.z_lambda - self.config.zlambda_epsilon
                     lam_zmeps = cluster_temp.calc_richness(self.mask)
                     elambda_zmeps = cluster_temp.lambda_e
-                    #cluster_temp.z = cluster.z_lambda + self.config.zlambda_epsilon
-                    #cluster_temp.update_z(cluster.z_lambda + self.config.zlambda_epsilon)
                     cluster_temp.redshift = cluster.z_lambda + self.config.zlambda_epsilon
                     lam_zpeps = cluster_temp.calc_richness(self.mask)
                     elambda_zpeps = cluster_temp.lambda_e
 
-                    cluster.dlambda_dz = (np.log(lam_zpeps) - np.log(lam_zmeps)) / (2. * self.config.zlambda_epsilon)
-                    cluster.dlambda_dz2 = (np.log(lam_zpeps) + np.log(lam_zmeps) - 2.*np.log(cluster.Lambda)) / (self.config.zlambda_epsilon**2.)
+                    if (lam_zmeps > 0 and lam_zpeps > 0):
+                        # Only compute if these are valid
+                        # During training, when we use the seed redshifts,
+                        #  we could fall out of the good range for a cluster
+                        cluster.dlambda_dz = (np.log(lam_zpeps) - np.log(lam_zmeps)) / (2. * self.config.zlambda_epsilon)
+                        cluster.dlambda_dz2 = (np.log(lam_zpeps) + np.log(lam_zmeps) - 2.*np.log(cluster.Lambda)) / (self.config.zlambda_epsilon**2.)
 
-                    cluster.dlambdavar_dz = (elambda_zpeps**2. - elambda_zmeps**2.) / (2.*self.config.zlambda_epsilon)
-                    cluster.dlambdavar_dz2 = (elambda_zpeps**2. + elambda_zmeps**2. - 2.*cluster.Lambda_e**2.) / (self.config.zlambda_epsilon**2.)
+                        cluster.dlambdavar_dz = (elambda_zpeps**2. - elambda_zmeps**2.) / (2.*self.config.zlambda_epsilon)
+                        cluster.dlambdavar_dz2 = (elambda_zpeps**2. + elambda_zmeps**2. - 2.*cluster.Lambda_e**2.) / (self.config.zlambda_epsilon**2.)
 
                 # and record pfree if desired
                 if self.do_percolation_masking:
@@ -386,7 +403,7 @@ class ClusterRunner(object):
                     mem_temp = Catalog.zeros(memuse.size, dtype=self.config.member_dtype)
 
                     mem_temp.mem_match_id[:] = cluster.mem_match_id
-                    mem_temp.z[:] = cluster.z_lambda
+                    mem_temp.z[:] = cluster.redshift
                     mem_temp.ra[:] = cluster.neighbors.ra[memuse]
                     mem_temp.dec[:] = cluster.neighbors.dec[memuse]
                     mem_temp.r[:] = cluster.neighbors.r[memuse]
