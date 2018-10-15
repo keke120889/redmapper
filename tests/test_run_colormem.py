@@ -59,10 +59,11 @@ class RunColormemTestCase(unittest.TestCase):
         # Check that the files are there...
         self.assertTrue(os.path.isfile(config.zmemfile))
 
-        cat = fitsio.read(config.zmemfile, ext=1)
+        mem = fitsio.read(config.zmemfile, ext=1)
 
-        testing.assert_equal(cat.size, 29)
-        testing.assert_array_almost_equal(cat['pcol'][0:3], np.array([0.954438, 0.908371, 0.72123]))
+        testing.assert_equal(mem.size, 16)
+        testing.assert_array_almost_equal(mem['pcol'][0:3], np.array([0.948298, 0.838039, 0.883159]))
+        testing.assert_array_almost_equal(mem['z'][0:3], np.array([0.189565, 0.194009, 0.191081]))
 
     def setUp(self):
         self.test_dir = None
