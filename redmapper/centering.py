@@ -72,7 +72,6 @@ class CenteringBCG(Centering):
 class CenteringWcenZred(Centering):
 
     def find_center(self):
-
         # These are the galaxies considered as candidate centers
         use, = np.where((self.cluster.neighbors.r < self.cluster.r_lambda) &
                         (self.cluster.neighbors.pfree >= self.config.percolation_pbcg_cut) &
@@ -200,9 +199,10 @@ class CenteringWcenZred(Centering):
             self.q_miss = 1.0
 
             # Set the same as the input galaxy...
-            good = np.argmin(self.cluster.neighbors.r[use])
+            # We need this to be an array of length 1
+            good = np.atleast_1d(np.argmin(self.cluster.neighbors.r[use]))
 
-            maxind = use[good]
+            maxind = use[good[0]]
 
             Pcen = np.zeros(use.size)
             Qcen = np.zeros(use.size)
@@ -212,11 +212,14 @@ class CenteringWcenZred(Centering):
 
             Pcen_unnorm = np.zeros(use.size)
 
-            st = np.argsort(Pcen_basic)[::-1]
+            # Only consider centrals that have a non-zero probability
+            ok, = np.where(Pcen_basic > 0)
+
+            st = np.argsort(Pcen_basic[ok])[::-1]
             if st.size < self.config.percolation_maxcen:
-                good = st
+                good = ok[st]
             else:
-                good = st[0: self.config.percolation_maxcen]
+                good = ok[st[0: self.config.percolation_maxcen]]
 
             self.ngood = good.size
 
