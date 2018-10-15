@@ -230,7 +230,7 @@ class Configuration(object):
     zlambda_tol = ConfigField(default=0.0002, required=True)
     zlambda_topfrac = ConfigField(default=0.7, required=True)
     zlambda_epsilon = ConfigField(default=0.005, required=True)
-    zlambda_parab_step = ConfigField(default=0.002, required=True)
+    zlambda_parab_step = ConfigField(default=0.001, required=True)
 
     centerclass = ConfigField(default='CenteringBCG', required=True)
     wcen_rsoft = ConfigField(default=0.05, required=True)
@@ -297,10 +297,26 @@ class Configuration(object):
 
         # get galaxy file stats
         gal_stats = self._galfile_stats()
+        if (self.area is not None):
+            if self.depthfile is not None:
+                print("WARNING: You should not need to set area in the config file when you have a depth map.")
+            if (np.abs(self.area - gal_stats['area']) > 1e-3):
+                print("Config area is not equal to galaxy file area.  Using config area.")
+                gal_stats.pop('area')
+        else:
+            if self.depthfile is None and self.nside > 0 and self.hpix > 0:
+                raise RuntimeError("You must set a config file area if no depthfile is present and you are running a sub-region")
         self._set_vars_from_dict(gal_stats, check_none=True)
+
+        if self.limmag_catalog is None:
+            self.limmag_catalog = self.limmag_ref
 
         # Get wcen numbers if available
         self.set_wcen_vals()
+
+        # Set some defaults
+        if self.specfile_train is None:
+            self.specfile_train = self.specfile
 
         # Record the cluster dtype for convenience
         self.cluster_dtype = copy.copy(cluster_dtype_base)
@@ -337,8 +353,20 @@ class Configuration(object):
         # Finally, we can validate...
         self.validate()
 
+        # Checks ...
+        if self.maskfile is not None and self.mask_mode == 0:
+            raise ValueError("A maskfile is set, but mask_mode is 0 (no mask).  Assuming this is not intended.")
+
         # Now set the duplicatable config parameters...
         self.d = DuplicatableConfig(self)
+
+        # Finally, once everything is here, we can make paths
+        if not os.path.exists(self.outpath):
+            os.makedirs(self.outpath)
+        if not os.path.exists(os.path.join(self.outpath, self.plotpath)):
+            os.makedirs(os.path.join(self.outpath, self.plotpath))
+
+            
 
     def validate(self):
         """
