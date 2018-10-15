@@ -277,4 +277,170 @@ def get_subpixel_indices(galtable, hpix=None, border=0.0, nside=0):
 
     return indices
 
+class GalaxyCatalogMaker(object):
+    """
+    """
 
+    def __init__(self, outbase, info_dict, nside=32):
+
+        # Record values
+        self.outbase = outbase
+        self.nside = nside
+
+        # Check the info dict
+        self.lim_ref = info_dict['LIM_REF']
+        self.ref_ind = info_dict['REF_IND']
+        self.area = info_dict['AREA']
+        self.nmag = info_dict['NMAG']
+        self.mode = info_dict['MODE']
+        self.zeropoint = info_dict['ZP']
+        try:
+            self.b = info_dict['B']
+        except KeyError:
+            self.b = np.zeros(self.nmag)
+
+        try:
+            self.u_ind = info_dict['U_IND']
+        except KeyError:
+            self.u_ind = None
+        try:
+            self.g_ind = info_dict['G_IND']
+        except KeyError:
+            self.g_ind = None
+        try:
+            self.r_ind = info_dict['R_IND']
+        except KeyError:
+            self.r_ind = None
+        try:
+            self.i_ind = info_dict['I_IND']
+        except KeyError:
+            self.i_ind = None
+        try:
+            self.z_ind = info_dict['Z_IND']
+        except KeyError:
+            self.z_ind = None
+        try:
+            self.y_ind = info_dict['Y_IND']
+        except KeyError:
+            self.y_ind = None
+
+        self.filename = '%s_master_table.fit' % (self.outbase)
+
+        # Start the file
+        self.outpath = os.path.dirname(self.filename)
+        self.outbase_nopath = os.path.basename(self.outbase)
+
+        if not os.path.exists(self.outpath):
+            os.makedirs(self.outpath)
+
+        # create a table
+        self.ngals = np.zeros(hp.nside2npix(self.nside), dtype=np.int32)
+
+    def split_galaxies(self, gals):
+        """
+        """
+        self.append_galaxies(gals)
+        self.finalize_catalog()
+
+    def append_galaxies(self, gals):
+        """
+        """
+
+        theta = (90.0 - gals['dec']) * np.pi / 180.
+        phi = gals['ra'] * np.pi / 180.
+
+        ipring = hp.ang2pix(self.nside, theta, phi)
+
+        h, rev = esutil.stat.histogram(ipring, min=0, max=self.ngals.size-1, rev=True)
+
+        gdpix, = np.where(h > 0)
+        for pix in gdpix:
+            i1a = rev[rev[pix]: rev[pix + 1]]
+
+            fname = os.path.join(self.outpath, '%s_%07d.fit' % (self.outbase_nopath, pix))
+
+            if (self.ngals[pix] == 0) and (os.path.isfile(fname)):
+                raise RuntimeError("We think there are 0 galaxies in pixel %d, but the file exists." % (pix))
+
+            if self.ngals[pix] == 0:
+                # Create a new file
+                fitsio.write(fname, gals[i1a])
+            else:
+                fits = fitsio.FITS(fname, mode='rw')
+                fits[1].append(gals[i1a])
+                fits.close()
+
+            self.ngals[pix] += i1a.size
+
+    def finalize_catalog(self):
+        """
+        """
+
+        hpix, = np.where(self.ngals > 0)
+
+        filename_dtype = 'a%d' % (len(self.outbase_nopath) + 15)
+
+        dtype = [('nside', 'i2'),
+                 ('hpix', 'i4', hpix.size),
+                 ('ra_pix', 'f8', hpix.size),
+                 ('dec_pix', 'f8', hpix.size),
+                 ('ngals', 'i4', hpix.size),
+                 ('filenames', filename_dtype, hpix.size),
+                 ('lim_ref', 'f4'),
+                 ('ref_ind', 'i2'),
+                 ('area', 'f8'),
+                 ('nmag', 'i4'),
+                 ('mode', 'a10'),
+                 ('b', 'f8', self.nmag),
+                 ('zeropoint', 'f4')]
+        if self.u_ind is not None:
+            dtype.append(('u_ind', 'i2'))
+        if self.g_ind is not None:
+            dtype.append(('g_ind', 'i2'))
+        if self.r_ind is not None:
+            dtype.append(('r_ind', 'i2'))
+        if self.i_ind is not None:
+            dtype.append(('i_ind', 'i2'))
+        if self.z_ind is not None:
+            dtype.append(('z_ind', 'i2'))
+        if self.y_ind is not None:
+            dtype.append(('y_ind', 'i2'))
+
+        tab = Entry(np.zeros(1, dtype=dtype))
+
+        tab.nside = self.nside
+        tab.hpix = hpix
+
+        theta, phi = hp.pix2ang(self.nside, hpix)
+        tab.ra_pix = phi * 180. / np.pi
+        tab.dec_pix = 90.0 - theta * 180. / np.pi
+
+        tab.ngals = self.ngals[hpix]
+        for i, pix in enumerate(hpix):
+            tab.filenames[i] = '%s_%07d.fit' % (self.outbase_nopath, pix)
+        tab.lim_ref = self.lim_ref
+        tab.ref_ind = self.ref_ind
+        tab.area = self.area
+        tab.nmag = self.nmag
+        tab.mode = self.mode
+        tab.b = self.b
+        tab.zeropoint = self.zeropoint
+
+        if self.u_ind is not None:
+            tab.u_ind = self.u_ind
+        if self.g_ind is not None:
+            tab.g_ind = self.g_ind
+        if self.r_ind is not None:
+            tab.r_ind = self.r_ind
+        if self.i_ind is not None:
+            tab.i_ind = self.i_ind
+        if self.z_ind is not None:
+            tab.z_ind = self.z_ind
+        if self.y_ind is not None:
+            tab.y_ind = self.y_ind
+
+        hdr = fitsio.FITSHDR()
+        hdr['PIXELS'] = 1
+        hdr['FITS'] = 1
+
+        tab.to_fits_file(self.filename, header=hdr, clobber=True)
