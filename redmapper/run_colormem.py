@@ -56,6 +56,8 @@ class RunColormem(ClusterRunner):
                         (self.cat.z < self.config.zrange[1]))
         self.cat = self.cat[use]
 
+        self.cat.z_init = self.cat.z
+
         # need to insert red model and get colormodes...
         self.cat.add_fields([('redcolor', 'f4', self.config.nmag - 1)])
 
@@ -116,7 +118,7 @@ class RunColormem(ClusterRunner):
         """
         """
 
-        use, = np.where((self.cat.Lambda/self.cat.scaleval >= self.config.calib_colormem_minlambda) & (self.cat.scaleval > 0.0))
+        use, = np.where((self.cat.Lambda/self.cat.scaleval >= self.config.calib_colormem_minlambda) & (self.cat.scaleval > 0.0) & (self.cat.maskfrac < self.config.max_maskfrac))
         self.cat = self.cat[use]
 
         a, b = esutil.numpy_util.match(self.cat.mem_match_id, self.members.mem_match_id)
