@@ -279,7 +279,7 @@ class Configuration(object):
     percolation_memradius = ConfigField()
     percolation_memlum = ConfigField()
 
-    def __init__(self, configfile):
+    def __init__(self, configfile, outpath=None):
 
         self._reset_vars()
 
@@ -290,6 +290,9 @@ class Configuration(object):
         #for key in confdict:
         #    setattr(self, key, confdict[key])
         self._set_vars_from_dict(confdict)
+
+        if outpath is not None:
+            self.outpath = outpath
 
         # validate the galfile and refmag
         type(self).__dict__['galfile'].validate('galfile')
@@ -365,8 +368,6 @@ class Configuration(object):
             os.makedirs(self.outpath)
         if not os.path.exists(os.path.join(self.outpath, self.plotpath)):
             os.makedirs(os.path.join(self.outpath, self.plotpath))
-
-            
 
     def validate(self):
         """
@@ -548,3 +549,45 @@ class Configuration(object):
             pars.append('%s_%s.%s' % (self.d.outbase, redmapper_name, filetype))
             return os.path.join(*pars)
 
+    def check_files(self, check_zredfile=False, check_bkgfile=False, check_bkgfile_components=False,
+                    check_parfile=False, check_zlambdafile=False):
+        if check_zredfile:
+            if not os.path.isfile(self.zredfile):
+                raise ValueError("zredfile %s not found." % (self.zredfile))
+
+        if check_bkgfile:
+            if not os.path.isfile(self.bkgfile):
+                raise ValueError("bkgfile %s not found." % (self.bkgfile))
+
+        if check_bkgfile_components:
+            with fitsio.FITS(self.bkgfile) as fits:
+                if 'CHISQBKG' not in [ext.get_extname() for ext in fits[1: ]]:
+                    raise ValueError("bkgfile %s does not have CHISQBKG extension." % (self.bkgfile))
+                if 'ZREDBKG' not in [ext.get_extname() for ext in fits[1: ]]:
+                    raise ValueError("bkgfile %s does not have ZREDBKG extension." % (self.bkgfile))
+
+        if check_parfile:
+            if not os.path.isfile(self.parfile):
+                raise ValueError("parfile %s not found." % (self.parfile))
+
+        if check_zlambdafile:
+            if not os.path.isfile(self.zlambdafile):
+                raise ValueError("zlambdafile %s not found." % (self.zlambdafile))
+
+    def output_yaml(self, filename):
+        out_dict = {}
+        for key in type(self).__dict__:
+            if isinstance(type(self).__dict__[key], ConfigField):
+                if type(self).__dict__[key]._isArray:
+                    # Convert all elements to python types and make a list
+                    out_dict[key] = np.ndarray.tolist(type(self).__dict__[key]._value)
+                else:
+                    # Try to use numpy to convert to scalar; if it doesn't work then
+                    # it's not numpy and we can use the value directly
+                    try:
+                        out_dict[key] = np.asscalar(type(self).__dict__[key]._value)
+                    except (ValueError, AttributeError):
+                        out_dict[key] = type(self).__dict__[key]._value
+
+        with open(filename, 'w') as f:
+            yaml.dump(out_dict, stream=f)
