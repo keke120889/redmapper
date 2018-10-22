@@ -63,9 +63,9 @@ class ZLambdaCalTestCase(unittest.TestCase):
                                                                              1.77075050e-03]))
         testing.assert_almost_equal(pars[0]['scatter_true'][:, 2], np.array([7.67152073e-07,
                                                                              1.73576328e-03]))
-        testing.assert_almost_equal(pars[0]['zred_uncorr'], np.array([0.09942016,
-                                                                      0.14075805,
-                                                                      0.2043011]))
+        testing.assert_almost_equal(pars[0]['zred_uncorr'], np.array([0.09942066,
+                                                                      0.14076371,
+                                                                      0.20428292]))
 
     def setUp(self):
         self.test_dir = None

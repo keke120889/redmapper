@@ -53,7 +53,7 @@ class FitterTestCase(unittest.TestCase):
         p0 = np.array([1.0, 1.1, 1.2])
         medpars = mzfitter.fit(p0)
 
-        testing.assert_almost_equal(medpars, [0.94604157, 1.09283561, 1.27056759], 5)
+        testing.assert_almost_equal(medpars, [0.94603754, 1.09285003, 1.27060679], 5)
 
         # Test median scatter fit
         spl = CubicSpline(nodes, medpars)
@@ -63,7 +63,7 @@ class FitterTestCase(unittest.TestCase):
         p0 = np.array([0.05, 0.05, 0.05])
         medscatpars = mzfitter.fit(p0)
 
-        testing.assert_almost_equal(medscatpars, [0.02410464, 0.02747469, 0.03136519], 5)
+        testing.assert_almost_equal(medscatpars, [0.02407928, 0.02745547, 0.03131481], 5)
 
         # And the red sequence fitter part
         rsfitter = RedSequenceFitter(nodes, fitdata['Z'], fitdata['GALCOLOR'], fitdata['GALCOLOR_ERR'], use_scatter_prior=False)
@@ -89,7 +89,7 @@ class FitterTestCase(unittest.TestCase):
         slopepars, = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_slope=True)
 
         # These values seem reasonable, but this is just a toy test
-        testing.assert_almost_equal(slopepars, [-0.00832335, -0.01538893, -0.02370383], 5)
+        testing.assert_almost_equal(slopepars, [-0.00830984,-0.01538641, -0.02372566], 5)
 
         # Fourth, combined all 3
         # this test is a lot slower than the others, but still reasonable.
@@ -119,15 +119,15 @@ class FitterTestCase(unittest.TestCase):
                                      trunc=trunc)
         meanpars3, = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_mean=True)
 
-        testing.assert_almost_equal(meanpars3, [0.93794242, 1.0925605, 1.27758869], 5)
+        testing.assert_almost_equal(meanpars3, [0.93789514, 1.09257947, 1.27767928], 5)
 
         # Finally, refit with scatter prior...
         rsfitter._use_scatter_prior = True
         meanpars3, slopepars3, scatpars3 = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_mean=True, fit_slope=True, fit_scatter=True)
 
-        testing.assert_almost_equal(meanpars3, [0.93837219, 1.09275066, 1.27600605], 5)
-        testing.assert_almost_equal(slopepars3, [-0.01066206, -0.01293863, -0.01642298], 5)
-        testing.assert_almost_equal(scatpars3, [0.03457, 0.04055158, 0.03840162], 5)
+        testing.assert_almost_equal(meanpars3, [0.93834492, 1.09276382, 1.27604319], 5)
+        testing.assert_almost_equal(slopepars3, [-0.01054824, -0.01296713, -0.01605626], 5)
+        testing.assert_almost_equal(scatpars3, [0.03453208, 0.04054536, 0.03832689], 5)
 
     def test_off_diagonal_fitter(self):
         file_path = 'data_for_tests'
@@ -159,7 +159,7 @@ class FitterTestCase(unittest.TestCase):
         pars = odfitter.fit(p0, full_covmats=full_covmats)
 
         testing.assert_almost_equal(pars, fitdata['RVALS'][0], 2)
-        testing.assert_almost_equal(pars, [0.59492937, 0.65473828], 5)
+        testing.assert_almost_equal(pars, [0.594956, 0.65475681], 5)
 
     def test_red_sequence_fitter_with_probs(self):
         pass
@@ -189,12 +189,12 @@ class FitterTestCase(unittest.TestCase):
         p0_bkg = np.zeros(fitdata['SNODES'][0].size) + 0.01
         pars_mean, = corrfitter.fit(p0_mean, p0_slope, p0_r, p0_bkg, fit_mean=True)
 
-        testing.assert_almost_equal(pars_mean, np.array([ 0.00483058, 0.00160791, -0.00020643]), 5)
+        testing.assert_almost_equal(pars_mean, np.array([0.00484127, 0.00159642, -0.00019032]), 5)
 
         p0_mean = pars_mean
         pars_r, = corrfitter.fit(p0_mean, p0_slope, p0_r, p0_bkg, fit_r=True)
 
-        testing.assert_almost_equal(pars_r, np.array([0.77331453, 0.40379796]), 5)
+        testing.assert_almost_equal(pars_r, np.array([0.7733483, 0.40378139]), 5)
 
         p0_r = pars_r
         pars_bkg, = corrfitter.fit(p0_mean, p0_slope, p0_r, p0_bkg, fit_bkg=True)
