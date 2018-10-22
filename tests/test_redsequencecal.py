@@ -50,16 +50,16 @@ class SelectRedSequenceCalTestCase(unittest.TestCase):
 
         # Read in the pars and check numbers
         pars = fitsio.read(config.parfile, ext=1)
-        testing.assert_almost_equal(pars[0]['pivotmag'], np.array([17.11361885, 18.58653641]), 5)
+        testing.assert_almost_equal(pars[0]['pivotmag'], np.array([17.11361885, 18.58653641]), 4)
         testing.assert_almost_equal(pars[0]['medcol'], np.array([[1.8905431, 0.92167693, 0.40061119, 0.33523971],
-                                                                 [2.00397801, 1.23729753, 0.47771141, 0.32697698]]), 5)
-        testing.assert_almost_equal(pars[0]['c01'], np.array([0.92372358, 1.07899547, 1.23832214]), 5)
-        testing.assert_almost_equal(pars[0]['slope01'], np.array([-0.00438043, -0.02314976]), 5)
+                                                                 [2.00397801, 1.23729753, 0.47771141, 0.32697698]]), 4)
+        testing.assert_almost_equal(pars[0]['c01'], np.array([0.92372358, 1.07899547, 1.23832214]), 4)
+        testing.assert_almost_equal(pars[0]['slope01'], np.array([-0.00438043, -0.02314976]), 4)
         testing.assert_almost_equal(pars[0]['covmat_amp'][1: 3, 1: 3, :],
                                     np.array([[[0.00134618, 0.00356992],
                                                [-0.00014466, 0.00035207]],
                                               [[-0.00014466, 0.00035207],
-                                               [0.00032816, 0.00047648]]]), 5)
+                                               [0.00032816, 0.00047648]]]), 4)
 
     def setUp(self):
         self.test_dir = None

@@ -20,7 +20,7 @@ class MedZFitter(object):
         """
         # add bounds if we need it...
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
         return pars
 
@@ -165,7 +165,7 @@ class RedSequenceFitter(object):
         if not self._fit_scatter and self._trunc is not None:
             self._phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
         retval = []
         if self._fit_mean:
@@ -299,7 +299,7 @@ class RedSequenceOffDiagonalFitter(object):
 
         self._full_covmats = full_covmats
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
         return pars
 
@@ -460,7 +460,7 @@ class CorrectionFitter(object):
             self._gbkg = np.clip(spl(self._redshifts), 1e-10, None)
             self._gci1 = (1. / np.sqrt(2. * np.pi * self._gbkg)) * np.exp(-self._dzs**2. / (2. * self._gbkg))
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
         retval = []
         if self._fit_mean:
@@ -556,7 +556,7 @@ class EcgmmFitter(object):
         else:
             self._bounds = bounds
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)  ## FIXME
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
         wt = np.array([pars[0], 1.0 - pars[0]])
         mu = pars[1:3] - offset
