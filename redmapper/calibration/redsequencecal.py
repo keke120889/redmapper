@@ -1,4 +1,5 @@
 from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
 
 import os
 import numpy as np
@@ -867,7 +868,7 @@ class RedSequenceCalibrator(object):
 
                 barr = np.zeros(ntrial)
                 for t in xrange(ntrial):
-                    r = np.random.choice(dzuse[use], replace=True)
+                    r = np.random.choice(dzuse[use], size=use.size, replace=True)
                     barr[t] = np.median(r)
 
                 # Error on median as determined from bootstrap resampling
