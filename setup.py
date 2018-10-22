@@ -11,6 +11,12 @@ with open('LICENSE') as f:
 
 exec(open('redmapper/_version.py').read())
 
+scripts = ['bin/redmapper_run_zred_pixel.py',
+           'bin/redmapper_run_redmapper_pixel.py',
+           'bin/redmapper_batch.py',
+           'bin/redmapper_make_zred_bkg.py',
+           'bin/redmapper_calibrate.py']
+
 include_dirs = [numpy.get_include()]
 
 ext_modules=[]
@@ -35,7 +41,6 @@ chisq_dist_module = Extension('redmapper.chisq_dist._chisq_dist_pywrap',
                               sources=chisq_dist_sources,
                               include_dirs=include_dirs)
 ext_modules.append(chisq_dist_module)
-                              
 
 # data files
 initcolorfiles = glob.glob('data/initcolors/*.fit')
@@ -61,6 +66,7 @@ setup(
     url='https://github.com/erykoff/redmapper',
     license=license,
     ext_modules=ext_modules,
+    scripts=scripts,
     install_requires=['numpy'],
     packages=find_packages(exclude=('tests', 'docs')),
     data_files=[('redmapper/data/initcolors', initcolorfiles),
