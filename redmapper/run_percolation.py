@@ -1,5 +1,6 @@
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
+from functools import reduce
 
 import fitsio
 import numpy as np
@@ -95,14 +96,16 @@ class RunPercolation(ClusterRunner):
         self.do_pz = True
 
         self.use_memradius = False
-        if self.config.percolation_memradius > 1.0:
+        if (self.config.percolation_memradius is not None and
+            self.config.percolation_memradius > 1.0):
             self.use_memradius = True
 
         self.use_memlum = False
         if (self.config.lval_reference > 0.1):
             self.limlum = self.limlum if self.limlum > 0.1 else 0.1
 
-        if (self.config.percolation_memlum > 0.0 and
+        if (self.config.percolation_memlum is not None and
+            self.config.percolation_memlum > 0.0 and
             self.config.percolation_memlum < self.config.lval_reference):
             if self.config.percolation_memlum < self.limlum:
                 self.limlum = self.config.percolation_memlum
