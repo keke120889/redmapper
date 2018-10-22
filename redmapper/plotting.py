@@ -126,6 +126,8 @@ class SpecPlot(object):
 
         fig.subplots_adjust(hspace=0.0)
 
+        fig.tight_layout()
+
         fig.savefig(self.filename)
         plt.close(fig)
 
