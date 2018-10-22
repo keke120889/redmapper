@@ -69,11 +69,11 @@ class RedmapperRun(object):
             self.config.seedfile = seedfile
         pool = Pool(processes=self.config.calib_run_nproc)
         if self.percolation_only:
-            #retvals = pool.map(self._percolation_only_worker, pixels_split, chunksize=1)
-            retvals = map(self._percolation_only_worker, pixels_split)
+            retvals = pool.map(self._percolation_only_worker, pixels_split, chunksize=1)
+            #retvals = list(map(self._percolation_only_worker, pixels_split))
         else:
-            #retvals = pool.map(self._worker, pixels_split, chunksize=1)
-            retvals = map(self._worker, pixels_split)
+            retvals = pool.map(self._worker, pixels_split, chunksize=1)
+            #retvals = list(map(self._worker, pixels_split))
         pool.close()
         pool.join()
 
