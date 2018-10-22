@@ -688,3 +688,4 @@ def read_members(catfile):
         raise RuntimeError("Could not find member file %s" % (memfile))
 
     return GalaxyCatalog.from_fits_file(memfile)
+
