@@ -25,7 +25,7 @@ class WcenFgFitter(object):
         """
         """
 
-        pars = scipy.optimize.fmin(self, p0, disp=False)
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
 
         return pars
 
@@ -59,7 +59,7 @@ class WcenCFitter(object):
         """
         """
 
-        pars = scipy.optimize.fmin(self, p0, disp=False)
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
 
         return pars
 
@@ -93,7 +93,7 @@ class WcenCwFitter(object):
         """
         """
 
-        pars = scipy.optimize.fmin(self, p0, disp=False)
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
 
         return pars
 
