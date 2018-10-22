@@ -52,17 +52,17 @@ class CenteringCalibratorTestCase(unittest.TestCase):
         vals = config._wcen_vals()
         config._set_vars_from_dict(vals)
 
-        testing.assert_almost_equal(config.wcen_Delta0, -1.41107068614, 5)
-        testing.assert_almost_equal(config.wcen_Delta1, -0.324385870342, 5)
-        testing.assert_almost_equal(config.wcen_sigma_m, 0.3654790486, 5)
-        testing.assert_almost_equal(config.wcen_pivot, 30.0, 5)
+        testing.assert_almost_equal(config.wcen_Delta0, -1.41107068614, 4)
+        testing.assert_almost_equal(config.wcen_Delta1, -0.324385870342, 4)
+        testing.assert_almost_equal(config.wcen_sigma_m, 0.3654790486, 4)
+        testing.assert_almost_equal(config.wcen_pivot, 30.0, 4)
 
-        testing.assert_almost_equal(config.lnw_fg_mean, -0.269133136174, 5)
-        testing.assert_almost_equal(config.lnw_fg_sigma, 0.295286695144, 5)
-        testing.assert_almost_equal(config.lnw_sat_mean, 0.0273435015217, 5)
-        testing.assert_almost_equal(config.lnw_sat_sigma, 0.273395687497, 5)
-        testing.assert_almost_equal(config.lnw_cen_mean, 0.219192726372, 5)
-        testing.assert_almost_equal(config.lnw_cen_sigma, 0.136759762564, 5)
+        testing.assert_almost_equal(config.lnw_fg_mean, -0.269133136174, 4)
+        testing.assert_almost_equal(config.lnw_fg_sigma, 0.295286695144, 4)
+        testing.assert_almost_equal(config.lnw_sat_mean, 0.0273435015217, 4)
+        testing.assert_almost_equal(config.lnw_sat_sigma, 0.273395687497, 4)
+        testing.assert_almost_equal(config.lnw_cen_mean, 0.219192726372, 4)
+        testing.assert_almost_equal(config.lnw_cen_sigma, 0.136759762564, 4)
 
     def setUp(self):
         self.test_dir = None
