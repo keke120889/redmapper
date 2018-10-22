@@ -4,6 +4,7 @@ import os
 import numpy as np
 import fitsio
 import copy
+import re
 
 from ..configuration import Configuration
 from ..color_background import ColorBackgroundGenerator
@@ -143,12 +144,109 @@ class RedmapperCalibrator(object):
         calib_iteration_final = RedmapperCalibrationIterationFinal(self.config)
         calib_iteration_final.run(self.config.calib_niter)
 
-        # Output a configuration file (later)
+        # Output a configuration file
+        new_files = self.output_configuration()
 
-        # Generate a full background (later)
+        # Generate a full background
+        if new_files:
+            # Note that the config file has been updated!
+            print("Running full background...")
+
+            self.config.d.hpix = 0
+            self.config.d.nside = 0
+
+            bkg_gen = BackgroundGenerator(self.config)
+            bkg_gen.run(deepmode=True)
+            print("Remember to run zreds and zred background before running the full cluster finder.")
+        else:
+            print("Calibration done on full footprint, so background and zreds are already available.")
 
         # Run halos if desired (later)
 
+    def output_configuration(self):
+        """
+        """
+
+        # Compute the path that the cluster finder will be run in
+
+        calpath = os.path.abspath(self.config.outpath)
+        calparent = os.path.normpath(os.path.join(calpath, os.pardir))
+        calpath_only = os.path.basename(os.path.normpath(calpath))
+
+        if calpath_only == 'cal':
+            runpath_only = 'run'
+        elif 'cal_' in calpath_only:
+            runpath_only = calpath_only.replace('cal_', 'run_')
+        elif '_cal' in calpath_only:
+            runpath_only = calpath_only.replace('_cal', '_run')
+        else:
+            runpath_only = '%s_run' % (calpath_only)
+
+        runpath = os.path.join(calparent, runpath_only)
+
+        if not os.path.isdir(runpath):
+            os.makedirs(runpath)
+
+        # Make sure we have absolute paths for everything that is defined
+        self.config.galfile = os.path.abspath(self.config.galfile)
+        self.config.specfile = os.path.abspath(self.config.specfile)
+
+        outbase_cal = self.config.outbase
+
+        # Compute the string to go with the final iteration
+        iterstr = '%s_iter%d' % (outbase_cal, self.config.calib_niter)
+
+        # Compute the new outbase
+        if '_cal' in outbase_cal:
+            outbase_run = self.config.outbase.replace('_cal', '_run')
+        else:
+            outbase_run = '%s_run' % (outbase_cal)
+
+        self.config.outbase = outbase_run
+
+        self.config.parfile = os.path.abspath(os.path.join(self.config.outpath,
+                                                           '%s_pars.fit' % (iterstr)))
+        # If we calibrated on the full survey, then we have the zredfile already
+        if self.config.nside == 0:
+            self.config.zredfile = os.path.abspath(os.path.join(calpath,
+                                                                '%s' % (iterstr),
+                                                                '%s_zreds_master_table.fit' % (iterstr)))
+
+            self.config.bkgfile = os.path.abspath(os.path.join(calpath,
+                                                               '%s_bkg.fit' % (iterstr)))
+            new_files = False
+        else:
+            galfile_base = os.path.basename(self.config.galfile)
+            zredfile = galfile_base.replace('_master', '_zreds_master')
+            self.config.zredfile = os.path.abspath(os.path.join(runpath,
+                                                                'zreds',
+                                                                zredfile))
+
+            self.config.bkgfile = os.path.abspath(os.path.join(runpath, '%s_bkg.fit' % (outbase_run)))
+            new_files = True
+
+        self.config.zlambdafile = os.path.abspath(os.path.join(calpath, '%s_zlambda.fit' % (iterstr)))
+        self.config.wcenfile = os.path.abspath(os.path.join(calpath, '%s_wcen.fit' % (iterstr)))
+        self.config.bkgfile_color = os.path.abspath(self.config.bkgfile_color)
+        self.config.catfile = None
+        self.config.maskgalfile = os.path.abspath(self.config.maskgalfile)
+        self.config.redgalfile = os.path.abspath(self.config.redgalfile)
+        self.config.redgalmodelfile = os.path.abspath(self.config.redgalmodelfile)
+        self.config.seedfile = os.path.abspath(self.config.seedfile)
+        self.config.zmemfile = None
+
+        # and reset the running values
+        self.config.nside = 0
+        self.config.hpix = 0
+        self.config.border = 0.0
+
+        # And finally, if we have a depth map we don't need the area...
+        if os.path.isfile(self.config.depthfile):
+            self.config.area = None
+
+        self.config.output_yaml(os.path.join(runpath, 'run_default.yml'))
+
+        return new_files
 
 class RedmapperCalibrationIteration(object):
     """
