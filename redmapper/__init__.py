@@ -37,3 +37,4 @@ from .depth_fitting import DepthLim
 from .plotting import SpecPlot
 from .utilities import read_members
 from . import calibration
+from . import pipeline
