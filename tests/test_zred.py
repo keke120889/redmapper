@@ -94,7 +94,7 @@ class ZredTestCase(unittest.TestCase):
         outfile = os.path.join(self.test_dir, 'test_zred_out.fits')
 
         tab = fitsio.read(config.galfile, ext=1)
-        galfile = os.path.join(os.path.dirname(config.galfile), tab[0]['FILENAMES'][0])
+        galfile = os.path.join(os.path.dirname(config.galfile), tab[0]['FILENAMES'][0].decode())
 
         zredRuncat = ZredRunCatalog(config)
 
