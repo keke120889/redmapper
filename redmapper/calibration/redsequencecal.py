@@ -181,7 +181,7 @@ class RedSequenceCalibrator(object):
         self._calc_zreds(gals, do_correction=True)
 
         # And want to save galaxies and zreds
-        zredfile = self._galfile.rstrip('.fit') + '_zreds.fit'
+        zredfile = os.path.join(self.config.outpath, os.path.basename(self._galfile.rstrip('.fit') + '_zreds.fit'))
         gals.to_fits_file(zredfile)
 
         # Make diagnostic plots
