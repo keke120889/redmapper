@@ -41,11 +41,13 @@ class RunPercolation(ClusterRunner):
         self.read_zreds = True
         self.zreds_required = True
         self.zredbkg_required = True
+        self.cutgals_bkgrange = True
+        self.cutgals_chisqmax = False
         self.filetype = 'final'
 
     def _more_setup(self, *args, **kwargs):
 
-        print("%d: Percolation using catfile: %s" % (self.config.d.hpix, self.config.catfile))
+        self.config.logger.info("%d: Percolation using catfile: %s" % (self.config.d.hpix, self.config.catfile))
 
         # read in the catalog...
         self.cat = ClusterCatalog.from_catfile(self.config.catfile,
