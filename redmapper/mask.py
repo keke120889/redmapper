@@ -279,32 +279,49 @@ class HPMask(Mask):
 
         # if we have a sub-region of the sky, cut down the mask to save memory
         if config.d.hpix > 0:
-            border = np.radians(config.border) + hp.nside2resol(nside_mask)
-            theta, phi = hp.pix2ang(config.d.nside, config.d.hpix)
-            radius = np.sqrt(2) * (hp.nside2resol(config.d.nside)/2. + border)
-            pixint = hp.query_disc(nside_mask, hp.ang2vec(theta, phi),
-                                   radius, inclusive=False)
-            suba, subb = esutil.numpy_util.match(pixint, hpix_ring)
-            hpix_ring = hpix_ring[subb]
-            muse = subb
+            # Choose an arbitrary nside to do the boundary measurements
+            nside_cutref = np.clip(config.d.nside * 4, 256, nside_mask)
+
+            # Find out which cutref pixels are inside the main pixel
+            theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
+            ipring_coarse = hp.ang2pix(config.d.nside, theta, phi)
+            inhpix, = np.where(ipring_coarse == config.d.hpix)
+
+            # If there is a border, we need to find the boundary pixels
+            if config.border > 0.0:
+                boundaries = hp.boundaries(config.d.nside, config.d.hpix, step=nside_cutref/config.d.nside)
+                # These are all the pixels that touch the boundary
+                for i in xrange(boundaries.shape[1]):
+                    pixint = hp.query_disc(nside_cutref, boundaries[:, i],
+                                           np.radians(config.border), inclusive=True, fact=8)
+                    inhpix = np.append(inhpix, pixint)
+                # Need to uniqify here because of overlapping pixels
+                inhpix = np.unique(inhpix)
+
+            # And now choose just those mask pixels that are in the inhpix region
+            theta, phi = hp.pix2ang(nside_mask, hpix_ring)
+            ipring = hp.ang2pix(nside_cutref, theta, phi)
+
+            _, muse = esutil.numpy_util.match(inhpix, ipring)
         else:
             muse = np.arange(hpix_ring.size, dtype='i4')
 
-        offset, ntot = np.min(hpix_ring)-1, np.max(hpix_ring)-np.min(hpix_ring)+3
+        offset = np.min(hpix_ring[muse]) - 1
+        ntot = np.max(hpix_ring[muse]) - np.min(hpix_ring[muse]) + 3
+
         self.nside = nside_mask
         self.offset = offset
         self.npix = ntot
 
-        #ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
-        self.fracgood = np.zeros(ntot,dtype='f4')
+        self.fracgood = np.zeros(ntot, dtype='f4')
 
         # check if we have a fracgood in the input maskinfo
         try:
             self.fracgood_float = 1
-            self.fracgood[hpix_ring-offset] = maskinfo[muse].fracgood
+            self.fracgood[hpix_ring[muse] - offset] = maskinfo.fracgood[muse]
         except AttributeError:
             self.fracgood_float = 0
-            self.fracgood[hpix_ring-offset] = 1
+            self.fracgood[hpix_ring[muse] - offset] = 1
         super(HPMask, self).__init__(config)
 
     def compute_radmask(self, ra, dec):
