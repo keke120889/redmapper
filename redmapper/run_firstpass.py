@@ -40,6 +40,8 @@ class RunFirstPass(ClusterRunner):
 
         self.read_zreds = True
         self.zreds_required = False
+        self.cutgals_bkgrange = True
+        self.cutgals_chisqmax = True
         self.specmode = specmode
         if specmode:
             self.filetype = 'firstpass_spec'
@@ -54,17 +56,18 @@ class RunFirstPass(ClusterRunner):
         self.keepz = kwargs.pop('keepz', False)
 
         # Check if there's a seedfile
-        if os.path.isfile(self.config.seedfile):
-            print("%d: Firstpass using seedfile: %s" % (self.config.d.hpix, self.config.seedfile))
+        if self.config.seedfile is not None and os.path.isfile(self.config.seedfile):
+            self.config.logger.info("%d: Firstpass using seedfile: %s" % (self.config.d.hpix, self.config.seedfile))
             incat = Catalog.from_fits_file(self.config.seedfile)
         else:
             if self.specmode:
                 raise RuntimeError("Must have config.seedfile for run_firstpass in specmode.")
             elif not self.did_read_zreds:
                 raise RuntimeError("Must have config.seedfile for run_firstpass with no zreds.")
-            print("%d: Firstpass using zreds as input" % (self.config.d.hpix))
+            self.config.logger.info("%d: Firstpass using zreds as input" % (self.config.d.hpix))
 
         if incat is not None:
+            # We have an input catalog
             # generate a cluster catalog from incat
             self.cat = ClusterCatalog.zeros(incat.size,
                                             zredstr=self.zredstr,
@@ -82,6 +85,7 @@ class RunFirstPass(ClusterRunner):
             self.cat.refmag_err = incat.refmag_err
             self.cat.zred = incat.zred
             self.cat.zred_e = incat.zred_e
+            self.cat.zred_chisq = incat.zred_chisq
             self.cat.chisq = incat.zred_chisq
             self.cat.ebv_mean = incat.ebv
             self.cat.z_spec_init = incat.zspec
@@ -97,6 +101,7 @@ class RunFirstPass(ClusterRunner):
                             (self.cat.zred <= self.config.zrange[1]))
             self.cat = self.cat[use]
         else:
+            # We do not have an input catalog
             # we must not have a seedfile, and did_read_zreds
             # so generate a cluster catalog from self.gals
 
@@ -108,7 +113,7 @@ class RunFirstPass(ClusterRunner):
                 return
 
             mstar = self.zredstr.mstar(self.gals.zred[use])
-            mlim = mstars - 2.5 * np.log10(self.config.lval_reference)
+            mlim = mstar - 2.5 * np.log10(self.config.lval_reference)
 
             good, = np.where(self.gals.refmag[use] < mlim)
 
@@ -130,10 +135,11 @@ class RunFirstPass(ClusterRunner):
             self.cat.refmag_err = self.gals.refmag_err[use[good]]
             self.cat.zred = self.gals.zred[use[good]]
             self.cat.zred_e = self.gals.zred_e[use[good]]
+            self.cat.zred_chisq = self.gals.chisq[use[good]]
             self.cat.chisq = self.gals.chisq[use[good]]
 
-            self.cat.z_init = self.gals.zred
-            self.cat.z = self.gals.zred
+            self.cat.z_init = self.cat.zred
+            self.cat.z = self.cat.zred
 
             # self.match_cat_to_spectra()
 
