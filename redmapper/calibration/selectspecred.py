@@ -61,7 +61,7 @@ class SelectSpecRedGalaxies(object):
         gals.add_fields([('z', 'f4')])
         gals.z = spec[i0].z
 
-        print("Calibrating with %d galaxies with spectra in pixel %d" % (gals.size, self.config.d.hpix))
+        self.config.logger.info("Calibrating with %d galaxies with spectra in pixel %d" % (gals.size, self.config.d.hpix))
 
         # Set the redshift range
         zrange = self.config.zrange_cushioned
@@ -95,7 +95,7 @@ class SelectSpecRedGalaxies(object):
         for m in xrange(nmodes):
             j = self.config.calib_colormem_colormodes[m]
 
-            print("Working on color %d" % (j))
+            self.config.logger.info("Working on color %d" % (j))
 
             # Get the template index...
             try:
