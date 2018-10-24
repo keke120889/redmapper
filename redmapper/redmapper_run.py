@@ -58,7 +58,7 @@ class RedmapperRun(object):
 
         nside_split, pixels_split = self._get_pixel_splits()
 
-        print("Running on %d pixels" % (len(pixels_split)))
+        self.config.logger.info("Running on %d pixels" % (len(pixels_split)))
 
         # run each individual one
         self.config.d.nside = nside_split
@@ -253,7 +253,7 @@ class RedmapperRun(object):
 
     def _worker(self, hpix):
 
-        print("Running on pixel %d" % (hpix))
+        self.config.logger.info("Running on pixel %d" % (hpix))
 
         # Not sure what to do with cosmo...
         config = self.config.copy()
@@ -272,7 +272,7 @@ class RedmapperRun(object):
             firstpass.run(keepz=self.keepz)
             firstpass.output(savemembers=False, withversion=False, clobber=True)
         else:
-            print("Firstpass file %s already present.  Skipping..." % (firstpass.filename))
+            self.config.logger.info("Firstpass file %s already present.  Skipping..." % (firstpass.filename))
 
         config.catfile = firstpass.filename
 
@@ -282,7 +282,7 @@ class RedmapperRun(object):
             like.run(keepz=self.keepz)
             like.output(savemembers=False, withversion=False, clobber=True)
         else:
-            print("Likelihood file %s already present.  Skipping..." % (like.filename))
+            self.config.logger.info("Likelihood file %s already present.  Skipping..." % (like.filename))
 
         config.catfile = like.filename
 
@@ -292,7 +292,7 @@ class RedmapperRun(object):
             perc.run(keepz=self.keepz)
             perc.output(savemembers=True, withversion=False, clobber=True)
         else:
-            print("Percolation file %s already present.  Skipping..." % (perc.filename))
+            self.config.logger.info("Percolation file %s already present.  Skipping..." % (perc.filename))
 
         return (hpix, firstpass.filename, like.filename, perc.filename)
 
