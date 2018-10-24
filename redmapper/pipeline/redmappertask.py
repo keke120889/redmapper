@@ -6,6 +6,9 @@ import glob
 
 from ..configuration import Configuration
 from ..utilities import make_lockfile
+from ..run_firstpass import RunFirstPass
+from ..run_likelihoods import RunLikelihoods
+from ..run_percolation import RunPercolation
 
 class RunRedmapperPixelTask(object):
     """
@@ -44,9 +47,10 @@ class RunRedmapperPixelTask(object):
         self.config.d.hpix = self.pixel
         self.config.d.nside = self.nside
         self.config.d.outbase = '%s_%05d' % (self.config.outbase, self.pixel)
-        self.config.outpath = self.path
 
         # Do the run
+
+        self.config.logger.info("Running redMaPPer on pixel %d" % (self.pixel))
 
         firstpass = RunFirstPass(self.config)
 
@@ -54,25 +58,25 @@ class RunRedmapperPixelTask(object):
             firstpass.run()
             firstpass.output(savemembers=False, withversion=False)
         else:
-            print("Firstpass file %s already present.  Skipping..." % (firstpass.filename))
+            self.config.logger.info("Firstpass file %s already present.  Skipping..." % (firstpass.filename))
 
         self.config.catfile = firstpass.filename
 
-        like = RunLikelihoods(config)
+        like = RunLikelihoods(self.config)
 
         if not os.path.isfile(like.filename):
             like.run()
             like.output(savemembers=False, withversion=False)
         else:
-            print("Likelihood file %s already present.  Skipping..." % (like.filename))
+            self.config.logger.info("Likelihood file %s already present.  Skipping..." % (like.filename))
 
         self.config.catfile = like.filename
 
-        perc = RunPercolation(config)
+        perc = RunPercolation(self.config)
 
         if not os.path.isfile(perc.filename):
             perc.run()
             perc.output(savemembers=True, withversion=False)
         else:
-            print("Percolation file %s already present.  Skipping..." % (perc.filename))
+            self.config.logger.info("Percolation file %s already present.  Skipping..." % (perc.filename))
 
