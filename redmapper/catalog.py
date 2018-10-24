@@ -2,7 +2,6 @@ import fitsio
 import esutil as eu
 import numpy as np
 import itertools
-from numpy.lib.recfunctions import merge_arrays
 
 
 class DataObject(object):
@@ -25,9 +24,8 @@ class DataObject(object):
         if len(arrays) == 1:
             self._ndarray = arrays[0]
         else:
-            self._ndarray = merge_arrays(arrays, flatten=True)
-
-
+            #self._ndarray = merge_arrays(arrays, flatten=True)
+            self._ndarray = self._merge_arrays(arrays)
 
     @classmethod
     def from_fits_file(cls, filename, ext=1, rows=None):
@@ -80,7 +78,8 @@ class DataObject(object):
     def add_fields(self, newdtype):
         array = np.zeros(self._ndarray.size, newdtype)
         self._lower_array(array)
-        self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
+        #self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
+        self._ndarray = self._merge_arrays([self._ndarray, array])
 
     def to_fits_file(self, filename, clobber=False, header=None, extname=None, indices=None):
         if self._ndarray.size == 1:
@@ -92,6 +91,39 @@ class DataObject(object):
                 fitsio.write(filename, self._ndarray, clobber=clobber, header=header, extname=extname)
             else:
                 fitsio.write(filename, self._ndarray[indices], clobber=clobber, header=header, extname=extname)
+
+    def _merge_arrays(self, arrays):
+        """
+        """
+
+        dtype = None
+        for array in arrays:
+            if dtype is None:
+                # First array
+                dtype = array.dtype.descr
+                names = array.dtype.names
+                size = array.size
+            else:
+                # Not the first array
+                # Check the size is the same
+                if array.size != size:
+                    raise ValueError("Cannot merge arrays of different length")
+                # Check that we don't have any duplicate names
+                for name in array.dtype.names:
+                    if name in names:
+                        raise ValueError("Cannot merge arrays with duplicate names (%s)" % (name))
+                # Extend the dtype
+                dtype.extend(array.dtype.descr)
+
+        # Now we have what we need
+        merged_array = np.zeros(size, dtype=dtype)
+
+        # Copy in the arrays to the merged array, column by column
+        for array in arrays:
+            for name in array.dtype.names:
+                merged_array[name] = array[name]
+
+        return merged_array
 
     def _lower_array(self, array):
         names = list(array.dtype.names)
@@ -142,7 +174,8 @@ class Entry(DataObject):
     def add_fields(self, newdtype):
         array = np.zeros(self._ndarray.size, newdtype)
         self._lower_array(array)
-        self._ndarray = merge_arrays([self._ndarray, array], flatten=True)[0]
+        #self._ndarray = merge_arrays([self._ndarray, array], flatten=True)[0]
+        self._ndarray = self._merge_arrays([self._ndarray, array])[0]
 
 
     def __getattr__(self, attr):
