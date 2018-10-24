@@ -42,7 +42,7 @@ class GalaxyCatalogTestCase(unittest.TestCase):
                                               hpix=9218, nside=128, border=0.1)
 
         # this isn't really a big enough sample catalog to fully test...
-        testing.assert_equal(gals_sub.size, 7950)
+        testing.assert_equal(gals_sub.size, 3459)
 
         # and test the matching...
 
