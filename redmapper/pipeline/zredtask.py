@@ -79,8 +79,8 @@ class RunZredPixelTask(object):
         lockfile = '%s.lock' % (self.config.zredfile)
         locktest = make_lockfile(lockfile, block=True, maxtry=60, waittime=2)
         if locktest:
-            print("Created lock file: %s" % (lockfile))
-            print("Checking for zred completion...")
+            self.config.logger.info("Created lock file: %s" % (lockfile))
+            self.config.logger.info("Checking for zred completion...")
 
             test_files = glob.glob('%s/%s_zreds_???????.fit' % (zredpath, self.config.outbase))
             test_locks = glob.glob('%s/%s_zreds_???????.lock' % (zredpath, self.config.outbase))
@@ -100,5 +100,5 @@ class RunZredPixelTask(object):
             # clear the lockfile
             os.unlink(lockfile)
         else:
-            print("Failed to get a consolidate lock.  That's okay.")
+            self.config.logger.info("Failed to get a consolidate lock.  That's okay.")
 
