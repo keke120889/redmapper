@@ -45,8 +45,6 @@ class GalaxyCatalog(Catalog):
         super(GalaxyCatalog, self).__init__(*arrays)
         self._htm_matcher = None
         self.depth = 10 if 'depth' not in kwargs else kwargs['depth']
-        #self._smatch_catalog = None
-        #self._smatch_nside = 4096 if 'smatch_nside' not in kwargs else kwargs['smatch_nside']
 
     @classmethod
     def from_galfile(cls, filename, zredfile=None, nside=0, hpix=0, border=0.0):
@@ -173,12 +171,35 @@ class GalaxyCatalog(Catalog):
                 zcat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(zpath, ztab.filenames[index].decode()), ext=1, upper=True)
             ctr += tab.ngals[index]
 
-        # In the IDL version this is trimmed to the precise boundary requested.
-        # that's easy in simplepix.  Not sure how to do in healpix.
-        if use_zred:
-            return cls(cat, zcat)
+        if hpix is not None and nside > 0 and border > 0.0:
+            # Trim to be closer to the border if necessary...
+
+            nside_cutref = 256
+            boundaries = hp.boundaries(nside, hpix, step=nside_cutref/nside)
+            theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
+            ipring_coarse = hp.ang2pix(nside, theta, phi)
+            inhpix, = np.where(ipring_coarse == hpix)
+
+            for i in xrange(boundaries.shape[1]):
+                pixint = hp.query_disc(nside_cutref, boundaries[:, i], np.radians(border), inclusive=True, fact=8)
+                inhpix = np.append(inhpix, pixint)
+            inhpix = np.unique(inhpix)
+
+            theta = np.radians(90.0 - cat['DEC'])
+            phi = np.radians(cat['RA'])
+            ipring = hp.ang2pix(nside_cutref, theta, phi)
+            _, indices = esutil.numpy_util.match(inhpix, ipring)
+
+            if use_zred:
+                return cls(cat[indices], zcat[indices])
+            else:
+                return cls(cat[indices])
         else:
-            return cls(cat)
+            # No cuts
+            if use_zred:
+                return cls(cat, zcat)
+            else:
+                return cls(cat)
 
     @property
     def galcol(self):
