@@ -52,37 +52,53 @@ class DepthMap(object):
 
         # if we have a sub-region of the sky, cut down mask to save memory
         if self.submask_hpix > 0:
-            border = np.radians(self.submask_border) + hp.nside2resol(nside_mask)
-            theta, phi = hp.pix2ang(self.submask_nside, self.submask_hpix)
-            radius = np.sqrt(2) * (hp.nside2resol(self.submask_nside)/2. + border)
-            pixint = hp.query_disc(nside_mask, hp.ang2vec(theta, phi),
-                                   radius, inclusive=False)
-            suba, subb = esutil.numpy_util.match(pixint, hpix_ring)
-            hpix_ring = hpix_ring[subb]
-            duse = subb
+            # Choose an arbitrary nside to do the boundary measurements
+            nside_cutref = np.clip(self.submask_nside * 4, 256, nside_mask)
+
+            # Find out which cutref pixels are inside the main pixel
+            theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
+            ipring_coarse = hp.ang2pix(self.submask_nside, theta, phi)
+            inhpix, = np.where(ipring_coarse == self.submask_hpix)
+
+            # If there is a border, we need to find the boundary pixels
+            if self.submask_border > 0.0:
+                boundaries = hp.boundaries(self.submask_nside, self.submask_hpix, step=nside_cutref/self.submask_nside)
+                # These are all the pixels that touch the boundary
+                for i in xrange(boundaries.shape[1]):
+                    pixint = hp.query_disc(nside_cutref, boundaries[:, i],
+                                           np.radians(self.submask_border), inclusive=True, fact=8)
+                    inhpix = np.append(inhpix, pixint)
+                # Need to uniqify here because of overlapping pixels
+                inhpix = np.unique(inhpix)
+
+            # And now choose just those depthmap pixels that are in the inhpix region
+            theta, phi = hp.pix2ang(nside_mask, hpix_ring)
+            ipring = hp.ang2pix(nside_cutref, theta, phi)
+
+            _, duse = esutil.numpy_util.match(inhpix, ipring)
         else:
             duse = np.arange(hpix_ring.size, dtype='i4')
 
         self.nside = nside_mask
-        self.offset = np.min(hpix_ring) - 1
-        self.ntot = np.max(hpix_ring) - np.min(hpix_ring) + 3
+        self.offset = np.min(hpix_ring[duse]) - 1
+        self.ntot = np.max(hpix_ring[duse]) - np.min(hpix_ring[duse]) + 3
 
-        self.npix = hpix_ring.size
+        self.npix = duse.size
 
         self.fracgood = np.zeros(self.npix + 1, dtype='f4')
         try:
             self.fracgood_float = 1
-            self.fracgood[0:self.npix] = depthinfo[duse].fracgood
+            self.fracgood[0: self.npix] = depthinfo.fracgood[duse]
         except AttributeError:
             self.fracgood_float = 0
-            self.fracgood[0:self.npix] = 0
+            self.fracgood[0: self.npix] = 0
 
         self.exptime = np.zeros(self.npix + 1, dtype='f4')
-        self.exptime[0:self.npix] = depthinfo[duse].exptime
+        self.exptime[0: self.npix] = depthinfo.exptime[duse]
         self.limmag = np.zeros(self.npix + 1, dtype='f4')
-        self.limmag[0:self.npix] = depthinfo[duse].limmag
+        self.limmag[0: self.npix] = depthinfo.limmag[duse]
         self.m50 = np.zeros(self.npix + 1, dtype='f4')
-        self.m50[0:self.npix] = depthinfo[duse].m50
+        self.m50[0: self.npix] = depthinfo.m50[duse]
 
         # And the overflow bins
         self.fracgood[self.npix] = hp.UNSEEN
@@ -93,7 +109,7 @@ class DepthMap(object):
         # The look-up table
         #  Set default to overflow bin
         self.hpix_to_index = np.zeros(self.ntot, dtype='i4') + self.npix
-        self.hpix_to_index[hpix_ring - self.offset] = np.arange(self.npix)
+        self.hpix_to_index[hpix_ring[duse] - self.offset] = np.arange(self.npix)
 
     def get_depth_values(self, ras, decs):
         """
@@ -109,6 +125,17 @@ class DepthMap(object):
                 self.exptime[self.hpix_to_index[ipring_offset]],
                 self.m50[self.hpix_to_index[ipring_offset]])
 
+    def get_fracgoods(self, ras, decs):
+        """
+        """
+
+        theta = np.clip((90.0 - decs) * np.pi / 180., -np.pi, np.pi)
+        phi = ras * np.pi / 180.
+
+        ipring_offset = np.clip(hp.ang2pix(self.nside, theta, phi) - self.offset,
+                                0, self.ntot - 1)
+
+        return self.fracgood[self.hpix_to_index[ipring_offset]]
 
     def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):
         """
@@ -159,7 +186,7 @@ class DepthMap(object):
                 maskgals.limmag[:] = 1.0
                 maskgals.exptime[:] = 1000.0
                 maskgals.m50[:] = 0.0
-                print("Warning: Bad cluster in bad region...")
+                self.config.logger.info("Warning: Bad cluster in bad region...")
 
 
     def calc_areas(self, mags):
