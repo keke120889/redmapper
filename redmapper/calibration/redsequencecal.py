@@ -275,7 +275,7 @@ class RedSequenceCalibrator(object):
         """
         """
 
-        print("Calculating pivot magnitudes...")
+        self.config.logger.info("Calculating pivot magnitudes...")
 
         # With binning, approximate the positions for starting the fit
         pivmags = np.zeros_like(self.pars.pivotmag_z)
@@ -297,7 +297,7 @@ class RedSequenceCalibrator(object):
         """
         """
 
-        print("Calculating median colors...")
+        self.config.logger.info("Calculating median colors...")
 
         ncol = self.config.nmag - 1
 
@@ -383,7 +383,7 @@ class RedSequenceCalibrator(object):
             sign = sign_indices[c]
             mind = mind_indices[c]
 
-            print("Working on diagonal for color %d" % (j))
+            self.config.logger.info("Working on diagonal for color %d" % (j))
 
             col = galcolor[:, j]
             col_err = galcolor_err[:, j]
@@ -468,7 +468,7 @@ class RedSequenceCalibrator(object):
             self.pars.covmat_amp[j, j, :] = scvals ** 2.
 
             # And print the time taken
-            print('Done in %.2f seconds.' % (time.time() - starttime))
+            self.config.logger.info('Done in %.2f seconds.' % (time.time() - starttime))
 
     def _calc_offdiagonal_pars(self, gals, doRaise=True):
         """
@@ -571,7 +571,7 @@ class RedSequenceCalibrator(object):
                 k = j
                 j = temp
 
-            print("Working on %d, %d" % (j, k))
+            self.config.logger.info("Working on %d, %d" % (j, k))
 
             u, = np.where((galcolor[:, j] > medci[:, j] - self.config.calib_color_nsig * medwidthi[:, j]) &
                           (galcolor[:, j] < medci[:, j] + self.config.calib_color_nsig * medwidthi[:, j]) &
@@ -602,7 +602,7 @@ class RedSequenceCalibrator(object):
             full_covmats[j, k, :] = self.pars.covmat_amp[j, k, :]
             full_covmats[k, j, :] = self.pars.covmat_amp[k, j, :]
 
-            print("Done in %.2f seconds." % (time.time() - starttime))
+            self.config.logger.info("Done in %.2f seconds." % (time.time() - starttime))
 
     def _calc_volume_factor(self, zref):
         """
@@ -657,7 +657,7 @@ class RedSequenceCalibrator(object):
             except:
                 pass
 
-        print('Computed zreds in %.2f seconds.' % (time.time() - starttime))
+        self.config.logger.info('Computed zreds in %.2f seconds.' % (time.time() - starttime))
 
     def _calc_corrections(self, gals, mode2=False):
         """
@@ -718,10 +718,10 @@ class RedSequenceCalibrator(object):
                 bkg_cvals[i] = np.std(gals.z[guse[uu]] - gals.zred[guse[uu]])**2.
 
         if mode2:
-            print("Fitting zred2 corrections...")
+            self.config.logger.info("Fitting zred2 corrections...")
             z = gals.zred
         else:
-            print("Fitting zred corrections...")
+            self.config.logger.info("Fitting zred corrections...")
             z = gals.z
 
         corrfitter = CorrectionFitter(self.pars.corr_z,
@@ -850,7 +850,7 @@ class RedSequenceCalibrator(object):
                 u1, = np.where((zuse >= z) & (zuse < (z + zbinsize)))
 
                 if u1.size < 3:
-                    print('Warning: not enough galaxies in zbin: %.2f, %.2f' % (z, z + zbinsize))
+                    self.config.logger.info('Warning: not enough galaxies in zbin: %.2f, %.2f' % (z, z + zbinsize))
                     continue
 
                 med = np.median(dzuse[u1])
@@ -858,7 +858,7 @@ class RedSequenceCalibrator(object):
 
                 u2, = np.where(np.abs(gsigma) < 3.0)
                 if u2.size < 3:
-                    print('Warning: not enough galaxies in zbin: %.2f, %.2f' % (z, z + zbinsize))
+                    self.config.logger.info('Warning: not enough galaxies in zbin: %.2f, %.2f' % (z, z + zbinsize))
 
                 use = u1[u2]
 
