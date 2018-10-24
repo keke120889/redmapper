@@ -44,9 +44,9 @@ class RedmapperCalibrator(object):
         self.config.redgalmodelfile = self.config.redmapper_filename('zspec_redgals_model')
 
         if os.path.isfile(self.config.redgalfile):
-            print("%s already there.  Skipping..." % (self.config.redgalfile))
+            self.config.logger.info("%s already there.  Skipping..." % (self.config.redgalfile))
         else:
-            print("Selecting red galaxies from spectra...")
+            self.config.logger.info("Selecting red galaxies from spectra...")
             selred = SelectSpecRedGalaxies(self.config)
             selred.run()
 
@@ -54,9 +54,9 @@ class RedmapperCalibrator(object):
         self.config.bkgfile_color = self.config.redmapper_filename('bkg_color')
 
         if os.path.isfile(self.config.bkgfile_color):
-            print("%s already there.  Skipping..." % (self.config.bkgfile_color))
+            self.config.logger.info("%s already there.  Skipping..." % (self.config.bkgfile_color))
         else:
-            print("Constructing color background...")
+            self.config.logger.info("Constructing color background...")
             cbg = ColorBackgroundGenerator(self.config)
             cbg.run()
 
@@ -64,9 +64,9 @@ class RedmapperCalibrator(object):
         self.config.maskgalfile = self.config.redmapper_filename('maskgals')
 
         if os.path.isfile(self.config.maskgalfile):
-            print("%s already there.  Skipping..." % (self.config.maskgalfile))
+            self.config.logger.info("%s already there.  Skipping..." % (self.config.maskgalfile))
         else:
-            print("Constructing maskgals...")
+            self.config.logger.info("Constructing maskgals...")
             # This will generate the maskgalfile if it isn't found
             mask = get_mask(self.config)
 
@@ -74,9 +74,9 @@ class RedmapperCalibrator(object):
         self.config.zmemfile = self.config.redmapper_filename('iter0_colormem_pgt%4.2f_lamgt%02d' % (self.config.calib_pcut, self.config.calib_colormem_minlambda))
 
         if os.path.isfile(self.config.zmemfile):
-            print("%s already there.  Skipping..." % (self.config.zmemfile))
+            self.config.logger.info("%s already there.  Skipping..." % (self.config.zmemfile))
         else:
-            print("Doing color-lambda training...")
+            self.config.logger.info("Doing color-lambda training...")
             rcm = RunColormem(self.config)
             rcm.run()
             rcm.output_training()
@@ -85,9 +85,9 @@ class RedmapperCalibrator(object):
         self.config.seedfile = self.config.redmapper_filename('specseeds_train')
 
         if os.path.isfile(self.config.seedfile):
-            print("%s already there.  Skipping..." % (self.config.seedfile))
+            self.config.logger.info("%s already there.  Skipping..." % (self.config.seedfile))
         else:
-            print("Generating spectroscopic seeds (training spec)...")
+            self.config.logger.info("Generating spectroscopic seeds (training spec)...")
             sss = SelectSpecSeeds(self.config)
             sss.run(usetrain=True)
 
@@ -102,9 +102,9 @@ class RedmapperCalibrator(object):
             redmapper_name = 'zmem_pgt%4.2f_lamgt%02d' % (self.config.calib_pcut, int(self.config.calib_minlambda))
             self.config.zmemfile = self.config.redmapper_filename(redmapper_name)
             if os.path.isfile(self.config.zmemfile):
-                print("%s already there.  Skipping..." % (self.config.zmemfile))
+                self.config.logger.info("%s already there.  Skipping..." % (self.config.zmemfile))
             else:
-                print("Preparing members for next calibration...")
+                self.config.logger.info("Preparing members for next calibration...")
                 ## FIXME
                 prep_members = PrepMembers(self.config)
                 prep_members.run('z_init')
@@ -116,9 +116,9 @@ class RedmapperCalibrator(object):
                 # If this is the first iteration, generate a new seedfile
                 new_seedfile = self.config.redmapper_filename('cut_specseeds')
                 if os.path.isfile(new_seedfile):
-                    print("%s already there.  Skipping..." % (new_seedfile))
+                    self.config.logger.info("%s already there.  Skipping..." % (new_seedfile))
                 else:
-                    print("Generating cut specseeds...")
+                    self.config.logger.info("Generating cut specseeds...")
                     seeds = GalaxyCatalog.from_fits_file(self.config.seedfile)
                     cat = GalaxyCatalog.from_fits_file(self.config.catfile)
 
@@ -135,9 +135,9 @@ class RedmapperCalibrator(object):
         self.config.seedfile = self.config.redmapper_filename('specseeds')
 
         if os.path.isfile(self.config.seedfile):
-            print("%s already there.  Skipping..." % (self.config.seedfile))
+            self.config.logger.info("%s already there.  Skipping..." % (self.config.seedfile))
         else:
-            print("Generating spectroscopic seeds (full spec)...")
+            self.config.logger.info("Generating spectroscopic seeds (full spec)...")
             sss = SelectSpecSeeds(self.config)
             sss.run(usetrain=False)
 
@@ -150,16 +150,16 @@ class RedmapperCalibrator(object):
         # Generate a full background
         if new_files:
             # Note that the config file has been updated!
-            print("Running full background...")
+            self.config.logger.info("Running full background...")
 
             self.config.d.hpix = 0
             self.config.d.nside = 0
 
             bkg_gen = BackgroundGenerator(self.config)
             bkg_gen.run(deepmode=True)
-            print("Remember to run zreds and zred background before running the full cluster finder.")
+            self.config.logger.info("Remember to run zreds and zred background before running the full cluster finder.")
         else:
-            print("Calibration done on full footprint, so background and zreds are already available.")
+            self.config.logger.info("Calibration done on full footprint, so background and zreds are already available.")
 
         # Run halos if desired (later)
 
@@ -232,7 +232,7 @@ class RedmapperCalibrator(object):
         self.config.maskgalfile = os.path.abspath(self.config.maskgalfile)
         self.config.redgalfile = os.path.abspath(self.config.redgalfile)
         self.config.redgalmodelfile = os.path.abspath(self.config.redgalmodelfile)
-        self.config.seedfile = os.path.abspath(self.config.seedfile)
+        self.config.seedfile = None
         self.config.zmemfile = None
 
         # and reset the running values
@@ -266,9 +266,9 @@ class RedmapperCalibrationIteration(object):
 
         # Run the red sequence calibration
         if os.path.isfile(self.config.parfile):
-            print("%s already there.  Skipping..." % (self.config.parfile))
+            self.config.logger.info("%s already there.  Skipping..." % (self.config.parfile))
         else:
-            print("Running red sequence calibration...")
+            self.config.logger.info("Running red sequence calibration...")
             redsequencecal = RedSequenceCalibrator(self.config, self.config.zmemfile)
             redsequencecal.run()
 
@@ -281,9 +281,9 @@ class RedmapperCalibrationIteration(object):
             self.config.zredfile = self.config.redmapper_filename('zreds')
 
         if os.path.isfile(self.config.zredfile):
-            print("%s already there.  Skipping..." % (self.config.zredfile))
+            self.config.logger.info("%s already there.  Skipping..." % (self.config.zredfile))
         else:
-            print("Computing zreds for all galaxies in the training region...")
+            self.config.logger.info("Computing zreds for all galaxies in the training region...")
             if self.config.galfile_pixelized:
                 zredRunpix = ZredRunPixels(self.config)
                 zredRunpix.run()
@@ -305,19 +305,19 @@ class RedmapperCalibrationIteration(object):
                 if 'CHISQBKG' not in [ext.get_extname() for ext in fits[1: ]]:
                     calc_bkg = True
                 else:
-                    print("Found CHISQBKG in %s.  Skipping..." % (self.config.bkgfile))
+                    self.config.logger.info("Found CHISQBKG in %s.  Skipping..." % (self.config.bkgfile))
                 if 'ZREDBKG' not in [ext.get_extname() for ext in fits[1: ]]:
                     calc_zred_bkg = True
                 else:
-                    print("Found ZREDBKG in %s.  Skipping..." % (self.config.bkgfile))
+                    self.config.logger.info("Found ZREDBKG in %s.  Skipping..." % (self.config.bkgfile))
 
         if calc_bkg:
-            print("Generating chisq background...")
+            self.config.logger.info("Generating chisq background...")
             bkg_gen = BackgroundGenerator(self.config)
             bkg_gen.run()
 
         if calc_zred_bkg:
-            print("Generating zred background...")
+            self.config.logger.info("Generating zred background...")
             zbkg_gen = ZredBackgroundGenerator(self.config)
             zbkg_gen.run()
 
@@ -334,9 +334,9 @@ class RedmapperCalibrationIteration(object):
         iter_seedfile = self.config.redmapper_filename('specseeds')
 
         if os.path.isfile(iter_seedfile):
-            print('%s already there.  Skipping...' % (iter_seedfile))
+            self.config.logger.info('%s already there.  Skipping...' % (iter_seedfile))
         else:
-            print("Generating iteration seedfile...")
+            self.config.logger.info("Generating iteration seedfile...")
             seedzredfile = self.config.redmapper_filename('specseeds_zreds')
             zredRuncat = ZredRunCatalog(self.config)
             zredRuncat.run(self.config.seedfile, seedzredfile)
@@ -356,9 +356,9 @@ class RedmapperCalibrationIteration(object):
         finalfile = self.config.redmapper_filename('final')
 
         if os.path.isfile(finalfile):
-            print('%s already there.  Skipping...' % (finalfile))
+            self.config.logger.info('%s already there.  Skipping...' % (finalfile))
         else:
-            print("Running redmapper in specmode with seeds...")
+            self.config.logger.info("Running redmapper in specmode with seeds...")
             self.config.zlambdafile = None
 
             redmapper_run = RedmapperRun(self.config)
@@ -372,7 +372,7 @@ class RedmapperCalibrationIteration(object):
             sublikefile = self.config.redmapper_filename('sub_like')
 
             if os.path.isfile(sublikefile):
-                print('%s already there.  Skipping...' % (sublikefile))
+                self.config.logger.info('%s already there.  Skipping...' % (sublikefile))
             else:
                 # Generate a subset of the likelihood file...
                 # Read these as GalaxyCatalogs to do matching
@@ -393,9 +393,9 @@ class RedmapperCalibrationIteration(object):
             self.config.d.outbase = '%s_rand' % (outbase)
             catfile_for_rand_calib = self.config.redmapper_filename('final')
             if os.path.isfile(catfile_for_rand_calib):
-                print('%s already there.  Skipping...' % (catfile_for_rand_calib))
+                self.config.logger.info('%s already there.  Skipping...' % (catfile_for_rand_calib))
             else:
-                print("Running percolation for random centers...")
+                self.config.logger.info("Running percolation for random centers...")
                 self.config.catfile = sublikefile
                 self.config.centerclass = 'CenteringRandom'
 
@@ -405,9 +405,9 @@ class RedmapperCalibrationIteration(object):
             self.config.d.outbase = '%s_randsat' % (outbase)
             catfile_for_randsat_calib = self.config.redmapper_filename('final')
             if os.path.isfile(catfile_for_randsat_calib):
-                print('%s already there.  Skipping...' % (catfile_for_randsat_calib))
+                self.config.logger.info('%s already there.  Skipping...' % (catfile_for_randsat_calib))
             else:
-                print("Running percolation for random satellite centers...")
+                self.config.logger.info("Running percolation for random satellite centers...")
                 self.config.catfile = sublikefile
                 self.config.centerclass = 'CenteringRandomSatellite'
 
@@ -426,9 +426,9 @@ class RedmapperCalibrationIteration(object):
         self.config.wcenfile = self.config.redmapper_filename('wcen')
 
         if os.path.isfile(self.config.wcenfile):
-            print('%s already there.  Skipping...' % (self.config.wcenfile))
+            self.config.logger.info('%s already there.  Skipping...' % (self.config.wcenfile))
         else:
-            print("Calibrating Wcen")
+            self.config.logger.info("Calibrating Wcen")
             wc = WcenCalibrator(self.config, iteration,
                                 randcatfile=catfile_for_rand_calib,
                                 randsatcatfile=catfile_for_randsat_calib)
@@ -440,23 +440,23 @@ class RedmapperCalibrationIteration(object):
         self.config.zlambdafile = self.config.redmapper_filename('zlambda')
 
         if os.path.isfile(self.config.zlambdafile):
-            print('%s already there.  Skipping...' % (self.config.zlambdafile))
+            self.config.logger.info('%s already there.  Skipping...' % (self.config.zlambdafile))
         else:
-            print("Calibrating zlambda corrections...")
+            self.config.logger.info("Calibrating zlambda corrections...")
             zlambdacal = ZLambdaCalibrator(self.config, corrslope=False)
             zlambdacal.run()
 
         # Make pretty plots showing performance
         spec_plot = SpecPlot(self.config)
         if os.path.isfile(spec_plot.filename):
-            print("%s already there.  Skipping..." % (spec_plot.filename))
+            self.config.logger.info("%s already there.  Skipping..." % (spec_plot.filename))
         else:
-            print("Correcting redshifts and making spec plot...")
+            self.config.logger.info("Correcting redshifts and making spec plot...")
             # We need to do a final run to apply the corrections, but this
             # seems inefficient...
 
             # Load in the catalog, apply the corrections, and make the plot.
-            print(self.config.catfile)
+            self.config.logger.info(self.config.catfile)
             cat = Catalog.from_fits_file(self.config.catfile)
             use, = np.where(cat.Lambda > self.config.calib_zlambda_minlambda)
             cat = cat[use]
@@ -492,9 +492,9 @@ class RedmapperCalibrationIterationFinal(object):
         iter_seedfile = self.config.redmapper_filename('specseeds')
 
         if os.path.isfile(iter_seedfile):
-            print('%s already there.  Skipping...'  % (iter_seedfile))
+            self.config.logger.info('%s already there.  Skipping...'  % (iter_seedfile))
         else:
-            print("Creating final iteration seeds...")
+            self.config.logger.info("Creating final iteration seeds...")
             seedzredfile = self.config.redmapper_filename('specseeds_zreds')
             zredRuncat = ZredRunCatalog(self.config)
             zredRuncat.run(self.config.seedfile, seedzredfile)
@@ -515,9 +515,9 @@ class RedmapperCalibrationIterationFinal(object):
         finalfile = self.config.redmapper_filename('final')
 
         if os.path.isfile(finalfile):
-            print('%s already there.  Skipping...' % (finalfile))
+            self.config.logger.info('%s already there.  Skipping...' % (finalfile))
         else:
-            print("Doing final iteration run")
+            self.config.logger.info("Doing final iteration run")
             redmapper_run = RedmapperRun(self.config)
             catfile = redmapper_run.run(seedfile=iter_seedfile)
             # check that catfile is the same as finalfile?
@@ -529,9 +529,9 @@ class RedmapperCalibrationIterationFinal(object):
         # And pretty plots
         spec_plot = SpecPlot(self.config)
         if os.path.isfile(spec_plot.filename):
-            print("%s already there.  Skipping..." % (spec_plot.filename))
+            self.config.logger.info("%s already there.  Skipping..." % (spec_plot.filename))
         else:
-            print("Making final iteration spec plot...")
+            self.config.logger.info("Making final iteration spec plot...")
             # We do not need to do the corrections for the final run (which has them, I hope)
 
             cat = Catalog.from_fits_file(self.config.catfile)
