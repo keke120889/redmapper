@@ -31,7 +31,7 @@ class RunCatalog(ClusterRunner):
         # I think I name the args here?
 
         # read in catalog, etc
-        print("Reading in catalog file...")
+        self.config.logger.info("Reading in catalog file...")
         self.cat = ClusterCatalog.from_catfile(self.config.catfile,
                                                zredstr=self.zredstr,
                                                config=self.config,
