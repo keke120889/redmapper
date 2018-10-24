@@ -12,6 +12,7 @@ import scipy.interpolate as interpolate
 import fitsio
 from scipy.special import erf
 from numpy import random
+import sys
 import warnings
 
 ###################################
@@ -689,3 +690,50 @@ def read_members(catfile):
 
     return GalaxyCatalog.from_fits_file(memfile)
 
+######################
+## A simple logger
+######################
+
+# At the moment, this doesn't take a filename, it just prints with a flush.
+
+class Logger(object):
+    def __init__(self):
+        if sys.version_info[: 2] < (3, 3):
+            self.py33 = False
+        else:
+            self.py33 = True
+
+    def info(self, message):
+        if self.py33:
+            print(message, flush=True)
+        else:
+            print(message)
+            sys.stdout.flush()
+
+def getMemoryString(location):
+    """
+    Get a string for memory usage (current and peak) for logging.
+
+    parameters
+    ----------
+    location: string
+       A short string which denotes where in the code the memory was recorded.
+    """
+
+    status = None
+    result = {'peak':0, 'rss':0}
+    memoryString = ''
+    try:
+        with open('/proc/self/status') as status:
+            for line in status:
+                parts = line.split()
+                key = parts[0][2:-1].lower()
+                if key in result:
+                    result[key] = int(parts[1])/1000
+
+            memoryString = 'Memory usage at %s: %d MB current; %d MB peak.' % (
+                location, result['rss'], result['peak'])
+    except:
+        memoryString = 'Could not get process status for memory usage at %s!' % (location)
+
+    return memoryString
