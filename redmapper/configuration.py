@@ -10,6 +10,7 @@ import re
 import os
 
 from .cluster import cluster_dtype_base, member_dtype_base
+from .utilities import Logger
 from ._version import __version__
 
 class ConfigField(object):
@@ -287,9 +288,10 @@ class Configuration(object):
         confdict = read_yaml(configfile)
 
         # And now set the config variables
-        #for key in confdict:
-        #    setattr(self, key, confdict[key])
         self._set_vars_from_dict(confdict)
+
+        # Get the logger
+        self.logger = Logger()
 
         if outpath is not None:
             self.outpath = outpath
@@ -302,9 +304,9 @@ class Configuration(object):
         gal_stats = self._galfile_stats()
         if (self.area is not None):
             if self.depthfile is not None:
-                print("WARNING: You should not need to set area in the config file when you have a depth map.")
+                self.logger.info("WARNING: You should not need to set area in the config file when you have a depth map.")
             if (np.abs(self.area - gal_stats['area']) > 1e-3):
-                print("Config area is not equal to galaxy file area.  Using config area.")
+                self.logger.info("Config area is not equal to galaxy file area.  Using config area.")
                 gal_stats.pop('area')
         else:
             if self.depthfile is None and self.nside > 0 and self.hpix > 0:
