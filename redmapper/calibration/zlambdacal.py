@@ -167,10 +167,10 @@ class ZLambdaCalibrator(object):
 
         for fitType in range(2):
             if fitType == 0:
-                print("Fitting zlambda corrections...")
+                self.config.logger.info("Fitting zlambda corrections...")
                 nziter = 1
             else:
-                print("Fitting ztrue corrections...")
+                self.config.logger.info("Fitting ztrue corrections...")
                 nziter = self.config.calib_zlambda_correct_niter
 
             # Make a backup copy of the catalog
