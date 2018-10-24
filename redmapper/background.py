@@ -256,7 +256,7 @@ class BackgroundGenerator(object):
             if os.path.isfile(self.config.bkgfile):
                 with fitsio.FITS(self.config.bkgfile) as fits:
                     if 'CHISQBKG' in [ext.get_extname() for ext in fits[1: ]]:
-                        print("CHISQBKG already in %s and clobber is False" % (self.config.bkgfile))
+                        self.config.logger.info("CHISQBKG already in %s and clobber is False" % (self.config.bkgfile))
                         return
 
         # get the ranges
@@ -481,8 +481,8 @@ class BackgroundGenerator(object):
             for j in xrange(self.nlnchisqbins):
                 sigma_lng_sub[:, j, i] = field2[:, j] / (self.areas * lnbinsizes)
 
-        print("Finished %.2f < z < %.2f in %.1f seconds" % (zbins_use[0], zbins_use[-1],
-                                                            time.time() - starttime))
+        self.config.logger.info("Finished %.2f < z < %.2f in %.1f seconds" % (zbins_use[0], zbins_use[-1],
+                                                                              time.time() - starttime))
 
         return (zbinmark, sigma_g_sub, sigma_lng_sub)
 
@@ -504,7 +504,7 @@ class ZredBackgroundGenerator(object):
             if os.path.isfile(self.config.bkgfile):
                 with fitsio.FITS(self.config.bkgfile) as fits:
                     if 'ZREDBKG' in [ext.get_extname() for ext in fits[1: ]]:
-                        print("ZREDBKG already in %s and clobber is False" % (self.config.bkgfile))
+                        self.config.logger.info("ZREDBKG already in %s and clobber is False" % (self.config.bkgfile))
                         return
 
         # Read in zred parameters
@@ -601,7 +601,7 @@ class ZredBackgroundGenerator(object):
         for j in range(nzredbins):
             sigma_g[:, j] = np.clip(field[:, j], 0.1, None) / (areas * binsizes)
 
-        print("Finished zred background in %.2f seconds" % (time.time() - starttime))
+        self.config.logger.info("Finished zred background in %.2f seconds" % (time.time() - starttime))
 
         # save it
 
