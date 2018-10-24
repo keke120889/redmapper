@@ -20,6 +20,8 @@ from .depthmap import DepthMap
 from .zlambda import Zlambda
 from .zlambda import ZlambdaCorrectionPar
 from .redsequence import RedSequenceColorPar
+from .depth_fitting import DepthLim
+# from .utilities import getMemoryString
 
 ###################################################
 # Order of operations:
@@ -51,6 +53,8 @@ class ClusterRunner(object):
         self.zredbkg_required = False
         self.use_colorbkg = False
         self.use_parfile = True
+        self.cutgals_bkgrange = False
+        self.cutgals_chisqmax = False
         self._filename = None
 
         # Will want to add stuff to check that everything needed is present?
@@ -98,6 +102,7 @@ class ClusterRunner(object):
         if self.maxrad2 > self.maxrad:
             self.maxrad = self.maxrad2
 
+
         # read in background
         if self.use_colorbkg:
             self.cbkg = ColorBackground(self.config.bkgfile_color, usehdrarea=True)
@@ -135,7 +140,6 @@ class ClusterRunner(object):
         except:
             self.depthstr = None
 
-        #self.cosmo = Cosmo()
         self.cosmo = self.config.cosmo
 
         # read in the galaxies
@@ -160,6 +164,22 @@ class ClusterRunner(object):
         # then we successfully read in the zreds
         if zredfile is not None:
             self.did_read_zreds = True
+
+        # Cut galaxies if desired
+        if self.cutgals_bkgrange:
+            refmag_low = self.bkg.refmagbins[0]
+            refmag_high = self.bkg.refmagbins[-1] + (self.bkg.refmagbins[1] - self.bkg.refmagbins[0])
+        else:
+            refmag_low = -1000.0
+            refmag_high = 1000.0
+
+        guse = ((self.gals.refmag > refmag_low) & (self.gals.refmag < refmag_high))
+
+        if self.did_read_zreds and self.cutgals_chisqmax:
+            guse &= (self.gals.chisq < self.config.chisq_max)
+
+        # Cut the input galaxy file
+        self.gals = self.gals[guse]
 
         # If we don't have a depth map, get ready to compute local depth
         if self.depthstr is None:
@@ -250,10 +270,10 @@ class ClusterRunner(object):
             if self.doublerun:
                 # This mode allows two passes, with a sort in between.
                 if it == 0:
-                    print("First iteration...")
+                    self.config.logger.info("First iteration...")
                     self.do_percolation_masking = False
                 else:
-                    print("Second iteration with percolation...")
+                    self.config.logger.info("Second iteration with percolation...")
                     self._doublerun_sort()
                     self.do_percolation_masking = True
                     self.record_members = True
@@ -262,7 +282,7 @@ class ClusterRunner(object):
 
             for cluster in self.cat:
                 if ((cctr % 1000) == 0):
-                    print("%d: Working on cluster %d of %d" % (self.config.d.hpix, cctr, self.cat.size))
+                    self.config.logger.info("%d: Working on cluster %d of %d" % (self.config.d.hpix, cctr, self.cat.size))
                 cctr += 1
 
                 # Note that the cluster is set with .z if available! (which becomes ._z)
