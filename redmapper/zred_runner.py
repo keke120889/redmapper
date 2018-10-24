@@ -143,7 +143,7 @@ class ZredRunPixels(object):
             self.ctr = 0
             self.total_galaxies = np.sum(self.galtable.ngals[indices])
             if (self.verbose):
-                print("Computing zred for %d galaxies in %d pixels." % (self.total_galaxies, len(indices)))
+                self.config.logger.info("Computing zred for %d galaxies in %d pixels." % (self.total_galaxies, len(indices)))
             retvals = map(self._worker, indices)
 
 
@@ -170,7 +170,7 @@ class ZredRunPixels(object):
 
         for g in galaxies:
             if self.verbose and (ctr % 1000) == 0:
-                print("Computing zred on galaxy %d of %d" % (ctr, ngal))
+                self.config.logger.info("Computing zred on galaxy %d of %d" % (ctr, ngal))
             self.zredc.compute_zred(g)
             ctr += 1
 
