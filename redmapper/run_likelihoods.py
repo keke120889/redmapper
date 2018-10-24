@@ -45,11 +45,14 @@ class RunLikelihoods(ClusterRunner):
             self.read_zreds = False
             self.zreds_required = False
 
+        self.cutgals_bkgrange = True
+        self.cutgals_chisqmax = True
+
         self.filetype = 'like'
 
     def _more_setup(self, *args, **kwargs):
 
-        print("%d: Likelihoods using catfile: %s" % (self.config.d.hpix, self.config.catfile))
+        self.config.logger.info("%d: Likelihoods using catfile: %s" % (self.config.d.hpix, self.config.catfile))
 
         self.cat = ClusterCatalog.from_catfile(self.config.catfile,
                                                zredstr=self.zredstr,
