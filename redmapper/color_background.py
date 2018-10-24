@@ -226,7 +226,7 @@ class ColorBackgroundGenerator(object):
 
         # Check if it's already there...
         if not clobber and os.path.isfile(self.config.bkgfile_color):
-            print("Found %s and clobber is False" % (self.config.bkgfile_color))
+            self.config.logger.info("Found %s and clobber is False" % (self.config.bkgfile_color))
             return
 
         # read in the galaxies
@@ -286,7 +286,7 @@ class ColorBackgroundGenerator(object):
                     refmagpos = (gals[~bad].refmag - refmagrange[0]) * nrefmag / (refmagrange[1] - refmagrange[0])
 
                     value = np.ones(np.sum(~bad))
-                    print("Running CIC on %d, %d" % (i, j))
+                    self.config.logger.info("Running CIC on %d, %d" % (i, j))
                     field = cic(value, colpos, ncoldiag, refmagpos, nrefmag, isolated=True)
                     # need to fix cic...
                     bad = ~np.isfinite(field)
@@ -345,7 +345,7 @@ class ColorBackgroundGenerator(object):
                     refmagpos = (gals[~bad].refmag - refmagrange[0]) * nrefmag / (refmagrange[1] - refmagrange[0])
 
                     value = np.ones(np.sum(~bad))
-                    print("Running CIC on %d, %d" % (i, j))
+                    self.config.logger.info("Running CIC on %d, %d" % (i, j))
                     field = cic(value, col1pos, ncol1, col2pos, ncol2, refmagpos, nrefmag, isolated=True)
                     bad = ~np.isfinite(field)
                     field[bad] = 0.0
