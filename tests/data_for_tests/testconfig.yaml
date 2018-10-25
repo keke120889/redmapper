@@ -38,6 +38,8 @@ percolation_rmask_zpivot: 0.1
 percolation_lmask: 0.1
 percolation_memlum: 0.0
 limmag_catalog: 21.5
+maskgal_ngals: 6000
+maskgal_nsamples: 5
 #wcen_zred_chisq_max: 100.0
 #wcen_Delta0: 0.0
 #wcen_Delta1: 0.0
