@@ -46,6 +46,8 @@ class Mask(object):
         return radmask
 
     def read_maskgals(self, maskgalfile):
+        """
+        """
 
         make_maskgals = False
         lockfile = maskgalfile + '.lock'
@@ -58,10 +60,24 @@ class Mask(object):
             self._gen_maskgals(maskgalfile)
 
         # Read the maskgals
-        self.maskgals = Catalog.from_fits_file(maskgalfile)
+        # These are going to be *all* the maskgals, but we only operate on a subset
+        # at a time
+        self.maskgals_all = Catalog.from_fits_file(maskgalfile)
 
         # Clear lockfile
         os.remove(lockfile)
+
+    def select_maskgals_sample(self, maskgal_index=None):
+        """
+        """
+
+        if maskgal_index is None:
+            maskgal_index = np.random.choice(self.config.maskgal_nsamples)
+
+        self.maskgals = self.maskgals_all[maskgal_index * self.config.maskgal_ngals:
+                                              (maskgal_index + 1) * self.config.maskgal_ngals]
+
+        return maskgal_index
 
     def _gen_maskgals(self, maskgalfile):
         """
@@ -76,7 +92,7 @@ class Mask(object):
         nmag = self.config.nmag
         ncol = nmag - 1
 
-        ngals = self.config.maskgal_ngals  # * nsamples
+        ngals = self.config.maskgal_ngals * self.config.maskgal_nsamples
 
         maskgals = Catalog.zeros(ngals, dtype=[('r', 'f4'),
                                                ('phi', 'f4'),
@@ -154,24 +170,30 @@ class Mask(object):
         maskgals.dzred = np.random.normal(loc=0.0, scale=self.config.maskgal_zred_err, size=maskgals.size)
         maskgals.zwt = (1. / (np.sqrt(2.*np.pi) * self.config.maskgal_zred_err)) * np.exp(-(maskgals.dzred**2.) / (2.*self.config.maskgal_zred_err**2.))
 
-        # Radial function
-        for i, rad in enumerate(radbins):
-            inside, = np.where((maskgals.r <= rad) & (maskgals.m < -2.5*np.log10(self.config.lval_reference)))
-            maskgals.nin_orig[:, i] = inside.size
+        # And we need the radial function for each set of samples
+        for j in xrange(self.config.maskgal_nsamples):
+            indices = np.arange(j * self.config.maskgal_ngals,
+                                (j + 1) * self.config.maskgal_ngals)
 
-            if self.config.rsig <= 0.0:
-                theta_r = np.ones(maskgals.size)
-            else:
-                theta_r = 0.5 + 0.5*erf((rad - maskgals.r) / (np.sqrt(2.)*self.config.rsig))
-            maskgals.theta_r[:, i] = theta_r
+            # Radial function
+            for i, rad in enumerate(radbins):
+                inside, = np.where((maskgals.r[indices] <= rad) &
+                                   (maskgals.m[indices] < -2.5*np.log10(self.config.lval_reference)))
+                maskgals.nin_orig[indices, i] = inside.size
 
-            inside2, = np.where(maskgals.m < -2.5*np.log10(self.config.lval_reference))
-            maskgals.nin[:, i] = np.sum(theta_r[inside2])
+                if self.config.rsig <= 0.0:
+                    theta_r = np.ones(self.config.maskgal_ngals)
+                else:
+                    theta_r = 0.5 + 0.5*erf((rad - maskgals.r[indices]) / (np.sqrt(2.)*self.config.rsig))
+                maskgals.theta_r[indices, i] = theta_r
+
+                inside2, = np.where(maskgals.m[indices] < -2.5*np.log10(self.config.lval_reference))
+                maskgals.nin[indices, i] = np.sum(theta_r[inside2])
 
         # And save it
 
         hdr = fitsio.FITSHDR()
-        hdr['version'] = 5
+        hdr['version'] = 6
         hdr['r0'] = self.config.percolation_r0
         hdr['beta'] = self.config.percolation_beta
         hdr['stepsize'] = self.config.maskgal_rad_stepsize
