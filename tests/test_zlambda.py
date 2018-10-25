@@ -57,6 +57,7 @@ class ClusterZlambdaTestCase(unittest.TestCase):
 
         #Set up the mask
         mask = HPMask(cluster.config) #Create the mask
+        maskgal_index = mask.select_maskgals_sample(maskgal_index=0)
         mask.set_radmask(cluster)
 
         #depthstr

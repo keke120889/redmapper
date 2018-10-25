@@ -45,6 +45,7 @@ class DepthFitTestCase(unittest.TestCase):
 
         config.mask_mode = 0
         mask = get_mask(config)
+        maskgal_index = mask.select_maskgals_sample()
         mask.read_maskgals(config.maskgalfile)
 
         dlim.calc_maskdepth(mask.maskgals, gals.refmag, gals.refmag_err)

@@ -21,6 +21,7 @@ class ClusterFiltersTestCase(unittest.TestCase):
         config = Configuration(file_path + '/' + conf_filename)
 
         mask = HPMask(config) #Create the mask
+        maskgal_index = mask.select_maskgals_sample()
 
         #set all the necessary inputs from test file
         mask.maskgals.exptime = 100.

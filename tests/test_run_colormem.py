@@ -63,7 +63,7 @@ class RunColormemTestCase(unittest.TestCase):
 
         testing.assert_equal(mem.size, 16)
         testing.assert_array_almost_equal(mem['pcol'][0:3], np.array([0.94829756, 0.83803916, 0.88315928]))
-        testing.assert_array_almost_equal(mem['z'][0:3], np.array([0.18835473, 0.18612731, 0.18680382]))
+        testing.assert_array_almost_equal(mem['z'][0:3], np.array([0.191279, 0.188257, 0.186945]))
 
     def setUp(self):
         self.test_dir = None

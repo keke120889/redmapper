@@ -65,6 +65,7 @@ class ClusterTestCase(unittest.TestCase):
 
 
         mask = HPMask(cluster.config)
+        maskgal_index = mask.select_maskgals_sample(maskgal_index=0)
         mask.set_radmask(cluster)
 
         depthstr = DepthMap(cluster.config)

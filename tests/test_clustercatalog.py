@@ -42,10 +42,8 @@ class ClusterCatalogTestCase(unittest.TestCase):
         bkg = Background('%s/%s' % (file_path, bkg_filename))
 
         mask = HPMask(config)
+        maskgal_index = mask.select_maskgals_sample(maskgal_index=0)
         depthstr = DepthMap(config)
-
-        #cosmo = Cosmo()
-
 
         testcatfile = 'test_cluster_pos.fit'
         cat = ClusterCatalog.from_catfile(file_path + '/' + testcatfile,

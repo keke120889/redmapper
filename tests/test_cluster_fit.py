@@ -44,6 +44,7 @@ class ClusterFitTestCase(unittest.TestCase):
         cluster.update_neighbors_dist()
 
         mask = HPMask(cluster.config)
+        maskgal_index = mask.select_maskgals_sample(maskgal_index=0)
         depthstr = DepthMap(cluster.config)
         mask.set_radmask(cluster)
         depthstr.calc_maskdepth(mask.maskgals, cluster.ra, cluster.dec, cluster.mpc_scale)

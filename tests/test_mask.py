@@ -27,6 +27,7 @@ class MaskTestCase(unittest.TestCase):
 
         config.mask_mode = 0
         mask = get_mask(config)
+        maskgal_index = mask.select_maskgals_sample()
         testing.assert_equal(hasattr(mask, 'maskgals'), True)
         testing.assert_equal(isinstance(mask, Mask), True)
         testing.assert_equal(isinstance(mask, HPMask), False)
@@ -35,6 +36,7 @@ class MaskTestCase(unittest.TestCase):
 
         config.mask_mode = 3
         mask = get_mask(config)
+        maskgal_index = mask.select_maskgals_sample()
         testing.assert_equal(hasattr(mask, 'maskgals'), True)
         testing.assert_equal(isinstance(mask, Mask), True)
         testing.assert_equal(isinstance(mask, HPMask), True)
@@ -69,6 +71,7 @@ class MaskTestCase(unittest.TestCase):
         config2.d.nside = 1024
         config2.border = 0.02
         mask2 = get_mask(config2)
+        maskgal_index = mask2.select_maskgals_sample()
 
         comp = np.array([False, True, True, True, False])
         testing.assert_equal(mask2.compute_radmask(RAs, Decs), comp)
@@ -87,6 +90,8 @@ class MaskTestCase(unittest.TestCase):
         file_path = "data_for_tests"
         conf_filename = "testconfig.yaml"
         config = Configuration(os.path.join(file_path, conf_filename))
+        # For testing, and backwards compatibility, only make one
+        config.maskgal_nsamples = 1
 
         config.mask_mode = 0
         mask = get_mask(config)
@@ -103,8 +108,8 @@ class MaskTestCase(unittest.TestCase):
 
         maskgals, hdr = fitsio.read(maskgalfile, ext=1, header=True)
 
-        self.assertEqual(maskgals.size, config.maskgal_ngals)
-        self.assertEqual(hdr['VERSION'], 5)
+        self.assertEqual(maskgals.size, config.maskgal_ngals * config.maskgal_nsamples)
+        self.assertEqual(hdr['VERSION'], 6)
         self.assertEqual(hdr['R0'], config.percolation_r0)
         self.assertEqual(hdr['BETA'], config.percolation_beta)
         self.assertEqual(hdr['STEPSIZE'], config.maskgal_rad_stepsize)
