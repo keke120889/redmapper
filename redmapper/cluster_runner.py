@@ -281,11 +281,13 @@ class ClusterRunner(object):
             cctr = 0
 
             for cluster in self.cat:
+                cluster.maskgal_index = self.mask.select_maskgals_sample()
+
                 if ((cctr % 1000) == 0):
                     self.config.logger.info("%d: Working on cluster %d of %d" % (self.config.d.hpix, cctr, self.cat.size))
                 cctr += 1
 
-                # Note that the cluster is set with .z if available! (which becomes ._z)
+                # Note that the cluster is set with .z if available! (which becomes .redshift)
                 maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
                 cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True, maxmag=maxmag)
 
