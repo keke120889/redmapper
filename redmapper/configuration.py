@@ -162,6 +162,7 @@ class Configuration(object):
     max_maskfrac = ConfigField(default=0.2, required=True)
 
     maskgal_ngals = ConfigField(default=6000, required=True)
+    maskgal_nsamples = ConfigField(default=100, required=True)
     maskgal_rad_stepsize = ConfigField(default=0.1, required=True)
     maskgal_dmag_extra = ConfigField(default=0.3, required=True)
     maskgal_zred_err = ConfigField(default=0.02, required=True)
