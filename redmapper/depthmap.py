@@ -44,6 +44,7 @@ class DepthMap(object):
         self.submask_nside = config.d.nside
         self.submask_border = config.border
         self.galfile_nside = config.galfile_nside
+        self.config_logger = config.logger
 
         if nest != 1:
             hpix_ring = depthinfo.hpix
@@ -186,7 +187,7 @@ class DepthMap(object):
                 maskgals.limmag[:] = 1.0
                 maskgals.exptime[:] = 1000.0
                 maskgals.m50[:] = 0.0
-                self.config.logger.info("Warning: Bad cluster in bad region...")
+                self.config_logger.info("Warning: Bad cluster in bad region...")
 
 
     def calc_areas(self, mags):
