@@ -481,6 +481,7 @@ class ClusterRunner(object):
 
         self._filename = fname_base + '.fit'
 
+        self.config.logger.info("Writing catalog to file: %s" % (self._filename))
         self.cat.to_fits_file(self._filename, clobber=clobber)
 
         if savemembers:
