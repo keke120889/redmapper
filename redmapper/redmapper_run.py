@@ -41,7 +41,7 @@ class RedmapperRun(object):
         self.config.cosmo = None
 
     def run(self, specmode=False, specseed=None, seedfile=None, check=True,
-            percolation_only=False, consolidate_like=False, keepz=False):
+            percolation_only=False, consolidate_like=False, keepz=False, cleaninput=False):
         """
         """
 
@@ -50,6 +50,7 @@ class RedmapperRun(object):
         self.check = check
         self.percolation_only = percolation_only
         self.keepz = keepz
+        self.cleaninput = cleaninput
 
         if self.specmode and not self.keepz:
             raise RuntimeError("Must set keepz=True when specmode=True")
@@ -269,7 +270,7 @@ class RedmapperRun(object):
         firstpass = RunFirstPass(config, specmode=self.specmode)
 
         if not os.path.isfile(firstpass.filename) or not self.check:
-            firstpass.run(keepz=self.keepz)
+            firstpass.run(keepz=self.keepz, cleaninput=self.cleaninput)
             firstpass.output(savemembers=False, withversion=False, clobber=True)
         else:
             self.config.logger.info("Firstpass file %s already present.  Skipping..." % (firstpass.filename))
@@ -306,7 +307,7 @@ class RedmapperRun(object):
 
         perc = RunPercolation(config)
         if not os.path.isfile(perc.filename) or not self.check:
-            perc.run(keepz=self.keepz)
+            perc.run(keepz=self.keepz, cleaninput=self.cleaninput)
             perc.output(savemembers=True, withversion=False, clobber=True)
 
         return (hpix, None, None, perc.filename)
