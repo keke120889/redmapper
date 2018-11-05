@@ -87,6 +87,7 @@ class RunZredPixelTask(object):
             if (len(test_files) == len(runPixels.galtable.filenames) and
                 len(test_locks) == 0):
                 # We have written all the files, and there are no locks left.
+                self.config.logger.info("All zred files have been found!  Creating master table.")
 
                 indices = np.arange(len(runPixels.galtable.filenames))
                 filenames = []
@@ -96,6 +97,8 @@ class RunZredPixelTask(object):
                 indices_and_filenames = list(zip(indices, filenames))
 
                 runPixels.make_zred_table(indices_and_filenames)
+            elif len(test_locks) > 0:
+                pass
 
             # clear the lockfile
             os.unlink(lockfile)
