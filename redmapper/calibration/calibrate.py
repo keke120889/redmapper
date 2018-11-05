@@ -362,7 +362,7 @@ class RedmapperCalibrationIteration(object):
             self.config.zlambdafile = None
 
             redmapper_run = RedmapperRun(self.config)
-            catfile, likefile = redmapper_run.run(specmode=True, keepz=True, consolidate_like=True, seedfile=iter_seedfile)
+            catfile, likefile = redmapper_run.run(specmode=True, keepz=True, consolidate_like=True, seedfile=iter_seedfile, cleaninput=True)
             # check that catfile is the same as finalfile?
             if catfile != finalfile:
                 raise RuntimeError("The output catfile %s should be the same as finalfile %s" % (catfile, finalfile))
@@ -400,7 +400,7 @@ class RedmapperCalibrationIteration(object):
                 self.config.centerclass = 'CenteringRandom'
 
                 redmapper_run = RedmapperRun(self.config)
-                redmapper_run.run(check=True, percolation_only=True, keepz=True)
+                redmapper_run.run(check=True, percolation_only=True, keepz=True, cleaninput=True)
 
             self.config.d.outbase = '%s_randsat' % (outbase)
             catfile_for_randsat_calib = self.config.redmapper_filename('final')
@@ -412,7 +412,7 @@ class RedmapperCalibrationIteration(object):
                 self.config.centerclass = 'CenteringRandomSatellite'
 
                 redmapper_run = RedmapperRun(self.config)
-                redmapper_run.run(check=True, percolation_only=True, keepz=True)
+                redmapper_run.run(check=True, percolation_only=True, keepz=True, cleaninput=True)
 
             # Reset outbase
             self.config.d.outbase = outbase
@@ -519,7 +519,7 @@ class RedmapperCalibrationIterationFinal(object):
         else:
             self.config.logger.info("Doing final iteration run")
             redmapper_run = RedmapperRun(self.config)
-            catfile = redmapper_run.run(seedfile=iter_seedfile)
+            catfile = redmapper_run.run(seedfile=iter_seedfile, cleaninput=True)
             # check that catfile is the same as finalfile?
             if catfile != finalfile:
                 raise RuntimeError("The output catfile %s should be the same as finalfile %s" % (catfile, finalfile))
