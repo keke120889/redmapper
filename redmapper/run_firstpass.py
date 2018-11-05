@@ -54,6 +54,7 @@ class RunFirstPass(ClusterRunner):
         incat = None
 
         self.keepz = kwargs.pop('keepz', False)
+        self.cleaninput = kwargs.pop('cleaninput', False)
 
         # Check if there's a seedfile
         if self.config.seedfile is not None and os.path.isfile(self.config.seedfile):
@@ -100,6 +101,10 @@ class RunFirstPass(ClusterRunner):
             use, = np.where((self.cat.zred >= self.config.zrange[0]) &
                             (self.cat.zred <= self.config.zrange[1]))
             self.cat = self.cat[use]
+
+            if self.cleaninput:
+                catmask = self.mask.compute_radmask(self.cat.ra, self.cat.dec)
+                self.cat = self.cat[catmask]
         else:
             # We do not have an input catalog
             # we must not have a seedfile, and did_read_zreds

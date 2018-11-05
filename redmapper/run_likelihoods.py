@@ -52,6 +52,8 @@ class RunLikelihoods(ClusterRunner):
 
     def _more_setup(self, *args, **kwargs):
 
+        self.cleaninput = kwargs.pop('cleaninput', False)
+
         self.config.logger.info("%d: Likelihoods using catfile: %s" % (self.config.d.hpix, self.config.catfile))
 
         self.cat = ClusterCatalog.from_catfile(self.config.catfile,
@@ -75,6 +77,10 @@ class RunLikelihoods(ClusterRunner):
                         (self.cat.Lambda > 0.0))
 
         self.cat = self.cat[use]
+
+        if self.cleaninput:
+            catmask = self.mask.compute_radmask(self.cat.ra, self.cat.dec)
+            self.cat = self.cat[catmask]
 
         self.do_lam_plusminux = False
         self.match_centers_to_galaxies = False

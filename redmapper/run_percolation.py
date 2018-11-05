@@ -47,6 +47,8 @@ class RunPercolation(ClusterRunner):
 
     def _more_setup(self, *args, **kwargs):
 
+        self.cleaninput = kwargs.pop('cleaninput', False)
+
         self.config.logger.info("%d: Percolation using catfile: %s" % (self.config.d.hpix, self.config.catfile))
 
         # read in the catalog...
@@ -84,6 +86,10 @@ class RunPercolation(ClusterRunner):
             self.cat.mem_match_id[:] = 0
 
         self.cat = self.cat[use[st]]
+
+        if self.cleaninput:
+            catmask = self.mask.compute_radmask(self.cat.ra, self.cat.dec)
+            self.cat = self.cat[catmask]
 
         # This preserves previously set ids
         self._generate_mem_match_ids()
