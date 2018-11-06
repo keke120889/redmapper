@@ -18,9 +18,10 @@ class ConfigField(object):
     A validatable field with a default
     """
 
-    def __init__(self, value=None, default=None, isArray=False, required=False, array_length=None):
+    def __init__(self, value=None, default=None, isArray=False, required=False, array_length=None, isList=False):
         self._value = value
         self._isArray = isArray
+        self._isList = isList
         self._required = required
         self._array_length = array_length
 
@@ -30,6 +31,11 @@ class ConfigField(object):
                 self._default = np.atleast_1d(default)
             if self._value is not None:
                 self._value = np.atleast_1d(self._value)
+        if isList:
+            if default is not None:
+                self._default = list(default)
+            if self._value is not None:
+                self._value = list(self._value)
 
         if self._value is None:
             self._value = self._default
@@ -40,6 +46,8 @@ class ConfigField(object):
     def __set__(self, obj, value):
         if self._isArray:
             self._value = np.atleast_1d(value)
+        elif self._isList:
+            self._value = list(value)
         else:
             try:
                 if len(value) > 1:
@@ -59,11 +67,11 @@ class ConfigField(object):
             if self._value is None:
                 raise ValueError("Required ConfigField %s is not set" % (name))
 
-        if self._value is not None and self._isArray:
+        if self._value is not None and (self._isArray or self._isList):
             if self._array_length is not None:
-                if self._value.size != self._array_length:
+                if len(self._value) != self._array_length:
                     raise ValueError("ConfigField %s has the wrong length (%d != %d)" %
-                                     (name, self._value.size, self._array_length))
+                                     (name, len(self._value), self._array_length))
 
         return True
 
@@ -281,6 +289,11 @@ class Configuration(object):
     percolation_memradius = ConfigField()
     percolation_memlum = ConfigField()
 
+    vlim_lstars = ConfigField(default=np.array([0.2, 5.0]), required=False, isArray=True)
+    vlim_depthfiles = ConfigField(default=[], required=False, isList=True)
+    vlim_bands = ConfigField(default=[], required=False, isList=True)
+    vlim_nsigs = ConfigField(default=[], required=False, isArray=True)
+
     def __init__(self, configfile, outpath=None):
 
         self._reset_vars()
@@ -353,6 +366,10 @@ class Configuration(object):
                            'calib_color_maxnodes', 'calib_covmat_maxnodes',
                            'calib_color_order'], self.nmag - 1)
 
+        # Vlim size checks
+        self._set_lengths(['vlim_bands', 'vlim_nsigs'],
+                          len(self.vlim_depthfiles))
+
         # will want to set defaults here...
         self.cosmo = Cosmo()
 
@@ -362,6 +379,10 @@ class Configuration(object):
         # Checks ...
         if self.maskfile is not None and self.mask_mode == 0:
             raise ValueError("A maskfile is set, but mask_mode is 0 (no mask).  Assuming this is not intended.")
+
+        for vlim_band in self.vlim_bands:
+            if vlim_band not in self.bands:
+                raise ValueError("vlim_band %s not in list of bands!" % (vlim_band))
 
         # Now set the duplicatable config parameters...
         self.d = DuplicatableConfig(self)

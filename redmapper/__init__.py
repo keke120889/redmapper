@@ -35,6 +35,7 @@ from .zred_runner import ZredRunCatalog, ZredRunPixels
 from .redmapper_run import RedmapperRun
 from .depth_fitting import DepthLim
 from .plotting import SpecPlot
+from .volumelimit import VolumeLimitMask
 from .utilities import read_members
 from . import calibration
 from . import pipeline

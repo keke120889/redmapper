@@ -75,3 +75,8 @@ calib_colormem_zbounds: [0.35, 0.72]
 calib_colormem_colormodes: [1, 2, 3]
 calib_colormem_sigint: [0.05, 0.03, 0.03]
 calib_color_pcut: 0.7
+
+vlim_lstars: [0.2]
+vlim_depthfiles: [./data_for_tests/test_dr8_depth_r.fit]
+vlim_bands: [r]
+vlim_nsigs: [5.0]
