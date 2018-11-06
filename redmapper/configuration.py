@@ -289,7 +289,7 @@ class Configuration(object):
     percolation_memradius = ConfigField()
     percolation_memlum = ConfigField()
 
-    vlim_lstars = ConfigField(default=np.array([0.2, 5.0]), required=False, isArray=True)
+    vlim_lstar = ConfigField(default=0.2, required=False)
     vlim_depthfiles = ConfigField(default=[], required=False, isList=True)
     vlim_bands = ConfigField(default=[], required=False, isList=True)
     vlim_nsigs = ConfigField(default=[], required=False, isArray=True)

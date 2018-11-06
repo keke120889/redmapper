@@ -26,7 +26,7 @@ class VolumeLimitMaskTestCase(unittest.TestCase):
         self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
         config.outpath = self.test_dir
 
-        vlim = VolumeLimitMask(config, config.vlim_lstars[0])
+        vlim = VolumeLimitMask(config, config.vlim_lstar)
 
         # And test the values...
 
