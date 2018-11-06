@@ -12,6 +12,7 @@ import scipy.integrate
 from .catalog import Catalog,Entry
 from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels
 from .utilities import make_lockfile, sample_from_pdf, chisq_pdf, schechter_pdf, nfw_pdf
+from .utilities import get_hpmask_subpix_indices
 
 class Mask(object):
     """
@@ -301,30 +302,8 @@ class HPMask(Mask):
 
         # if we have a sub-region of the sky, cut down the mask to save memory
         if config.d.hpix > 0:
-            # Choose an arbitrary nside to do the boundary measurements
-            nside_cutref = np.clip(config.d.nside * 4, 256, nside_mask)
-
-            # Find out which cutref pixels are inside the main pixel
-            theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
-            ipring_coarse = hp.ang2pix(config.d.nside, theta, phi)
-            inhpix, = np.where(ipring_coarse == config.d.hpix)
-
-            # If there is a border, we need to find the boundary pixels
-            if config.border > 0.0:
-                boundaries = hp.boundaries(config.d.nside, config.d.hpix, step=nside_cutref/config.d.nside)
-                # These are all the pixels that touch the boundary
-                for i in xrange(boundaries.shape[1]):
-                    pixint = hp.query_disc(nside_cutref, boundaries[:, i],
-                                           np.radians(config.border), inclusive=True, fact=8)
-                    inhpix = np.append(inhpix, pixint)
-                # Need to uniqify here because of overlapping pixels
-                inhpix = np.unique(inhpix)
-
-            # And now choose just those mask pixels that are in the inhpix region
-            theta, phi = hp.pix2ang(nside_mask, hpix_ring)
-            ipring = hp.ang2pix(nside_cutref, theta, phi)
-
-            _, muse = esutil.numpy_util.match(inhpix, ipring)
+            muse = get_hpmask_subpix_indices(config.d.nside, config.d.hpix,
+                                             config.border, nside_mask, hpix_ring)
         else:
             muse = np.arange(hpix_ring.size, dtype='i4')
 

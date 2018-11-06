@@ -13,6 +13,7 @@ from redmapper import Configuration
 class DepthMapTestCase(unittest.TestCase):
     def runTest(self):
         """
+        Test depth map basic functionality
         """
         file_path = "data_for_tests"
         conf_filename = "testconfig.yaml"

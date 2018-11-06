@@ -12,6 +12,8 @@ import scipy.interpolate as interpolate
 import fitsio
 from scipy.special import erf
 from numpy import random
+import healpy as hp
+import esutil
 import sys
 import warnings
 
@@ -737,3 +739,37 @@ def getMemoryString(location):
         memoryString = 'Could not get process status for memory usage at %s!' % (location)
 
     return memoryString
+
+#############################
+## Cutting healpix maps up...
+#############################
+
+def get_hpmask_subpix_indices(submask_nside, submask_hpix, submask_border, nside_mask, hpix):
+    """
+    """
+
+    nside_cutref = np.clip(submask_nside * 4, 256, nside_mask)
+
+    # Find out which cutref pixels are inside the main pixel
+    theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
+    ipring_coarse = hp.ang2pix(submask_nside, theta, phi)
+    inhpix, = np.where(ipring_coarse == submask_hpix)
+
+    # If there is a border, we need to find the boundary pixels
+    if submask_border > 0.0:
+        boundaries = hp.boundaries(submask_nside, submask_hpix, step=nside_cutref/submask_nside)
+        # These are all the pixels that touch the boundary
+        for i in xrange(boundaries.shape[1]):
+            pixint = hp.query_disc(nside_cutref, boundaries[:, i],
+                                   np.radians(submask_border), inclusive=True, fact=8)
+            inhpix = np.append(inhpix, pixint)
+            # Need to uniqify here because of overlapping pixels
+            inhpix = np.unique(inhpix)
+
+    # And now choose just those depthmap pixels that are in the inhpix region
+    theta, phi = hp.pix2ang(nside_mask, hpix)
+    ipring = hp.ang2pix(nside_cutref, theta, phi)
+
+    _, use = esutil.numpy_util.match(inhpix, ipring)
+
+    return use
