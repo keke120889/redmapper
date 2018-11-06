@@ -8,9 +8,8 @@ from healpy import pixelfunc
 import esutil
 import scipy.optimize
 
-from .utilities import astro_to_sphere
+from .utilities import astro_to_sphere, get_hpmask_subpix_indices
 from .catalog import Catalog, Entry
-
 
 class DepthMap(object):
     """
@@ -20,11 +19,16 @@ class DepthMap(object):
     ----------
     config: Config object
         Configuration object with depthfile
+    depthfile: string, optional
+        Override config depthfile
 
     """
-    def __init__(self, config):
+    def __init__(self, config, depthfile=None):
         # record for posterity
-        self.depthfile = config.depthfile
+        if depthfile is None:
+            self.depthfile = config.depthfile
+        else:
+            self.depthfile = depthfile
 
         depthinfo, hdr = fitsio.read(self.depthfile, ext=1, header=True, upper=True)
         # convert into catalog for convenience...
@@ -53,30 +57,8 @@ class DepthMap(object):
 
         # if we have a sub-region of the sky, cut down mask to save memory
         if self.submask_hpix > 0:
-            # Choose an arbitrary nside to do the boundary measurements
-            nside_cutref = np.clip(self.submask_nside * 4, 256, nside_mask)
-
-            # Find out which cutref pixels are inside the main pixel
-            theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
-            ipring_coarse = hp.ang2pix(self.submask_nside, theta, phi)
-            inhpix, = np.where(ipring_coarse == self.submask_hpix)
-
-            # If there is a border, we need to find the boundary pixels
-            if self.submask_border > 0.0:
-                boundaries = hp.boundaries(self.submask_nside, self.submask_hpix, step=nside_cutref/self.submask_nside)
-                # These are all the pixels that touch the boundary
-                for i in xrange(boundaries.shape[1]):
-                    pixint = hp.query_disc(nside_cutref, boundaries[:, i],
-                                           np.radians(self.submask_border), inclusive=True, fact=8)
-                    inhpix = np.append(inhpix, pixint)
-                # Need to uniqify here because of overlapping pixels
-                inhpix = np.unique(inhpix)
-
-            # And now choose just those depthmap pixels that are in the inhpix region
-            theta, phi = hp.pix2ang(nside_mask, hpix_ring)
-            ipring = hp.ang2pix(nside_cutref, theta, phi)
-
-            _, duse = esutil.numpy_util.match(inhpix, ipring)
+            duse = get_hpmask_subpix_indices(self.submask_nside, self.submask_hpix,
+                                             self.submask_border, nside_mask, hpix_ring)
         else:
             duse = np.arange(hpix_ring.size, dtype='i4')
 
@@ -236,5 +218,37 @@ class DepthMap(object):
 
         return areas
 
+# This is incomplete, since I worry the general-use depthmap will be too memory
+# intensive for the volume limit mask.  TBD 
+
+class MultibandDepthMap(object):
+    """
+    A class to use a multi-band depth map
+
+    parameters
+    ----------
+    config: Config object
+    depthfiles: string list
+        additional depthfiles
+    bands: string list
+        additional depthfile bands
+
+    """
+
+    def __init__(self, config, depthfiles, bands):
+
+        self.nband = len(bands) + 1
 
 
+        self.depthfile = config.depthfile
+
+        # We start by reading in the primary depth file
+
+        depthinfo, hdr = fitsio.read(self.config.depthfile, ext=1, header=True, lower=True)
+        dstr = Catalog(depthinfo)
+
+        mband = Catalog(np.zeros(dstr.size, dtype=[('hpix', 'i8'),
+                                                   ('fracgood', 'f4'),
+                                                   ('exptime', 'f4', self.nband),
+                                                   ('limmag', 'f4', self.nband),
+                                                   ('m50', 'f4', self.nband)]))
