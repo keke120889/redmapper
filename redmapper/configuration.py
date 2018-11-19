@@ -294,6 +294,10 @@ class Configuration(object):
     vlim_bands = ConfigField(default=[], required=False, isList=True)
     vlim_nsigs = ConfigField(default=[], required=False, isArray=True)
 
+    consolidate_lambda_cuts = ConfigField(default=[5.0, 20.0], required=False, isArray=True)
+    consolidate_vlim_lstars = ConfigField(default=[0.2, 5.0], required=False, isArray=True)
+    select_scaleval = ConfigField(default=False, required=True)
+
     def __init__(self, configfile, outpath=None):
 
         self._reset_vars()

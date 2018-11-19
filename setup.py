@@ -15,7 +15,8 @@ scripts = ['bin/redmapper_run_zred_pixel.py',
            'bin/redmapper_run_redmapper_pixel.py',
            'bin/redmapper_batch.py',
            'bin/redmapper_make_zred_bkg.py',
-           'bin/redmapper_calibrate.py']
+           'bin/redmapper_calibrate.py',
+           'bin/redmapper_consolidate_run.py']
 
 include_dirs = [numpy.get_include()]
 

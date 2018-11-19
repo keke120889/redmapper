@@ -216,3 +216,12 @@ class VolumeLimitMask(object):
             return (self.zmax[self.hpix_to_index[ipring_offset]],
                     self.fracgood[self.hpix_to_index[ipring_offset]])
 
+class VolumeLimitMaskFixed(object):
+    """
+    """
+
+    def __init__(self, config):
+        self.z_max = config.zrange[1]
+
+    def calc_zmax(self, ra, dec):
+        return self.z_max
