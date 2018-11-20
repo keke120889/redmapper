@@ -216,12 +216,62 @@ class VolumeLimitMask(object):
             return (self.zmax[self.hpix_to_index[ipring_offset]],
                     self.fracgood[self.hpix_to_index[ipring_offset]])
 
+    def get_areas(self):
+        """
+        """
+
+        zbinsize = self.config.area_finebin
+        zbins = np.arange(self.config.zrange[0], self.config.zrange[1], zbinsize)
+
+        astr = Catalog(np.zeros(zbins.size, dtype=[('z', 'f4'),
+                                                   ('area', 'f4')]))
+        astr.z = zbins
+
+        pixsize = hp.nside2pixarea(self.nside, degrees=True)
+
+        # ignore the last overflow pixel
+        st = np.argsort(self.zmax[:-1])
+        zmax = self.zmax[st]
+
+        fracgoods = self.fracgood[st]
+
+        inds = np.searchsorted(zmax, zbins, side='right')
+
+        lo = (inds <= 0)
+        astr.area[lo] = np.sum(fracgoods.astype(np.float64)) * pixsize
+
+        if np.sum(~lo) > 0:
+            carea = pixsize * np.cumsum(fracgoods.astype(np.float64))
+            astr.area[~lo] = carea[carea.size - inds[~lo]]
+
+        return astr
+
 class VolumeLimitMaskFixed(object):
     """
     """
 
     def __init__(self, config):
         self.z_max = config.zrange[1]
+        self.zrange = config.zrange
+        self.zbinsize = config.area_finebin
+        self.area = config.area
 
     def calc_zmax(self, ra, dec):
+        """
+        """
+
         return self.z_max
+
+    def get_areas(self):
+        """
+        """
+
+        zbins = np.arange(self.zrange[0], self.zrange[1], self.zbinsize)
+
+        astr = Catalog(np.zeros(zbins.size, dtype=[('z', 'f4'),
+                                                   ('area', 'f4')]))
+        astr.z = zbins
+
+        astr.area = self.area
+
+        return astr

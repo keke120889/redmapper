@@ -162,6 +162,9 @@ class Configuration(object):
     galfile_nside = ConfigField(required=True)
     bands = ConfigField(required=True)
 
+    area_finebin = ConfigField(default=0.001, required=True)
+    area_coarsebin = ConfigField(default=0.005, required=True)
+
     zrange = ConfigField(isArray=True, array_length=2, required=True)
     lval_reference = ConfigField(default=0.2, required=True)
 

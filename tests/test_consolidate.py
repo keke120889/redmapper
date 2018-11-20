@@ -79,7 +79,7 @@ class ConsolidateTestCase(unittest.TestCase):
 
         # Consolidate them together...
         consol = RedmapperConsolidateTask(config_file)
-        consol.run()
+        consol.run(do_plots=False)
 
         # Check that the ordering is correct, etc.
         catfile = config.redmapper_filename('redmapper_v%s_lgt20_catalog' % (config.version))

@@ -8,7 +8,7 @@ import scipy.optimize
 import scipy.ndimage
 
 from .configuration import Configuration
-from .utilities import gaussFunction, CubicSpline
+from .utilities import gaussFunction, CubicSpline, interpol
 
 class SpecPlot(object):
     """
@@ -27,7 +27,7 @@ class SpecPlot(object):
         """
         """
 
-        self.run_values(cat.bcg_spec_z, cat.z_lambda, cat.z_lambda_e)
+        self.plot_values(cat.bcg_spec_z, cat.z_lambda, cat.z_lambda_e)
 
     def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', title=None):
         """
@@ -198,3 +198,77 @@ class SpecPlot(object):
         z_map_smooth = scipy.ndimage.uniform_filter(z_map_values, size=5, mode='nearest')
 
         return z_bins, z_map_smooth
+
+class NzPlot(object):
+    """
+    """
+
+    def __init__(self, conf, binsize=0.02):
+        if not isinstance(conf, Configuration):
+            self.config = Configuration(conf)
+        else:
+            self.config = conf
+
+        self.binsize = binsize
+
+    def plot_cluster_catalog(self, cat, areastr=None, nosamp=False):
+        """
+        """
+
+        corr_zrange = self.config.zrange.copy()
+        nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
+        corr_zrange[1] = nbin * self.binsize + corr_zrange[0]
+
+        nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
+
+        if nosamp:
+            zsamp = cat.z_lambda
+        else:
+            zsamp = np.zeros(cat.size)
+
+            nsampbin = 100
+            npzbins = self.config.npzbins
+
+            for i, cluster in enumerate(cat):
+                xvals = ((np.arange(nsampbin, dtype=np.float64) / nsampbin) *
+                         (cluster.pzbins[-1] - cluster.pzbins[0]) + cluster.pzbins[0])
+                yvals = interpol(cluster.pz, cluster.pzbins, xvals)
+                pdf = yvals / np.sum(yvals)
+                cdf = np.cumsum(pdf)
+                cdfi = (cdf * xvals.size).astype(np.int32)
+                rand = (np.random.uniform(size=1)*nsampbin).astype(np.int32)
+                test, = np.where(cdfi >= rand)
+                zsamp[i] = xvals[test[0]]
+
+        hist = esutil.stat.histogram(zsamp, min=corr_zrange[0], max=corr_zrange[1]-0.0001, binsize=self.binsize, more=True)
+        h = hist['hist']
+        zbins = hist['center']
+
+        indices = np.clip(np.searchsorted(astr.z, zbins), 0, astr.size - 1)
+
+        vol = np.zeros(zbins.size)
+        for i in xrange(zbins.size):
+            vol[i] = (self.config.cosmo.V(zbins[i] - self.binsize/2.,
+                                          zbins[i] + self.binsize/2.) *
+                      (astr.area[indices[i]] / 41252.961))
+
+        dens = h.astype(np.float32) / vol
+        err = np.sqrt(dens * vol) / vol
+
+        fig = plt.figure(1, figsize=(8, 6))
+        fig.clf()
+
+        ax = fig.add_subplot(111)
+
+        ax.errorbar(zbins, dens*1e4, yerr=err*1e4, fmt='r.', markersize=8)
+        ax.set_xlabel(r'$z_{\lambda}$', fontsize=16)
+        ax.set_ylabel(r'$n\,(1e4\,\mathrm{clusters} / \mathrm{Mpc}^{3})$', fontsize=16)
+        ax.tick_params(axis='both',which='major',labelsize=14)
+        fig.tight_layout()
+
+        fig.savefig(self.filename)
+        plt.close(fig)
+
+    @property
+    def filename(self):
+        return self.config.redmapper_filename('nz', paths=(self.config.plotpath,), filetype='png')

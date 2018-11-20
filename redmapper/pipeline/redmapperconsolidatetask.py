@@ -12,6 +12,7 @@ from ..configuration import Configuration
 from ..volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 from ..catalog import Catalog
 from ..utilities import read_members, astro_to_sphere
+from ..plotting import SpecPlot
 
 class RedmapperConsolidateTask(object):
     """
@@ -38,7 +39,7 @@ class RedmapperConsolidateTask(object):
         else:
             self.vlim_lstars = vlim_lstars
 
-    def run(self):
+    def run(self, do_plots=True):
         """
         """
 
@@ -64,14 +65,17 @@ class RedmapperConsolidateTask(object):
         # If we have vlim set, we need to make the vlims...
         if self.vlim_lstars is not None:
             vlim_masks = []
+            vlim_areas = []
             for vlim_lstar in self.vlim_lstars:
                 vlim_masks.append(VolumeLimitMask(self.config, vlim_lstar))
+                vlim_areas.append(vlim_masks[-1].get_areas())
         else:
             vlim_masks = [VolumeLimitMaskFixed(self.config)]
+            vlim_areas = [vlim_masks[0].get_areas()]
 
         started = np.zeros((len(self.lambda_cuts), len(vlim_masks)), dtype=np.bool)
         cat_filename_dict = {}
-        mem_filename_dict = {}
+        #mem_filename_dict = {}
 
         # Unique counter for temporary ids
         ctr = 0
@@ -99,7 +103,9 @@ class RedmapperConsolidateTask(object):
 
             scaleval = cat.scaleval if self.config.select_scaleval else 1.0
 
-            # Figure out which clusters are in the pixel, less than max_maskfrac, and above percolation_minlambda (with or without scale)
+            # Figure out which clusters are in the pixel, less than
+            # max_maskfrac, and above percolation_minlambda (with or without
+            # scale)
 
             theta, phi = astro_to_sphere(cat.ra, cat.dec)
             ipring = hp.ang2pix(nside, theta, phi)
@@ -143,25 +149,16 @@ class RedmapperConsolidateTask(object):
 
                     _, mem_use = esutil.numpy_util.match(cat.mem_match_id[cat_use], mem.mem_match_id)
 
-                    # Build the filenames
-                    outbase = '%s_redmapper_v%s_lgt%02d' % (self.config.outbase, self.config.version, minlambda)
-                    if self.vlim_lstars is not None:
-                        outbase += '_vl%02d' % (int(self.vlim_lstars[j] * 10))
-
-                    cat_fname = os.path.join(self.config.outpath, '%s_catalog.fit' % (outbase))
-                    mem_fname = os.path.join(self.config.outpath, '%s_catalog_members.fit' % (outbase))
-
                     if not started[i, j]:
                         # Figure out filename
-                        outbase = '%s_redmapper_v%s_lgt%02d' % (self.config.outbase, self.config.version, minlambda)
+                        self.config.d.outbase = '%s_redmapper_v%s_lgt%02d' % (self.config.outbase, self.config.version, minlambda)
                         if self.vlim_lstars is not None:
-                            outbase += '_vl%02d' % (int(self.vlim_lstars[j] * 10))
+                            self.config.d.outbase += '_vl%02d' % (int(self.vlim_lstars[j] * 10))
 
-                        cat_fname = os.path.join(self.config.outpath, '%s_catalog.fit' % (outbase))
-                        mem_fname = os.path.join(self.config.outpath, '%s_catalog_members.fit' % (outbase))
+                        cat_fname = self.config.redmapper_filename('catalog')
+                        mem_fname = self.config.redmapper_filename('catalog_members')
 
-                        cat_filename_dict[(i, j)] = cat_fname
-                        mem_filename_dict[(i, j)] = mem_fname
+                        cat_filename_dict[(i, j)] = (self.config.d.outbase, cat_fname, mem_fname)
 
                         # Write out new fits files...
                         cat.to_fits_file(cat_fname, clobber=True, indices=cat_use)
@@ -170,11 +167,11 @@ class RedmapperConsolidateTask(object):
                         started[i, j] = True
                     else:
                         # Append to existing fits files
-                        fits = fitsio.FITS(cat_filename_dict[(i, j)], mode='rw')
+                        fits = fitsio.FITS(cat_filename_dict[(i, j)][1], mode='rw')
                         fits[1].append(cat._ndarray[cat_use])
                         fits.close()
 
-                        fits = fitsio.FITS(mem_filename_dict[(i, j)], mode='rw')
+                        fits = fitsio.FITS(cat_filename_dict[(i, j)][2], mode='rw')
                         fits[1].append(mem._ndarray[mem_use])
                         fits.close()
 
@@ -190,8 +187,8 @@ class RedmapperConsolidateTask(object):
 
         for i, minlambda in enumerate(self.lambda_cuts):
             for j, vlim_mask in enumerate(vlim_masks):
-                catfits = fitsio.FITS(cat_filename_dict[(i, j)], mode='rw')
-                memfits = fitsio.FITS(mem_filename_dict[(i, j)], mode='rw')
+                catfits = fitsio.FITS(cat_filename_dict[(i, j)][1], mode='rw')
+                memfits = fitsio.FITS(cat_filename_dict[(i, j)][2], mode='rw')
 
                 cat_ids = catfits[1].read_column('mem_match_id')
                 mem_ids = memfits[1].read_column('mem_match_id')
@@ -208,4 +205,13 @@ class RedmapperConsolidateTask(object):
                 catfits.close()
                 memfits.close()
 
-        # And we're done (ha)
+                if do_plots:
+                    # We want to plot the zspec plot and the n(z) plot
+                    cat = Catalog.from_fits_file(cat_filename_dict[(i, j)][1])
+
+                    self.config.d.outbase = cat_filename_dict[(i, j)][0]
+                    specplot = SpecPlot(self.config)
+                    specplot.plot_cluster_catalog(cat)
+
+                    nzplot = NzPlot(self.config)
+                    nzplot.plot_cluster_catalog(cat, areastr=vlim_areas[j])
