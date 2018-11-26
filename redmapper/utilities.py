@@ -204,8 +204,8 @@ def calc_theta_i(mag, mag_err, maxmag, limmag):
     #    theta_i[hi] = 0.0
     #return theta_i
 
-def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False, 
-    nonoise=False, inlup=False):
+def apply_errormodels(maskgals, mag_in, b=None, err_ratio=1.0, fluxmode=False,
+    nonoise=False, inlup=False, lnscat=None):
     """
     Find magnitude and uncertainty.
 
@@ -239,6 +239,9 @@ def apply_errormodels(maskgals, mag_in, b = None, err_ratio=1.0, fluxmode=False,
         tflux = maskgals.exptime*10.**((mag_in - maskgals.zp[0])/(-2.5))
 
     noise = err_ratio*np.sqrt(fsky1*maskgals.exptime + tflux)
+
+    if lnscat is not None:
+        noise = np.exp(np.log(noise) + lnscat * np.random.normal(size=noise.size))
 
     if nonoise:
         flux = tflux
