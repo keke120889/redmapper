@@ -43,18 +43,23 @@ class DepthFunction(object):
 
         return t
 
-def applyErrorModel(pars, magIn, noNoise=False):
+# FIXME: want to be able to reuse code from utilities!
+def applyErrorModel(pars, magIn, noNoise=False, lnscat=None):
     """
     """
 
     tFlux = pars['EXPTIME'][0]*10.**((magIn - pars['ZP'][0])/(-2.5))
     noise = np.sqrt(pars['FSKY1'][0]*pars['EXPTIME'][0] + tFlux)
 
+    if lnscat is not None:
+        noise = np.exp(np.log(noise) + lnscat * np.random.normal(size=noise.size))
+
     if (noNoise):
         flux = tFlux
     else:
         flux = tFlux + noise*np.random.normal(magIn.size)
 
+    # Straight magnitudes
     mag = pars['ZP'][0] - 2.5*np.log10(flux/pars['EXPTIME'][0])
     magErr = (2.5/np.log(10.)) * (noise/flux)
 
