@@ -12,7 +12,8 @@ from ..configuration import Configuration
 from ..volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 from ..catalog import Catalog
 from ..utilities import read_members, astro_to_sphere
-from ..plotting import SpecPlot
+from ..plotting import SpecPlot, NzPlot
+from ..galaxy import GalaxyCatalog
 
 class RedmapperConsolidateTask(object):
     """
@@ -39,7 +40,7 @@ class RedmapperConsolidateTask(object):
         else:
             self.vlim_lstars = vlim_lstars
 
-    def run(self, do_plots=True):
+    def run(self, do_plots=True, match_spec=True):
         """
         """
 
@@ -54,6 +55,11 @@ class RedmapperConsolidateTask(object):
             raise RuntimeError("Could not understand filename for %s" % (catfiles[0]))
 
         nside = int(m.groups()[0])
+
+        if match_spec:
+            spec = GalaxyCatalog.from_fits_file(self.config.specfile)
+            use, = np.where(spec.z_err < 0.001)
+            spec = spec[use]
 
         # Add check for the number of files that are here
 
@@ -75,7 +81,6 @@ class RedmapperConsolidateTask(object):
 
         started = np.zeros((len(self.lambda_cuts), len(vlim_masks)), dtype=np.bool)
         cat_filename_dict = {}
-        #mem_filename_dict = {}
 
         # Unique counter for temporary ids
         ctr = 0
@@ -90,6 +95,17 @@ class RedmapperConsolidateTask(object):
 
             # and read in members
             mem = read_members(catfile)
+
+            if match_spec:
+                # match spec to cat and mem
+                cat.cg_spec_z[:] = -1.0
+
+                i0, i1, dists = spec.match_many(cat.ra, cat.dec, 3./3600., maxmatch=1)
+                cat.cg_spec_z[i0] = spec.z[i1]
+
+                mem.zspec[:] = -1.0
+                i0, i1, dists = spec.match_many(mem.ra, mem.dec, 3./3600., maxmatch=1)
+                mem.zspec[i0] = spec.z[i1]
 
             # Extract pixnum from name
 
@@ -211,7 +227,7 @@ class RedmapperConsolidateTask(object):
 
                     self.config.d.outbase = cat_filename_dict[(i, j)][0]
                     specplot = SpecPlot(self.config)
-                    specplot.plot_cluster_catalog(cat)
+                    specplot.plot_cluster_catalog(cat, title=self.config.d.outbase)
 
                     nzplot = NzPlot(self.config)
                     nzplot.plot_cluster_catalog(cat, areastr=vlim_areas[j])

@@ -23,11 +23,11 @@ class SpecPlot(object):
         self.binsize = binsize
         self.nsig = nsig
 
-    def plot_cluster_catalog(self, cat):
+    def plot_cluster_catalog(self, cat, title=None):
         """
         """
 
-        self.plot_values(cat.bcg_spec_z, cat.z_lambda, cat.z_lambda_e)
+        self.plot_values(cat.cg_spec_z, cat.z_lambda, cat.z_lambda_e, title=title)
 
     def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', title=None):
         """
@@ -215,6 +215,8 @@ class NzPlot(object):
         """
         """
 
+        import matplotlib.pyplot as plt
+
         corr_zrange = self.config.zrange.copy()
         nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
         corr_zrange[1] = nbin * self.binsize + corr_zrange[0]
@@ -244,13 +246,13 @@ class NzPlot(object):
         h = hist['hist']
         zbins = hist['center']
 
-        indices = np.clip(np.searchsorted(astr.z, zbins), 0, astr.size - 1)
+        indices = np.clip(np.searchsorted(areastr.z, zbins), 0, areastr.size - 1)
 
         vol = np.zeros(zbins.size)
         for i in xrange(zbins.size):
             vol[i] = (self.config.cosmo.V(zbins[i] - self.binsize/2.,
                                           zbins[i] + self.binsize/2.) *
-                      (astr.area[indices[i]] / 41252.961))
+                      (areastr.area[indices[i]] / 41252.961))
 
         dens = h.astype(np.float32) / vol
         err = np.sqrt(dens * vol) / vol
