@@ -155,6 +155,8 @@ class GalaxyCatalog(Catalog):
             indices = np.delete(indices, bad)
 
         # create the catalog array to read into
+        # FIXME: filter out any TRUTH information if necessary
+        # will need to also get the list of columns from the thingamajig.
         elt = fitsio.read(os.path.join(path, tab.filenames[indices[0]].decode()), ext=1, rows=0, upper=True)
         cat = np.zeros(np.sum(tab.ngals[indices]), dtype=elt.dtype)
 
