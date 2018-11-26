@@ -33,8 +33,8 @@ from .color_background import ColorBackground, ColorBackgroundGenerator
 from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter
 from .zred_runner import ZredRunCatalog, ZredRunPixels
 from .redmapper_run import RedmapperRun
-from .depth_fitting import DepthLim
-from .plotting import SpecPlot
+from .depth_fitting import DepthLim, applyErrorModel
+from .plotting import SpecPlot, NzPlot
 from .volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 from .utilities import read_members
 from . import calibration
