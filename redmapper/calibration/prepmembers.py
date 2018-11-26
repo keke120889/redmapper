@@ -27,8 +27,8 @@ class PrepMembers(object):
 
         if mode == 'z_init':
             cat_z = cat.z_init
-        elif mode == 'bcg':
-            cat_z = cat.bcg_spec_z
+        elif mode == 'cg':
+            cat_z = cat.cg_spec_z
         else:
             raise RuntimeError("Unsupported mode %s" % (mode))
 
