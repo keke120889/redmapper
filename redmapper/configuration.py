@@ -141,6 +141,7 @@ class Configuration(object):
 
     calib_nproc = ConfigField(default=1, required=True)
     calib_run_nproc = ConfigField(default=1, required=True)
+    calib_run_min_nside = ConfigField(default=1, required=True)
 
     outpath = ConfigField(default='./', required=True)
     plotpath = ConfigField(default='', required=True)
@@ -457,6 +458,8 @@ class Configuration(object):
                 gal_stats['survey_mode'] = 0
             elif hdrmode == 'DES':
                 gal_stats['survey_mode'] = 1
+            elif hdrmode == 'LSST':
+                gal_stats['survey_mode'] = 2
             else:
                 raise ValueError("Input galaxy file with unknown mode: %s" % (hdrmode))
 
@@ -491,6 +494,8 @@ class Configuration(object):
                 gal_stats['survey_mode'] = 0
             elif (mode == 'DES'):
                 gal_stats['survey_mode'] = 1
+            elif (mode == 'LSST'):
+                gal_stats['survey_mode'] = 2
             else:
                 raise ValueError("Input galaxy file with unknown mode: %s" % (mode))
 

@@ -154,6 +154,7 @@ class ClusterRunner(object):
         if self.zreds_required and zredfile is None:
             raise RuntimeError("zreds are required, but zredfile is None")
 
+        print("nside, hpix = %d, %d" % (self.config.d.nside, self.config.d.hpix))
         self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
                                                nside=self.config.d.nside,
                                                hpix=self.config.d.hpix,
@@ -183,7 +184,7 @@ class ClusterRunner(object):
 
         # If we don't have a depth map, get ready to compute local depth
         if self.depthstr is None:
-            self.depthlim = DepthLim(gals.refmag, gals.refmag_err)
+            self.depthlim = DepthLim(self.gals.refmag, self.gals.refmag_err)
 
         # default limiting luminosity
         self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
@@ -312,9 +313,9 @@ class ClusterRunner(object):
                     self.depthstr.calc_maskdepth(self.mask.maskgals,
                                                  cluster.ra, cluster.dec, cluster.mpc_scale)
 
-                    cluster.lim_exptime = np.median(self.mask.maskgals.exptime)
-                    cluster.lim_limmag = np.median(self.mask.maskgals.limmag)
-                    cluster.lim_limmag_hard = self.config.limmag_catalog
+                cluster.lim_exptime = np.median(self.mask.maskgals.exptime)
+                cluster.lim_limmag = np.median(self.mask.maskgals.limmag)
+                cluster.lim_limmag_hard = self.config.limmag_catalog
 
                 # And survey masking (this may be a dummy)
                 self.mask.set_radmask(cluster)
@@ -451,6 +452,7 @@ class ClusterRunner(object):
                         self.members.append(mem_temp)
 
         self._postprocess()
+        self._cleanup()
 
     def _postprocess(self):
         # default post-processing...
@@ -460,6 +462,20 @@ class ClusterRunner(object):
 
         # And crop down members?
         # FIXME
+
+    def _cleanup(self):
+        """
+        """
+
+        # Release references to allow garbage collection to run
+        self.gals = None
+        self.bkg = None
+        self.cbkg = None
+        self.zredbkg = None
+        self.zredstr = None
+        self.depthstr = None
+        self.zlambda_corr = None
+        self.mask = None
 
     def output(self, savemembers=True, withversion=True, clobber=False, outbase=None):
         """

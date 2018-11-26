@@ -266,8 +266,11 @@ class ColorBackgroundGenerator(object):
         nrefmag = np.ceil((refmagrange[1] - refmagrange[0]) / refmagbinsize).astype(np.int32)
         refmagbins = np.arange(nrefmag) * refmagbinsize + refmagrange[0]
 
-        depthstr = DepthMap(self.config)
-        areas = depthstr.calc_areas(refmagbins)
+        if self.config.depthfile is not None:
+            depthstr = DepthMap(self.config)
+            areas = depthstr.calc_areas(refmagbins)
+        else:
+            areas = np.zeros(refmagbins.size) + self.config.area
 
         for i in xrange(ncol):
             for j in xrange(i, ncol):

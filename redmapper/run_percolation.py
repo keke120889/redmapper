@@ -228,8 +228,12 @@ class RunPercolation(ClusterRunner):
                 # update the mask info...
                 self.mask.set_radmask(cluster)
 
-                self.depthstr.calc_maskdepth(self.mask.maskgals,
-                                             cluster.ra, cluster.dec, cluster.mpc_scale)
+                if self.depthstr is None:
+                    self.depthlim.calc_maskdepth(self.mask.maskgals,
+                                                 cluster.neighbors.refmag, cluster.neighbors.refmag_err)
+                else:
+                    self.depthstr.calc_maskdepth(self.mask.maskgals,
+                                                 cluster.ra, cluster.dec, cluster.mpc_scale)
 
             rmask = self.rmask_0 * (cluster.Lambda/100.)**self.rmask_beta * ((1. + cluster.redshift) / (1. + self.rmask_zpivot))**self.rmask_gamma
 

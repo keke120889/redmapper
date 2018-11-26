@@ -281,8 +281,11 @@ class BackgroundGenerator(object):
         sigma_lng = np.zeros((self.nrefmagbins, self.nlnchisqbins, self.nzbins))
 
         # We need the areas from the depth map
-        depthstr = DepthMap(self.config)
-        self.areas = depthstr.calc_areas(self.refmagbins)
+        if self.config.depthfile is not None:
+            depthstr = DepthMap(self.config)
+            self.areas = depthstr.calc_areas(self.refmagbins)
+        else:
+            self.areas = np.zeros(self.refmagbins.size) + self.config.area
 
 
         # Split into bins for parallel running
@@ -521,8 +524,11 @@ class ZredBackgroundGenerator(object):
 
         # Compute the areas...
         # This takes into account the configured sub-region
-        depthstr = DepthMap(self.config)
-        areas = depthstr.calc_areas(refmagbins)
+        if self.config.depthfile is not None:
+            depthstr = DepthMap(self.config)
+            areas = depthstr.calc_areas(refmagbins)
+        else:
+            areas = np.zeros(refmagbins.size) + self.config.area
 
         maxchisq = self.config.wcen_zred_chisq_max
 

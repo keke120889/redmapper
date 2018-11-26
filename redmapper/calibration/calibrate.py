@@ -241,7 +241,7 @@ class RedmapperCalibrator(object):
         self.config.border = 0.0
 
         # And finally, if we have a depth map we don't need the area...
-        if os.path.isfile(self.config.depthfile):
+        if self.config.depthfile is not None and os.path.isfile(self.config.depthfile):
             self.config.area = None
 
         self.config.output_yaml(os.path.join(runpath, 'run_default.yml'))
