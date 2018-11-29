@@ -149,7 +149,7 @@ class RunLikelihoods(ClusterRunner):
             lum = 10.**((cluster.mstar - cluster.neighbors.refmag) / 2.5)
             u, = np.where((cluster.neighbors.r > 1e-5) & (cluster.neighbors.pmem > 0.0))
             w = np.log(np.sum(cluster.neighbors.pmem[u] * lum[u] /
-                               np.sqrt(cluster.neighbors.r[u]**2. + self.config.wcen_rsoft**2.)) / ((1. / cluster.r_lambda) * np.sum(cluster.neighbors.pmem[u] * lum[u])))
+                              np.sqrt(cluster.neighbors.r[u]**2. + self.config.wcen_rsoft**2.)) / ((1. / cluster.r_lambda) * np.sum(cluster.neighbors.pmem[u] * lum[u])))
             sig = self.config.lnw_cen_sigma / np.sqrt(((np.clip(cluster.Lambda, None, self.config.wcen_maxlambda)) / cluster.scaleval) / self.config.wcen_pivot)
             fw = (1. / (np.sqrt(2. * np.pi) * sig)) * np.exp(-0.5 * (np.log(w) - self.config.lnw_cen_mean)**2. / (sig**2.))
 

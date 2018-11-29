@@ -5,6 +5,7 @@ import fitsio
 import numpy as np
 import esutil
 import os
+import gc
 from esutil.cosmology import Cosmo
 
 from .configuration import Configuration
@@ -154,7 +155,6 @@ class ClusterRunner(object):
         if self.zreds_required and zredfile is None:
             raise RuntimeError("zreds are required, but zredfile is None")
 
-        print("nside, hpix = %d, %d" % (self.config.d.nside, self.config.d.hpix))
         self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
                                                nside=self.config.d.nside,
                                                hpix=self.config.d.hpix,
@@ -249,8 +249,12 @@ class ClusterRunner(object):
             self.cat.refmag[i0] = self.gals.refmag[i1]
             self.cat.refmag_err[i0] = self.gals.refmag_err[i1]
             self.cat.mag[i0, :] = self.gals.mag[i1, :]
-            self.cat.mag_err[i0, :] = self.gals.mag[i1, :]
-            # do zred stuff when in...
+            self.cat.mag_err[i0, :] = self.gals.mag_err[i1, :]
+
+            if self.did_read_zreds:
+                self.cat.zred = self.gals.zred[i1]
+                self.cat.zred_e = self.gals.zred_e[i1]
+                self.cat.zred_chisq = self.gals.zred_chisq[i1]
 
         # loop over clusters...
         # at the moment, we are doing the matching once per cluster.
@@ -477,6 +481,8 @@ class ClusterRunner(object):
         self.zlambda_corr = None
         self.mask = None
 
+        gc.collect()
+
     def output(self, savemembers=True, withversion=True, clobber=False, outbase=None):
         """
         """
@@ -496,11 +502,17 @@ class ClusterRunner(object):
         fname_base += '_' + self.filetype
 
         self._filename = fname_base + '.fit'
+        if self.cat is None:
+            self.config.logger.info("Warning: no catalog generated for %s" % (self._filename))
+            return
 
         self.config.logger.info("Writing catalog to file: %s" % (self._filename))
         self.cat.to_fits_file(self._filename, clobber=clobber)
 
         if savemembers:
+            if self.members is None:
+                self.config.logger.info("Warning: no members generated for %s" % (self._filename))
+                return
             self.members.to_fits_file(fname_base + '_members.fit', clobber=clobber)
 
         return

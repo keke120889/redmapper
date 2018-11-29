@@ -108,7 +108,7 @@ class RedmapperRun(object):
             if self.config.d.nside > self.config.calib_run_min_nside:
                 nside_test = self.config.run_min_nside
             else:
-                nside_test = eslf.config.d.nside
+                nside_test = np.clip(self.config.d.nside, 1, None)
             subpixels = self._get_subpixels(nside_test, tab)
             return (nside_test, subpixels)
 
@@ -116,18 +116,12 @@ class RedmapperRun(object):
         if self.config.d.hpix == 0:
             nside_splits = [self.config.calib_run_min_nside]
             pixels_splits = [self._get_subpixels(nside_splits[0], tab)]
-            print("a:")
-            print("nside_splits = ", nside_splits)
-            print("pixels_splits = ", pixels_splits)
         else:
             if self.config.d.nside > self.config.calib_run_min_nside:
                 nside_splits = [self.config.d.nside]
             else:
                 nside_splits = [self.config.calib_run_min_nside]
             pixels_splits = [self._get_subpixels(nside_splits[0], tab)]
-            print("b:")
-            print("nside_splits = ", nside_splits)
-            print("pixels_splits = ", pixels_splits)
 
         nsplit = [len(pixels_splits[0])]
 
@@ -141,13 +135,7 @@ class RedmapperRun(object):
             nside_splits.append(nside_test)
             pixels_splits.append(pixels_test)
 
-        print("now:")
-        print("nsplit:", nsplit)
-        print("nside_splits: ", nside_splits)
-        print("pixels_splits: ", pixels_splits)
-
         test, = np.where(np.array(nsplit) <= self.config.calib_run_nproc)
-        print("test: ", test)
         if test.size == 0:
             nside_split = nside_splits[0]
             pixels_split = pixels_splits[0]
@@ -157,65 +145,6 @@ class RedmapperRun(object):
 
         return (nside_split, pixels_split)
 
-        """
-        # We start with the pixel and resolution in the config file
-        if self.config.d.hpix == 0:
-            nside_splits = [self.config.calib_run_min_nside]
-            pixels_splits = [[0]]
-            print('a:')
-            print('nside_splits = ', nside_splits)
-            print('pixels_splits = ', pixels_splits)
-        else:
-            if self.config.d.nside > self.config.calib_run_min_nside:
-                nside_splits = [self.config.d.nside]
-            else:
-                nside_splits = [self.config.calib_run_min_nside]
-            #nside_splits = [self.config.d.nside]
-            pixels_splits = [[self.config.d.hpix]]
-            print('b:')
-            print('nside_splits = ', nside_splits)
-            print('pixels_splits = ', pixels_splits)
-
-
-        # We know that we can fit the whole thing in 1 pixel
-        #nsplit = [1]
-        nsplit = []
-
-        nside_test = nside_splits[0]
-        while nside_test < tab.nside:
-            # Increment the nside_test
-            nside_test *= 2
-
-            # Generate all the pixels
-            pixels = np.arange(hp.nside2npix(nside_test))
-
-            # Which of these actually match the parent?
-            if self.config.d.hpix > 0:
-                theta, phi = hp.pix2ang(nside_test, pixels)
-                hpix_test = hp.ang2pix(self.config.d.nside, theta, phi)
-                a, b = esutil.numpy_util.match(self.config.d.hpix, hpix_test)
-                pixels = pixels[b]
-
-            # And which of these match the galaxies?
-            theta, phi = hp.pix2ang(tab.nside, tab.hpix)
-            hpix_test = hp.ang2pix(nside_test, theta, phi)
-            a, b = esutil.numpy_util.match(pixels, hpix_test)
-
-            nsplit.append(np.unique(a).size)
-            nside_splits.append(nside_test)
-            pixels_splits.append(np.unique(pixels[a]))
-
-        test, = np.where(np.array(nsplit) <= self.config.calib_run_nproc)
-        if test.size == 0:
-            nside_split = nside_splits[0]
-            pixels_split = pixels_splits[0]
-        else:
-            # the last one is the one we want
-            nside_split = nside_splits[test[-1]]
-            pixels_split = pixels_splits[test[-1]]
-
-        return (nside_split, pixels_split)
-        """
     def _get_subpixels(self, nside_test, galtab):
         """
         """

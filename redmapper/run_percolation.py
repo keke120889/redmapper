@@ -193,7 +193,7 @@ class RunPercolation(ClusterRunner):
         if cent.index[0] >= 0:
             # check order of index
             cluster.mag[:] = cluster.neighbors.mag[cent.index[0], :]
-            cluster.mag_err[:] = cluster.neighbors.mag[cent.index[0], :]
+            cluster.mag_err[:] = cluster.neighbors.mag_err[cent.index[0], :]
             cluster.refmag = cluster.neighbors.refmag[cent.index[0]]
             cluster.refmag_err = cluster.neighbors.refmag_err[cent.index[0]]
             cluster.ebv_mean = cluster.neighbors.ebv[cent.index[0]]
