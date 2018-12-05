@@ -86,8 +86,9 @@ class ZredRunCatalog(object):
         galaxies = GalaxyCatalog(in_cat)
         galaxies.add_zred_fields()
 
-        for g in galaxies:
-            self.zredc.compute_zred(g)
+        #for g in galaxies:
+        #    self.zredc.compute_zred(g)
+        self.zredc.compute_zreds(galaxies)
 
         return (ind_range,
                 galaxies.zred, galaxies.zred_e,
@@ -168,11 +169,13 @@ class ZredRunPixels(object):
             ctr = 0
             ngal = galaxies.size
 
-        for g in galaxies:
-            if self.verbose and (ctr % 1000) == 0:
-                self.config.logger.info("Computing zred on galaxy %d of %d" % (ctr, ngal))
-            self.zredc.compute_zred(g)
-            ctr += 1
+        #for g in galaxies:
+        #    if self.verbose and (ctr % 1000) == 0:
+        #        self.config.logger.info("Computing zred on galaxy %d of %d" % (ctr, ngal))
+        #    self.zredc.compute_zred(g)
+        #    ctr += 1
+        self.zredc.compute_zreds(galaxies)
+        ctr += galaxies.size
 
         if self.single_process:
             self.ctr = ctr

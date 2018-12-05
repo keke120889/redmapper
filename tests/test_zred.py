@@ -40,11 +40,12 @@ class ZredTestCase(unittest.TestCase):
         zredc.compute_zred(galaxies[0])
 
         starttime = time.time()
-        for i, g in enumerate(galaxies):
-            try:
-                zredc.compute_zred(g)
-            except:
-                print("Crashed on %d" % (i))
+        #for i, g in enumerate(galaxies):
+        #    try:
+        #        zredc.compute_zred(g)
+        #    except:
+        #        print("Crashed on %d" % (i))
+        zredc.compute_zreds(galaxies)
 
         print("Ran %d galaxies in %.3f seconds" % (galaxies.size,
                                                    time.time() - starttime))
@@ -107,7 +108,8 @@ class ZredTestCase(unittest.TestCase):
         self.assertGreater(np.min(gals.chisq), 0.0)
         self.assertLess(np.max(gals.lkhd), 0.0)
         testing.assert_array_almost_equal(gals.zred[0: 3],
-                                          np.array([0.10292412, 0.19617805, 0.13324176]))
+                                          np.array([0.10292413, 0.19618003, 0.13324969]))
+    #                                      np.array([0.10292412, 0.19617805, 0.13324176]))
 
     def test_zred_runpixels(self):
         """
@@ -151,7 +153,8 @@ class ZredTestCase(unittest.TestCase):
 
         # Spot check a few
         testing.assert_array_almost_equal(gals.zred[0: 3],
-                                          np.array([0.10292412, 0.19617805, 0.13324176]))
+                                          np.array([0.10292413, 0.19618003, 0.13324969]))
+    #                                      np.array([0.10292412, 0.19617805, 0.13324176]))
 
     def setUp(self):
         self.test_dir = None
