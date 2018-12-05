@@ -157,8 +157,9 @@ class RedSequenceColorPar(object):
             if (hiz.size > 0) : self.extrapolated[hiz] = True
 
             # set the pivotmag
+            self.pivotmag = np.zeros(self.z.size, dtype=np.float64)
             spl=CubicSpline(pars[0][pivotmag_name+'_Z'],pars[0][pivotmag_name])
-            self.pivotmag = spl(self.z)
+            self.pivotmag[:] = spl(self.z)
 
             # and the max/min refmag
             spl=CubicSpline(pars[0][pivotmag_name+'_Z'], pars[0]['MAX'+refmag_name])
@@ -388,6 +389,43 @@ class RedSequenceColorPar(object):
         else:
             return lumrefmagind
 
+    def calculate_chisq_redshifts(self, galaxy, zs, calc_lkhd=False, z_is_index=False):
+        """
+        Compute chisq for a single galaxy at a series of redshifts.  Optimized for the
+        redshift case.
+
+        Parameters
+        ----------
+        galaxy: Galaxy
+        zs: redshift or bins
+        z_is_index: bool, default=False
+           The zs are indices and not redshifts
+        calc_lkhd: bool, default=False
+           Calculate likelihood rather than chisq
+
+        Returns
+        -------
+        chisqs: array of floats
+        """
+
+        calc_chisq = not calc_lkhd
+
+        if z_is_index:
+            zinds = zs
+        else:
+            zinds = self.zindex(zs)
+
+        magind = self.refmagindex(galaxy.refmag)
+        galcolor = galaxy.galcol
+
+        return compute_chisq(self.covmat[:,:,zinds], self.c[zinds,:],
+                             self.slope[zinds,:], self.pivotmag[zinds],
+                             np.array(galaxy.refmag), galaxy.mag_err,
+                             galcolor, refmagerr=np.array(galaxy.refmag_err),
+                             lupcorr=self.lupcorr[magind,zinds,:],
+                             calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)
+
+
     def calculate_chisq(self, galaxies, z, calc_lkhd=False, z_is_index=False):
         """
         compute chisq for a set of galaxies at redshift z OR a galaxy at many redshifts OR
@@ -433,34 +471,6 @@ class RedSequenceColorPar(object):
                              lupcorr=self.lupcorr[magind,zind,:],
                              calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)
 
-    def calculate_chisq_redshifts(self, galaxy, zs, calc_lkhd=False):
-        """
-        Compute chisq for a galaxy at a set of redshifts zs
-
-        parameters
-        ----------
-        galaxy: element of GalaxyCatalog
-           Galaxy which needs chisq values
-        zs: numpy array
-           redshifts to compute chisq
-        calc_lkhd: bool, optional
-           compute likelihood rather than chisq (default False)
-
-        returns
-        -------
-        chisqs: array of floats
-        """
-
-        zind = self.zindex(zs)
-        magind = self.refmagindex(galaxy.refmag)
-        galcolor = galaxy.galcol
-        chisq_dist = ChisqDist(self.covmat[:, :, zind], zredstr.c[zind, :], zredstr.slope[zind, :],
-                               self.pivotmag[zind], galaxy.refmag, galaxy.mag_err,
-                               galcolor, refmagerr=galaxy.refmag_err,
-                               lupcorr=self.lupcorr[magind, zind, :])
-        if calc_lkhd:
-            return chisq_dist.compute_chisq(chisq_mode=False)
-        return chisq_dist.compute_chisq(chisq_mode=True)
 
     def plot_redsequence_diag(self, fig, ind, bands):
         """
