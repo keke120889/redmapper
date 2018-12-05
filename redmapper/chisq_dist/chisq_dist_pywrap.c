@@ -1,5 +1,6 @@
 #include <Python.h>
 #include "chisq_dist.h"
+#include "stdio.h"
 #include <numpy/arrayobject.h>
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
@@ -75,14 +76,50 @@ ChisqDistObject_init(struct ChisqDistObject* self, PyObject* args)
     self->chisq_dist->ngal = ngal;
     self->chisq_dist->nz = nz;
     self->chisq_dist->ncol = ncol;
+    if (PyArray_TYPE(covmat_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "covmat must be of type float64");
+        return -1;
+    }
     self->chisq_dist->covmat = (double *) PyArray_DATA(covmat_obj);
+    if (PyArray_TYPE(c_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "c must be of type float64");
+        return -1;
+    }
     self->chisq_dist->c = (double *) PyArray_DATA(c_obj);
+    if (PyArray_TYPE(slope_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "slope must be of type float64");
+        return -1;
+    }
     self->chisq_dist->slope = (double *) PyArray_DATA(slope_obj);
+    if (PyArray_TYPE(pivotmag_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "pivotmag must be of type float64");
+        return -1;
+    }
     self->chisq_dist->pivotmag = (double *) PyArray_DATA(pivotmag_obj);
+    if (PyArray_TYPE(refmag_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "refmag must be of type float64");
+        return -1;
+    }
     self->chisq_dist->refmag = (double *) PyArray_DATA(refmag_obj);
+    if (PyArray_TYPE(refmagerr_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "refmagerr must be of type float64");
+        return -1;
+    }
     self->chisq_dist->refmagerr = (double *) PyArray_DATA(refmagerr_obj);
+    if (PyArray_TYPE(magerr_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "magerr must be of type float64");
+        return -1;
+    }
     self->chisq_dist->magerr = (double *) PyArray_DATA(magerr_obj);
+    if (PyArray_TYPE(color_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "color must be of type float64");
+        return -1;
+    }
     self->chisq_dist->color = (double *) PyArray_DATA(color_obj);
+    if (PyArray_TYPE(lupcorr_obj) != NPY_FLOAT64) {
+        PyErr_SetString(PyExc_ValueError, "lupcorr must be of type float64");
+        return -1;
+    }
     self->chisq_dist->lupcorr = (double *) PyArray_DATA(lupcorr_obj);
 
     if (self->chisq_dist->mode == 0) {
