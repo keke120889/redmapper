@@ -14,7 +14,7 @@ class ZredColor(object):
     """
     """
 
-    def __init__(self, zredstr, sigint=0.001, do_correction=True, adaptive=True,
+    def __init__(self, zredstr, sigint=0.001, do_correction=True,
                  use_photoerr=True, zrange=None):
         self.zredstr = zredstr
 
@@ -88,10 +88,10 @@ class ZredColor(object):
         lndist[zbins], chisq[zbins] = self._calculate_lndist(galaxy, zbins)
 
         # move from log space to regular space
-        maxlndist = np.max(lndist[zbins_limited])
+        maxlndist = np.max(lndist[zbins])
         dist = np.zeros_like(lndist)
         with np.errstate(invalid='ignore', over='ignore'):
-            dist[zbins_limited] = np.exp(lndist[zbins_limited] - maxlndist)
+            dist[zbins] = np.exp(lndist[zbins] - maxlndist)
 
         # fix infinities and NaNs
         bad, = np.where(~np.isfinite(dist))
@@ -130,7 +130,16 @@ class ZredColor(object):
         neighbors = 2
         use, = np.where(lndist > -1e10)
         if use.size >= neighbors * 2 + 1:
-            minindex, maxindex = np.clip([ind - neighbors, ind + neighbors], use[0], use[-1])
+            # If it hits a wall, then move in the other direction to ensure we have at least neighbors*2+1 points
+            minuse = use.min()
+            maxuse = use.max()
+
+            minindex = minuse if minuse > ind - neighbors else ind - neighbors
+            maxindex = maxuse if maxuse < ind + neighbors else ind + neighbors
+            if minindex == minuse:
+                maxindex = np.clip(minuse + 2 * neighbors, None, maxuse)
+            elif maxindex == maxuse:
+                minindex = np.clip(maxuse - 1 - 2*neighbors, minuse, None)
 
             if ((maxindex - minindex + 1) >= 5):
                 X = np.zeros((maxindex - minindex + 1, 3))
@@ -143,7 +152,7 @@ class ZredColor(object):
 
                 if fit[0] < 0.0:
                     ztry = -fit[1] / (2.0 * fit[0])
-                    # Don't let it move to far, or it's a bad fit
+                    # Don't let it move too far, or it's a bad fit
                     if (np.abs(ztry - zred) < 2.0*zred_e):
                         zred = ztry
 
