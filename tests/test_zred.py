@@ -35,47 +35,48 @@ class ZredTestCase(unittest.TestCase):
         galaxies_input = copy.deepcopy(galaxies)
 
         # start with the first one...
-        zredc = ZredColor(zredstr, adaptive=True)
+        zredc = ZredColor(zredstr)
 
         zredc.compute_zred(galaxies[0])
 
         starttime = time.time()
-        for i, g in enumerate(galaxies):
-            try:
-                zredc.compute_zred(g)
-            except:
-                print("Crashed on %d" % (i))
+        zredc.compute_zreds(galaxies)
 
         print("Ran %d galaxies in %.3f seconds" % (galaxies.size,
                                                    time.time() - starttime))
 
-        # make sure we have reasonable consistency...
-        # It seems that at least some of the discrepancies are caused by
-        # slight bugs in the IDL implementation.
+        # Only compare galaxies that are brighter than 0.15L* in either old OR new
+        # Otherwise, we're just comparing how the codes handle "out-of-range"
+        # galaxies, and that does not matter
+        mstar_input = zredstr.mstar(galaxies_input.zred_uncorr)
+        mstar = zredstr.mstar(galaxies.zred_uncorr)
 
-        delta_zred_uncorr = galaxies.zred_uncorr - galaxies_input.zred_uncorr
+        ok, = np.where((galaxies.refmag < (mstar_input - 2.5*np.log10(0.15))) |
+                       (galaxies.refmag < (mstar - 2.5*np.log10(0.15))))
+
+        delta_zred_uncorr = galaxies.zred_uncorr[ok] - galaxies_input.zred_uncorr[ok]
 
         use, = np.where(np.abs(delta_zred_uncorr) < 1e-3)
 
-        testing.assert_array_less(0.9, float(use.size) / float(galaxies.size))
+        testing.assert_array_less(0.9, float(use.size) / float(ok.size))
 
-        delta_zred = galaxies.zred[use] - galaxies_input.zred[use]
+        delta_zred = galaxies.zred[ok[use]] - galaxies_input.zred[ok[use]]
         use2, = np.where(np.abs(delta_zred) < 1e-3)
         testing.assert_array_less(0.99, float(use2.size) / float(delta_zred.size))
 
-        delta_zred2 = galaxies.zred2[use] - galaxies_input.zred2[use]
+        delta_zred2 = galaxies.zred2[ok[use]] - galaxies_input.zred2[ok[use]]
         use2, = np.where(np.abs(delta_zred) < 1e-3)
         testing.assert_array_less(0.99, float(use2.size) / float(delta_zred2.size))
 
-        delta_zred_uncorr_e = galaxies.zred_uncorr_e[use] - galaxies_input.zred_uncorr_e[use]
+        delta_zred_uncorr_e = galaxies.zred_uncorr_e[ok[use]] - galaxies_input.zred_uncorr_e[ok[use]]
         use2, = np.where(np.abs(delta_zred_uncorr_e) < 1e-3)
         testing.assert_array_less(0.98, float(use2.size) / float(delta_zred_uncorr_e.size))
 
-        delta_zred_e = galaxies.zred_e[use] - galaxies_input.zred_e[use]
+        delta_zred_e = galaxies.zred_e[ok[use]] - galaxies_input.zred_e[ok[use]]
         use2, = np.where(np.abs(delta_zred_e) < 1e-3)
         testing.assert_array_less(0.98, float(use2.size) / float(delta_zred_e.size))
 
-        delta_zred2_e = galaxies.zred2_e[use] - galaxies_input.zred2_e[use]
+        delta_zred2_e = galaxies.zred2_e[ok[use]] - galaxies_input.zred2_e[ok[use]]
         use2, = np.where(np.abs(delta_zred2_e) < 1e-3)
         testing.assert_array_less(0.98, float(use2.size) / float(delta_zred2_e.size))
 
@@ -93,8 +94,8 @@ class ZredTestCase(unittest.TestCase):
         config.outpath = self.test_dir
         outfile = os.path.join(self.test_dir, 'test_zred_out.fits')
 
-        tab = fitsio.read(config.galfile, ext=1)
-        galfile = os.path.join(os.path.dirname(config.galfile), tab[0]['FILENAMES'][0].decode())
+        tab = fitsio.read(config.galfile, ext=1, lower=True)
+        galfile = os.path.join(os.path.dirname(config.galfile), tab[0]['filenames'][0].decode())
 
         zredRuncat = ZredRunCatalog(config)
 
@@ -106,8 +107,25 @@ class ZredTestCase(unittest.TestCase):
         self.assertGreater(np.min(gals.zred), 0.0)
         self.assertGreater(np.min(gals.chisq), 0.0)
         self.assertLess(np.max(gals.lkhd), 0.0)
-        testing.assert_array_almost_equal(gals.zred[0: 3],
-                                          np.array([0.10292412, 0.19617805, 0.13324176]))
+
+        # And compare to the "official" run...
+        config.zredfile = os.path.join(file_path, 'zreds_test', 'dr8_test_zreds_master_table.fit')
+        ztab = fitsio.read(config.zredfile, ext=1, lower=True)
+        zredfile = os.path.join(os.path.dirname(config.zredfile), ztab[0]['filenames'][0].decode())
+
+        gals_compare = GalaxyCatalog.from_galfile(galfile, zredfile=zredfile)
+
+        zredstr = RedSequenceColorPar(config.parfile)
+        mstar_input = zredstr.mstar(gals_compare.zred_uncorr)
+        mstar = zredstr.mstar(gals_compare.zred_uncorr)
+
+        ok, = np.where((gals_compare.refmag < (mstar_input - 2.5*np.log10(0.15))) |
+                       (gals_compare.refmag < (mstar - 2.5*np.log10(0.15))))
+
+        delta_zred_uncorr = gals.zred_uncorr[ok] - gals_compare.zred_uncorr[ok]
+
+        use, = np.where(np.abs(delta_zred_uncorr) < 1e-3)
+        testing.assert_array_less(0.98, float(use.size) / float(ok.size))
 
     def test_zred_runpixels(self):
         """
@@ -149,9 +167,21 @@ class ZredTestCase(unittest.TestCase):
         self.assertGreater(np.min(gals.chisq), 0.0)
         self.assertLess(np.max(gals.lkhd), 0.0)
 
-        # Spot check a few
-        testing.assert_array_almost_equal(gals.zred[0: 3],
-                                          np.array([0.10292412, 0.19617805, 0.13324176]))
+        zredfile = os.path.join(file_path, 'zreds_test', 'dr8_test_zreds_master_table.fit')
+        gals_compare = GalaxyCatalog.from_galfile(config.galfile, zredfile=zredfile,
+                                                  nside=config.d.nside, hpix=config.d.hpix, border=config.border)
+
+        zredstr = RedSequenceColorPar(config.parfile)
+        mstar_input = zredstr.mstar(gals_compare.zred_uncorr)
+        mstar = zredstr.mstar(gals_compare.zred_uncorr)
+
+        ok, = np.where((gals_compare.refmag < (mstar_input - 2.5*np.log10(0.15))) |
+                       (gals_compare.refmag < (mstar - 2.5*np.log10(0.15))))
+
+        delta_zred_uncorr = gals.zred_uncorr[ok] - gals_compare.zred_uncorr[ok]
+
+        use, = np.where(np.abs(delta_zred_uncorr) < 1e-3)
+        testing.assert_array_less(0.98, float(use.size) / float(ok.size))
 
     def setUp(self):
         self.test_dir = None

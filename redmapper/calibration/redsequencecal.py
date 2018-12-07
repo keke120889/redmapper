@@ -646,16 +646,12 @@ class RedSequenceCalibrator(object):
 
         zredstr = RedSequenceColorPar(self.config.parfile)
 
-        zredc = ZredColor(zredstr, adaptive=True, do_correction=do_correction)
+        zredc = ZredColor(zredstr, do_correction=do_correction)
 
         gals.add_zred_fields()
 
         starttime = time.time()
-        for i, g in enumerate(gals):
-            try:
-                zredc.compute_zred(g)
-            except:
-                pass
+        zredc.compute_zreds(gals)
 
         self.config.logger.info('Computed zreds in %.2f seconds.' % (time.time() - starttime))
 

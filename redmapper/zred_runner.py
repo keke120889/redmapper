@@ -43,7 +43,7 @@ class ZredRunCatalog(object):
         ngal = hdr['NAXIS2']
 
         zredstr = RedSequenceColorPar(self.config.parfile)
-        self.zredc = ZredColor(zredstr, adaptive=True)
+        self.zredc = ZredColor(zredstr)
 
         zreds = Catalog(np.zeros(ngal, dtype=[('ZRED', 'f4'),
                                               ('ZRED_E', 'f4'),
@@ -86,8 +86,7 @@ class ZredRunCatalog(object):
         galaxies = GalaxyCatalog(in_cat)
         galaxies.add_zred_fields()
 
-        for g in galaxies:
-            self.zredc.compute_zred(g)
+        self.zredc.compute_zreds(galaxies)
 
         return (ind_range,
                 galaxies.zred, galaxies.zred_e,
@@ -129,7 +128,7 @@ class ZredRunPixels(object):
             os.makedirs(self.zredpath)
 
         zredstr = RedSequenceColorPar(self.config.parfile)
-        self.zredc = ZredColor(zredstr, adaptive=True)
+        self.zredc = ZredColor(zredstr)
 
         self.galtable = Entry.from_fits_file(self.config.galfile)
         indices = list(get_subpixel_indices(self.galtable, hpix=self.config.d.hpix, border=self.config.border, nside=self.config.d.nside))
@@ -168,11 +167,8 @@ class ZredRunPixels(object):
             ctr = 0
             ngal = galaxies.size
 
-        for g in galaxies:
-            if self.verbose and (ctr % 1000) == 0:
-                self.config.logger.info("Computing zred on galaxy %d of %d" % (ctr, ngal))
-            self.zredc.compute_zred(g)
-            ctr += 1
+        self.zredc.compute_zreds(galaxies)
+        ctr += galaxies.size
 
         if self.single_process:
             self.ctr = ctr
