@@ -629,3 +629,12 @@ class Configuration(object):
 
         with open(filename, 'w') as f:
             yaml.dump(out_dict, stream=f)
+
+    def compute_border(self):
+        """
+        """
+
+        maxdist = 1.05 * self.percolation_rmask_0 * (300. / 100.)**config.percolation_rmask_beta
+        radius = maxdist / (np.radians(1.) * self.cosmo.Da(0, self.zrange[0]))
+
+        return 3.0 * radius

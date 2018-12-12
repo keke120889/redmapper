@@ -41,7 +41,8 @@ class RedmapperRun(object):
         self.config.cosmo = None
 
     def run(self, specmode=False, specseed=None, seedfile=None, check=True,
-            percolation_only=False, consolidate_like=False, keepz=False, cleaninput=False):
+            percolation_only=False, consolidate_like=False, keepz=False, cleaninput=False,
+            consolidate=True):
         """
         """
 
@@ -86,7 +87,11 @@ class RedmapperRun(object):
         likefiles = [x[2] for x in retvals]
         percfiles = [x[3] for x in retvals]
 
-        finalfile = self._consolidate(hpixels, percfiles, 'final', members=True, check=check)
+        # Allow for runs without consolidation
+        if consolidate:
+            finalfile = self._consolidate(hpixels, percfiles, 'final', members=True, check=check)
+        else:
+            finalfile = None
 
         if consolidate_like:
             likefile = self._consolidate(hpixels, likefiles, 'like', members=False, check=check)
@@ -281,7 +286,7 @@ class RedmapperRun(object):
         # Set the specific config stuff here
         config.d.hpix = hpix
 
-        config.d.outbase = '%s_%05d' % (self.config.d.outbase, hpix)
+        config.d.outbase = '%s_%d_%05d' % (self.config.d.outbase, self.config.d.nside, hpix)
 
         # Need to add checks about success, and whether a file was output
         #  (especially border pixels in sims)

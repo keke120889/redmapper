@@ -39,10 +39,11 @@ class RunRedmapperPixelTask(object):
 
         # Compute the border size
 
-        maxdist = 1.05 * self.config.percolation_rmask_0 * (300. / 100.)**self.config.percolation_rmask_beta
-        radius = maxdist / (np.radians(1.) * self.config.cosmo.Da(0, self.config.zrange[0]))
+        #maxdist = 1.05 * self.config.percolation_rmask_0 * (300. / 100.)**self.config.percolation_rmask_beta
+        #radius = maxdist / (np.radians(1.) * self.config.cosmo.Da(0, self.config.zrange[0]))
 
-        self.config.border = 3.0 * radius
+        #self.config.border = 3.0 * radius
+        self.config.border = self.config.compute_border()
 
         self.config.d.hpix = self.pixel
         self.config.d.nside = self.nside
