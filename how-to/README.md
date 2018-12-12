@@ -185,14 +185,14 @@ For convenience, the following files are included with the `redmapper` package, 
 more can be added on request (and I will add the code to generate these files
 at some point in the near future):
 
-* mstar_sdss_r03.fit
-* mstar_sdss_i03.fit
-* mstar_sdss_z03.fit
-* mstar_des_i03.fit
-* mstar_des_z03.fit
-* mstar_lsst_i03.fit
-* mstar_lsst_r03.fit
-* mstar_lsst_z03.fit
+* `mstar_sdss_r03.fit`
+* `mstar_sdss_i03.fit`
+* `mstar_sdss_z03.fit`
+* `mstar_des_i03.fit`
+* `mstar_des_z03.fit`
+* `mstar_lsst_i03.fit`
+* `mstar_lsst_r03.fit`
+* `mstar_lsst_z03.fit`
 
 (The "03" in the names refer to them being generated from a BC03 model.)
 
@@ -227,9 +227,9 @@ For convenience, the following files are included with the `redmapper` package, 
 more can be added on request (and I will add the code to generate these files
 at some point in the near future):
 
-* bc03_colors_sdss.fit
-* bc03_colors_des.fit
-* bc03_colors_lsst.fit
+* `bc03_colors_sdss.fit`
+* `bc03_colors_des.fit`
+* `bc03_colors_lsst.fit`
 
 The format of the files is as follows:
 
