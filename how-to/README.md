@@ -310,8 +310,124 @@ main things to look at are:
   done!) or in the run directory (to do!)
 
 Unfortunately, the background file generation has not yet been optimized for memory
-usage.  If you have a very large footprint, you may need to point the `bkgfile`
-parameter to the final iteration from the calibration run (and if this is a
-sufficiently large area this should be fine.)
+usage.  If you have a very large footprint, you may want to set the
+`calib_make_full_bkg` to `False` in the calibration configuration file.
 
-### Step 2: Compute 
+### Step 2: Compute zred photometric redshifts (if necessary)
+
+The second step (if the calibration was not performed on the full footprint) is
+to compute the zred photometric redshifts.  This can be done one of two ways.
+If you have a compute cluster, then you should be able to run:
+
+```bash
+
+redmapper_batch.py -c run.yml -r 1 -b BATCHMODE -w WALLTIME -n NSIDE
+```
+
+On first run, the code will create a configuration file called
+`$HOME/.redmapper_batch.yml`.  You must edit this, with the following format:
+
+```yaml
+
+batchmode:
+   setup: 'environment_setup_script_to_call'
+   batch: 'lsf'
+   requirements: 'linux64'
+```
+
+You can name `batchmode` whatever you want, and you can define more than one
+section if you run on multiple clusters.  Currently, the only batch system that
+is supported is `lsf`, but I'll be adding `slurm` support soon, and please let
+me know if you have other needs.  Finally, `requirements` is the batch system
+requirements (`-R` in `lsf`).
+
+When run after setup, this will create directory called `jobs/` and an `lsf`
+batch file called `foo_zred_1.job`.  You can specify the walltime for the
+compute cluster (default is 5 hours) and the nside splitting (larger number
+means more jobs that will run faster).  Default is nside=8.
+
+Alternatively, if you do not have a compute cluster, this can be run locally in
+the following way:
+
+```python
+
+import redmapper
+
+config = redmapper.Configuration('run.yml')
+zredRunpix = redmapper.ZredRunPixels(config)
+# This will use python multiprocessing to run on config.calib_nproc cores
+zredRunpix.run()
+```
+
+### Step 3: Compute zred background (if necessary)
+
+The third step (if the calibration was not performed on the full footprint, and
+you have asked for a computation of the new background) is to compute the zred
+background.  This needs to be streamlined, but can be accomplished with:
+
+```bash
+
+redmapper_make_zred_bkg.py -c run.yml
+```
+
+### Step 4: Run the Cluster Finder
+
+The fourth step is to run the full cluster finder.  It is strongly recommended
+to run this on a compute cluster, but it is possible to run it locally (though
+not fully tested yet...).
+
+See above for setting up the batch system.  Then you do:
+
+```bash
+
+redmapper_batch.py -c run.yml -r 0 -b BATCHMODE -w WALLTIME -n NSIDE
+```
+
+When run after setup, this will create a directory called `jobs/` and an `lsf`
+batch file called `foo_run_1.job`.  You can specify the walltime for the
+compute cluster (default is 72 hours) and the nside splitting (larger number
+means more jobs that will run faster).  Default is nside=4.  Higher nside is
+smaller pixels which run faster and use less memory, but there are diminishing
+returns because you still have to run the buffer region between pixels.
+
+Alternatively, if you do not have a compute cluster, this can be run locally in
+the following way:
+
+```python
+
+import redmapper
+import numpy as np
+
+config = redmapper.Configuration('run.yml')
+config.run_min_nside = 4  # nside desired
+config.border = config.compute_border()
+redmapperRun = redmapper.RedmapperRun(config)
+# This will use python multiprocessing to run on config.calib_run_nproc cores
+redmapperRun.run(consolidate=False)
+```
+
+### Step 5: Consolidate the Catalog Pixels
+
+The final step is to consolidate the catalog pixels that were run.  This is
+done with:
+
+```bash
+
+redmapper_consolidate_run.py -c run.yml [-l LAMBDA_CUTS] [-v VLIM_LSTARS]
+```
+
+The `lambda_cuts` (typically lambda > 5 and lambda > 20) can also be specified
+in `run.yml`, but the command line will override it.  The `vlim_lstars`
+arguments specify the "fraction of L* for which the galaxy catalog depth should
+be bright enough to find a typical red galaxy at redshift z".  This can only be
+specified if you have depth maps for all the relevant bands.  Typically, this
+is set to 0.2 (the same as the luminosity cut for the richness estimation) for
+a volume limited catalog, and to some large number (I use 5.0) for a "full"
+catalog that covers as much redshift as possible, but is not volume-limited.
+
+Some diagnostic plots will be placed in the `plots/` subdirectory of the run.
+
+And that's it!
+
+
+
