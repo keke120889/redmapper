@@ -23,13 +23,36 @@ class SpecPlot(object):
         self.binsize = binsize
         self.nsig = nsig
 
-    def plot_cluster_catalog(self, cat, title=None):
+    def plot_cluster_catalog(self, cat, title=None, figure_return=False):
         """
         """
 
-        self.plot_values(cat.cg_spec_z, cat.z_lambda, cat.z_lambda_e, title=title)
+        return self.plot_values(cat.cg_spec_z, cat.z_lambda, cat.z_lambda_e, title=title,
+                                figure_return=figure_return)
 
-    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', title=None):
+    def plot_cluster_catalog_from_members(self, cat, mem, title=None, figure_return=False):
+        """
+        """
+
+        # Not sure why this is necessary on the mocks, but there are some -1s...
+        ok, = np.where(mem.zspec > 0.0)
+        mem = mem[ok]
+
+        a, b = esutil.numpy_util.match(cat.mem_match_id, mem.mem_match_id)
+
+        h, rev = esutil.stat.histogram(a, rev=True)
+        mem_zmed = np.zeros(cat.size)
+        for i in xrange(h.size):
+            if h[i] == 0:
+                continue
+            i1a = rev[rev[i]: rev[i + 1]]
+            mem_zmed[i] = np.median(mem.zspec[i1a])
+
+        return self.plot_values(mem_zmed, cat.z_lambda, cat.z_lambda_e, title=title,
+                                figure_return=figure_return)
+
+    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', title=None,
+                    figure_return=False):
         """
         """
 
@@ -44,7 +67,7 @@ class SpecPlot(object):
 
         plot_xrange = np.array([0.0, self.config.zrange[1] + 0.1])
 
-        fig = plt.figure(1, figsize=(8, 6))
+        fig = plt.figure(figsize=(8, 6))
         fig.clf()
 
         ax = fig.add_subplot(211)
@@ -77,7 +100,7 @@ class SpecPlot(object):
         # Plot the outliers
         bad, = np.where(np.abs(z_phot[use] - z_spec[use]) / z_phot_e[use] > self.nsig)
         if bad.size > 0:
-            ax.plot(z_phot[use[bad]], z_spec[use[bad]], 'r.')
+            ax.plot(z_phot[use[bad]], z_spec[use[bad]], 'r*')
 
         fracout = float(bad.size) / float(use.size)
 
@@ -128,8 +151,11 @@ class SpecPlot(object):
 
         fig.tight_layout()
 
-        fig.savefig(self.filename)
-        plt.close(fig)
+        if not figure_return:
+            fig.savefig(self.filename)
+            plt.close(fig)
+        else:
+            return fig
 
     @property
     def filename(self):

@@ -162,6 +162,7 @@ class Configuration(object):
     b = ConfigField(isArray=True)
     galfile_nside = ConfigField(required=True)
     bands = ConfigField(required=True)
+    has_truth = ConfigField(default=False)
 
     area_finebin = ConfigField(default=0.001, required=True)
     area_coarsebin = ConfigField(default=0.005, required=True)
@@ -299,7 +300,7 @@ class Configuration(object):
     vlim_nsigs = ConfigField(default=[], required=False, isArray=True)
 
     consolidate_lambda_cuts = ConfigField(default=[5.0, 20.0], required=False, isArray=True)
-    consolidate_vlim_lstars = ConfigField(default=[0.2, 5.0], required=False, isArray=True)
+    consolidate_vlim_lstars = ConfigField(default=[0.2, 5.0], required=False, isList=True)
     select_scaleval = ConfigField(default=False, required=True)
 
     def __init__(self, configfile, outpath=None):

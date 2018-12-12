@@ -12,12 +12,17 @@ if __name__ == '__main__':
 
     parser.add_argument('-c', '--configfile', action='store', type=str, required=True,
                         help='YAML config file')
-    parser.add_argument('-l', '--minlambdas', action='store', type=float,
+    parser.add_argument('-l', '--lambda_cuts', action='store', type=float,
                         nargs='+', required=False, help='Minimum lambdas')
     parser.add_argument('-v', '--vlim_lstars', action='store', type=float,
                         nargs='+', required=False, help='Volume-limit L* cuts')
 
     args = parser.parse_args()
 
-    consolidate = redmapper.pipeline.RedmapperConsolidateTask(args.configfile, minlambdas=args.minlambdas, vlim_lstars=args.vlim_lstars)
+    if args.vlim_lstars is None:
+        vlim_lstars = []
+    else:
+        vlim_lstars = args.vlim_lstars
+
+    consolidate = redmapper.pipeline.RedmapperConsolidateTask(args.configfile, lambda_cuts=args.lambda_cuts, vlim_lstars=vlim_lstars)
     consolidate.run()

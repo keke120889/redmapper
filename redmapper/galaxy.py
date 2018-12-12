@@ -47,7 +47,7 @@ class GalaxyCatalog(Catalog):
         self.depth = 10 if 'depth' not in kwargs else kwargs['depth']
 
     @classmethod
-    def from_galfile(cls, filename, zredfile=None, nside=0, hpix=0, border=0.0):
+    def from_galfile(cls, filename, zredfile=None, nside=0, hpix=0, border=0.0, truth=False):
         """
         Name:
             from_galfile
@@ -65,6 +65,8 @@ class GalaxyCatalog(Catalog):
                 healpix pixel (ring order) of sub-pixel
             zredfile: string
                 name of zred file
+            truth: boolean
+                read truth info (default false)
         Outputs:
             A galaxy catalog object
         """
@@ -157,26 +159,44 @@ class GalaxyCatalog(Catalog):
         # create the catalog array to read into
         # FIXME: filter out any TRUTH information if necessary
         # will need to also get the list of columns from the thingamajig.
-        elt = fitsio.read(os.path.join(path, tab.filenames[indices[0]].decode()), ext=1, rows=0, upper=True)
-        cat = np.zeros(np.sum(tab.ngals[indices]), dtype=elt.dtype)
+
+        # and need to be able to cut?
+        elt = fitsio.read(os.path.join(path, tab.filenames[indices[0]].decode()), ext=1, rows=0, lower=True)
+        dtype_in = elt.dtype.descr
+        if not truth:
+            mark = []
+            for dt in dtype_in:
+                if (dt[0] != 'ztrue' and dt[0] != 'm200' and dt[0] != 'central' and
+                    dt[0] != 'halo_id'):
+                    mark.append(True)
+                else:
+                    mark.append(False)
+
+            dtype = [dt for i, dt in enumerate(dtype_in) if mark[i]]
+            columns = [dt[0] for dt in dtype]
+        else:
+            dtype = dtype_in
+            columns = None
+
+        cat = np.zeros(np.sum(tab.ngals[indices]), dtype=dtype)
 
         if use_zred:
-            zelt = fitsio.read(os.path.join(zpath, ztab.filenames[indices[0]].decode()), ext=1, rows=0, upper=True)
+            zelt = fitsio.read(os.path.join(zpath, ztab.filenames[indices[0]].decode()), ext=1, rows=0, upper=False)
             zcat = np.zeros(cat.size, dtype=zelt.dtype)
 
         # read the files
         ctr = 0
         for index in indices:
-            cat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(path, tab.filenames[index].decode()), ext=1, upper=True)
+            cat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(path, tab.filenames[index].decode()), ext=1, upper=False, columns=columns)
             if use_zred:
                 # Note that this effectively checks that the numbers of rows in each file match properly (though the exception will be cryptic...)
-                zcat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(zpath, ztab.filenames[index].decode()), ext=1, upper=True)
+                zcat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(zpath, ztab.filenames[index].decode()), ext=1, upper=False)
             ctr += tab.ngals[index]
 
-        if hpix is not None and nside > 0 and border > 0.0:
+        if _hpix is not None and nside > 0 and border > 0.0:
             # Trim to be closer to the border if necessary...
 
-            nside_cutref = 256
+            nside_cutref = 512
             boundaries = hp.boundaries(nside, hpix, step=nside_cutref/nside)
             theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
             ipring_coarse = hp.ang2pix(nside, theta, phi)
@@ -187,8 +207,8 @@ class GalaxyCatalog(Catalog):
                 inhpix = np.append(inhpix, pixint)
             inhpix = np.unique(inhpix)
 
-            theta = np.radians(90.0 - cat['DEC'])
-            phi = np.radians(cat['RA'])
+            theta = np.radians(90.0 - cat['dec'])
+            phi = np.radians(cat['ra'])
             ipring = hp.ang2pix(nside_cutref, theta, phi)
             _, indices = esutil.numpy_util.match(inhpix, ipring)
 

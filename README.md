@@ -1,41 +1,51 @@
-redmapper
+The *red*-sequence *ma*tched-filter *P*robabilistic *Per*colation (redMaPPer)
+Cluster Finder
 =========
-This will be the public, python version of redMaPPer (see
-[http://adsabs.harvard.edu/abs/2014ApJ...785..104R]).
+
+This is the open-source, python version of the *red*-sequence *ma*tched-filter
+*P*robabilistic *Per*colation (redMaPPer) cluster finder, originally described
+in [Rykoff et al. (2014)](http://adsabs.harvard.edu/abs/2014ApJ...785..104R),
+with updates described in [Rozo et
+al. (2015)](http://adsabs.harvard.edu/abs/2015MNRAS.453...38R) and [Rykoff et
+al. (2016)](http://adsabs.harvard.edu/abs/2016ApJS..224....1R).
 
 Installation
 ------------
-You can install this module with
-```
-cd redmapper
-make
-python setup.py install
-```
 
-If you want to keep the root directory clean then run
+Installing the code is easy, and is supported on Python 2.7 and 3.5+.
+
 ```
 cd redmapper
-python setup.py clean
+python setup.py install
 ```
 
 Tests
 -----
-Once installed, feel free to run the nosetests with
+Once installed, it is important to run all the tests:
+
 ```
 cd redmapper/tests
+nosetests
 ```
-where the tests can be run individually.
+
+If you encounter any problems, please [file an
+issue](https://github.com/erykoff/redmapper/issues).
 
 Dependencies
 ------------
-Note: this list is ongoing. A list of dependencies includes
-the following:
-* numpy
+The following modules are required:
+* astropy
+* matplotlib
 * nose
 * pyyaml
-* sphinx
 * fitsio
 * esutil
+* numpy
 * healpy
+* scipy
+* future
 
-These modules will be installed when _make_ runs.
+How-To
+------
+Please see [the redMaPPer How-To](how-to/README.md) for information about
+running redMaPPer on your data.

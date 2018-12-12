@@ -10,7 +10,7 @@ import esutil
 
 from ..configuration import Configuration
 from ..volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
-from ..catalog import Catalog
+from ..catalog import Catalog, Entry
 from ..utilities import read_members, astro_to_sphere
 from ..plotting import SpecPlot, NzPlot
 from ..galaxy import GalaxyCatalog
@@ -19,7 +19,7 @@ class RedmapperConsolidateTask(object):
     """
     """
 
-    def __init__(self, configfile, lambda_cuts=None, vlim_lstars=None, path=None):
+    def __init__(self, configfile, lambda_cuts=None, vlim_lstars=[], path=None):
         if path is None:
             outpath = os.path.dirname(os.path.abspath(configfile))
         else:
@@ -32,9 +32,9 @@ class RedmapperConsolidateTask(object):
         else:
             self.lambda_cuts = lambda_cuts
 
-        if vlim_lstars is None:
-            if self.config.consolidate_vlim_lstars[0] is None:
-                self.vlim_lstars = None
+        if len(vlim_lstars) == 0:
+            if len(self.config.consolidate_vlim_lstars) == 0:
+                self.vlim_lstars = []
             else:
                 self.vlim_lstars = self.config.consolidate_vlim_lstars
         else:
@@ -56,7 +56,7 @@ class RedmapperConsolidateTask(object):
 
         nside = int(m.groups()[0])
 
-        if match_spec:
+        if match_spec and not self.config.has_truth:
             spec = GalaxyCatalog.from_fits_file(self.config.specfile)
             use, = np.where(spec.z_err < 0.001)
             spec = spec[use]
@@ -69,7 +69,7 @@ class RedmapperConsolidateTask(object):
         # Note that the vlim will not be per lambda!
 
         # If we have vlim set, we need to make the vlims...
-        if self.vlim_lstars is not None:
+        if len(self.vlim_lstars) > 0:
             vlim_masks = []
             vlim_areas = []
             for vlim_lstar in self.vlim_lstars:
@@ -96,7 +96,15 @@ class RedmapperConsolidateTask(object):
             # and read in members
             mem = read_members(catfile)
 
-            if match_spec:
+            # Extract pixnum from name
+
+            m = re.search('_(\d+)_(\d\d\d\d\d)_', catfile)
+            if m is None:
+                raise RuntimeError("Could not understand filename for %s" % (catfile))
+
+            hpix = int(m.groups()[1])
+
+            if match_spec and not self.config.has_truth:
                 # match spec to cat and mem
                 cat.cg_spec_z[:] = -1.0
 
@@ -107,13 +115,18 @@ class RedmapperConsolidateTask(object):
                 i0, i1, dists = spec.match_many(mem.ra, mem.dec, 3./3600., maxmatch=1)
                 mem.zspec[i0] = spec.z[i1]
 
-            # Extract pixnum from name
+            if self.config.has_truth:
+                # Need to match to the truth catalog
+                truthcat = GalaxyCatalog.from_galfile(self.config.galfile, hpix=hpix, nside=nside, border=0.0, truth=True)
 
-            m = re.search('_(\d+)_(\d\d\d\d\d)_', catfile)
-            if m is None:
-                raise RuntimeError("Could not understand filename for %s" % (catfile))
+                cat.cg_spec_z[:] = -1.0
 
-            hpix = int(m.groups()[1])
+                i0, i1, dists = truthcat.match_many(cat.ra, cat.dec, 1./3600., maxmatch=1)
+                cat.cg_spec_z[i0] = truthcat.ztrue[i1]
+
+                mem.zspec[:] = -1.0
+                i0, i1, dists = truthcat.match_many(mem.ra, mem.dec, 1./3600., maxmatch=1)
+                mem.zspec[i0] = truthcat.ztrue[i1]
 
             # Note: when adding mock support, read in true galaxies to get members
 
@@ -168,7 +181,7 @@ class RedmapperConsolidateTask(object):
                     if not started[i, j]:
                         # Figure out filename
                         self.config.d.outbase = '%s_redmapper_v%s_lgt%02d' % (self.config.outbase, self.config.version, minlambda)
-                        if self.vlim_lstars is not None:
+                        if len(self.vlim_lstars) > 0:
                             self.config.d.outbase += '_vl%02d' % (int(self.vlim_lstars[j] * 10))
 
                         cat_fname = self.config.redmapper_filename('catalog')
@@ -227,7 +240,13 @@ class RedmapperConsolidateTask(object):
 
                     self.config.d.outbase = cat_filename_dict[(i, j)][0]
                     specplot = SpecPlot(self.config)
-                    specplot.plot_cluster_catalog(cat, title=self.config.d.outbase)
+
+                    if self.config.has_truth:
+                        mem = Catalog.from_fits_file(cat_filename_dict[(i, j)][2])
+                        specplot.plot_cluster_catalog_from_members(cat, mem, title=self.config.d.outbase)
+                    else:
+                        specplot.plot_cluster_catalog(cat, title=self.config.d.outbase)
+
 
                     nzplot = NzPlot(self.config)
                     nzplot.plot_cluster_catalog(cat, areastr=vlim_areas[j])
