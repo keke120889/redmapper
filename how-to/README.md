@@ -147,7 +147,7 @@ and add the ability to make a volume-limited catalog (see Section 3.4 of [Rykoff
 et al. (2016)](http://adsabs.harvard.edu/abs/2016ApJS..224....1R)).  If the
 depth map is not specified, the code will do its best to approximate it with a
 fit to the galaxies (see Appendix B of [Rozo et
-al. (2015)](http://adsabs.harvard.edu/abs/2015MNRAS.453...38R).
+al. (2015)](http://adsabs.harvard.edu/abs/2015MNRAS.453...38R)).
 
 The depth map has the format described below, with values consistent with the
 model in Section 3 of [Rykoff et
