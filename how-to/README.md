@@ -29,9 +29,9 @@ measuring total flux (though not great, just ask the people who do detailed
 modeling of galaxy outskirts!), and the model magnitudes are good for colors.
 
 The band used as the reference band is up to the user.  For SDSS clusters,
-redMaPPer was run with i-band (which is good and bright up to z~0.6), and for
+redMaPPer was run with i-band (which is good and bright up to z\~0.6), and for
 DES and LSST it is run with z-band (which avoids getting cut by the 4000A break
-until z~1).
+until z\~1).
 
 For the expected datatype, please see `redmapper_dtype` in the python code
 below.
