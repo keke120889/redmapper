@@ -129,7 +129,6 @@ class GalaxyCatalog(Catalog):
                                     table nside (%d).""" % (nside, nside_tab))
 
         if use_zred:
-            #ztab = fitsio.read(zredfile, ext=1, upper=True)
             ztab = Entry.from_fits_file(zredfile, ext=1)
             zpath = os.path.dirname(zredfile)
 
@@ -187,7 +186,7 @@ class GalaxyCatalog(Catalog):
         # read the files
         ctr = 0
         for index in indices:
-            cat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(path, tab.filenames[index].decode()), ext=1, upper=False, columns=columns)
+            cat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(path, tab.filenames[index].decode()), ext=1, lower=True, columns=columns)
             if use_zred:
                 # Note that this effectively checks that the numbers of rows in each file match properly (though the exception will be cryptic...)
                 zcat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(zpath, ztab.filenames[index].decode()), ext=1, upper=False)

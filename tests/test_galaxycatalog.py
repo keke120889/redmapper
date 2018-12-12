@@ -42,7 +42,7 @@ class GalaxyCatalogTestCase(unittest.TestCase):
                                               hpix=9218, nside=128, border=0.1)
 
         # this isn't really a big enough sample catalog to fully test...
-        testing.assert_equal(gals_sub.size, 3459)
+        testing.assert_equal(gals_sub.size, 2511)
 
         # and test the matching...
 
@@ -59,3 +59,6 @@ class GalaxyCatalogTestCase(unittest.TestCase):
         test, = np.where(i0 == 1)
         testing.assert_equal(test.size, 666 - 521)
         testing.assert_array_less(dists[test], 0.1)
+
+if __name__=='__main__':
+    unittest.main()

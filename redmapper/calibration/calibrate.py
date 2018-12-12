@@ -145,10 +145,10 @@ class RedmapperCalibrator(object):
         calib_iteration_final.run(self.config.calib_niter)
 
         # Output a configuration file
-        new_files = self.output_configuration()
+        new_bkgfile, new_zreds = self.output_configuration()
 
         # Generate a full background
-        if new_files:
+        if new_bkgfile:
             # Note that the config file has been updated!
             self.config.logger.info("Running full background...")
 
@@ -159,13 +159,19 @@ class RedmapperCalibrator(object):
             bkg_gen.run(deepmode=True)
             self.config.logger.info("Remember to run zreds and zred background before running the full cluster finder.")
         else:
-            self.config.logger.info("Calibration done on full footprint, so background and zreds are already available.")
+            if new_zreds:
+                self.config.logger.info("Remember to run zreds before running the full cluster finder.  No need to recompute the background.")
+            else:
+                self.config.logger.info("Calibration done on full footprint, so background and zreds are already available.")
 
         # Run halos if desired (later)
 
     def output_configuration(self):
         """
         """
+
+        new_zreds = False
+        new_bkg = False
 
         # Compute the path that the cluster finder will be run in
 
@@ -206,24 +212,28 @@ class RedmapperCalibrator(object):
 
         self.config.parfile = os.path.abspath(os.path.join(self.config.outpath,
                                                            '%s_pars.fit' % (iterstr)))
+
+        # This is the default, unless we want to recompute
+        self.config.bkgfile = os.path.abspath(os.path.join(calpath,
+                                                           '%s_bkg.fit' % (iterstr)))
+
         # If we calibrated on the full survey, then we have the zredfile already
         if self.config.nside == 0:
             self.config.zredfile = os.path.abspath(os.path.join(calpath,
                                                                 '%s' % (iterstr),
                                                                 '%s_zreds_master_table.fit' % (iterstr)))
-
-            self.config.bkgfile = os.path.abspath(os.path.join(calpath,
-                                                               '%s_bkg.fit' % (iterstr)))
-            new_files = False
         else:
+            new_zreds = True
+
             galfile_base = os.path.basename(self.config.galfile)
             zredfile = galfile_base.replace('_master', '_zreds_master')
             self.config.zredfile = os.path.abspath(os.path.join(runpath,
                                                                 'zreds',
                                                                 zredfile))
+            if self.config.calib_make_full_bkg:
+                new_bkgfile = True
+                self.config.bkgfile = os.path.abspath(os.path.join(runpath, '%s_bkg.fit' % (outbase_run)))
 
-            self.config.bkgfile = os.path.abspath(os.path.join(runpath, '%s_bkg.fit' % (outbase_run)))
-            new_files = True
 
         self.config.zlambdafile = os.path.abspath(os.path.join(calpath, '%s_zlambda.fit' % (iterstr)))
         self.config.wcenfile = os.path.abspath(os.path.join(calpath, '%s_wcen.fit' % (iterstr)))
@@ -246,7 +256,7 @@ class RedmapperCalibrator(object):
 
         self.config.output_yaml(os.path.join(runpath, 'run_default.yml'))
 
-        return new_files
+        return (new_bkgfile, new_zreds)
 
 class RedmapperCalibrationIteration(object):
     """

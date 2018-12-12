@@ -28,7 +28,7 @@ class ConsolidateTestCase(unittest.TestCase):
         config.outpath = self.test_dir
 
         config.consolidate_lambda_cuts = np.array([5.0, 20.0])
-        config.consolidate_vlim_lstars = np.array([None])
+        config.consolidate_vlim_lstars = np.array([])
 
         # Make 3 fake simple catalogs...
         random.seed(seed=12345)

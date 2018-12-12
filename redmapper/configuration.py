@@ -238,6 +238,7 @@ class Configuration(object):
     bkg_zbinsize = ConfigField(default=0.02)
     bkg_zredbinsize = ConfigField(default=0.01)
     bkg_deepmode = ConfigField(default=False)
+    calib_make_full_bkg = ConfigField(default=True)
 
     zlambda_pivot = ConfigField(default=30.0, required=True)
     zlambda_binsize = ConfigField(default=0.002, required=True)
