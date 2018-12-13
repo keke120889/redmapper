@@ -430,6 +430,7 @@ class ClusterRunner(object):
                     mem_temp = Catalog.zeros(memuse.size, dtype=self.config.member_dtype)
 
                     mem_temp.mem_match_id[:] = cluster.mem_match_id
+                    mem_temp.id[:] = cluster.neighbors.id[memuse]
                     mem_temp.z[:] = cluster.redshift
                     mem_temp.ra[:] = cluster.neighbors.ra[memuse]
                     mem_temp.dec[:] = cluster.neighbors.dec[memuse]

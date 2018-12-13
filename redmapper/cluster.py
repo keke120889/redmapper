@@ -62,6 +62,7 @@ cluster_dtype_base = [('MEM_MATCH_ID', 'i4'),
                       ('MASKGAL_INDEX', 'i2')]
 
 member_dtype_base = [('MEM_MATCH_ID', 'i4'),
+                     ('ID', 'i8'),
                      ('Z', 'f4'),
                      ('RA', 'f8'),
                      ('DEC', 'f8'),
