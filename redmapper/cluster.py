@@ -1,3 +1,9 @@
+"""Classes to describe clusters and cluster catalogs.
+
+This file contains the main cluster and cluster catalog classes, including
+richness computation, etc.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -84,21 +90,44 @@ member_dtype_base = [('MEM_MATCH_ID', 'i4'),
 
 class Cluster(Entry):
     """
+    Class for a single galaxy cluster.
 
-    Class for a single galaxy cluster, with methods to perform
-    computations on individual clusters
-
-    parameters
-    ----------
-    (TBD)
-
+    This class includes methods to perform richness computations on individual clusters using the associated neighbor galaxy catalog.
     """
-    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, cbkg=None, neighbors=None, zredbkg=None):
+
+    def __init__(self, cat_vals=None, r0=1.0, beta=0.2, config=None, zredstr=None, bkg=None, cbkg=None, neighbors=None, zredbkg=None):
+        """
+        Instantiate a Cluster object.
+
+        Note that while all the associated config, zredstr, bkg, neighbors are
+        optional to instantiate the object, they are necessary in order to
+        perform any calculations (but not to be able to store a representation
+        of the cluster catalog.)  This also allows these to be set "lazily"
+        after instantiation.
+
+        Parameters
+        ----------
+        cat_vals: `np.ndarray`, optional
+           Existing catalog values to pre-fill.  Default is None (zeros).
+        r0: `float`, optional
+           Richness/radius scale parameter.  Default to 1.0 h^-1 Mpc.
+        beta: `float`, optional
+           Richness/radius slope parameter.  Default to 0.2.
+        config: `redmapper.Configuration`, optional
+           Configuration information.  Default is None.
+        zredstr: `redmapper.RedSequenceColorPar`, optional
+           Red sequence parameterization.  Default is None.
+        bkg: `redmapper.Background`, optional
+           Galaxy background.  Default is None.
+        cbkg: `redmapper.ColorBackground`, optional
+           Galaxy color-only background.  Default is None.
+        neighbors: `redmapper.GalaxyCatalog`, optional
+           Neighbor galaxy catalog.  Default is None.
+        zredbkg: `redmapper.ZredBackground`, optional
+           Zred background.  Default is None.
+        """
 
         if cat_vals is None:
-            #cat_vals = np.zeros(1, dtype=[('RA', 'f8'),
-            #                              ('DEC', 'f8'),
-            #                              ('Z', 'f8')])
             if config is not None:
                 cat_vals = np.zeros(1, dtype=config.cluster_dtype)
             else:
@@ -109,8 +138,8 @@ class Cluster(Entry):
         # we need to extend if necessary?  Or just the catalog?
         super(Cluster, self).__init__(cat_vals)
 
-        self.r0 = 1.0 if r0 is None else r0
-        self.beta = 0.2 if beta is None else beta
+        self.r0 = r0
+        self.beta = beta
 
         # FIXME: this should explicitly set our default cosmology
         if config is None:
@@ -119,7 +148,7 @@ class Cluster(Entry):
             self.cosmo = config.cosmo
         self.config = config
         self.zredstr = zredstr
-        self.bkg = bkg
++        self.bkg = bkg
         self.cbkg = cbkg
         self.zredbkg = zredbkg
         self.set_neighbors(neighbors)
@@ -134,6 +163,7 @@ class Cluster(Entry):
 
     def reset(self):
         """
+        Reset the cluster richness and redshift to -1.0.
         """
 
         # reset values to defaults
@@ -142,6 +172,12 @@ class Cluster(Entry):
 
     def set_neighbors(self, neighbors):
         """
+        Set the neighbor galaxy catalog from a list of neighbors.  The input
+        neighbor catalog is deep-copied.
+
+        Parameters
+        ----------
+        neighbors: `redmapper.GalaxyCatalog`
         """
 
         if (neighbors.__class__ is not GalaxyCatalog and neighbors is not None):
@@ -179,19 +215,19 @@ class Cluster(Entry):
 
     def find_neighbors(self, radius, galcat, megaparsec=False, maxmag=None):
         """
-        parameters
+        Find neighbors from a full galaxy catalog.
+
+        Parameters
         ----------
-        radius: float
-            radius in degrees or megaparsec to look for neighbors
-        galcat: GalaxyCatalog
-            catalog of galaxies
-        megaparsec: bool, optional, default False
-            The radius is in mpc not degrees.
-
-        This method is not finished or tested.
-
+        radius: `float`
+           Radius in degrees or megaparsec to search for neighbors
+        galcat: `redmapper.GalaxyCatalog`
+           Full catalog of galaxies to look for neighbors
+        megaparsec: `bool`, optional
+           The radius has units of megaparsec?  Default is False.
+        maxmag: `float`, optional
+           The maximum refmag to store the neighbors.  Default is None (no cuts).
         """
-
         if radius is None:
             raise ValueError("A radius must be specified")
         if galcat is None:
@@ -218,6 +254,7 @@ class Cluster(Entry):
 
     def update_neighbors_dist(self):
         """
+        Update the distance from the neighbors to the central galaxy (in degrees)
         """
 
         self.neighbors.dist = esutil.coords.sphdist(self.ra, self.dec,
@@ -227,34 +264,27 @@ class Cluster(Entry):
 
     def clear_neighbors(self):
         """
+        Clear out all neighbors, to save memory.
         """
 
         # Clear out the memory used by the neighbors.
-        # Here or elsewhere to copy to members?
         self.neighbors = None
-
-    def neighbors_to_members(self):
-        """
-        """
-
-        # copy the neighbors to a members subset
-        pass
 
     def _calc_radial_profile(self, idx=None, rscale=0.15):
         """
-        internal method for computing radial profile weights
+        Internal method for computing radial profile weights.
 
-        parameters
+        Parameters
         ----------
-        idx: integer array (optional)
-           indices to compute
-        rscale: float
-           r_s for nfw profile
+        idx: `np.array`, optional
+           Integer indices to compute.  Default is None (all).
+        rscale: `float`, optional
+           r_s for nfw profile.  Default is 0.15
 
-        returns
+        Returns
         -------
-        sigx: array of floats
-           sigma(x)
+        sigx: `np.array`
+           sigma(x) from radial profile
         """
         if idx is None:
             idx = np.arange(len(self.neighbors))
@@ -267,22 +297,18 @@ class Cluster(Entry):
         """
         Internal method to compute luminosity filter
 
-        parameters
+        Parameters
         ----------
-        self.zredstr: RedSequenceColorPar
-            Red sequence object
-        normmag: float
-            Normalization magnitude
-        idx: int array (optional)
-            Indices to compute
+        normmag: `float`
+           Normalization magnitude
+        idx: `np.array`, optional
+           Integer indices to compute.  Default is None (all).
 
-        returns
+        Returns
         -------
-        phi: float array
-            phi(x) filter for the cluster
-
+        phi: `np.array`
+           phi(x) for the cluster
         """
-
         if idx is None:
             idx = np.arange(len(self.neighbors))
 
@@ -295,25 +321,44 @@ class Cluster(Entry):
 
     def calc_bkg_density(self, r, chisq, refmag):
         """
-        Internal method to compute background filter
+        Internal method to compute background filter.
 
-        parameters
+        Parameters
         ----------
-        r: radius (Mpc)
-        chisq: chisq values at redshift of cluster
-        refmag: total magnitude of galaxies
+        r: `np.array`
+           Radius (megaparsec)
+        chisq: `np.array`
+           Chi-squared values at redshift of the cluster
+        refmag: `np.array`
+           Reference magnitude of the galaxies
 
-        returns
+        Returns
         -------
-
-        bcounts: float array
-            b(x) for the cluster
+        bcounts: `np.array`
+           b(x) for the neighbors
         """
         sigma_g = self.bkg.sigma_g_lookup(self._redshift, chisq, refmag)
         return 2. * np.pi * r * (sigma_g/self.mpc_scale**2.)
 
     def calc_cbkg_density(self, r, col_index, col, refmag):
         """
+        Internal method to compute color background filter.
+
+        Parameters
+        ----------
+        r: `np.array`
+           Radius (megaparsec)
+        col_index: `int`
+           Index of color used
+        col: `np.array`
+           Float array of colors
+        refmag: `np.array`
+           Reference magnitude of galaxies
+
+        Returns
+        -------
+        bcounts: `np.array`
+           b(x) for the neighbors
         """
         sigma_g = self.cbkg.sigma_g_diagonal(col_index, col, refmag)
         return 2. * np.pi * r * (sigma_g / self.mpc_scale**2.)
@@ -322,17 +367,19 @@ class Cluster(Entry):
         """
         Internal method to compute zred background filter
 
-        parameters
+        Parameters
         ----------
-        r: radius (Mpc)
-        zred: zred of galaxies
-        refmag: total magnitude of galaxies
+        r: `np.array`
+           Radius (megaparsec)
+        zred: `np.array`
+           Zred values
+        refmag: `np.array`
+           Reference magnitude of galaxies
 
-        returns
+        Returns
         -------
-
-        bcounts: float array
-           bzred(x) for the cluster
+        bcounts: `np.array`
+           b(x) for the neighbors
         """
 
         if self.zredbkg is None:
@@ -341,20 +388,23 @@ class Cluster(Entry):
         sigma_g = self.zredbkg.sigma_g_lookup(zred, refmag)
         return 2. * np.pi * r * (sigma_g / self.mpc_scale**2.)
 
-    def calc_richness(self, mask, calc_err=True, index=None, record_values=True):
+    def calc_richness(self, mask, calc_err=True, index=None):
         """
-        compute richness for a cluster
+        Calculate the richness for the cluster.
 
-        parameters
+        Parameters
         ----------
-        mask:  mask object
-        calc_err: if False, no error calculated
-        index: only use part of self.neighbor data
+        mask: `redmapper.Mask`
+           Footprint mask for survey
+        calc_err: `bool`, optional
+           Calculate the richness error?  Default is True.
+        index: `np.array`, optional
+           Integer array of neighbor indices.  Default is None (all).
 
-        returns
+        Returns
         -------
-        lam: cluster richness
-
+        lam: `float`
+           Cluster richness.  Will be < 0 when no cluster found.
         """
         #set index for slicing self.neighbors
         if index is not None:
@@ -446,21 +496,29 @@ class Cluster(Entry):
 
     def calc_lambdacerr(self, maskgals, mstar, lam, rlam, pmem, cval, gamma):
         """
-        Calculate richness error from masking
+        Calculate richness error from masking only.
 
-        parameters
+        Parameters
         ----------
-        maskgals : maskgals object
-        lam      : Richness
-        rlam     :
-        pmem
-        cval     :
-        gamma    : Local slope of the richness profile of galaxy clusters
+        maskgals: `redmapper.Catalog`
+           Mask galaxies for monte carlo (see `redmapper.Mask`)
+        mstar: `float`
+           mstar at redshift of the cluster
+        lam: `float`
+           Richness of cluster
+        rlam: `float`
+           Radius of cluster
+        pmem: `np.array`
+           Array of pmem membership probabilities
+        cval: `float`
+           Total mask value c
+        gamma: `float`
+           Slope of the dlambda/dradius relation (on average)
 
-        returns
+        Returns
         -------
-        lam_cerr
-
+        lam_err: `float`
+           Error on richness due to masking.
         """
         dof = self.zredstr.ncol
         limmag = self.zredstr.limmag
@@ -508,14 +566,27 @@ class Cluster(Entry):
         Compute richness for a cluster by fitting the red sequence in a single color.
         This is approximate and is used for the first iteration of training.
 
-        parameters
+        Parameters
         ----------
-        record_values: bool, optional, default=True
-           Save the cluster values to the object
+        mask: `redmapper.Mask`
+           Footprint mask for survey
+        col_index: `int`
+           Index of color to use
+        centcolor_in: `float`, optional
+           Central color to use for reference.  Default is None (use BCG color)
+        rcut: `float`, optional
+           Maximum radius (megaparsec).  Default is 0.5.
+        mingal: `int`, optional
+           Minimum number of galaxies to try fit.  Default is 5.
+        sigint: `float`, optional
+           Default intrinsic scatter.  Default is 0.05.
+        calc_err: `bool`, optional
+           Compute richness error?  Default is False.
 
-        returns
+        Returns
         -------
-        lam: cluster richness
+        lam: `float`
+           cluster richness.  Will be < 0 when no cluster found.
         """
 
         badlam = -10.0
@@ -640,10 +711,18 @@ class Cluster(Entry):
 
     @property
     def redshift(self):
+        """Current cluster redshift."""
         return self._redshift
 
     @redshift.setter
     def redshift(self, value):
+        """Set the cluster redshift.
+
+        Parameters
+        ----------
+        value: `float`
+           New redshift
+        """
         if (value < 0.0):
             raise ValueError("Cannot set redshift to < 0.0")
 
@@ -660,17 +739,12 @@ class Cluster(Entry):
 
     @property
     def mstar(self):
+        """Get the cluster mstar at self.redshift"""
         return self._mstar
 
     def _update_mstar(self):
-        # Either use the zredstr table, or if not available, do the (slow) interpolation
-        # directly
-        #if self.zredstr is not None:
+        """Update the stored mstar based on self.redshift"""
         self._mstar = self.zredstr.mstar(self._redshift)
-        #else:
-        #    if self._MStar is None:
-        #        self._MStar = MStar(self.config.mstar_survey, self.config.mstar_band)
-        #    self._mstar = self._MStar(self._redshift)
 
     @property
     def mpc_scale(self):
@@ -686,12 +760,24 @@ class Cluster(Entry):
         self._mpc_scale = np.radians(1.) * self.cosmo.Da(0, self._redshift)
 
     def _compute_neighbor_r(self):
+        """
+        Compute the radius in Mpc for the neighbors, given the current redshift
+        and neighbor dist (in degrees).
+        """
         if self.neighbors is not None and self._redshift is not None:
             # Clipping at 1e-6 to avoid singularities.
             self.neighbors.r = np.clip(self.mpc_scale * self.neighbors.dist, 1e-6, None)
 
 
     def copy(self):
+        """
+        Copy the current cluster, including deep copying the neighbors.
+
+        Returns
+        -------
+        cluster: `redmapper.Cluster`
+           Deep copy of the cluster
+        """
         cluster = self.__copy__()
         cluster.redshift = self.redshift
         return cluster
@@ -709,24 +795,35 @@ class Cluster(Entry):
 
 class ClusterCatalog(Catalog):
     """
-    Class to hold a catalog of Clusters
+    Class for a catalog of clusters.
 
-    TBD
-
+    This class comprises a set of clusters and their neighbors.
     """
     entry_class = Cluster
 
-    # Okay, here's the plan for the cluster catalog...
-
-    # It is simply an array of numbers ... all the fields we want
-    #   So we need to override and append all those values when we load a catalog
-    # And it will also have an array of members, if necessary
-    # And on demand it will return a cluster object which it needs to initialize...
-
-
-    #def __init__(self, *arrays, **kwargs):
-    #    super(ClusterCatalog, self).__init__(*arrays)
     def __init__(self, array, **kwargs):
+        """
+        Instantiate a ClusterCatalog
+
+        Parameters
+        ----------
+        array: `np.ndarray`
+           Array of initialization values for the cluster catalog
+        r0: `float`, optional
+           Richness/radius scale parameter.  Default to 1.0 h^-1 Mpc.
+        beta: `float`, optional
+           Richness/radius slope parameter.  Default to 0.2.
+        config: `redmapper.Configuration`, optional
+           Configuration information.  Default is None.
+        zredstr: `redmapper.RedSequenceColorPar`, optional
+           Red sequence parameterization.  Default is None.
+        bkg: `redmapper.Background`, optional
+           Galaxy background.  Default is None.
+        cbkg: `redmapper.ColorBackground`, optional
+           Galaxy color-only background.  Default is None.
+        zredbkg: `redmapper.ZredBackground`, optional
+           Zred background.  Default is None.
+        """
         super(ClusterCatalog, self).__init__(array)
 
         self.r0 = kwargs.pop('r0', None)
@@ -751,6 +848,26 @@ class ClusterCatalog(Catalog):
     @classmethod
     def from_catfile(cls, filename, **kwargs):
         """
+        Instantiate a ClusterCatalog from a catalog file
+
+        Parameters
+        ----------
+        filename: `str`
+           Filename of catalog file
+        r0: `float`, optional
+           Richness/radius scale parameter.  Default to 1.0 h^-1 Mpc.
+        beta: `float`, optional
+           Richness/radius slope parameter.  Default to 0.2.
+        config: `redmapper.Configuration`, optional
+           Configuration information.  Default is None.
+        zredstr: `redmapper.RedSequenceColorPar`, optional
+           Red sequence parameterization.  Default is None.
+        bkg: `redmapper.Background`, optional
+           Galaxy background.  Default is None.
+        cbkg: `redmapper.ColorBackground`, optional
+           Galaxy color-only background.  Default is None.
+        zredbkg: `redmapper.ZredBackground`, optional
+           Zred background.  Default is None.
         """
         cat = fitsio.read(filename, ext=1, upper=True)
 
@@ -758,6 +875,28 @@ class ClusterCatalog(Catalog):
 
     @classmethod
     def zeros(cls, size, **kwargs):
+        """
+        Instantiate a ClusterCatalog of a given size, filled with zeros.
+
+        Parameters
+        ----------
+        size: `int`
+           Length of cluster catalog
+        r0: `float`, optional
+           Richness/radius scale parameter.  Default to 1.0 h^-1 Mpc.
+        beta: `float`, optional
+           Richness/radius slope parameter.  Default to 0.2.
+        config: `redmapper.Configuration`, optional
+           Configuration information.  Default is None.
+        zredstr: `redmapper.RedSequenceColorPar`, optional
+           Red sequence parameterization.  Default is None.
+        bkg: `redmapper.Background`, optional
+           Galaxy background.  Default is None.
+        cbkg: `redmapper.ColorBackground`, optional
+           Galaxy color-only background.  Default is None.
+        zredbkg: `redmapper.ZredBackground`, optional
+           Zred background.  Default is None.
+        """
         return cls(np.zeros(size, dtype=cluster_dtype_base), **kwargs)
 
     def __getitem__(self, key):
