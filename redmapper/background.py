@@ -1,3 +1,9 @@
+"""Galaxy background classes for redmapper.
+
+This file contains classes to describe the b(x) background terms for computing
+richness and other redmapper likelihoods.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -29,24 +35,24 @@ copyreg.pickle(types.MethodType, _pickle_method)
 
 class Background(object):
     """
-    Name:
-        Background
-    Purpose:
-        An object used to hold the background. This also
-        contains the functionality to interpolate between
-        known background points.
+    Galaxy background class.
 
-    parameters
-    ----------
-    filename: string
-       background filename
+    This class describes the binned, interpolateable background term b(x), where
+    x describes the redshift, chi-squared, and reference magnitude of the galaxy.
+
+    This is used in regular richness calculations.
     """
 
     def __init__(self, filename):
-        #"""
-        #docstring for the constructor
-        #"""
-        # Get the raw object background from the fits file
+        """
+        Instantiate a Background
+
+        Parameters
+        ----------
+        filename: `string`
+           Background filename
+        """
+
         obkg = Entry.from_fits_file(filename, ext='CHISQBKG')
 
         # Set the bin size in redshift, chisq and refmag spaces
@@ -128,19 +134,24 @@ class Background(object):
 
     def sigma_g_lookup(self, z, chisq, refmag, allow0=False):
         """
-        Name:
-            sigma_g_lookup
-        Purpose:
-            return the value of sigma_g at points in redshift, chisq and refmag space
-        Inputs:
-            z: redshift
-            chisq: chisquared value
-            refmag: reference magnitude
-        Optional Inputs:
-            allow0 (boolean): if we allow sigma_g to be zero 
-                and the chisq is very high. Set to False by default.
-        Outputs:
-            lookup_vals: the looked-up values of sigma_g
+        Look up the Sigma_g(z, chisq, refmag) background quantity for matched filter
+
+        Parameters
+        ----------
+        z: `np.array`
+           redshifts of galaxies
+        chisq: `np.array`
+           chi-squared values of galaxies
+        refmag: `np.array`
+           reference magnitudes of galaxies
+        allow0: `bool`, default=False
+           Flag to allow Sigma_g(x) to be zero.  Otherwise will set to infinity
+           where there is no data.
+
+        Returns
+        -------
+        sigma_g: `np.array`
+           Sigma_g(x) for input values
         """
         zmin = self.zbins[0]
         chisqindex = np.searchsorted(self.chisqbins, chisq) - 1
@@ -167,9 +178,23 @@ class Background(object):
 
 class ZredBackground(object):
     """
+    Zred background class.
+
+    This class describes the binned, interpolateable background term b(x), where
+    x describes the zred and reference magnitude of the galaxy.
+
+    This is used in centering calculations.
     """
 
     def __init__(self, filename):
+        """
+        Instantiate a Zred Background
+
+        Parameters
+        ----------
+        filename: `string`
+           Zred background filename
+        """
         obkg = Entry.from_fits_file(filename, ext='ZREDBKG')
 
         # Will want to make configurable
@@ -184,13 +209,11 @@ class ZredBackground(object):
         nzredbins = obkg.zredbins.size
 
         # Set up arrays to populate
-        # sigma_g_new = np.zeros((nzredbins, nrefmagbins))
         sigma_g_new = np.zeros((nrefmagbins, nzredbins))
 
         floor = np.min(obkg.sigma_g)
 
         for i in xrange(nzredbins):
-            #sigma_g_new[i, :] = np.clip(interpol(obkg.sigma_g[i, :], obkg.refmagbins, refmagbins), floor, None)
             sigma_g_new[:, i] = np.clip(interpol(obkg.sigma_g[:, i], obkg.refmagbins, refmagbins), floor, None)
 
         sigma_g = sigma_g_new.copy()
@@ -199,11 +222,9 @@ class ZredBackground(object):
         zredbins = np.arange(obkg.zredrange[0], obkg.zredrange[1], self.zredbinsize)
         nzredbins = zredbins.size
 
-        #sigma_g_new = np.zeros((nzredbins, nrefmagbins))
         sigma_g_new = np.zeros((nrefmagbins, nzredbins))
 
         for i in xrange(nrefmagbins):
-            #sigma_g_new[:, i] = np.clip(interpol(sigma_g[:, i], obkg.zredbins, zredbins), floor, None)
             sigma_g_new[i, :] = np.clip(interpol(sigma_g[i, :], obkg.zredbins, zredbins), floor, None)
 
         self.zredbins = zredbins
@@ -216,6 +237,19 @@ class ZredBackground(object):
 
     def sigma_g_lookup(self, zred, refmag):
         """
+        Look up the Sigma_g(zred, refmag) background quantity for centering calculations
+
+        Parameters
+        ----------
+        zred: `np.array`
+           zred redshifts of galaxies
+        refmag: `np.array`
+           reference magnitudes of galaxies
+
+        Returns
+        -------
+        sigma_g: `np.array`
+           Sigma_g(x) for input values
         """
 
         zredindex = np.searchsorted(self.zredbins, zred) - 1
@@ -228,7 +262,6 @@ class ZredBackground(object):
                               (refmagindex >= self.refmagbins.size))
         refmagindex[badrefmag] = 0
 
-        #lookup_vals = self.sigma_g[zredindex, refmagindex]
         lookup_vals = self.sigma_g[refmagindex, zredindex]
 
         lookup_vals[badzred] = np.inf
@@ -238,15 +271,39 @@ class ZredBackground(object):
 
 class BackgroundGenerator(object):
     """
+    Class to generate the galaxy background.
+
+    This class will use multiprocessing to generate the galaxy background table
+    to look up Sigma_g(z, chi-squared, refmag).
     """
 
     def __init__(self, config):
+        """
+        Instantiate a BackgroundGenerator
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Redmapper configuration object
+        """
         # We need to delete "cosmo" from the config for pickling/multiprocessing
         self.config = config.copy()
         self.config.cosmo = None
 
     def run(self, clobber=False, natatime=100000, deepmode=False):
         """
+        Generate the galaxy background using multiprocessing.  The number of
+        cores used is specified in self.config.calib_nproc, and the output
+        filename is specified in self.config.bkgfile.
+
+        Parameters
+        ----------
+        clobber: `bool`, default=False
+           Overwrite any existing self.config.bkgfile file
+        natatime: `int`, default=100000
+           Number of galaxies to read at a time
+        deepmode: `bool`, default=False
+           Run background to full depth of survey (rather than Lstar richness limit)
         """
 
         self.natatime = natatime
@@ -358,6 +415,22 @@ class BackgroundGenerator(object):
 
     def _worker(self, zbinmark):
         """
+        Internal worker method for multiprocessing.
+
+        Parameters
+        ----------
+        zbinmark: `np.array`
+           Indices for the redshift bins to run in this job
+
+        Returns
+        -------
+        retvals: `tuple`
+           zbinmark: `np.array`
+              Indices for redshift bins run in this job
+           sigma_g_sub: `np.array`
+              Sigma_g(x) for the redshift bins in zbinmark
+           sigma_lng_sub: `np.array`
+              Sigma_lng(x) (log binning) for the redshift bins in zbinmark
         """
 
         starttime = time.time()
@@ -491,13 +564,34 @@ class BackgroundGenerator(object):
 
 class ZredBackgroundGenerator(object):
     """
+    Class to generate the zred galaxy background.
+
+    This class will generate the zred galaxy background
+    table to look up Sigma_g(zred, refmag).
     """
 
     def __init__(self, config):
+        """
+        Instantiate a ZredBackgroundGenerator
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Redmapper configuration object
+        """
         self.config = config
 
     def run(self, clobber=False, natatime=100000):
         """
+        Generate the zred galaxy background.  The output filename is specified
+        in self.config.bkgfile.
+
+        Parameters
+        ----------
+        clobber: `bool`, default=False
+           Overwrite any existing self.config.bkgfile file
+        natatime: `int`, default=100000
+           Number of galaxies to read at a time
         """
 
         if not os.path.isfile(self.config.zredfile):
