@@ -144,9 +144,9 @@ class Background(object):
            chi-squared values of galaxies
         refmag: `np.array`
            reference magnitudes of galaxies
-        allow0: `bool`, default=False
+        allow0: `bool`, optional
            Flag to allow Sigma_g(x) to be zero.  Otherwise will set to infinity
-           where there is no data.
+           where there is no data.  Default is False.
 
         Returns
         -------
@@ -298,12 +298,13 @@ class BackgroundGenerator(object):
 
         Parameters
         ----------
-        clobber: `bool`, default=False
-           Overwrite any existing self.config.bkgfile file
-        natatime: `int`, default=100000
-           Number of galaxies to read at a time
-        deepmode: `bool`, default=False
-           Run background to full depth of survey (rather than Lstar richness limit)
+        clobber: `bool`, optional
+           Overwrite any existing self.config.bkgfile file.  Default is False.
+        natatime: `int`, optional
+           Number of galaxies to read at a time.  Default is 100000.
+        deepmode: `bool`, optional
+           Run background to full depth of survey (rather than Lstar richness limit).
+           Default is False.
         """
 
         self.natatime = natatime
@@ -588,10 +589,10 @@ class ZredBackgroundGenerator(object):
 
         Parameters
         ----------
-        clobber: `bool`, default=False
-           Overwrite any existing self.config.bkgfile file
-        natatime: `int`, default=100000
-           Number of galaxies to read at a time
+        clobber: `bool`, optional
+           Overwrite any existing self.config.bkgfile file.  Default is False.
+        natatime: `int`, optional
+           Number of galaxies to read at a time.  Default is 100000
         """
 
         if not os.path.isfile(self.config.zredfile):
