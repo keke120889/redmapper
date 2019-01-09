@@ -1,3 +1,10 @@
+"""Classes for fitting red sequence and related parameters.
+
+This file contains the classes used to fit the red sequence model, including
+the median relations, mean relations, scatter, covariance, etc.
+"""
+
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -9,14 +16,40 @@ from .utilities import CubicSpline, interpol
 
 class MedZFitter(object):
     """
+    Class to fit a spline to the median value as a function of redshift.
+
+    This can be the color or magnitude or any quantity.
     """
     def __init__(self, z_nodes, redshifts, values):
+        """
+        Instantiate a MedZFitter object
+
+        Parameters
+        ----------
+        z_nodes: `np.array`
+           Float array for redshift nodes
+        redshifts: `np.array`
+           Float array of input redshifts to fit
+        values: `np.array`
+           Float array of color values to fit
+        """
         self._z_nodes = z_nodes
         self._redshifts = redshifts
         self._values = values
 
     def fit(self, p0):
         """
+        Perform a spline fit to the median value as a function of redshift.
+
+        Parameters
+        ----------
+        p0: `np.array`
+           Initial fit parameters, with same number of elements as nodes
+
+        Returns
+        -------
+        pars: `np.array`
+           Spline node parameters
         """
         # add bounds if we need it...
 
@@ -26,6 +59,17 @@ class MedZFitter(object):
 
     def __call__(self, pars):
         """
+        Compute the median cost function for f(pars)
+
+        Parameters
+        ----------
+        pars: `np.array`
+           Fit parameters, with same number of elements as nodes
+
+        Returns
+        -------
+        t: `float`
+           Median cost
         """
         spl = CubicSpline(self._z_nodes, pars)
         m = spl(self._redshifts)
@@ -36,11 +80,61 @@ class MedZFitter(object):
 
 class RedSequenceFitter(object):
     """
+    Class to fit a spline to the red sequence as a function of redshift.
+
+    This class computes the mean value of the color, the red sequence slope,
+    and the intrinsic scatter as a function of redshift.
+
+    The node positions can be different for the mean color, the slope, and the
+    intrinsic scatter.
     """
     def __init__(self, mean_nodes,
                  redshifts, colors, errs, dmags=None, trunc=None,
                  slope_nodes=None, scatter_nodes=None, lupcorrs=None,
                  probs=None, bkgs=None, scatter_max=None, use_scatter_prior=False):
+        """
+        Instantiate a RedSequenceFitter
+
+        Parameters
+        ----------
+        mean_nodes: `np.array`
+           Float array for mean color redshift nodes
+        redshifts: `np.array`
+           Float array of input redshifts for fit
+        colors: `np.array`
+           Float array of input colors to fit
+        errs: `np.array`
+           Float array of input color errors to fit
+        dmags: `np.array`, optional
+           Float array of delta-mag (refmag - pivot) (location on x axis for slope).
+           Must have same length as colors if used.  Default is None (don't fit slope).
+        trunc: `np.array`, optional
+           Float array of delta-color used to truncate input colors.
+           This outlier rejection is corrected for in the Gaussian likelihood.
+           Must have same length as colors if used.  Default is None (no truncation).
+        slope_nodes: `np.array`, optional
+           Float array of red sequence slope node locations.
+           Default is None (use mean_nodes for slope).
+        scatter_nodes: `np.array`, optional
+           Float array of red sequence scatter node locations.
+           Default is None (use mean_nodes for scatter).
+        lupcorrs: `np.array`, optional
+           Float array of model corrections based on use of luptitudes.
+           Must have same length as colors if used.
+           Default is None (no luptitude corrections required).
+        probs: `np.array`, optional
+           Float array of membership probabilities.
+           Must have same length as colors if used; must also supply "bkgs" if used.
+           Default is None (assume all galaxies have p=1)
+        bkgs: `np.array`, optional
+           Float array of background likelihoods
+           Must have same length as colors if used; must also supply "probs" if used.
+           Default is None (assume all galaxies have bkg=0)
+        scatter_max: `float`, optional
+           Maximum intrinsic scatter allowed for any node.  Default is None (no max).
+        use_scatter_prior: `bool`, optional
+           Use Jeffry's prior on intrinsic scatter.  Default is False.
+        """
 
         self._use_scatter_prior = use_scatter_prior
 
@@ -123,6 +217,36 @@ class RedSequenceFitter(object):
             fit_mean=False, fit_slope=False, fit_scatter=False,
             min_scatter=0.001):
         """
+        Fit the red sequence mean, slope, and intrinsic scatter.
+
+        Parameters
+        ----------
+        p0_mean: `np.array`
+           Float array of initial fit parameters for mean relation.
+           Must have same number of elements as mean_nodes
+        p0_slope: `np.array`
+           Float array of initial fit parameters for slope relation.
+           Must have same number of elements as slope_nodes
+        p0_scatter: `np.array`
+           Float array of initial fit parameters for scatter relation.
+           Must have same number of elements as scatter_nodes
+        fit_mean: `bool`, optional
+           Fit the mean relation? (else fix to p0_mean).  Default is False.
+        fit_slope: `bool`, optional
+           Fit the slope? (else fix to p0_slope).  Default is False.
+        fit_scatter: `bool`, optional
+           Fit the scatter? (else fix to p0_scatter).  Default is False.
+        min_scatter: `float`, optional
+           Minimum intrinsic scatter.  Default is 0.001.
+
+        Returns
+        -------
+        pars_mean: `np.array`
+           Mean parameters (if fit_mean is True)
+        pars_slope: `np.array`
+           Slope parameters (if fit_slope is True)
+        pars_scatter: `np.array`
+           Scatter parameters (if fit_scatter is True)
         """
         self._fit_mean = fit_mean
         self._fit_slope = fit_slope
@@ -179,6 +303,17 @@ class RedSequenceFitter(object):
 
     def __call__(self, pars):
         """
+        Compute the red sequence log-likelihood (negative for minimization).
+
+        Parameters
+        ----------
+        pars: `np.array`
+           Concatenated array of all the fit parameters
+
+        Returns
+        -------
+        t: `float`
+           Total negative log-likelihood.
         """
         if self._fit_mean:
             # We are fitting the mean
@@ -247,8 +382,51 @@ class RedSequenceFitter(object):
 
 class RedSequenceOffDiagonalFitter(object):
     """
+    Class to fit a spline to a pair of off-diagonal elements of the
+    red-sequence covariance matrix.
+
+    This can only be run after the diagonal elements of the red-sequence model
+    have been constrained.
     """
     def __init__(self, nodes, redshifts, d1, d2, s1, s2, mag_errs, j, k, probs, bkgs, covmat_prior, min_eigenvalue=0.0):
+        """
+        Instantiate a RedSequenceOffDiagonalFitter
+
+        Parameters
+        ----------
+        nodes: `np.array`
+           Float array of covariance matrix redshift nodes
+        redshifts: `np.array`
+           Float array of input redshifts for fit
+        d1: `np.array`
+           Float array of color residual (color - model_color) for color 1 (j)
+           Must have same number of elements as redshifts.
+        d2: `np.array`
+           Float array of color residual (color - model_color) for color 2 (k)
+           Must have same number of elements as redshifts.
+        s1: `np.array`
+           Float array of intrinsic scatters for color 1 (j)
+           Must have same number of elements as redshifts.
+        s2: `np.array`
+           Float array of intrinsic scatters for color 2 (k)
+           Must have same number of elements as redshifts.
+        mag_errs: `np.array`
+           2d float array of magnitude errors [n_redshifts, nmag]
+        j: `int`
+           Index for color 1
+        k: `int`
+           Index for color 2
+        probs: `np.array`
+           Float array of membership probabilities
+           Must have same number of elements as redshifts.
+        bkgs: `np.array`
+           Float array of background likelihood for color 1, color 2.
+           Must have same number of elements as redshifts.
+        covmat_prior: `float`
+           Prior on covariance matrix off-diagonal elements.
+        min_eigenvalue: `float`, optional
+           Minimum eigenvalue of covariance matrix.  Default is 0.0.
+        """
         self._nodes = np.atleast_1d(nodes)
         self._redshifts = np.atleast_1d(redshifts)
         self._d1 = np.atleast_1d(d1)
@@ -295,6 +473,20 @@ class RedSequenceOffDiagonalFitter(object):
 
     def fit(self, p0, full_covmats=None):
         """
+        Perform a spline fit to a pair of elements of the covariance matrix.
+
+        Parameters
+        ----------
+        p0: `np.array`
+           Initial fit parameters, with same number of elements as nodes
+        full_covmats: `np.array`, optional
+           Full covariance matrix node values [nmag, nmag, nnode]
+           Default is None.  If not None, then minimum eigenvalue is checked during fit.
+
+        Returns
+        -------
+        pars: `np.array`
+           Correlation values (r) for each node.
         """
 
         self._full_covmats = full_covmats
@@ -305,6 +497,17 @@ class RedSequenceOffDiagonalFitter(object):
 
     def __call__(self, pars):
         """
+        Compute the off-diagonal log-likelihood (negative for minimization)
+
+        Parameters
+        ----------
+        pars: `np.array`
+           Float array of the correlation (r) values
+
+        Returns
+        -------
+        t: `float`
+           Total negative log-likelihood
         """
 
         spl = CubicSpline(self._nodes, pars)
@@ -361,10 +564,47 @@ class RedSequenceOffDiagonalFitter(object):
 
 class CorrectionFitter(object):
     """
+    Class for fit a spline to the zred corrections as a function of redshift.
+
+    This class computes the zred corrections, including slope (if desired) and
+    error adjustment factor.
     """
     def __init__(self, mean_nodes, redshifts, dzs, dz_errs,
                  slope_nodes=None, r_nodes=None, bkg_nodes=None,
                  probs=None, dmags=None, ws=None):
+        """
+        Instantiate a CorrectionFitter
+
+        Parameters
+        ----------
+        mean_nodes: `np.array`
+           Float array for mean correction redshift nodes
+        redshifts: `np.array`
+           Float array of input redshifts for fit
+        dzs: `np.array`
+           Float array of input delta-z (zred - ztrue) for fit
+        dz_errs: `np.array`
+           Float array of error on delta-z
+        slope_nodes: `np.array`, optional
+           Float array for slope redshift nodes.
+           Default is None (use mean_nodes for slope).
+        r_nodes: `np.array`, optional
+           Float array for error factor redshift nodes.
+           Default is None (use slope_nodes for correction factor).
+        bkg_nodes: `np.array`, optional
+           Float array for background/outlier redshift nodes.
+           Default is None (use slope_nodes for bkg.)
+        probs: `np.array`, optional
+           Float array for membership probabilities.
+           Default is None (no probabilities used).
+        dmags: `np.array`, optional
+           Float array of delta-mag (refmag - pivot) (location on x axis for slope).
+           Must have same length as redshifts if used.
+           Default is None (don't fit slope).
+        ws: `np.array`, optional
+           Float array of likelihood weighting factors.
+           Default is None (no weighting factors).
+        """
         self._mean_nodes = np.atleast_1d(mean_nodes)
         # Note that the slope_nodes are the default for the r, bkg as well
         if slope_nodes is None:
@@ -417,6 +657,41 @@ class CorrectionFitter(object):
 
     def fit(self, p0_mean, p0_slope, p0_r, p0_bkg, fit_mean=False, fit_slope=False, fit_r=False, fit_bkg=False):
         """
+        Fit the zred correction factor.
+
+        Parameters
+        ----------
+        p0_mean: `np.array`
+           Float array of initial fit parameters for mean offset relation
+           Must have same number of elements as mean_nodes
+        p0_slope: `np.array`
+           Float array of initial fit parameters for slope relation
+           Must have same number of elements as slope_nodes
+        p0_r: `np.array`
+           Float array of initial fit parameters for error scaling relation
+           Must have same number of elements as r_nodes
+        p0_bkg: `np.array`
+           Float array of initial fit parameters for bkg outlier relation
+           Must have same number of elements as bkg_nodes
+        fit_mean: `bool`, optional
+           Fit the mean relation? (else fix to p0_mean).  Default is False.
+        fit_slope: `bool`, optional
+           Fit the slope relation? (else fix to p0_slope).  Default is False.
+        fit_r: `bool`, optional
+           Fit the r relation? (else fix to p0_r).  Default is False.
+        fit_bkg: `bool`, optional
+           Fit the bkg relation? (else fix to p0_bkg).  Default is False.
+
+        Returns
+        -------
+        pars_mean: `np.array`
+           Mean parameters (if fit_mean is True)
+        pars_slope: `np.array`
+           Slope parameters (if fit_slope is True)
+        pars_r: `np.array`
+           Error scaling parameters (if fit_r is True)
+        pars_bkg: `np.array`
+           Background parameters (if fit_bkg is True)
         """
         self._fit_mean = fit_mean
         self._fit_slope = fit_slope
@@ -476,6 +751,17 @@ class CorrectionFitter(object):
 
     def __call__(self, pars):
         """
+        Compute the correction log-likelihood (negative for minimization)
+
+        Parameters
+        ----------
+        pars: `np.array`
+           Float array of the consolidate parameters
+
+        Returns
+        -------
+        t: `float`
+           Total negative log-likelihood
         """
 
         if self._fit_mean:
@@ -532,13 +818,57 @@ class CorrectionFitter(object):
 
 class EcgmmFitter(object):
     """
+    Class to fit the error-corrected Gaussian Mixture Model (ECGMM), see Hao et
+    al. (2009) (ApJ).
+
+    This is a simplified version that will do two components.
     """
     def __init__(self, y, y_err):
+        """
+        Instantiate a EcgmmFitter.
+
+        Parameters
+        ----------
+        y: `np.array`
+           Float array of y values to decompose.
+        y_err: `np.array`
+           Float array of y error values to decompose.
+        """
         self._y = y
         self._y_err2 = y_err**2.
 
     def fit(self, wt0, mu, sigma, bounds=None, offset=0.0):
         """
+        Perform an ECGMM fit.
+
+        Parameters
+        ----------
+        wt0: `float` or `np.array` (1 elements)
+           Initial guess for 0th component weight
+           1st component weight is 1.0 - wt0
+        mu: `np.array` (2 elements)
+           Initial guess for component means
+        sigma: `np.array` (2 elements)
+           Initial guess for component widths
+        bounds: `list`, optional
+           bounds[0][:] is a two element range of wt0
+           bounds[1][:] is a two element range of mu[0]
+           bounds[2][:] is a two element range of mu[1]
+           bounds[3][:] is a two element range of sigma[0]
+           bounds[4][:] is a two element range of sigma[1]
+           Default is bounds is None (no bounds).
+        offset: `float`, optional
+           Arbitrary offset to ensure that neither mean is ~0 which
+           for some reason confuses the fitter.  Default is 0 (no offset).
+
+        Returns
+        -------
+        wt: `np.array`
+           Two element array with [wt0, wt1]
+        mu: `np.array`
+           Two element array with mean values
+        sigma: `np.array`
+           Two element array with sigmas
         """
 
         p0 = np.concatenate([np.atleast_1d(wt0),
@@ -571,6 +901,18 @@ class EcgmmFitter(object):
 
     def __call__(self, pars):
         """
+        Compute the ECGMM log-likelihood (negative for minimization).
+
+        Parameters
+        ----------
+        pars: `np.array`
+           Float array of the combined parameters
+           pars: [wt0, mu0, mu1, sigma0, sigma1]
+
+        Returns
+        -------
+        t: `float`
+          Total negative log-likelihood
         """
         wt0 = pars[0]
         mu0 = pars[1]
