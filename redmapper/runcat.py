@@ -1,3 +1,6 @@
+"""Class to compute richness/redshifts for a set of ra/dec/z positions.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -18,9 +21,15 @@ from .cluster_runner import ClusterRunner
 
 class RunCatalog(ClusterRunner):
     """
+    The RunCatalog class derived from ClusterRunner, and will compute richness,
+    redshift (z_lambda) and other associated values for an input catalog that
+    has ra/dec/redshift.
     """
 
     def _additional_initialization(self, **kwargs):
+        """
+        Additional initialization for RunCatalog.
+        """
         # This is the runmode and where we get the mask/radius config vars from
         self.runmode = 'percolation'
         self.read_zreds = False
@@ -28,6 +37,21 @@ class RunCatalog(ClusterRunner):
         self.filetype = 'lambda_chisq'
 
     def _more_setup(self, *args, **kwargs):
+        """
+        More setup for RunCatalog.
+
+        Parameters
+        ----------
+        do_percolation_masking: `bool`, optional
+           Do percolation masking, assuming input positions are ranked.
+           Default is False.
+        maxiter: `int`, optional
+           Maximum number of iterations to converge z_lambda.
+           Default is 5
+        converge_zlambda: `bool`, optional
+           Run iterations until z_lambda is converged?  (Otherwise use first value)
+           Default is False
+        """
         # I think I name the args here?
 
         # read in catalog, etc
@@ -72,6 +96,14 @@ class RunCatalog(ClusterRunner):
                 self.limlum = self.config.percolation_lmask
 
     def _process_cluster(self, cluster):
+        """
+        Process a single cluster with RunCatalog.
+
+        Parameters
+        ----------
+        cluster: `redmapper.Cluster`
+           Cluster to compute richness.
+        """
         # here is where the work on an individual cluster is done
         bad = False
         iteration = 0
