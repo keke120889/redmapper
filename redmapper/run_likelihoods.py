@@ -1,3 +1,6 @@
+"""Class to run the second (likelihood) pass through a catalog for cluster finding.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -33,9 +36,26 @@ from .utilities import chisq_pdf, interpol
 
 class RunLikelihoods(ClusterRunner):
     """
+    The RunLikelihoods class is derived from a ClusterRunner, and will compute
+    richness and cluster likelihood (including centering) and other associated
+    values for the second "likelihood" pass of the cluster finder.
+
+    The specific configuration variables used in the likelihood run are:
+
+    likelihoods_r0: `float`
+       r0 value for radius/richness relation
+    likelihoods_beta: `float`
+       beta value for radius/richness relation
+    likelihoods_use_zred: `bool`
+       Centering likelihood should use zred filter rather than chisq filter.
+    likelihoods_minlambda: `float`
+       Minimum richness (lambda/scaleval) to record in output catalog
     """
 
     def _additional_initialization(self):
+        """
+        Additional initialization for RunLikelihoods.
+        """
         self.runmode = 'likelihoods'
 
         if self.config.likelihoods_use_zred:
@@ -50,7 +70,35 @@ class RunLikelihoods(ClusterRunner):
 
         self.filetype = 'like'
 
+    def run(self, *args, **kwargs):
+        """
+        Run a catalog through RunLikelihoods.
+
+        Loop over all clusters and perform RunLikelihoods computations on each cluster.
+
+        Parameters
+        ----------
+        keepz: `bool`, optional
+           Keep input redshifts?  (Otherwise use z_lambda).
+           Default is False.
+        cleaninput: `bool`, optional
+           Clean seed clusters that are out of the footprint?  Default is False.
+        """
+
+        return super(RunLikelihoods, self).run(*args, **kwargs)
+
     def _more_setup(self, *args, **kwargs):
+        """
+        More setup for RunLikelihoods
+
+        Parameters
+        ----------
+        keepz: `bool`, optional
+           Keep input redshifts?  (Otherwise use z_lambda).
+           Default is False.
+        cleaninput: `bool`, optional
+           Clean seed clusters that are out of the footprint?  Default is False.
+        """
 
         self.cleaninput = kwargs.pop('cleaninput', False)
 
@@ -91,6 +139,9 @@ class RunLikelihoods(ClusterRunner):
         #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
 
     def _reset_bad_values(self, cluster):
+        """
+        Internal method to reset all cluster values to "bad" values.
+        """
         cluster.lnlamlike = -1e11
         cluster.lnbcglike = -1e11
         cluster.lnlike = -1e11
@@ -98,6 +149,14 @@ class RunLikelihoods(ClusterRunner):
         super(RunLikelihoods, self)._reset_bad_values(cluster)
 
     def _process_cluster(self, cluster):
+        """
+        Process a single cluster with RunLikelihoods.
+
+        Parameters
+        ----------
+        cluster: `redmapper.Cluster`
+           Cluster to compute richness.
+        """
 
         bad = False
 
@@ -161,6 +220,11 @@ class RunLikelihoods(ClusterRunner):
 
 
     def _postprocess(self):
+        """
+        RunLikelihoods post-processing.
+
+        This will select clusters where they have a valid likelihood computed.
+        """
         # For this catalog we're cutting on failed likelihood
 
         use, = np.where(self.cat.lnlamlike > -1e11)
