@@ -95,7 +95,7 @@ class Cluster(Entry):
     This class includes methods to perform richness computations on individual clusters using the associated neighbor galaxy catalog.
     """
 
-    def __init__(self, cat_vals=None, r0=1.0, beta=0.2, config=None, zredstr=None, bkg=None, cbkg=None, neighbors=None, zredbkg=None):
+    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, cbkg=None, neighbors=None, zredbkg=None):
         """
         Instantiate a Cluster object.
 
@@ -138,8 +138,8 @@ class Cluster(Entry):
         # we need to extend if necessary?  Or just the catalog?
         super(Cluster, self).__init__(cat_vals)
 
-        self.r0 = r0
-        self.beta = beta
+        self.r0 = 1.0 if r0 is None else r0
+        self.beta = 0.2 if beta is None else beta
 
         # FIXME: this should explicitly set our default cosmology
         if config is None:
@@ -432,8 +432,9 @@ class Cluster(Entry):
         except AttributeError:
             w = theta_i * np.ones_like(ucounts)
 
-        richness_obj = Solver(self.r0, self.beta, ucounts, bcounts, self.neighbors.r[idx], w,
-                              cpars = cpars, rsig = self.config.rsig)
+        richness_obj = Solver(self.r0, self.beta, ucounts, bcounts,
+                              self.neighbors.r[idx], w,
+                              cpars=cpars, rsig=self.config.rsig)
 
         # Call the solving routine
         # this returns five items: lam_obj, p, pmem, rlam, theta_r
