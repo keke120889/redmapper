@@ -1,3 +1,6 @@
+"""Class to run the final (percolation) pass through a catalog for cluster finding.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 from functools import reduce
@@ -34,9 +37,46 @@ from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, Centeri
 
 class RunPercolation(ClusterRunner):
     """
+    The RunPercolation class is derived from a ClusterRunner, and will compute
+    richness, redshift (z_lambda) and associated quantities (including new
+    centers), including percolation masking, for the final "percolation" pass
+    of the cluster finder.
+
+    The specific configuration variables used in the percolation run are:
+
+    percolation_r0: `float`
+       r0 value for radius/richness relation
+    percolation_beta: `float`
+       beta value for radius/richness relation
+    percolation_rmask_0: `float`
+       r0 value for rmask/richness relation (mask radius)
+    percolation_rmask_beta: `float`
+       beta value for rmask/richness relation
+    percolation_rmask_gamma: `float`
+       gamma (redshift dependence) value for rmask/richness relation
+    percolation_rmask_zpivot: `float`
+       redshift pivot for rmask/richness relation
+    percolation_lmask: `float`
+       Luminosity cut for percolation masking
+    percolation_niter: `int`
+       Number of iterations to converge on richness/redshift
+    percolation_minlambda: `float`
+       Minimum richness (lambda/scaleval) to record in output catalog
+    percolation_pbcg_cut: `float`
+       Minimum pfree (unallocated probability) for galaxy to be considered
+       a possible cluster central seed.
+    percolation_maxcen: `int`
+       Maximum number of central candidates to record
+    percolation_memradius: `float`
+       Max radius (in units of r_lambda) to record members to file.
+    percolation_memlum: `float`
+       Minimum luminosity (units of L*) to record members to file.
     """
 
     def _additional_initialization(self, **kwargs):
+        """
+        Additional initialization for RunLikelihoods.
+        """
         self.runmode = 'percolation'
         self.read_zreds = True
         self.zreds_required = True
@@ -45,7 +85,43 @@ class RunPercolation(ClusterRunner):
         self.cutgals_chisqmax = False
         self.filetype = 'final'
 
+    def run(self, *args, **kwargs):
+        """
+        Run a catalog through RunPercolation.
+
+        Loop over all clusters and perform RunPercolation computations on each cluster.
+
+        Parameters
+        ----------
+        keepz: `bool`, optional
+           Keep input redshifts?  (Otherwise use z_lambda).
+           Default is False.
+        keepid: `bool`, optional
+           Keep input mem_match_id values?  Default is False.
+        specseed: `bool`, optional
+           Were input cluster seeds from spectroscopy for training?  Default is False.
+        cleaninput: `bool`, optional
+           Clean seed clusters that are out of the footprint?  Default is False.
+        """
+
+        return super(RunPercolation, self).run(*args, **kwargs)
+
     def _more_setup(self, *args, **kwargs):
+        """
+        More setup for RunPercolation
+
+        Parameters
+        ----------
+        keepz: `bool`, optional
+           Keep input redshifts?  (Otherwise use z_lambda).
+           Default is False.
+        keepid: `bool`, optional
+           Keep input mem_match_id values?  Default is False.
+        specseed: `bool`, optional
+           Were input cluster seeds from spectroscopy for training?  Default is False.
+        cleaninput: `bool`, optional
+           Clean seed clusters that are out of the footprint?  Default is False.
+        """
 
         self.cleaninput = kwargs.pop('cleaninput', False)
 
@@ -126,6 +202,15 @@ class RunPercolation(ClusterRunner):
         self.min_lambda = self.config.percolation_minlambda
 
     def _process_cluster(self, cluster):
+        """
+        Process a single cluster with RunPercolation.
+
+        Parameters
+        ----------
+        cluster: `redmapper.Cluster`
+           Cluster to compute richness.
+        """
+
         bad = False
         iteration = 0
         done = False
