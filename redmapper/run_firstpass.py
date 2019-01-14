@@ -1,3 +1,6 @@
+"""Class to run the first pass through a catalog for cluster finding.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -32,9 +35,40 @@ from .cluster_runner import ClusterRunner
 
 class RunFirstPass(ClusterRunner):
     """
+    The RunFirstPass class is derived from ClusterRunner, and will compute
+    richness, redshift (z_lambda) and other associated values for the first
+    pass of the cluster finder.
+
+    The specific configuration variables used for the firstpass run are:
+
+    firstpass_r0: `float`
+       r0 value for radius/richness relation
+    firstpass_beta: `float`
+       beta value for radius/richness relation
+    firstpass_niter: `int`
+       Number of iterations to converge on z_lambda
+    firstpass_minlambda: `float`
+       Minimum richness (lambda/scaleval) to record in output catalog
+
+    The firstpass run requires a list of "seeds".  This can either be derived
+    from a spectroscopic catalog (specmode) or from all zred galaxies brighter
+    than the luminosity threshold.
+
+    Parameters
+    ----------
+    specmode: `bool`, optional
+       Run in spectroscopic-seed mode.  Default is False.
     """
 
     def _additional_initialization(self, specmode=False):
+        """
+        Additional initialization for RunCatalog.
+
+        Parameters
+        ----------
+        specmode: `bool`, optional
+           Run in spectroscopic seed mode.  Default is False.
+        """
         # This is the runmode and where we get the mask/radius config vars from
         self.runmode = 'firstpass'
 
@@ -50,6 +84,17 @@ class RunFirstPass(ClusterRunner):
 
     # FIXME: This needs to specify args here?
     def _more_setup(self, *args, **kwargs):
+        """
+        More setup for RunFirstPass.
+
+        Parameters
+        ----------
+        keepz: `bool`, optional
+           Keep input redshifts?  (Otherwise use z_lambda).
+           Default is False.
+        cleaninput: `bool`, optional
+           Clean seed clusters that are out of the footprint?  Default is False.
+        """
 
         incat = None
 
@@ -163,6 +208,14 @@ class RunFirstPass(ClusterRunner):
         self.min_lambda = self.config.firstpass_minlambda
 
     def _process_cluster(self, cluster):
+        """
+        Process a single cluster with RunCatalog.
+
+        Parameters
+        ----------
+        cluster: `redmapper.Cluster`
+           Cluster to compute richness.
+        """
         bad = False
         iteration = 0
         done = False
