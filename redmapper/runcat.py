@@ -21,9 +21,9 @@ from .cluster_runner import ClusterRunner
 
 class RunCatalog(ClusterRunner):
     """
-    The RunCatalog class derived from ClusterRunner, and will compute richness,
-    redshift (z_lambda) and other associated values for an input catalog that
-    has ra/dec/redshift.
+    The RunCatalog class is derived from ClusterRunner, and will compute
+    richness, redshift (z_lambda) and other associated values for an input
+    catalog that has ra/dec/redshift.
     """
 
     def _additional_initialization(self, **kwargs):
