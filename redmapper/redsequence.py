@@ -1,3 +1,10 @@
+"""Class for the color-based red-sequence model.
+
+This class describes the red-sequence parameterization, and contains various
+methods for using the model.
+"""
+
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -14,24 +21,49 @@ from .utilities import schechter_pdf
 
 class RedSequenceColorPar(object):
     """
-    Class which contains a red-sequence parametrization
+    Class which describes the color-based red-sequence model.
 
-    parameters
-    ----------
-    filename: string
-        red sequence parameter file
-    zbinsize: float, optional
-        interpolation bin size in redshift
-    minsig: float, optional
-        minimum intrinsic scatter.  Default 0.01
-    fine: bool, optional
-        finest binning, set in filename header.  Default False
-    zrange: float*2, optional
-        redshift range [zlo,zhi].  Default from filename header
-        (maximum range)
-
+    This is the fundamental basis of the redmapper red sequence model.
     """
+
     def __init__(self, filename, zbinsize=None, minsig=0.01, fine=False, zrange=None, config=None, limmag=None):
+        """
+        Instantiate a RedSequenceColorPar object.
+
+        The primary way to create a RedSequenceColorPar object is by specifying
+        a filename to read the red-sequence parameters from.  The default reads
+        in with coarse interpolation, which is faster, uses less memory, and is
+        used when computing zreds.  The 'fine=True' option reads fine-scale
+        binning which is slower, uses more memory, and is used when computing
+        richness and cluster z_lambda.
+
+        If a red-sequence file is not available, a placeholder
+        RedSequenceColorPar can be created by setting 'filename=None' and
+        specifying a Configuration.  Some features of the RedSequenceColorPar
+        (including mstar calculations) are available in this mode.
+
+        Parameters
+        ----------
+        filename: `str`
+           Filename of the fits file to load parameters from
+        zbinsize: `float`, optional
+           Redshift binning to interpolate model.
+           Default is None, which uses ZBINCOAR (coarse binning)
+           from the fits header, or ZBINFINE (fine binning) if fine=True
+        minsig: `float`, optional
+           Minimum intrinsic scatter.  Default is 0.01 mag.
+        fine: `bool`, optional
+           Use fine binning for interpolation.  Default is False.
+        zrange: `np.array`, optional
+           Redshift range to do interpolation.
+           Default is None, which means use the config (if specified)
+           or ZRANGE0, ZRANGE1 from the filename header
+        config: `redmapper.Configuration`, optional
+           Only required if filename=None, and then used for placeholder
+           RedSequenceColorPar
+        limmag: `float`, optional
+           Maximum magnitude to do red-sequence interpolation.
+        """
 
         if filename is None:
             if config is None:
@@ -304,61 +336,59 @@ class RedSequenceColorPar(object):
 
     def mstar(self,z):
         """
-        M_star lookup
+        Look up mstar at a set of redshifts
 
-        parameters
+        Parameters
         ----------
-        z: array of floats
-           redshift
+        z: `np.array`
+           Float array of redshifts
 
-        returns
+        Returns
         -------
-        mstar: array of floats
-
+        mstar: `np.array`
+           Float array of mstar values.
         """
-        # lookup and return mstar...awesome.
+        # lookup and return mstar.
         zind = self.zindex(z)
         return self._mstar[zind]
 
     def zindex(self,z):
         """
-        redshift index lookup
+        Look up the redshift index for the RedSequenceColorPar interpolated
+        arrays.
 
-        parameters
+        Parameters
         ----------
-        z: array of floats
+        z: `np.array`
+           Float array of redshifts
 
-        returns
+        Returns
         -------
-        indices: array of integers
-            redshift indices
-
+        zindex: `np.array`
+           Integer array of redshift indices
         """
         # return the z index/indices with rounding.
 
         zind = np.searchsorted(self.zinteger,np.round(np.atleast_1d(z)*self.zbinscale).astype(np.int64))
-        #zind = np.searchsorted(self.zinteger,(np.atleast_1d(z)*self.zbinscale).astype(np.int64))
         if (zind.size == 1):
             return np.asscalar(zind)
         else:
             return zind
 
-        # and check for top overflows.  Minimum is always 0
-        #test,=np.where(zind == self.z.size)
-        #if (test.size > 0): zind[test] = self.z.size-1
-
     def refmagindex(self,refmag):
         """
-        reference magnitude index lookup
+        Look up the reference magnitude index for the RedSequenceColorPar
+        interpolated arrays.
 
-        parameters
+        Parameters
         ----------
-        refmag: array of floats
+        refmag: `np.array`
+           Float array of refmag values
 
-        returns
+        Returns
         -------
-        indices: array of integers
-            refmag indices
+        indices: `np.array`
+           Integer array of refmag indices
         """
         # return the refmag index/indices with rounding
 
@@ -370,19 +400,18 @@ class RedSequenceColorPar(object):
 
     def lumrefmagindex(self,lumrefmag):
         """
-        luminosity reference magnitude index lookup
+        Look up the luminosity table reference magnitude index.
 
-        parameters
+        Parameters
         ----------
-        lumrefmag: array of floats
+        lumrefmag: `np.array`
+           Float array of refmags for luminosity table.
 
-        returns
+        Returns
         -------
-        indices: array of integers
-            lumrefmag indices
-
+        indices: `np.array`
+           Integer array of lumrefmag indices
         """
-
         lumrefmagind = np.searchsorted(self.lumrefmaginteger,np.round(np.atleast_1d(lumrefmag)*self.refmagbinscale).astype(np.int64))
         if (lumrefmagind.size == 1):
             return np.asscalar(lumrefmagind)
@@ -396,16 +425,19 @@ class RedSequenceColorPar(object):
 
         Parameters
         ----------
-        galaxy: Galaxy
-        zs: redshift or bins
-        z_is_index: bool, default=False
-           The zs are indices and not redshifts
-        calc_lkhd: bool, default=False
-           Calculate likelihood rather than chisq
+        galaxy: `redmapper.Galaxy`
+           The galaxy to compute chisq values
+        zs: `np.array`
+           Float array of redshifts or integer array of bins
+        z_is_index: `bool`, optional
+           The zs are indices and not redshifts.  Default is False.
+        calc_lkhd: `bool`, optional
+           Calculate likelihood rather than chisq.  Default is False.
 
         Returns
         -------
-        chisqs: array of floats
+        chisqs: `np.array`
+           Float array of chisq values.
         """
 
         calc_chisq = not calc_lkhd
@@ -428,23 +460,24 @@ class RedSequenceColorPar(object):
 
     def calculate_chisq(self, galaxies, z, calc_lkhd=False, z_is_index=False):
         """
-        compute chisq for a set of galaxies at redshift z OR a galaxy at many redshifts OR
-          many galaxies at many redshifts
+        Compute chisq for (a) a set of galaxies at redshift z or (b) a galaxy
+        at an array of redshifts or (c) many galaxies at many redshifts.
 
-        parameters
+        Parameters
         ----------
-        galaxies: GalaxyCatalog
-            galaxies which need chisq values
-        z: redshift
-            redshift to compute chisq
-        calc_lkhd: bool, optional
-            compute likelihood rather than chisq (default False)
-        z_is_index: bool, optional
-            The input redshift is already a redshift index
+        galaxies: `redmapper.GalaxyCatalog`
+           Catalog of galaxies to compute chisq values.
+        z: `np.array`
+           Float array of redshifts or integer array of redshift indices
+        z_is_index: `bool`, optional
+           The zs are indices and not redshifts.  Default is False.
+        calc_lkhd: `bool`, optional
+           Calculate likelihood rather than chisq.  Default is False.
 
-        returns
+        Returns
         -------
-        chisqs: array of floats
+        chisqs: `np.array`
+           Float array of chisq values.
         """
 
         if calc_lkhd:
@@ -474,6 +507,16 @@ class RedSequenceColorPar(object):
 
     def plot_redsequence_diag(self, fig, ind, bands):
         """
+        Plot the diagonal elements of the red-sequence model
+
+        Parameters
+        ----------
+        fig: `matplotlib.Figure`
+           Figure to add subplots to plot red-sequence model
+        ind: `int`
+           Color index to plot
+        bands: `list`
+           List of string names of bands for labeling
         """
 
         not_extrap, = np.where(~self.extrapolated)
@@ -500,6 +543,14 @@ class RedSequenceColorPar(object):
 
     def plot_redsequence_offdiags(self, fig, bands):
         """
+        Plot the off-diagonal elements of the red-sequence model
+
+        Parameters
+        ----------
+        fig: `matplotlib.Figure`
+           Figure to add subplots to plot red-sequence model
+        bands: `list`
+           List of string names of bands for labeling
         """
 
         noff = (self.ncol * self.ncol - self.ncol) / 2
