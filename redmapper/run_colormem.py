@@ -54,6 +54,15 @@ class RunColormem(ClusterRunner):
         self.use_colorbkg = True
         self.use_parfile = False
 
+    def run(self, *args, **kwargs):
+        """
+        Run a catalog through RunColormem.
+
+        Loop over all clusters and perform RunColormem computations on each cluster.
+        """
+
+        return super(RunColormem, self).run(*args, **kwargs)
+
     def _more_setup(self, *args, **kwargs):
         """
         More setup for RunColormem.

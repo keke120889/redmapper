@@ -82,7 +82,23 @@ class RunFirstPass(ClusterRunner):
         else:
             self.filetype = 'firstpass'
 
-    # FIXME: This needs to specify args here?
+    def run(self, *args, **kwargs):
+        """
+        Run a catalog through RunCatalog.
+
+        Loop over all clusters and perform RunCatalog computations on each cluster.
+
+        Parameters
+        ----------
+        keepz: `bool`, optional
+           Keep input redshifts?  (Otherwise use z_lambda).
+           Default is False.
+        cleaninput: `bool`, optional
+           Clean seed clusters that are out of the footprint?  Default is False.
+        """
+
+        return super(RunFirstPass, self).run(*args, **kwargs)
+
     def _more_setup(self, *args, **kwargs):
         """
         More setup for RunFirstPass.

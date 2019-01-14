@@ -36,6 +36,27 @@ class RunCatalog(ClusterRunner):
         self.zreds_required = False
         self.filetype = 'lambda_chisq'
 
+    def run(self, *args, **kwargs):
+        """
+        Run a catalog through RunCatalog.
+
+        Loop over all clusters and perform RunCatalog computations on each cluster.
+
+        Parameters
+        ----------
+        do_percolation_masking: `bool`, optional
+           Do percolation masking, assuming input positions are ranked.
+           Default is False.
+        maxiter: `int`, optional
+           Maximum number of iterations to converge z_lambda.
+           Default is 5
+        converge_zlambda: `bool`, optional
+           Run iterations until z_lambda is converged?  (Otherwise use first value)
+           Default is False
+        """
+
+        return super(RunCatalog, self).run(*args, **kwargs)
+
     def _more_setup(self, *args, **kwargs):
         """
         More setup for RunCatalog.
