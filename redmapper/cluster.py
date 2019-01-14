@@ -148,7 +148,7 @@ class Cluster(Entry):
             self.cosmo = config.cosmo
         self.config = config
         self.zredstr = zredstr
-+        self.bkg = bkg
+        self.bkg = bkg
         self.cbkg = cbkg
         self.zredbkg = zredbkg
         self.set_neighbors(neighbors)
