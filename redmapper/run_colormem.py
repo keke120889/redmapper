@@ -38,7 +38,7 @@ from .utilities import CubicSpline
 
 class RunColormem(ClusterRunner):
     """
-    The RunColormem class derived from ClusterRunner, and will compute a
+    The RunColormem class is derived from ClusterRunner, and will compute a
     richness and membership probabilities using only an individual color per
     cluster.  The central galaxy is assumed to be close to the mean color of
     the cluster, and the red sequence is fit in a single color-magnitude space
