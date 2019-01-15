@@ -1,6 +1,8 @@
+"""Miscellaneous methods and classes for redmapper.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
-
 
 # miscellaneous utilities and functions
 
@@ -24,24 +26,111 @@ TOTAL_SQDEG = 4 * 180**2 / np.pi
 SEC_PER_DEG = 3600
 
 def astro_to_sphere(ra, dec):
+    """
+    Convert astronomical ra/dec to healpix theta, phi coordinates.
+
+    Parameters
+    ----------
+    ra: `np.array`
+       Float array of right ascension
+    dec: `np.array`
+       Float array of declination
+
+    Returns
+    -------
+    theta: `np.array`
+       Float array of healpix theta
+    phi: `np.array`
+       Float array of healpix phi
+    """
     return np.radians(90.0-dec), np.radians(ra)
 
 #Equation 7 in Rykoff et al. 2014
 def chisq_pdf(data, k):
+    """
+    Compute the chi-squared probability density function for an array of values
+    and given number of degrees of freedom.  Implementing Equation 7 of
+    Rykoff++2014.
+
+    Parameters
+    ----------
+    data: `np.array`
+       Float array of values
+    k: `float`
+       Number of effective degrees of freedom.
+
+    Returns
+    -------
+    pdf: `np.array`
+       Float array of pdf values
+    """
     normalization = 1./(2**(k/2.) * special.gamma(k/2.))
     return normalization * data**((k/2.)-1) * np.exp(-data/2.)
 
 def gaussFunction(x, *p):
-   A, mu, sigma = p
-   return A*np.exp(-(x-mu)**2./(2.*sigma**2))
+    """
+    Compute a normalizes Gaussian G(x) for a given set of parameters
+
+    Parameters
+    ----------
+    x: `np.array`
+       Float array of x values
+    A: `float`
+       Normalization of the Gaussian
+    mu: `float`
+       Mean value (mu) for the Gaussian
+    sigma: `float`
+       Gaussian sigma
+
+    Returns
+    -------
+    pdf: `np.array`
+       Float array of Gaussian pdf values
+    """
+    A, mu, sigma = p
+    return A*np.exp(-(x-mu)**2./(2.*sigma**2))
 
 def schechter_pdf(x, alpha=-1.0, mstar=0.0):
-    """Unnormalized schechter pdf"""
+    """
+    Compute an unnormalized Schechter function pdf.
+
+    Parameters
+    ----------
+    x: `np.array`
+       Float array of x (magnitude) values
+    alpha: `float`, optional
+       Faint-end slope of the Schechter function.  Default is -1.0.
+    mstar: `float`, optional
+       Pivot magnitude mstar.  Default is 0.0.
+
+    Returns
+    -------
+    pdf: `np.array`
+       Float array of unnormalized Schechter pdf values.
+    """
     pdf = 10.**(0.4*(alpha + 1.0) * (mstar - x)) * np.exp(-10.**(0.4 * (mstar - x)))
     return pdf
 
 def nfw_pdf(x, rscale=0.15, corer=0.1, radfactor=False):
-    """Unnormalized projected nfw pdf"""
+    """
+    Compute an unnormalized projected NFW pdf.
+
+    Parameters
+    ----------
+    x: `np.array`
+       Float array of x (radius) values
+    rscale: `float`, optional
+       NFW radial scaling.  Default is 0.15 Mpc.
+    corer: `float`, optional
+       Maximum radius to substitute a flat core.  Default is 0.1 Mpc.
+    radfactor: `bool`, optional
+       Multiply by 2*pi*r factor?  Default is False.
+
+    Returns
+    -------
+    pdf: `np.array`
+       Unnormalized projected NFW pdf.
+    """
 
     xscale = x / rscale
     corex = corer / rscale
@@ -91,7 +180,21 @@ def nfw_pdf(x, rscale=0.15, corer=0.1, radfactor=False):
 ## mstar LUT code
 ######################################
 class MStar(object):
+    """
+    Class to describe the MStar(z) look-up table.
+    """
+
     def __init__(self, survey, band):
+        """
+        Instantiate a MStar object.
+
+        Parameters
+        ----------
+        survey: `str`
+           Name of survey to get mstar look-up table
+        band: `str`
+           Name of band to get mstar look-up table
+        """
         self.survey = survey.strip()
         self.band = band.strip()
 
@@ -106,9 +209,21 @@ class MStar(object):
 
         # Tom - why not use CubicSpline here? That's why it exists...
         self._f = CubicSpline(self._mstar_arr['Z'],self._mstar_arr['MSTAR'])
-        #self._f = interpolate.interp1d(self._mstar_arr['Z'],self._mstar_arr['MSTAR'],kind='cubic')
 
     def __call__(self, z):
+        """
+        Return mstar at redshifts z.
+
+        Parameters
+        ----------
+        z: `np.array`
+           Float array of redshifts
+
+        Returns
+        -------
+        mstar: `np.array`
+           mstar at redshifts z
+        """
         # may want to check the type ... if it's a scalar, return scalar?  TBD
         return self._f(z)
 
@@ -118,7 +233,22 @@ class MStar(object):
 ##   http://faun.rc.fas.harvard.edu/eschlafly/apored/cubicspline.py
 #############################################################
 class CubicSpline(object):
+    """
+    CubicSpline interpolation class.
+    """
     def __init__(self, x, y, yp=None):
+        """
+        Instantiate a CubicSpline object.
+
+        Parameters
+        ----------
+        x: `np.array`
+           Float array of node positions
+        y: `np.array`
+           Float array of node values
+        yp: `str`
+           Type of spline.  Default is None, which is "natural"
+        """
         npts = len(x)
         mat = np.zeros((3, npts))
         # enforce continuity of 1st derivatives
@@ -151,6 +281,19 @@ class CubicSpline(object):
         self.x, self.y, self.y2 = (x, y, y2)
 
     def splint(self,x):
+        """
+        Compute spline interpolation.
+
+        Parameters
+        ----------
+        x: `np.array`
+           Float array of x values to compute interpolation
+
+        Returns
+        -------
+        y: `np.array`
+           Spline interpolated values at x
+        """
         npts = len(self.x)
         lo = np.searchsorted(self.x, x)-1
         lo = np.clip(lo, 0, npts-2)
@@ -163,24 +306,41 @@ class CubicSpline(object):
         return y
 
     def __call__(self, x):
+        """
+        Compute spline interpolation.
+
+        Parameters
+        ----------
+        x: `np.array`
+           Float array of x values to compute interpolation
+
+        Returns
+        -------
+        y: `np.array`
+           Spline interpolated values at x
+        """
         return self.splint(x)
 
 def calc_theta_i(mag, mag_err, maxmag, limmag):
     """
-    Calculate theta_i. This is reproduced from calclambda_chisq_theta_i.pro
+    Calculate the luminosity function smooth cutoff function, theta_i.
 
-    parameters
+    Parameters
     ----------
-    mag:
-    mag_err:
-    maxmag:
-    limmag:
+    mag: `np.array`
+       Magnitude values to compute theta_i
+    mag_err: `np.array`
+       Magnitude errors to compute theta_i
+    maxmag: `float`
+       Maximum possible magnitude in the catalog (hard cutoff)
+    limmag: `float`
+       Limiting magnitude to compute smooth cutoff
 
-    returns
+    Returns
     -------
-    theta_i:
+    theta_i: `np.array`
+       Float array of theta_i(mag, mag_err)
     """
-
     theta_i = np.ones(mag.size)
     eff_lim = np.clip(maxmag, 0, limmag)
     dmag = eff_lim - mag
@@ -192,41 +352,40 @@ def calc_theta_i(mag, mag_err, maxmag, limmag):
         theta_i[hi] = 0.0
     return theta_i
 
-    #theta_i = np.ones((len(mag)))
-    #eff_lim = np.clip(maxmag,0,limmag)
-    #dmag = eff_lim - mag
-    #calc = dmag < 5.0
-    #N_calc = np.count_nonzero(calc==True)
-    #if N_calc > 0: theta_i[calc] = 0.5 + 0.5*erf(dmag[calc]/(np.sqrt(2)*mag_err[calc]))
-    #hi = mag > limmag
-    #N_hi = np.count_nonzero(hi==True)
-    #if N_hi > 0:
-    #    theta_i[hi] = 0.0
-    #return theta_i
-
 def apply_errormodels(maskgals, mag_in, b=None, err_ratio=1.0, fluxmode=False,
     nonoise=False, inlup=False, lnscat=None, sigma0=0.0):
     """
-    Find magnitude and uncertainty.
+    Apply error models to a set of magnitudes.
 
-    parameters
+    Parameters
     ----------
-    mag_in    :
-    nonoise   : account for noise / no noise
-    zp:       : Zero point magnitudes
-    nsig:     :
-    fluxmode  :
-    lnscat    :
-    b         : parameters for luptitude calculation
-    inlup     :
-    errtflux  :
-    err_ratio : scaling factor
+    maskgals: `redmapper.Catalog`
+       Catalog of maskgals which have individual limmag, nsig values.
+    mag_in: `np.array`
+       Float array of raw magnitudes
+    b: `np.array`, optional
+       Luptitude softening parameters.  Default is None (not luptitudes)
+    err_ratio: `float`, optional
+       Error scaling ratio (for testing/adjustments).  Default is 1.0.
+    fluxmode: `bool`, optional
+       Return fluxes rather than magnitudes/luptitudes.  Default is False.
+    nonoise: `bool`, optional
+       Do not apply noise to output fluxes?  Default is False.
+    inlup: `bool`, optional
+       Input magnitudes are actually luptitudes.  Default is False.
+       If True, b array must be supplied.
+    lnscat: `float`, optional
+       Apply additional ln(scatter) term (increasing errors).
+       Default is None (no ln(scatter) term).
+    sigma0: `float`, optional
+       Additional noise floor term to apply.  Default is 0.0 (no floor).
 
-    returns
+    Returns
     -------
-    mag
-    mag_err
-
+    mag: `np.array`
+       Array of noised magnitudes/luptitudes/fluxes
+    mag_err: `np.array`
+       Array of magnitude/luptitude/flux errors
     """
     f1lim = 10.**((maskgals.limmag - maskgals.zp[0])/(-2.5))
     fsky1 = (((f1lim**2.) * maskgals.exptime)/(maskgals.nsig[0]**2.) - f1lim)
@@ -282,6 +441,21 @@ def apply_errormodels(maskgals, mag_in, b=None, err_ratio=1.0, fluxmode=False,
 
 def interpol(v, x, xout):
     """
+    Port of IDL interpol.py.  Does fast and simple linear interpolation.
+
+    Parameters
+    ----------
+    v: `np.array`
+       Float array of y (dependent) values to interpolate between
+    x: `np.array`
+       Float array of x (independent) values to interpolate between
+    xout: `np.array`
+       Float array of x values to compute interpolated values
+
+    Returns
+    -------
+    yout: `np.array`
+       Float array of y output values associated with xout
     """
 
     m = v.size
@@ -300,6 +474,39 @@ def interpol(v, x, xout):
 def cic(value, posx=None, nx=None, posy=None, ny=None, posz=None, nz=None, average=False, isolated=True):
     """
     Port of idl astronomy utils cic.pro
+
+    Interpolate an irregularly sampled field using Cloud-in-Cells
+
+    Parameters
+    ----------
+    value: `np.array`
+       Array of sample weights (field values)
+    posx: `np.array`, optional
+       Array of x coordinates of field samples, unit indices: [0, nx)
+       Default is None
+    nx: `int`, optional
+       Range of x values
+    posy: `np.array`, optional
+       Array of y coordinates of field samples, unit indices: [0, ny)
+       Default is None
+    ny: `int`, optional
+       Range of y values
+    posz: `np.array`, optional
+       Array of z coordinates of field samples, unit indices: [0, nz)
+       Default is None
+    nz: `int`, optional
+       Range of z values
+    average: `bool`, optional
+       True if nodes contain field samples.  The value at each grid point
+       will be the weighted average of all samples allocated.  If False,
+       the value will be the weighted sum of all nodes.  Default is False.
+    isolated: `bool`, optional
+       True if data is not periodic.  Default is True.
+
+    Returns
+    -------
+    field: `np.array`
+       1d, 2d, or 3d float array of CIC field values.
     """
 
     # need type checks
@@ -512,6 +719,27 @@ def cic(value, posx=None, nx=None, posy=None, ny=None, posz=None, nz=None, avera
 
 def make_nodes(zrange, nodesize, maxnode=None):
     """
+    Make spline nodes over a given range, mostly but not entirely uniform.
+
+    This will return nodes that fill the space desired, and will make the
+    highest redshift node spacing larger to fill the space.  In addition, the
+    maxnode maximum useful node can be specified, and this will create one
+    final node at the high redshift end.  This is useful when you have a color
+    (e.g. u-g) that is only fittable over a restricted redshift range.
+
+    Parameters
+    ----------
+    zrange: `np.array` or `list`
+       2-element float array with redshift range
+    nodesize: `float`
+       Default (and minimum) node spacing
+    maxnode: `float`, optional
+       Maximum useful node.  Default is None (do full redshift range)
+
+    Returns
+    -------
+    nodes: `np.array`
+       Float array of redshift nodes.
     """
 
     if maxnode is None or maxnode < 0.0:
@@ -541,6 +769,25 @@ def make_nodes(zrange, nodesize, maxnode=None):
 
 def sample_from_pdf(f, ran, step, nsamp, **kwargs):
     """
+    Sample from a PDF described by a function f.
+
+    Parameters
+    ----------
+    f: `function`
+       PDF function that can be called
+    ran: `np.arange` or `list`
+       Two-element range over which to sample.
+    step: `float`
+       Step size for interpolation.
+    nsamp: `int`
+       Number of samples from pdf
+    **kwargs: `dict`
+       Extra arguments to call f()
+
+    Returns
+    -------
+    samples: `np.array`
+       Float array of samples from PDF.
     """
 
     x = np.arange(ran[0], ran[1], step)
@@ -560,6 +807,18 @@ def sample_from_pdf(f, ran, step, nsamp, **kwargs):
 
 # for multiprocessing classes
 def _pickle_method(m):
+    """
+    Method to allow object pickling.
+
+    Parameters
+    ----------
+    m: `object` or None
+       Object pickle?
+
+    Returns
+    -------
+    attr: Attributes to pickle?
+    """
     if m.im_self is None:
         return getattr, (m.im_class, m.im_func.func_name)
     else:
@@ -570,14 +829,21 @@ def histoGauss(ax, array):
     """
     Plot a histogram and fit a Gaussian to it.  Modeled after IDL histogauss.pro.
 
-    parameters
+    Parameters
     ----------
-    ax: Plot axis object, may be None
-    array: float array to plot
+    ax: `matplotlib.Axis`
+       Plot axis object.  If None, no plot is created, only the fit.
+    array: `np.array`
+       Float array of values to create a histogram from.
 
-    returns
+    Returns
     -------
-    coeff: tuple (A, mu, sigma)
+    A: `float`
+       Fit normalization A
+    mu: `float`
+       Fit mean mu
+    sigma: `float`
+       Fit width sigma
     """
 
     import scipy.optimize
@@ -637,6 +903,23 @@ def histoGauss(ax, array):
 
 def make_lockfile(lockfile, block=False, maxtry=300, waittime=2):
     """
+    Make a lockfile with atomic linking.
+
+    Parameters
+    ----------
+    lockfile: `str`
+       Name of lockfile to create
+    block: `bool`, optional
+       Block execution until lockfile is created?  Default is False.
+    maxtry: `int`, optional
+       Maximum number of tries to create lockfile (if blocking).  Default is 300.
+    waittime: `float`, optional
+       Wait time in seconds between tries (if blocking).  Default is 2.
+
+    Returns
+    -------
+    locked: `bool`
+       True if lockfile created, False if not.
     """
 
     import os
@@ -677,16 +960,20 @@ def make_lockfile(lockfile, block=False, maxtry=300, waittime=2):
 
         return locked
 
-"""
-def redmapper_filename(config, filetype):
-
-
-    import os
-
-    return os.path.join(config.outpath,
-                        '%s_%s.fit' % (config.d.outbase, filetype))
-"""
 def read_members(catfile):
+    """
+    Read members associated to a catalog file.
+
+    Parameters
+    ----------
+    catfile: `str`
+       Filename of a cluster catalog.
+
+    Returns
+    -------
+    members: `redmapper.GalaxyCatalog`
+       Member catalog as a GalaxyCatalog
+    """
     import os
 
     from .galaxy import GalaxyCatalog
@@ -705,13 +992,27 @@ def read_members(catfile):
 # At the moment, this doesn't take a filename, it just prints with a flush.
 
 class Logger(object):
+    """
+    A class for a simple logger with flushed output.
+    """
     def __init__(self):
+        """
+        Instantiate a Logger
+        """
         if sys.version_info[: 2] < (3, 3):
             self.py33 = False
         else:
             self.py33 = True
 
     def info(self, message):
+        """
+        Log an informational message.
+
+        Parameters
+        ----------
+        message: `str`
+           Message to output
+        """
         if self.py33:
             print(message, flush=True)
         else:
@@ -722,10 +1023,15 @@ def getMemoryString(location):
     """
     Get a string for memory usage (current and peak) for logging.
 
-    parameters
+    Parameters
     ----------
-    location: string
+    location: `str`
        A short string which denotes where in the code the memory was recorded.
+
+    Returns
+    -------
+    memory_string: `str`
+       A string suitable for logging that says the memory usage.
     """
 
     status = None
