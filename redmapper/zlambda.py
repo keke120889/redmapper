@@ -1,3 +1,6 @@
+"""Classes to compute cluster photometric redshifts (z_lambda) and perform corrections.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -14,12 +17,23 @@ from .catalog import Entry
 
 class Zlambda(object):
     """
+    Class for computing z_lambda cluster photometric redshifts.
 
-    Class for computing zlambda cluster redshift on clusters
-
+    This algorithm performs an iterative fit.  The cluster photometric redshift
+    used to compute richness and membership probabilities must be consistent
+    with the maximum redshift likelihood computed with the membership
+    probability weights.
     """
 
     def __init__(self, cluster):
+        """
+        Instantiate a Zlambda object
+
+        Parameters
+        ----------
+        cluster: `redmapper.Cluster`
+           Cluster to compute z_lambda
+        """
         # We make a link to the parent cluster
         self.cluster_parent = cluster
 
@@ -35,21 +49,41 @@ class Zlambda(object):
     def calc_zlambda(self, zin, mask, maxmag_in=None, calcpz=False, calc_err=True,
                      correction=False, record_values=True):
         """
-        compute z_lambda with uncertainty - Cluster Redshift Estimation
-        from redmapper_zlambda.pro
+        Calculate the z_lambda cluster photometric redshift
 
-        parameters
+        This sets self.z_lambda, self.z_lambda_err.  It also will set z_lambda,
+        z_lambda_err in the input cluster (if record_values=True) and will set
+        self.pzbins, self.pz if calcpz=True.
+
+        Will return z_lambda = -1 if no valid redshift is found.
+
+        Parameters
         ----------
-        zin: input redshift
-        mask: mask object
-        calc_err: if False, no error calculated
+        zin: `float`
+           Input redshift (starting point)
+        mask: `redmapper.Mask`
+           Footprint mask for survey
+        maxmag_in: `float`, optional
+           Maximum magnitude to select neighbor galaxies.  Default is None,
+           which uses reference luminosity cut.
+        calcpz: `bool`, optional
+           Calculate p(z) as well as z_lambda.  Default is False.
+        calc_err: `bool`, optional
+           Calculate z_lambda error.  Default is True.
+        correction: `bool`, optional
+           Apply z_lambda "internal" correction.  Default is False.
+        record_values: `bool`, optional
+           Record redshift values in input cluster.  Default is True.
+           Should set to False when doing ancillary calculations that
+           should not be recorded.
 
-        returns
+        Returns
         -------
-        z_lambda: estimated cluster redshift
-        z_lambda_err: uncertainty
+        z_lambda: `float`
+           Cluster photometric redshift
+        z_lambda_err: `float`
+           Error on photometric redshift.  May be -1.0 if calc_err is False.
         """
-
         z_lambda = copy.copy(zin)
 
         maxmag = self.zredstr.mstar(z_lambda) - 2.5*np.log10(self.config.lval_reference)
@@ -143,8 +177,6 @@ class Zlambda(object):
                 else:
                     # Calculating p(z)
                     pzdone, z_lambda, z_lambda_e = self._zlambda_calc_pz_and_check(z_lambda, wtvals_mod, self.cluster.r_lambda, maxmag, convergence_warning=(pz_iter > 0))
-                    #if not pzdone and pz_iter > 0 and z_lambda < 0.4 and z_lambda > 0.15 and self.cluster_parent.Lambda > 20.0 and self.cluster_parent.scaleval < 2.0:
-                    #    asdljflkjasdf
             else:
                 # Invalid z_lambda, we're done here.
                 z_lambda_e = -1.0
@@ -167,18 +199,21 @@ class Zlambda(object):
 
     def _zlambda_select_neighbors(self, wtvals, maxrad, maxmag):
         """
-        select neighbours internal to r < maxrad
+        Select neighbors that are inside r < maxrad
 
-        parameters
+        Will set self._zlambda_in_rad, self._zlambda_zrefmagbin,
+        self._zlambda_refmag, self._zlambda_refmag_err, self._zlambda_mag,
+        self._zlambda_mag_err, self._zlambda_c, self._zlambda_pw,
+        self._zlambda_targval
+
+        Parameters
         ----------
-        wtvals: weights
-        maxrad: maximum radius for considering neighbours
-        maxmag: maximum magnitude for considering neighbours
-
-        returns
-        -------
-        sets zrefmagbin, refmag, refmag_err, mag, mag_err, c, pw, targval
-        for selected neighbors
+        wtvals: `np.array`
+           Float array of member weights
+        maxrad: `float`
+           Maximum radius for considering neighbors (Mpc)
+        maxmag: `float`
+           Maximum magnitude for considering neighbors
         """
         topfrac = self.config.zlambda_topfrac
 
@@ -228,15 +263,17 @@ class Zlambda(object):
 
     def _zlambda_calcz(self, z_lambda):
         """
-        calculate z_lambda
+        Calculate a redshift by fitting a parabola to likelihood(z) near the peak.
 
-        parameters
+        Parameters
         ----------
-        z_lambda: input
+        z_lambda: `float`
+           Input redshift
 
-        returns
+        Returns
         -------
-        z_lambda: output
+        z_lambda: `float`
+           Output redshift
         """
         nsteps = 10
         steps = self.config.zlambda_parab_step * np.arange(nsteps) + z_lambda - self.config.zlambda_parab_step * (nsteps - 1) / 2
@@ -255,10 +292,19 @@ class Zlambda(object):
 
         return z_lambda
 
-
     def _bracket_fn(self, z):
         """
-        bracketing function
+        Function to compute z_lambda likelihood (negative for minimization).
+
+        Parameters
+        ----------
+        z: `float`
+           Redshift to compute z_lambda likelihood
+
+        Returns
+        -------
+        t: `float`
+           Total (negative) likelihood at redshift z
         """
         likelihoods = self.zredstr.calculate_chisq(self.cluster.neighbors[self._zlambda_in_rad],
                                                    z, calc_lkhd=True)
@@ -266,23 +312,38 @@ class Zlambda(object):
         return t
 
     def _delta_bracket_fn(self, z):
+        """
+        Compute the difference in likelihood between that at redshift z and a
+        target likelihood.
+
+        Parameters
+        ----------
+        z: `float`
+           Redshift to compute z_lambda likelihood
+
+        Returns
+        -------
+        delta: `float`
+           Difference between z_lambda likelihood and self._zlambda_targval
+        """
         t  = self._bracket_fn(z)
         dt = np.abs(t-self._zlambda_targval)
         return dt
 
     def _zlambda_calc_gaussian_err(self, z_lambda):
         """
-        calculate z_lambda error
+        Calculate z_lambda error, assuming Gaussian
 
-        parameters
+        Parameters
         ----------
-        z_lambda: input
+        z_lambda: `float`
+           z_lambda redshift at which to compute error
 
-        returns
+        Returns
         -------
-        z_lambda_e: z_lambda error
+        z_lambda_e: `float`
+           Gaussian error on z_lambda
         """
-
         minlike = self._bracket_fn(z_lambda) # of course this is negative
         # now we want to aim for minlike+1
         self._zlambda_targval = minlike+1
@@ -299,15 +360,29 @@ class Zlambda(object):
 
     def _zlambda_calc_pz_and_check(self, z_lambda, wtvals, maxrad, maxmag, convergence_warning=False):
         """
-        Parent to set pz and pzbins, with checking
+        Call function to calculate p(z) and check that all values/ranges are okay.
 
-        parameters
+        Parameters
         ----------
-        z_lambda: input
-        wtvals: weights
-        maxrad: maximum radius for considering neighbours
-        maxmag: maximum magnitude for considering neighbours
-        convergence_warning: print warning if we haven't converged
+        z_lambda: `float`
+           Central z_lambda redshift
+        wtvals: `np.array`
+           Float array of member weights
+        maxrad: `float`
+           Maximum radius for considering neighbors (Mpc)
+        maxmag: `float`
+           Maximum magnitude for considering neighbors
+        convergence_warning: `bool`, optional
+           Print a warning if p(z) hasn't fully converged?  Default is False.
+
+        Returns
+        -------
+        pzdone: `bool`
+           Did the p(z) properly converge?
+        z_lambda: `float`
+           z_lambda as computed at peak of p(z)
+        z_lambda_e: `float`
+           Width of Gaussian fit to p(z).
         """
 
         # First do with fast mode
@@ -365,15 +440,29 @@ class Zlambda(object):
 
     def _zlambda_calc_pz(self, z_lambda, wtvals, maxrad, maxmag, slow=False):
         """
-        set pz and pzbins
+        Calculate p(z)
 
-        parameters
+        Will set self.pzbins and self.pz
+
+        Parameters
         ----------
-        z_lambda: input
-        wtvals: weights
-        maxrad: maximum radius for considering neighbours
-        maxmag: maximum magnitude for considering neighbours
-        slow: slow or fast mode
+        z_lambda: `float`
+           Input z_lambda to start
+        wtvals: `np.array`
+           Float array of member weights
+        maxrad: `float`
+           Maximum radius for considering neighbors (Mpc)
+        maxmag: `float`
+           Maximum magnitude for considering neighbors
+        slow: `bool`, optional
+           Compute p(z) is "slow" careful mode?  Default is False.
+
+        Returns
+        -------
+        pzbins: `np.array`
+           Float array of p(z) redshift bins
+        pz: `np.array`
+           Float array of p(z) values
         """
         minlike = self._bracket_fn(z_lambda)
         # 4 sigma
@@ -464,8 +553,31 @@ class Zlambda(object):
 
 class ZlambdaCorrectionPar(object):
     """
+    Class to describe the z_lambda correction parameters
     """
     def __init__(self, parfile=None, pars=None, zrange=None, zbinsize=None, zlambda_pivot=None):
+        """
+        Instantiate a ZlambdaCorrectionPar
+
+        Must specify at least one of parfile (parameter file) or pars
+        (`redmapper.Entry` describing the parameters).
+
+        Parameters
+        ----------
+        parfile: `str`, optional
+           z_lambda correction parameters.  Default is None.
+        pars: `redmapper.Entry`, optional
+           z_lambda correction parameters.  Default is None.
+        zrange: array_like, optional
+           Redshift range.  Default is None.  Use header info if parfile,
+           must be specified if pars are input.
+        zbinsize: `float`, optional
+           Redshift bin size.  Default is None.  Use header info if parfile,
+           must be specified if pars are input.
+        zlambda_pivot: `float`, optional
+           Pivot richness for correction terms.  Default is None.  Use
+           header info if parfile, must be specified if pars are input.
+        """
 
         # We can either send in a parfile or the actual pars (used in calibration)
 
@@ -552,6 +664,33 @@ class ZlambdaCorrectionPar(object):
 
     def apply_correction(self, lam, zlam, zlam_e, pzbins=None, pzvals=None, noerr=False):
         """
+        Apply the z_lambda correction to an input z_lambda
+
+        Parameters
+        ----------
+        lam: `float`
+           Richness of cluster to compute correction
+        zlam: `float`
+           Input z_lambda
+        zlam_e: `float`
+           Input z_lambda error
+        pzbins: `np.array`, optional
+           Input p(z) redshift bins.  Default is None (no p(z)).
+        pzvals: `np.array`, optional
+           Input p(z) values.  Default is None (no p(z)).
+        noerr: `bool`, optional
+           Do not apply any error correction.  Default is False.
+
+        Returns
+        -------
+        zlam: `float`
+           Output corrected z_lambda
+        zlam_e: `float`
+           Output corrected z_lambda error
+        pzbins: `np.array`
+           Present if pzbins/pz is input.  Corrected p(z) redshift bins.
+        pz: `np.array`
+           Present if pzbinz/pz is input.  Corrected p(z) values.
         """
 
         if pzbins is None:
