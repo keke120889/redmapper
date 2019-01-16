@@ -1,3 +1,6 @@
+"""Classes to describe the volume limit mask.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -14,15 +17,33 @@ from .utilities import astro_to_sphere
 
 class VolumeLimitMask(object):
     """
-    A class to describe a volume limit mask
+    A class to describe a volume limit mask.
 
-    parameters
-    ----------
-    config: Config object
+    This is based on combining the red sequence model with depth maps in
+    different bands, to determine the highest redshift that a typical
+    red-sequence galaxy can be observed with the specified luminosity.
 
     """
 
     def __init__(self, config, vlim_lstar, vlimfile=None):
+        """
+        Instantiate a VolumeLimitMask
+
+        If the mask described by maskfile already exists, it will be read in
+        directly.  If it does not exist, it will be generated from the depth
+        files described in the config parameters, and then stored in vlimfile.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        vlim_lstar: `float`
+           Luminosity cutoff (units of L*) for red-sequence volume limit
+           computation
+        vlimfile: `str`, optional
+           Filename to store volume limit mask.  Default is None, which
+           means generate the filename of the 'vlim_zmask' type.
+        """
         self.config = config
         self.vlim_lstar = vlim_lstar
 
@@ -41,6 +62,7 @@ class VolumeLimitMask(object):
 
     def _read_mask(self):
         """
+        Read an existing volume-limit mask into the VolumeLimitMask structure.
         """
 
         vliminfo, hdr = fitsio.read(self.vlimfile, ext=1, header=True, lower=True)
@@ -86,6 +108,8 @@ class VolumeLimitMask(object):
 
     def _build_mask(self):
         """
+        Build a VolumeLimitMask from the parameters in the config file, and
+        store the mask in self.vlimfile
         """
 
         # Make some checks to make sure we can build a volume limit mask
@@ -198,6 +222,23 @@ class VolumeLimitMask(object):
 
     def calc_zmax(self, ra, dec, get_fracgood=False):
         """
+        Calculate the maximum redshifts associated with a set of ra/decs.
+
+        Parameters
+        ----------
+        ra: `np.array` or `float`
+           Float array of right ascensions
+        dec: `np.array` or `float`
+           Float array of declinations
+        get_fracgood: `bool`, optional
+           Also retrieve the fracgood pixel coverage.  Default is False.
+
+        Returns
+        -------
+        zmax: `np.array`
+           Float array of maximum redshifts
+        fracgood: `np.array`
+           Float array of fracgood, if get_fracgood=True
         """
 
         _ra = np.atleast_1d(ra)
@@ -218,6 +259,13 @@ class VolumeLimitMask(object):
 
     def get_areas(self):
         """
+        Retrieve the area structure (area as a function of redshift) associated
+        with the volume-limit mask.
+
+        Returns
+        -------
+        astr: `redmapper.Catalog`
+           Area structure catalog, with .z and .area
         """
 
         zbinsize = self.config.area_finebin
@@ -248,9 +296,24 @@ class VolumeLimitMask(object):
 
 class VolumeLimitMaskFixed(object):
     """
+    A class to describe a volume limit mask with a fixed redshift maximum.
+
+    This class is used as a placeholder when there is no depth information to
+    construct a true VolumeLimitMask.
     """
 
     def __init__(self, config):
+        """
+        Instantiate a VolumeLimitMaskFixed
+
+        The maximum redshift is set by config.zrange[1] (the max redshift in
+        the config file).
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        """
         self.z_max = config.zrange[1]
         self.zrange = config.zrange
         self.zbinsize = config.area_finebin
@@ -258,12 +321,32 @@ class VolumeLimitMaskFixed(object):
 
     def calc_zmax(self, ra, dec):
         """
+        Calculate the maximum redshifts associated with a set of ra/decs.
+
+        Parameters
+        ----------
+        ra: `np.array` or `float`
+           Float array of right ascensions
+        dec: `np.array` or `float`
+           Float array of right ascensions
+
+        Returns
+        -------
+        zmax: `float`
+           Maximum redshift from the config file.
         """
 
         return self.z_max
 
     def get_areas(self):
         """
+        Retrieve the area structure (area as a function of redshift) associated
+        with the fixed-redshift mask.
+
+        Returns
+        -------
+        astr: `redmapper.Catalog`
+           Area structure catalog, with .z and .area
         """
 
         zbins = np.arange(self.zrange[0], self.zrange[1], self.zbinsize)
