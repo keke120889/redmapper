@@ -432,7 +432,7 @@ class Configuration(object):
                                    ('PZ', 'f4', self.npzbins),
                                    ('RA_CENT', 'f8', self.percolation_maxcen),
                                    ('DEC_CENT', 'f8', self.percolation_maxcen),
-                                   ('ID_CENT', 'i4', self.percolation_maxcen),
+                                   ('ID_CENT', 'i8', self.percolation_maxcen),
                                    ('LAMBDA_CENT', 'f4', self.percolation_maxcen),
                                    ('ZLAMBDA_CENT', 'f4', self.percolation_maxcen),
                                    ('P_CEN', 'f4', self.percolation_maxcen),
