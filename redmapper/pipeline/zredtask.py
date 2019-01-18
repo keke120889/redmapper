@@ -1,3 +1,6 @@
+"""Class to compute zreds on a single pixel, for distributed runs.
+"""
+
 from __future__ import division, absolute_import, print_function
 
 import os
@@ -11,9 +14,25 @@ from ..utilities import make_lockfile
 
 class RunZredPixelTask(object):
     """
+    Class to compute zreds on a single healpix pixel, for distributed runs.
     """
 
     def __init__(self, configfile, pixel, nside, path=None):
+        """
+        Instantiate a RunZredPixelTask.
+
+        Parameters
+        ----------
+        configfile: `str`
+           Configuration yaml filename.
+        pixel: `int`
+           Healpix pixel to run on.
+        nside: `int`
+           Healpix nside associated with pixel.
+        path: `str`, optional
+           Output path.  Default is None, use same absolute
+           path as configfile.  I think this is unused.
+        """
         if path is None:
             outpath = os.path.dirname(os.path.abspath(configfile))
         else:
@@ -25,6 +44,11 @@ class RunZredPixelTask(object):
 
     def run(self):
         """
+        Calculate zreds on a single healpix pixel.
+
+        All files will be placed in the path in self.config.zredfile, and when
+        the final pixel is run the self.config.zredfile master table will be
+        created.
         """
 
         # Make sure galaxy file exists, and is pixelized
