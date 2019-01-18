@@ -1,3 +1,6 @@
+"""Class for calibrating the color-based red-sequence model.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -18,9 +21,30 @@ from ..utilities import make_nodes, CubicSpline, interpol
 
 class RedSequenceCalibrator(object):
     """
+    Class for calibrating the color-based red-sequence model.
+
+    Requires an input galfile that has the following fields:
+
+    z: host cluster redshift
+    pcol: probability of membership using color/luminosity
+    p: probability of membership using color/luminosity/radial filter
+    refmag: total magnitude in the reference band
+    mag: magnitude array
+    mag_err: magnitude error array
     """
 
     def __init__(self, conf, galfile):
+        """
+        Instantiate a RedSequenceCalibrator.
+
+        Parameters
+        ----------
+        conf: `str` or `redmapper.Configuration`
+           Configuration yaml file or configuration object
+        galfile: `str`
+           Galaxy file with the required fields
+        """
+
         if not isinstance(conf, Configuration):
             self.config = Configuration(conf)
         else:
@@ -30,6 +54,13 @@ class RedSequenceCalibrator(object):
 
     def run(self, doRaise=True):
         """
+        Run the red-sequence calibration.
+
+        Parameters
+        ----------
+        doRaise: `bool`, optional
+           Raise an error if background cannot be computed for any galaxies
+           Default is True. Can be set to False for certain testing.
         """
 
         gals = GalaxyCatalog.from_galfile(self._galfile)
@@ -189,6 +220,30 @@ class RedSequenceCalibrator(object):
 
     def _compute_startvals(self, nodes, z, val, xval=None, err=None, median=False, fit=False, mincomp=3):
         """
+        Compute the starting fit values using a simple algorithm.
+
+        Must select one (and only one) of median=True (median fit) or
+        fit=True (weighted mean fit).
+
+        Parameters
+        ----------
+        nodes: `np.array`
+           Float array of redshift nodes
+        z: `np.array`
+           Float array of redshifts
+        val: `np.array`
+           Float array of values to fit (e.g. refmag, color)
+        xval: `np.array`, optional
+           X-axis value for color-magnitude relation if fitting slope.
+           Usually refmag.
+           Default is None, which means not fitting a slope.
+        err: `np.array`, optional
+           Float array of error on val.  Not used if fitting median.
+           Default is None.
+        median: `bool`, optional
+           Perform median fit.  Default is False.
+        fit: `bool`, optional
+           Perform weighted mean fit.  Default is False.
         """
 
         def _linfunc(p, x, y):
@@ -254,6 +309,36 @@ class RedSequenceCalibrator(object):
             return cvals, svals, evals
 
     def _compute_single_lupcorr(self, j, cvals, svals, gals, dmags, mags, lups, mind, sign):
+        """
+        Compute the luptitude correction for a single color
+
+        Parameters
+        ----------
+        j: `int`
+           Color index
+        cvals: `np.array`
+           Float array of spline values for color at pivotmag
+        svals: `np.array`
+           Float array of slope values
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog being fit
+        dmags: `np.array`
+           Float array of refmag - pivotmag
+        mags: `np.array`
+           2d Float array of true (model)  magnitudes
+        lups: `np.array`
+           2d Float array of true (model) luptitudes
+        mind: `int`
+           magnitude index, currently being worked on.
+        sign: `int`, -1 or 1
+           Sign of color; -1 if band is redder than ref_ind,
+           +1 if band is bluer than ref_ind
+
+        Returns
+        -------
+        lupcorr: `np.array`
+           Float array of luptitude color corrections
+        """
         spl = CubicSpline(self.pars._ndarray[self.ztag[j]], cvals)
         cv = spl(gals.z)
         spl = CubicSpline(self.pars._ndarray[self.zstag[j]], svals)
@@ -273,6 +358,15 @@ class RedSequenceCalibrator(object):
 
     def _calc_pivotmags(self, gals):
         """
+        Calculate the pivot magnitude parameters.
+
+        These are put into self.pars.pivotmag, self.pars.maxrefmag, and
+        self.pars.minrefmag
+
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog with fields required for fit.
         """
 
         self.config.logger.info("Calculating pivot magnitudes...")
@@ -295,6 +389,14 @@ class RedSequenceCalibrator(object):
 
     def _calc_medcols(self, gals):
         """
+        Calculate the median color spline parameters.
+
+        Sets self.pars.medcol, self.pars.medcol_width
+
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog with fields required for fit.
         """
 
         self.config.logger.info("Calculating median colors...")
@@ -324,6 +426,17 @@ class RedSequenceCalibrator(object):
 
     def _calc_diagonal_pars(self, gals, doRaise=True):
         """
+        Calculate the model parameters and diagonal elements of the covariance
+        matrix (one color at a time).
+
+        Sets self.pars.sigma, self.pars.covmat_amp, self.pars.cXX, self.pars.slopeXX
+
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog with fields required for fit.
+        doRaise: `bool`, optional
+           Raise if there's a problem with the background?  Default is True.
         """
 
         # The main routine to compute the red sequence on the diagonal
@@ -472,6 +585,16 @@ class RedSequenceCalibrator(object):
 
     def _calc_offdiagonal_pars(self, gals, doRaise=True):
         """
+        Calculate the off-diagonal elements of the covariance matrix.
+
+        Sets self.pars.sigma, self.pars.covmat_amp (off-diagonal).
+
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog with fields required for fit.
+        doRaise: `bool`, optional
+           Raise if there's a problem with the background?  Default is True.
         """
         # The routine to compute the off-diagonal elements
 
@@ -606,6 +729,14 @@ class RedSequenceCalibrator(object):
 
     def _calc_volume_factor(self, zref):
         """
+        Calculate the volume factor (delta-comoving volume in redshift steps)
+
+        Sets self.pars.volume_factor
+
+        Parameters
+        ----------
+        zref: `float`
+           Highest redshift in the model (for reference)
         """
 
         dz = 0.01
@@ -618,6 +749,14 @@ class RedSequenceCalibrator(object):
 
     def save_pars(self, filename, clobber=False):
         """
+        Save the parameters to a fits file.
+
+        Parameters
+        ----------
+        filename: `str`
+           Filename to save to.
+        clobber: `bool`, optional
+           Clobber any existing file?  Default is False.
         """
 
         hdr = fitsio.FITSHDR()
@@ -640,10 +779,17 @@ class RedSequenceCalibrator(object):
 
     def _calc_zreds(self, gals, do_correction=True):
         """
+        Calculate the zreds for a set of galaxies, using the newly fit model.
+
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog being fit
+        do_corrections: `bool`, optional
+           Do redshift afterburner corrections?  Default is True.
         """
 
         # This is temporary
-
         zredstr = RedSequenceColorPar(self.config.parfile)
 
         zredc = ZredColor(zredstr, do_correction=do_correction)
@@ -657,6 +803,19 @@ class RedSequenceCalibrator(object):
 
     def _calc_corrections(self, gals, mode2=False):
         """
+        Calculate zred afterburner correction parameters.
+
+        Sets self.pars.corr, self.pars.corr_slope, self.pars.corr_r or
+        self.pars.corr2, self.pars.corr2_slope, self.pars.corr2_r
+
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog being fit.  Must contain zred_uncorr information.
+        mode2: `bool`, optional
+           Default is False.  When False, corrections are computed such that
+           <zred|ztrue> is unbiased.  When True, corrections are computed
+           such that <ztrue|zred> is unbiased.
         """
 
         # p or pcol
@@ -758,6 +917,12 @@ class RedSequenceCalibrator(object):
 
     def _make_diagnostic_plots(self, gals):
         """
+        Make diagnostic plots.
+
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog being fit.  Must contain zred information.
         """
 
         import matplotlib.pyplot as plt
