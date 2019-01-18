@@ -1,3 +1,6 @@
+"""Classes to calibrate the z_lambda afterburner
+"""
+
 from __future__ import division, absolute_import, print_function
 
 import os
@@ -17,7 +20,30 @@ from ..fitters import MedZFitter
 from ..catalog import Entry
 
 class ZLambdaFitter(object):
+    """
+    Class to fit the z_lambda afterburner spline function.
+    """
+
     def __init__(self, nodes, slope_nodes, redshifts, dzs, redshift_errs, loglambdas):
+        """
+        Instantiate a ZLambdaFitter object.
+
+        Parameters
+        ----------
+        nodes: `np.array`
+           Float array of spline nodes for mean correction
+        slope_nodes: `np.array`
+           Float array of spline nodes for slope (as a function of log-richness)
+           correction.
+        redshifts: `np.array`
+           Float array of redshifts on x axis (either zspec or z_lambda).
+        dzs: `np.array`
+           Float array of delta_z (z_spec - z_lambda)
+        redshift_errs: `np.array`
+           Float array of errors on redshifts
+        loglambdas: `np.array`
+           Float array of log((lambda / scaleval) / pivot)
+        """
         self._nodes = np.atleast_1d(nodes)
         self._slope_nodes = np.atleast_1d(slope_nodes)
         self._redshifts = np.atleast_1d(redshifts)
@@ -39,6 +65,33 @@ class ZLambdaFitter(object):
             fit_delta=False, fit_slope=False, fit_scatter=False,
             min_scatter=0.0):
         """
+        Fit the afterburner correction parameters.
+
+        Parameters
+        ----------
+        p0_delta: `list`
+           Initial guess at values of mean correction at nodes
+        p0_slope: `list`
+           Initial guess at values of slope correction at slope_nodes
+        p0_scatter: `list`
+           Initial guess at values of scatter corrections at slope_nodes
+        fit_delta: `bool`, optional
+           Fit the delta parameters?  Default is False.
+        fit_slope: `bool`, optional
+           Fit the slope parameters?  Default is False.
+        fit_scatter: `bool`, optional
+           Fit the scatter parameters?  Default is False.
+        min_scatter: `float`, optional
+           Minimum scatter.  Default is 0.0.
+
+        Returns
+        -------
+        pars_delta: `list`
+           Delta parameters.  Present if fit_delta=True.
+        pars_slope: `list`
+           Slope parameters.  Present if fit_slope=True.
+        pars_scatter: `list`
+           Scatter parameters.  Present if fit_scatter=True.
         """
         self._fit_delta = fit_delta
         self._fit_slope = fit_slope
@@ -88,6 +141,17 @@ class ZLambdaFitter(object):
 
     def __call__(self, pars):
         """
+        Calculate the negative log-likelihood cost function for a set of parameters.
+
+        Parameters
+        ----------
+        pars: `list`
+           Parameters for fit, including delta, slope, scatter concatenated.
+
+        Returns
+        -------
+        t: `float`
+           Total cost function of negative log-likelihood to minimize.
         """
         if self._fit_delta:
             spl = CubicSpline(self._nodes, pars[self._delta_index: self._delta_index + self._n_nodes])
@@ -125,14 +189,28 @@ class ZLambdaFitter(object):
 
 class ZLambdaCalibrator(object):
     """
+    Class to calibrate the z_lambda correction afterburner.
     """
 
     def __init__(self, config, corrslope=False):
+        """
+        Instantiate a ZLambdaCalibrator object.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        corrslope: `bool`, optional
+           Compute correction for richness slope.  Default is False.
+        """
         self.config = config
         self.corrslope = corrslope
 
     def run(self):
         """
+        Run the z_lambda afterburner calibration routine.
+
+        Output goes to self.config.zlambdafile.
         """
 
         cat = ClusterCatalog.from_catfile(self.config.catfile, cosmo=self.config.cosmo)
