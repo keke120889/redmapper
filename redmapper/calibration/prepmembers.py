@@ -1,3 +1,6 @@
+"""Classes related to preparing members for the next calibration iteration
+"""
+
 from __future__ import division, absolute_import, print_function
 
 import os
@@ -11,9 +14,18 @@ from ..configuration import Configuration
 
 class PrepMembers(object):
     """
+    Class to prepare members for input to the next calibration iteration.
     """
 
     def __init__(self, conf):
+        """
+        Instantiate a PrepMembers object.
+
+        Parameters
+        ----------
+        conf: `str` or `redmapper.Configuration`
+           Config filename or configuration object
+        """
         if not isinstance(conf, Configuration):
             self.config = Configuration(conf)
         else:
@@ -21,6 +33,19 @@ class PrepMembers(object):
 
     def run(self, mode):
         """
+        Run the member preparation.
+
+        Output members are put into self.config.zmemfile.
+
+        Parameters
+        ----------
+        mode: `str`
+           May be "z_init": use initial cluster seed redshift as member redshift or
+           may be "cg": use the most likely central spec_z as member redshift
+
+        Raises
+        ------
+        RuntimeError: If mode is not "z_init" or "cg".
         """
 
         cat = Catalog.from_fits_file(self.config.catfile)
