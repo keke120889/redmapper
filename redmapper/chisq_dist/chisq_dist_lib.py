@@ -1,14 +1,91 @@
+"""Routines for computing the chi-squared for the color-based red-sequence model.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
 import numpy as np
 from . import _chisq_dist_pywrap
 
-class ChisqDist(object):
-    pass
+#class ChisqDist(object):
+#    pass
 
 
 def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, refmagerr=None, lupcorr=None, calc_chisq=True, calc_lkhd=False, nophotoerr=False):
+    """
+    Compute the chi-squared for an galaxy or set of galaxies at a redshift or
+    set of redshifts.
+
+    Based on the input, this will determine which mode is being run:
+
+    mode 0: one redshift, many galaxies
+    mode 1: many redshifts, one galaxy
+    mode 2: many redshifts, many galaxies
+
+    Parameters
+    ----------
+    covmat: `np.array`
+       Float array of covariance matrices.
+       mode 0: 2d, [ncol, ncol]
+       mode 1: 3d, [ncol, ncol, nz]
+       mode 2: 3d, [ncol, ncol, nz]
+    c: `np.array`
+       Float array of colors at pivot magnitudes
+       mode 0: 1d, [ncol]
+       mode 1: 2d, [nz, ncol]
+       mode 2: 2d, [ngal, ncol]
+    slope: `np.array`
+       Float array of slopes at pivot magnitudes
+       mode 0: 1d, [ncol]
+       mode 1: 2d, [nz, ncol]
+       mode 2: 2d, [ngal, ncol]
+    pivotmag: `np.array`
+       Float array of pivot magnitudes
+       mode 0:
+       mode 1:
+       mode 2:
+    refmag: `np.array`
+       Float array of reference (total) magnitudes
+       mode 0:
+       mode 1:
+       mode 2:
+    magerr: `np.array`
+       Float array of magnitude errors
+       mode 0:
+       mode 1:
+       mode 2:
+    color: `np.array`
+       Float array of colors
+       mode 0:
+       mode 1:
+       mode 2:
+    refmagerr: `np.array`, optional
+       Float array of reference magnitude errors.  Default is None, don't
+       use reference magnitude error in computing chi-squared.
+       mode 0:
+       mode 1:
+       mode 2:
+    lupcorr: `np.array`, optional
+       Float array of luptitude corrections.  Default is None, don't
+       use luptitude corrections.
+       mode 0:
+       mode 1:
+       mode 2:
+    calc_chisq: `bool`, optional
+       Calculate chi-squared?  Default is True.
+    calc_lkhd: `bool`, optional
+       Calculate likelihood with determinant factor?  Default is False.
+    nophotoerr: `bool`, optional
+       Do not use photometric errors in chi-squared (intrinsic only)?
+       Default is False.
+
+    Returns
+    -------
+    chisq: `np.array`
+       Float array of chi-squared.  Present if calc_chisq=True.
+    lkhd: `np.array`
+       Float array of likelihoods.  Present if calc_lkhd=True.
+    """
 
     _covmat = covmat.astype('f8')
     _c = c.astype('f8')
@@ -34,7 +111,7 @@ def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, refmagerr=N
             # c is matrix, nz x ncol
             mode = 1
         else :
-                # ngal_nz mode
+            # ngal_nz mode
             # c is matrix, ngal x ncol
             mode = 2
         ncol = c.shape[1]
@@ -66,12 +143,6 @@ def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, refmagerr=N
 
         # ngal is number of refmag entries
         ngal = _refmag.size
-
-        # dumb
-        #if (self.c.shape[1] != self.ngal):
-        #    raise ValueError("c must have ncol x ngal elements for mode 0")
-        #if (self.slope.shape[1] != self.ngal):
-        #    raise ValueError("slope must have ncol x ngal elements for mode 0")
 
         if (magerr.ndim != 2):
             raise ValueError("magerr must be 2D for mode 0")
