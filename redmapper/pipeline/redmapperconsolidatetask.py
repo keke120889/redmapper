@@ -1,3 +1,6 @@
+"""Class to consolidate distributed redmapper run.
+"""
+
 from __future__ import division, absolute_import, print_function
 
 import os
@@ -17,9 +20,28 @@ from ..galaxy import GalaxyCatalog
 
 class RedmapperConsolidateTask(object):
     """
+    Class to consolidate a distributed redmapper run.
+
+    This class looks for files of the specific format in the specified
+    directory and consolidates, while applying richness and volume-limited
+    cuts.
     """
 
     def __init__(self, configfile, lambda_cuts=None, vlim_lstars=[], path=None):
+        """
+        Instantiate a RedmapperConsolidateTask.
+
+        Parameters
+        ----------
+        configfile: `str`
+           Configuration yaml file.
+        lambda_cuts: `list`, optional
+           Richness cuts to apply.  Default is None.  If None,
+           use the values in self.config.consolidate_lambda_cuts
+        vlim_lstars: `list`, optional
+           Volume-limit luminosity cuts to apply.  Default is [].
+           If [] then use the values in self.config.consolidate_vlim_lstars.
+        """
         if path is None:
             outpath = os.path.dirname(os.path.abspath(configfile))
         else:
@@ -42,6 +64,15 @@ class RedmapperConsolidateTask(object):
 
     def run(self, do_plots=True, match_spec=True):
         """
+        Run the redmapper consolidation task.
+
+        Parameters
+        ----------
+        do_plots: `bool`, optional
+           Make diagnostic plots.  Default is True.
+        match_spec: `bool`, optional
+           Match cluster centrals and members to spectra.
+           Default is True.
         """
 
         # find the files
