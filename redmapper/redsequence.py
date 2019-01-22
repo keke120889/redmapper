@@ -13,7 +13,6 @@ import esutil
 import numpy as np
 from scipy import interpolate
 
-from .chisq_dist import ChisqDist
 from .chisq_dist import compute_chisq
 from .catalog import Catalog
 from .utilities import CubicSpline, MStar

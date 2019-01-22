@@ -19,7 +19,6 @@ from .solver_nfw import Solver
 from .catalog import Catalog, Entry
 from .utilities import chisq_pdf, calc_theta_i, MStar, schechter_pdf, nfw_pdf
 from .mask import HPMask
-from .chisq_dist import ChisqDist
 from .redsequence import RedSequenceColorPar
 from esutil.cosmology import Cosmo
 from .galaxy import GalaxyCatalog

@@ -26,7 +26,6 @@ except ImportError:
 from .catalog import Entry
 from .galaxy import GalaxyCatalog
 from .redsequence import RedSequenceColorPar
-from .chisq_dist import ChisqDist
 from .depthmap import DepthMap
 from .utilities import interpol, cic
 from .utilities import _pickle_method
