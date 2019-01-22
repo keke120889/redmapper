@@ -367,6 +367,20 @@ class Configuration(object):
     consolidate_vlim_lstars = ConfigField(default=[0.2, 5.0], required=False, isList=True)
     select_scaleval = ConfigField(default=False, required=True)
 
+    redmagic_calib_nodesize = ConfigField(default=0.05, required=True)
+    redmagic_calib_zbinsize = ConfigField(default=0.02, required=True)
+    redmagic_calib_chisqcut = ConfigField(default=20.0, required=True)
+    redmagic_calib_pz_integrate = ConfigField(default=False, required=True)
+    redmagic_zrange = ConfigField(default=[], required=False, isArray=True)
+    redmagic_calib_fractrain = ConfigField(default=0.5, required=True)
+    redmagic_clean_nsig = ConfigField(default=0.0, required=True)
+    redmagic_maxlum = ConfigField(default=100.0, required=True)
+    redmagic_run_afterburner = ConfigField(default=False, required=True)
+    redmagic_n0s = ConfigField(default=[], required=True, isArray=True)
+    redmagic_etas = ConfigField(default=[], required=True, isArray=True)
+    redmagic_names = ConfigField(default=[], required=True, isList=True)
+    redmagic_zmaxes = ConfigField(default=[], required=True, isArray=True)
+
     def __init__(self, configfile, outpath=None):
         """
         Instantiate a Configuration object
@@ -452,6 +466,10 @@ class Configuration(object):
         self._set_lengths(['calib_color_nodesizes', 'calib_slope_nodesizes',
                            'calib_color_maxnodes', 'calib_covmat_maxnodes',
                            'calib_color_order'], self.nmag - 1)
+
+        # redmagic size checks
+        self._set_lengths(['redmagic_n0s', 'redmagic_etas', 'redmagic_names',
+                           'redmagic_zmaxes'], len(self.redmagic_names))
 
         # Vlim size checks
         self._set_lengths(['vlim_bands', 'vlim_nsigs'],

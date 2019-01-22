@@ -193,10 +193,29 @@ class RedmagicCalibrator(object):
         """
 
         # make sure that we have pixelized file, zreds, etc.
+        if not self.config.galfile_pixelized:
+            raise RuntimeError("Code only runs with pixelized galfile.")
+
+        if self.config.zredfile is None or not os.path.isfile(self.config.zredfile):
+            raise RuntimeError("Must have zreds available.")
+
+        if self.config.catfile is None or not os.path.isfile(self.config.catfile):
+            raise RuntimeError("Must have a cluster catalog available.")
 
         # check for vlim files
-
-        # Create vlim if possible
+        vlim_masks = []
+        vlim_areas = []
+        if not os.path.isfile(self.config.depthfile):
+            # If there is no depthfile, there are no proper vlim files...
+            # So we're going to make temporary masks
+            for vlim_lstar in self.config.redmagic_etas:
+                vlim_masks.append(VolumeLimitMaskFixed(self.config))
+                vlim_areas.append(vlim_masks[-1].get_areas())
+        else:
+            # There is a depth file so we can create/read vlim masks.
+            for vlim_lstar in self.config.redmagic_etas:
+                vlim_masks.append(VolumeLimitMask(self.config, vlim_lstar))
+                vlim_areas.append(vlim_masks[-1].get_areas())
 
         # make sure we compute area factors if less than full footprint.
 
