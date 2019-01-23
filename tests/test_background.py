@@ -14,18 +14,13 @@ from redmapper import Configuration
 from redmapper import ZredBackground
 
 class BackgroundTestCase(unittest.TestCase):
+    """
+    Tests of the redmapper.Background class.
+    """
 
     def test_readbkg(self):
         """
-        Part one of this file checks that the background file
-        exists and is formatted correctly.
-
-        Then we load the background file and pull out some sources
-        in the background, and compare the IDL outputs to thoe
-        of the sigma_g attribute of the background. The initialization
-        of the sigma_g values as well as the 'lookup' or spline used
-        over these valus is also tested. Note that the background
-        is characterized by sigma_g as functions of (z,chisq,refmag).
+        Test reading of a redmapper background file.
         """
         file_name, file_path = 'test_bkg.fit', 'data_for_tests'
         # test that we fail if we try a non-existent file
@@ -80,6 +75,9 @@ class BackgroundTestCase(unittest.TestCase):
         testing.assert_almost_equal(py_outputs, idl_outputs, decimal=3)
 
     def test_generatebkg(self):
+        """
+        Test generation of a background file.
+        """
         config_file = os.path.join('data_for_tests', 'testconfig.yaml')
 
         config = Configuration(config_file)
@@ -111,6 +109,7 @@ class BackgroundTestCase(unittest.TestCase):
 
     def test_generatezredbkg(self):
         """
+        Test generation of a zred background file.
         """
 
         config_file = os.path.join('data_for_tests', 'testconfig.yaml')

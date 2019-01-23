@@ -17,7 +17,13 @@ from redmapper import Cluster
 from redmapper import RedSequenceColorPar
 
 class ClusterFitTestCase(unittest.TestCase):
+    """
+    Tests for computing richness by fitting the red sequence (used in calibration).
+    """
     def runTest(self):
+        """
+        Run the ClusterFit test.
+        """
         random.seed(seed=12345)
 
         file_path = 'data_for_tests'

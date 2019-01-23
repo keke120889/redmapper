@@ -15,9 +15,12 @@ from redmapper import Configuration
 from redmapper import VolumeLimitMask
 
 class VolumeLimitMaskTestCase(unittest.TestCase):
+    """
+    Tests of redmapper.VolumeLimitMask volume-limit mask code.
+    """
     def runTest(self):
         """
-        Test volume limit basic functionality
+        Run tests of redmapper.VolumeLimitMask
         """
         file_path = "data_for_tests"
         conf_filename = "testconfig.yaml"

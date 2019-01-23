@@ -17,7 +17,14 @@ from redmapper.configuration import Configuration
 from redmapper.calibration import ZLambdaCalibrator
 
 class ZLambdaCalTestCase(unittest.TestCase):
+    """
+    Tests of redmapper.calibration.ZLambdaCalibrator, calibration of
+    z_lambda correction factors.
+    """
     def test_zlambdacal(self):
+        """
+        Run tests on redmapper.calibration.ZLambdaCalibrator.
+        """
         file_path = 'data_for_tests'
         conf_filename = 'testconfig.yaml'
         config = Configuration(os.path.join(file_path, conf_filename))
@@ -74,6 +81,7 @@ class ZLambdaCalTestCase(unittest.TestCase):
         if self.test_dir is not None:
             if os.path.exists(self.test_dir):
                 shutil.rmtree(self.test_dir, True)
+
 
 if __name__=='__main__':
     unittest.main()

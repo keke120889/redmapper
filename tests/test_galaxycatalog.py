@@ -14,8 +14,13 @@ from redmapper import GalaxyCatalog
 
 class GalaxyCatalogTestCase(unittest.TestCase):
     """
+    Tests for redmapper.GalaxyCatalog class, including reading full catalogs,
+    reading sub-regions, and matching neighbors.
     """
     def runTest(self):
+        """
+        Run redmapper.GalaxyCatalog tests,
+        """
 
         file_path = 'data_for_tests'
 

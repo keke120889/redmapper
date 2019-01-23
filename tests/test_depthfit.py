@@ -17,9 +17,12 @@ from redmapper import get_mask
 from redmapper.depth_fitting import calcErrorModel
 
 class DepthFitTestCase(unittest.TestCase):
+    """
+    Test fitting the local depth with the redmapper.DepthLim class.
+    """
     def test_depthfit(self):
         """
-        Test depth fitting
+        Test depth fitting with redmapper.DepthLim
         """
 
         file_path = "data_for_tests"

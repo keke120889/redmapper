@@ -13,7 +13,14 @@ from redmapper import ColorBackgroundGenerator
 from redmapper import Configuration
 
 class ColorBackgroundTestCase(unittest.TestCase):
+    """
+    Tests for the redmapper.ColorBackground and
+    redmapper.ColorBackgroundGenerator classes.
+    """
     def runTest(self):
+        """
+        Run the ColorBackground and ColorBackgroundGenerator tests.
+        """
 
         file_name = 'test_dr8_col_bkg.fit'
         file_path = 'data_for_tests'

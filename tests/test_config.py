@@ -8,11 +8,13 @@ import numpy as np
 import redmapper
 
 class ReadConfigTestCase(unittest.TestCase):
+    """
+    Tests for reading the redmapper.Configuration class.
+    """
 
     def runTest(self):
         """
-        All we can test from the config file are that the fields are what we
-        expect them to be.
+        Run the ReadConfig tests.
         """
         file_name = 'testconfig.yaml'
         file_path = 'data_for_tests'
@@ -23,7 +25,6 @@ class ReadConfigTestCase(unittest.TestCase):
         self.assertEqual(config.specfile,'./data_for_tests/dr8_test_spec.fit')
         self.assertEqual(config.parfile,'./data_for_tests/test_dr8_pars.fit')
         self.assertEqual(config.bkgfile,'./data_for_tests/test_bkg.fit')
-        #self.assertEqual(config.zrange,[0.05,0.60])
         testing.assert_almost_equal(config.zrange, [0.05, 0.60])
         self.assertEqual(config.d.outbase,"dr8_testing")
         self.assertEqual(config.chisq_max,20.0)

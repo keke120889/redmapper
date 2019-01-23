@@ -24,9 +24,14 @@ from redmapper import Catalog
 
 class RunColormemTestCase(unittest.TestCase):
     """
+    Tests of redmapper.RunColormem, which computes richness by fitting the
+    red-sequence for each cluster (for calibration)
     """
 
     def test_run_colormem(self):
+        """
+        Run tests of redmapper.RunColormem
+        """
 
         random.seed(seed=12345)
 

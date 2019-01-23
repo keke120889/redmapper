@@ -11,9 +11,12 @@ from redmapper import DepthMap
 from redmapper import Configuration
 
 class DepthMapTestCase(unittest.TestCase):
+    """
+    Test reading and using redmapper.DepthMap class.
+    """
     def runTest(self):
         """
-        Test depth map basic functionality
+        Run redmapper.DepthMap tests.
         """
         file_path = "data_for_tests"
         conf_filename = "testconfig.yaml"

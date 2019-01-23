@@ -11,11 +11,14 @@ from redmapper import HPMask
 from redmapper import Configuration
 from redmapper.utilities import apply_errormodels
 
-class ClusterFiltersTestCase(unittest.TestCase):
+class ApplyErrormodelsTestCase(unittest.TestCase):
     """
     Test the apply_errormodels() function in mask.py.
     """
     def runTest(self):
+        """
+        Run the apply_errormodels() test.
+        """
         file_path = 'data_for_tests'
         conf_filename = 'testconfig.yaml'
         config = Configuration(file_path + '/' + conf_filename)

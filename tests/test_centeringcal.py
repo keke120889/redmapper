@@ -17,7 +17,13 @@ from redmapper.configuration import Configuration
 from redmapper.calibration import WcenCalibrator
 
 class CenteringCalibratorTestCase(unittest.TestCase):
+    """
+    Test the centering model calibrator code (WcenCalibrator).
+    """
     def test_centeringcal(self):
+        """
+        Test WcenCalibrator.
+        """
         file_path = 'data_for_tests'
         conf_filename = 'testconfig_wcen.yaml'
         config = Configuration(os.path.join(file_path, conf_filename))

@@ -20,9 +20,13 @@ from redmapper import ZredRunCatalog, ZredRunPixels
 
 class ZredTestCase(unittest.TestCase):
     """
+    Tests of computing zred galaxy photo-z with various methods.
     """
 
     def test_zred(self):
+        """
+        Test redmapper.ZredColor, looping over galaxies.
+        """
 
         file_path = 'data_for_tests'
 
@@ -82,7 +86,8 @@ class ZredTestCase(unittest.TestCase):
 
     def test_zred_runcat(self):
         """
-        Test the running of a single fits catalog file through the zred runner
+        Test redmapper.ZredRunCatalog, computing zreds for all the galaxies in
+        a single catalog file.
         """
 
         file_path = 'data_for_tests'
@@ -129,7 +134,8 @@ class ZredTestCase(unittest.TestCase):
 
     def test_zred_runpixels(self):
         """
-        Test the running of a pixelized catalog
+        Test redmapper.ZredRunPixels, computing zreds for all the galaxies
+        in a pixelized galaxy catalog.
         """
 
         file_path = 'data_for_tests'
