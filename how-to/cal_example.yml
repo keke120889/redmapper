@@ -1,4 +1,6 @@
 # This is an example calibration file, based on one used to calibrate SDSS DR8
+# Please note that these settings are appropriate for a ~10000 deg^2 survey with
+# ugriz bands, focused on lower redshift (z<0.6) clusters.
 
 # Galaxy file for input
 galfile: /path/to/dr8_galaxies_master_table.fit
@@ -10,7 +12,7 @@ plotpath: 'plots'
 has_truth: False
 
 # Healpixel over which to run calibration
-# Set this and nside to 0 to run the full footprint
+# Set "hpix" and "nside" to 0 to run the full footprint
 hpix: 16
 # Nside of this healpix
 nside: 2
@@ -18,6 +20,7 @@ nside: 2
 border: 0.0
 
 # Reference magnitude (band) name
+# Recommend z-band for cluster-finding to higher redshift z>0.8)
 refmag: i
 
 # Redshift range [lo, hi]
@@ -95,6 +98,9 @@ calib_color_nsig: 1.5
 calib_redspec_nsig: 2.0
 
 # Red-sequence color template file for initial guess of red sequence.
+# This file does not need a full path if it is in the data/initcolors path in the package
+# which will be searched first.  If it is a file not in the redmapper package, this
+# should be a full path.
 calib_redgal_template: bc03_colors_sdss.fit
 # Redshift spline node spacing for red-sequence pivot magnitude
 # Default is 0.1
@@ -107,11 +113,11 @@ calib_color_nodesizes: [0.05, 0.05, 0.05, 0.05]
 calib_slope_nodesizes: [0.1, 0.1, 0.1, 0.1]
 # Maximum redshift for spline to use in fit.
 # Recommended is -1 (max redshift) for each color, unless a band is very shallow/blue
-# (for SDSS, only consider u-g in detail at z<0.4)
+# (for SDSS in this sample, only consider u-g in detail at z<0.4)
 calib_color_maxnodes: [0.4, -1, -1, -1]
 # Maximum redshift for covariance spline to use in fit.
 # Recommended is -1 (max redshift) for each color, unless a band is very shallow/blue
-# (For SDSS, only consider u-g in detail in covmat at z<0.4)
+# (For SDSS in this sample, only consider u-g in detail in covmat at z<0.4)
 calib_covmat_maxnodes: [0.5, -1, -1, -1]
 # Redshift spline node spacing for covariance matrix.  Default is 0.15
 calib_covmat_nodesize: 0.15
@@ -125,6 +131,9 @@ calib_corr_nodesize: 0.05
 calib_corr_slope_nodesize: 0.1
 # Color index order to compute off-diagonal elements.
 # Important to have bad colors (e.g. u-g) last.
+# Otherwise, it's useful to do good blue colors to good red colors,
+# e.g. g-r, r-i, i-z ... So if you don't have griz bands, this should
+# be [0, 1, 2].
 calib_color_order: [1, 2, 3, 0]
 
 # Use "pcol" (which excludes radial weight) in selecting galaxies to calibrate the
@@ -163,6 +172,7 @@ calib_colormem_minlambda: 10.0
 #  Middle redshift: 0.5<z<0.72, use color index 2 (r-i), intrinsic scatter 0.03
 #  High redshift: z>0.72, use color index 3 (i-z), intrinsic scatter 0.03
 # (Note that the high redshift one is not used if zrange[1] = 0.60)
+# Note that if you have griz and not ugriz this should be [0, 1, 2]
 calib_colormem_colormodes: [1, 2, 3]
 calib_colormem_zbounds: [0.35, 0.72]
 calib_colormem_sigint: [0.05, 0.03, 0.03]
