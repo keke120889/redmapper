@@ -1,4 +1,4 @@
-Units Tests
+Unit Tests
 ===========
 This directory contains the unit tests needed for
 the development of redmapper. In addition,
