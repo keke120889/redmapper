@@ -141,7 +141,7 @@ class SelectSpecRedGalaxies(object):
             u, = np.where((delta > delta5) & (delta < delta99))
 
             ecfitter = EcgmmFitter(delta[u], galcolor_err[u, j])
-            wt, mu, sigma = ecfitter.fit([0.2], [-0.5, 0.0], [0.2, 0.05], offset=0.5)
+            wt, mu, sigma = ecfitter.fit([0.2], [-0.5, 0.0], [0.2, 0.05], offset=2.0)
 
             mvals = interpol(template.color[:, template_index], template.z, nodes) + mu[1]
             scvals = np.zeros(nodes.size) + sigma[1]
