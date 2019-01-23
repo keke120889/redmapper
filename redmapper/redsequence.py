@@ -121,13 +121,16 @@ class RedSequenceColorPar(object):
 
         if has_file:
             bvalues=np.zeros(nmag)
-            do_lupcorr = False
             try:
                 for i in xrange(nmag):
                     bvalues[i] = hdr['BVALUE%1d' % (i+1)]
-                do_lupcorr = True
             except:
                 bvalues[:] = 0.0
+
+            do_lupcorr = False
+            if bvalues.min() > 0.0:
+                # Only do luptitude corrections if we have non-zero b values.
+                do_lupcorr = True
 
             try:
                 ref_ind = hdr['REF_IND']

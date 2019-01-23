@@ -772,8 +772,11 @@ class RedSequenceCalibrator(object):
         hdr['ZBINCOAR'] = self.config.zredc_binsize_coarse
         hdr['LOWZMODE'] = 0
         hdr['REF_IND'] = self.config.ref_ind
-        for j, b in enumerate(self.config.b):
-            hdr['BVALUE%d' % (j + 1)] = b
+        # Only save the b values if they're > 0 (that means we have
+        # luptitudes).
+        if self.config.b[0] > 0.0:
+            for j, b in enumerate(self.config.b):
+                hdr['BVALUE%d' % (j + 1)] = b
 
         self.pars.to_fits_file(filename, header=hdr, clobber=clobber)
 
