@@ -186,7 +186,7 @@ class RedmapperCalibrator(object):
         """
 
         new_zreds = False
-        new_bkg = False
+        new_bkgfile = False
 
         # Compute the path that the cluster finder will be run in
 
