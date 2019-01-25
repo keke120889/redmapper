@@ -818,7 +818,7 @@ class Configuration(object):
            Border radius for overlapping tiles for parallel runs.
         """
 
-        maxdist = 1.05 * self.percolation_rmask_0 * (300. / 100.)**config.percolation_rmask_beta
+        maxdist = 1.05 * self.percolation_rmask_0 * (300. / 100.)**self.percolation_rmask_beta
         radius = maxdist / (np.radians(1.) * self.cosmo.Da(0, self.zrange[0]))
 
         return 3.0 * radius
