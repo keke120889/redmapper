@@ -113,7 +113,7 @@ class VolumeLimitMask(object):
         """
 
         # Make some checks to make sure we can build a volume limit mask
-        if not os.path.isfile(self.config.depthfile):
+        if self.config.depthfile is None or not os.path.isfile(self.config.depthfile):
             raise RuntimeError("Cannot create a volume limit mask without a depth file")
         for fname in self.config.vlim_depthfiles:
             if not os.path.isfile(fname):
