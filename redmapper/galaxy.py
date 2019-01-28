@@ -15,6 +15,7 @@ import healpy as hp
 import os
 
 from .catalog import Catalog, Entry
+from .mask import get_mask
 
 zred_extra_dtype = [('ZRED', 'f4'),
                     ('ZRED_E', 'f4'),
@@ -389,6 +390,25 @@ def get_subpixel_indices(galtable, hpix=None, border=0.0, nside=0):
 
     return indices
 
+class FakeMaskConfig(object):
+    """
+    A simple fake config to read in a mask
+    """
+
+    def __init__(self, maskfile, mask_mode):
+        """
+        Instantiate a FakeMaskConfig.
+
+        Parameters
+        ----------
+        maskfile: `str`
+           Mask filename
+        mask_mode: `int`
+           Mask mode
+        """
+        self.maskfile = maskfile
+        self.mask_mode = mask_mode
+
 class GalaxyCatalogMaker(object):
     """
     Class to generate a redmapper galaxy catalog from an input catalog.
@@ -417,7 +437,7 @@ class GalaxyCatalogMaker(object):
     maker.finalize_catalog()
     """
 
-    def __init__(self, outbase, info_dict, nside=32):
+    def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0):
         """
         Instantiate a GalaxyCatalogMaker
 
@@ -442,6 +462,10 @@ class GalaxyCatalogMaker(object):
            ['Y_IND']: y-band index (optional)
         nside: `int`
            Split catalog into subpixels with nside of nside.
+        maskfile: `str`, optional
+           Geometric mask file.  Default is None (mask already applied).
+        mask_mode: `int`, optional
+           Geometric mask file mode.  Default is 0.
         """
 
         # Record values
@@ -487,6 +511,9 @@ class GalaxyCatalogMaker(object):
 
         self.filename = '%s_master_table.fit' % (self.outbase)
 
+        if os.path.basename(self.filename) == self.filename:
+            raise RuntimeError("outbase %s must contain a path (absolute or relative)" % (self.outbase))
+
         # Start the file
         self.outpath = os.path.dirname(self.filename)
         self.outbase_nopath = os.path.basename(self.outbase)
@@ -496,6 +523,12 @@ class GalaxyCatalogMaker(object):
 
         # create a table
         self.ngals = np.zeros(hp.nside2npix(self.nside), dtype=np.int32)
+
+        # And read in mask if necessary
+        self.mask = None
+        if maskfile is not None:
+            fake_config = FakeMaskConfig(maskfile, mask_mode)
+            self.mask = get_mask(fake_config)
 
         self.is_finalized = False
 
@@ -525,6 +558,12 @@ class GalaxyCatalogMaker(object):
         """
         if self.is_finalized:
             raise RuntimeError("Cannot append galaxies for an already finalized catalog.")
+
+        self._check_galaxies(gals)
+
+        if self.mask is not None:
+            good = self.mask.compute_radmask(gals['ra'], gals['dec'])
+            gals = gals[good]
 
         theta = (90.0 - gals['dec']) * np.pi / 180.
         phi = gals['ra'] * np.pi / 180.
@@ -629,3 +668,95 @@ class GalaxyCatalogMaker(object):
         tab.to_fits_file(self.filename, header=hdr, clobber=True)
 
         self.is_finalized = True
+
+    def _check_galaxies(self, gals):
+        """
+        Check the galaxies for the data-type and for NaNs and illegal values.
+
+        Parameters
+        ----------
+        gals: `np.ndarray`
+           Galaxy catalog structure.  See class docstring for what is in this catalog.
+
+        Raises
+        ------
+        RuntimeError: If anything illegal is found.
+        """
+
+        dtype = gals.dtype.descr
+        dtype_required = self.get_galaxy_dtype(self.nmag)
+
+        dtype_names = [d[0].lower() for d in dtype]
+        dtype_types = [d[1] for d in dtype]
+
+        for d in dtype_required:
+            try:
+                index = dtype_names.index(d[0])
+            except ValueError:
+                raise RuntimeError("Required dtype %s not in galaxy catalog." % (d[0]))
+
+            # and compare types...
+            if not np.issubdtype(d[1], dtype_types[index]):
+                raise RuntimeError("Required dtype %s not the right type (%s)" % (d[0], dtype_types[index]))
+            # Check for NaNs and infinities
+            bad, = np.where(~np.isfinite(gals[d[0]].flatten()))
+            if bad.size > 0:
+                raise RuntimeError("Input column %s contains %d non-finite elements" % (d[0], bad.size))
+            # And if it's a mag, check the size
+            if d[0] == 'mag' or d[0] == 'mag_err':
+                if isinstance(dtype[index][2], tuple):
+                    dtype_nmag = dtype[index][2][0]
+                else:
+                    dtype_nmag = dtype[index][2]
+                if dtype_nmag != self.nmag:
+                    raise RuntimeError("dtype %s does not have the right size (%d instead of %d)" % (d[0], dtype_nmag, self.nmag))
+
+                bad, = np.where(gals[d[0]].flatten() >= 90.0)
+                if bad.size > 0:
+                    raise RuntimeError("Input magnitude/error column %s contains %d elements with >= 90." % (d[0], bad.size))
+
+                bad, = np.where(gals[d[0]].flatten() <= 0.0)
+                if bad.size > 0:
+                    raise RuntimeError("Input magnitude/error column %s contains %d elements with <=0.0" % (d[0], bad.size))
+
+        bad, = np.where((gals['ra'] < 0.0) | (gals['ra'] > 360.0))
+        if bad.size > 0:
+            raise RuntimeError("Input ra has %d values that are out of range 0.0 <= ra <= 360.0" % (bad.size))
+        bad, = np.where((gals['dec'] < -90.0) | (gals['dec'] > 90.0))
+        if bad.size > 0:
+            raise RuntimeError("Input dec has %d values that are out of range -90.0 <= dec <= 90.0" % (bad.size))
+
+    @staticmethod
+    def get_galaxy_dtype(nmag, truth=False):
+        """
+        Get the recommended galaxy dtype.
+
+        Parameters
+        ----------
+        nmag: `int`
+           Number of bands
+        truth: `bool`, optional
+           Include truth fields.  Default is False.
+
+        Returns
+        -------
+        dtype: `list`
+           Numpy dtype list of tuples
+        """
+
+        dtype = [('id', 'i8'),
+                 ('ra', 'f8'),
+                 ('dec', 'f8'),
+                 ('refmag', 'f4'),
+                 ('refmag_err', 'f4'),
+                 ('mag', 'f4', nmag),
+                 ('mag_err', 'f4', nmag),
+                 ('ebv', 'f4')]
+
+        if truth:
+            dtype.extend([('ztrue', 'f4'),
+                          ('m200', 'f4'),
+                          ('central', 'i2'),
+                          ('halo_id', 'i8')])
+
+        return dtype

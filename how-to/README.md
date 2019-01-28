@@ -85,6 +85,17 @@ for input_file in input_files:
 maker.finalize_catalog()
 ```
 
+If you have a set of galaxies and a geometric mask (see below), and the
+geometric mask has *not* been applied to the set of galaxies, these can be
+applied at this stage, for example:
+
+```
+maker = redmapper.GalaxyCatalogMaker(filename_base, info_dict,
+maskfile='maskfile', mask_mode=3)
+```
+
+And the mask will then be applied every time galaxies are appended to the catalog.
+
 ### Spectroscopic Training Galaxies
 
 In addition to the photometric galaxies, you also need a spectroscopic sample
@@ -190,6 +201,8 @@ at some point in the near future):
 * `mstar_sdss_z03.fit`
 * `mstar_des_i03.fit`
 * `mstar_des_z03.fit`
+* `mstar_hsc_i03.fit`
+* `mstar_hsc_z03.fit`
 * `mstar_lsst_i03.fit`
 * `mstar_lsst_r03.fit`
 * `mstar_lsst_z03.fit`
@@ -229,6 +242,7 @@ at some point in the near future):
 
 * `bc03_colors_sdss.fit`
 * `bc03_colors_des.fit`
+* `bc03_colors_hsc.fit`
 * `bc03_colors_lsst.fit`
 
 The format of the files is as follows:

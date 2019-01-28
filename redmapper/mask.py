@@ -28,7 +28,7 @@ class Mask(object):
     #   We need a routine that looks at the mask_mode and instantiates
     #   the correct type.  How is this typically done?
 
-    def __init__(self, config):
+    def __init__(self, config, include_maskgals=True):
         """
         Instantiate a placeholder geometry mask that will describe all galaxies
         as in the mask.
@@ -41,7 +41,8 @@ class Mask(object):
         self.config = config
 
         # This will generate a maskgalfile if necessary
-        self.read_maskgals(config.maskgalfile)
+        if include_maskgals:
+            self.read_maskgals(config.maskgalfile)
 
     def compute_radmask(self, ra, dec):
         """
@@ -324,7 +325,7 @@ class HPMask(Mask):
     This is described as mask_mode == 3 for compatibility with the old IDL code.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         """
         Instantiate an HPMask
 
@@ -366,7 +367,7 @@ class HPMask(Mask):
         except AttributeError:
             self.fracgood_float = 0
             self.fracgood[hpix_ring[muse] - offset] = 1
-        super(HPMask, self).__init__(config)
+        super(HPMask, self).__init__(config, **kwargs)
 
     def compute_radmask(self, ra, dec):
         """
