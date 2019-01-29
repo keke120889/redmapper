@@ -535,7 +535,7 @@ class GalaxyCatalogMaker(object):
         self.mask = None
         if maskfile is not None:
             fake_config = FakeMaskConfig(maskfile, mask_mode)
-            self.mask = get_mask(fake_config)
+            self.mask = get_mask(fake_config, include_maskgals=False)
 
         self.is_finalized = False
 

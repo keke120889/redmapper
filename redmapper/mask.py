@@ -37,6 +37,8 @@ class Mask(object):
         ----------
         config: `redmapper.Configuration`
            Configuration object
+        include_maskgals: `bool`, optional
+           Also read in the maskgals.  Default is True.
         """
         self.config = config
 
@@ -333,6 +335,8 @@ class HPMask(Mask):
         ----------
         config: `redmapper.Configuration`
            Configuration object.  Reads mask from config.maskfile.
+        include_maskgals: `bool`, optional
+           Also read in the maskgals.  Default is True.
         """
         # record for posterity
         self.maskfile = config.maskfile
@@ -403,7 +407,7 @@ class HPMask(Mask):
         return radmask
 
 
-def get_mask(config):
+def get_mask(config, include_maskgals=True):
     """
     Convenience function to look at a config file and load the appropriate type of mask.
 
@@ -418,8 +422,8 @@ def get_mask(config):
     if config.mask_mode == 0:
         # This is no mask!
         # Return a bare object with maskgal functionality
-        return Mask(config)
+        return Mask(config, include_maskgals=include_maskgals)
     elif config.mask_mode == 3:
         # This is a healpix mask
         #  (don't ask about 1 and 2)
-        return HPMask(config)
+        return HPMask(config, include_maskgals=include_maskgals)
