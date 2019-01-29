@@ -154,14 +154,25 @@ with open(jobfile, 'w') as jf:
 
         index_string = '$LSB_JOBINDEX-1'
 
+    elif (batchconfig[batchmode]['batch'] == 'pbs'):
+        # PBS mode
+        ppn = batchconfig[batchmode]['ppn']
+        n_nodes = int(np.ceil(float(hpix_run.size) / float(ppn)))
+        jf.write("#PBS -q %s\n" % (batchconfig[batchmode]['queue']))
+        jf.write("#PBS -l nodes=%d:ppn=%d\n" % (n_nodes, ppn))
+        jf.write("#PBS -l walltime=%d:00:00\n" % (int(walltime / 60)))
+        jf.write("#PBS -l mem=%dmb\n" % (memory))
+        jf.write("#PBS -j oe\n")
+        jf.write('N_CPU=%d\n' % (n_nodes * batchconfig[batchmode]['ppn']))
     else:
         # Nothing else supported
-        raise RuntimeError("Only LSF supported at this time.")
+        raise RuntimeError("Only LSF and PBS supported at this time.")
 
     jf.write("pixarr=(")
     for hpix in hpix_run:
         jf.write("%d " % (hpix))
     jf.write(")\n\n")
+
     jf.write("%s\n\n" % (batchconfig[batchmode]['setup']))
 
     if args.runmode == 0:
