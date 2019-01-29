@@ -409,6 +409,13 @@ class FakeMaskConfig(object):
         self.maskfile = maskfile
         self.mask_mode = mask_mode
 
+        class TempD(object):
+            def __init__(self):
+                self.hpix = 0
+                self.nside = 0
+
+        self.d = TempD()
+
 class GalaxyCatalogMaker(object):
     """
     Class to generate a redmapper galaxy catalog from an input catalog.
