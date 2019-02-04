@@ -13,6 +13,8 @@ from ..redsequence import RedSequenceColorPar
 from ..galaxy import GalaxyCatalog
 from ..catalog import Catalog, Entry
 from ..utilities import make_nodes, CubicSpline, interpol, read_members
+from ..plotting import SpecPlot, NzPlot
+
 
 class RedmagicParameterFitter(object):
     """
@@ -20,7 +22,8 @@ class RedmagicParameterFitter(object):
     def __init__(self, nodes, corrnodes, z, z_err,
                  chisq, mstar, zcal, zcal_err, refmag,
                  randomn, zmax, etamin, n0,
-                 volume, zrange, zbinsize, zredstr, maxchi=20.0)
+                 volume, zrange, zbinsize, zredstr, maxchi=20.0,
+                 ab_use=None)
         """
         """
         self._nodes = np.atleast_1d(nodes)
@@ -45,6 +48,7 @@ class RedmagicParameterFitter(object):
         self._zbinsize = zbinsize
         self._zredstr = zredstr
         #self.run_afterburner = run_afterburner
+        self._ab_use = afterburner_use
 
         self._maxchi = maxchi
 
@@ -65,9 +69,12 @@ class RedmagicParameterFitter(object):
         if len(self._zrange) != 2:
             raise ValueError("zrange must have 2 elements")
 
-    def fit(self, p0_cval, p0_bias, p0_eratio, afterburner=False):
+    def fit(self, p0_cval, p0_bias=None, p0_eratio=None, afterburner=False):
         """
         """
+
+        if self._ab_use is None and afterburner:
+            raise RuntimeError("Must set afterburner_use if using the afterburner")
 
         # always fit cval, that's what we're fitting.  The others are fit
         # inside the loop (oof)
@@ -76,8 +83,10 @@ class RedmagicParameterFitter(object):
 
         self._afterburner = afterburner
         if afterburner:
+            if p0_bias is None or p0_eratio is None:
+                raise RuntimeError("Must set p0_bias, p0_ratio if using the afterburner")
             self._pars_bias = p0_bias
-            self._pars_eratio p0_eratio
+            self._pars_eratio = p0_eratio
 
         pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
@@ -182,6 +191,7 @@ class RedmagicCalibrator(object):
         # this is the number of calibration runs we have
         nruns = len(self.config.redmagic_etas)
 
+
         # check for vlim files
         vlim_masks = []
         vlim_areas = []
@@ -264,6 +274,7 @@ class RedmagicCalibrator(object):
         if use.size == 0:
             raise RuntimeError("No galaxies in redshift range/chisq range/eta range.")
 
+        # This selects all *possible* redmagic galaxies
         gals = gals[use]
 
         # Run the galaxy cleaner
@@ -324,6 +335,31 @@ class RedmagicCalibrator(object):
             nodes = make_nodes(redmagic_zrange, self.config.redmagic_calib_nodesize)
             corrnodes = make_nodes(redmagic_zrange, self.config.calib_corr_nodesize)
 
+            # Prepare calibration structure
+            vmaskfile = ''
+            if isinstance(vlim_masks[i], VolumeLimitMask):
+                vmaskfile = vlim_masks[i].vlimfile
+
+            calstr = Entry(np.zeros(1, dtype=[('zrange', 'f4', 2),
+                                              ('name', 'a%d' % (len(self.config.redmagic_names[i]) + 1)),
+                                              ('maxchi', 'f4'),
+                                              ('nodes', 'f8', nodes.size),
+                                              ('etamin', 'f8'),
+                                              ('n0', 'f8'),
+                                              ('cmax', 'f8', nodes.size),
+                                              ('corrnodes', 'f8', corrnodes.size),
+                                              ('bias', 'f8', corrnodes.size),
+                                              ('eratio', 'f8', corrnodes.size),
+                                              ('vmaskfile', 'a%d' % (len(vmaskfile) + 1))]))
+
+            calstr.zrange[:] = redmagic_zrange
+            calstr.name = self.config.redmagic_names[i]
+            calstr.maxchi = self.config.redmagic_calib_chisqcut
+            calstr.nodes[:] = nodes
+            calstr.etamin = self.config.redmagic_eta[i]
+            calstr.n0 = self.config.redmagic_n0[i]
+            calstr.vmaskfile = vmaskfile
+
             # Initial histogram
             h = esutil.stat.histogram(gals.zuse,
                                       min=corr_zrange[0], max=corr_zrange[1] - 0.0001,
@@ -339,17 +375,13 @@ class RedmagicCalibrator(object):
 
             dens = h.astype(np.float64) / vol_default
 
-            # FIXME
-            #bad, = np.where(dens < n0s[i])
-            #if bad.size > 0:
-            #    self.config.log.info("Problem: not enough galaxies at z= %s" % (zbins[bad].__str__()))
-            #    continue
-
             etamin_ref = np.clip(self.config.redmagic_etas[i] - lstar_cushion, 0.1, None)
-            use, = np.where(gals.refmag < (mstar_init - 2.5*np.log10(etamin_ref)))
+
+            # These are possible redmagic galaxies for this selection
+            red_poss, = np.where(gals.refmag < (mstar_init - 2.5*np.log10(etamin_ref)))
 
             # Determine which of the galaxies to use in the afterburner
-            gd, = np.where(gals.zcal[use] > 0.0)
+            gd, = np.where(gals.zcal[red_poss] > 0.0)
             ntrain = int(self.config.redmagic_calib_fractrain * gd.size)
             r = np.random.random(gd.size)
             st = np.argsort(r)
@@ -368,10 +400,10 @@ class RedmagicCalibrator(object):
                                                  zbins[j] + self.redmagic_calib_zbinsize/2.) *
                                   (z_areas[j] / 41252.961))
 
-            zmax = vmask.calc_zmax(gals.ra[use], gals.dec[use])
+            zmax = vmask.calc_zmax(gals.ra[red_poss], gals.dec[red_poss])
 
-            randomn = np.random.normal(use.size)
-            zsamp = randomn * gals.zuse_e[use] + gals.zuse[use]
+            randomn = np.random.normal(red_poss.size)
+            zsamp = randomn * gals.zuse_e[red_poss] + gals.zuse[red_poss]
 
             h = esutil.stat.histogram(zsamp,
                                       min=corr_zrange[0], max=corr_zrange[1] - 0.0001,
@@ -406,33 +438,106 @@ class RedmagicCalibrator(object):
 
                 u, = np.where((zsamp > zrange[0]) & (zsamp < zrange[1]))
 
-                st = np.argsort(gals.chisq[use[u]])
+                st = np.argsort(gals.chisq[red_poss[u]])
                 test_den = np.arange(u.size) / test_vol[j]
                 ind = np.searchsorted(test_den, self.config.redmagic_n0s[i] * 1e-4)
-                cmaxvals[k] = gals.chisq[use[u[st[ind]]]]
+                cmaxvals[k] = gals.chisq[red_poss[u[st[ind]]]]
 
             # minimize chisquared parameters (need that function)
             rmfitter = RedmagicParameterFitter(nodes, corrnodes,
-                                               zsamp, gals.zuse_e[use],
-                                               gals.chisq[use], mstar_init[use],
-                                               gals.zcal[use], gals.zcal_e[use],
-                                               gals.refmag[use], randomn,
+                                               zsamp, gals.zuse_e[red_poss],
+                                               gals.chisq[red_poss], mstar_init[red_poss],
+                                               gals.zcal[red_poss], gals.zcal_e[red_poss],
+                                               gals.refmag[red_poss], randomn,
                                                self.config.redmagic_zmaxes[i],
                                                self.config.redmagic_eta[i],
                                                self.config.redmagic_n0[i],
                                                volume, corr_zrange,
                                                self.config.redmagic_calib_zbinsize,
-                                               zredstr, maxchi=self.config.redmagic_calib_chisqcut,
-                                               ab_use=blah)
-            cmaxvals, blah, blah = rmfitter.fit(cmaxvals, blah, blah, afterburner=False)
+                                               zredstr,
+                                               maxchi=self.config.redmagic_calib_chisqcut,
+                                               ab_use=afterburner_use)
+
+            cmaxvals = rmfitter.fit(cmaxvals, afterburner=False)
+
+            # default is no bias or eratio
+            biasvals = np.zeros(corrnodes)
+            eratiovals = np.ones(corrnodes)
 
             # run with afterburner
             if self.config.redmagic_run_afterburner:
-                cmaxvals, blah, blah = rmfitter.fit(cmaxvals, blah, blah, afterburner=True)
+                cmaxvals, biasvals, eratiovals = rmfitter.fit(cmaxvals, biasvals, eratiovals, afterburner=True)
 
-            # Save the calibrations
+            # Record the calibrations
+            calstr.cmax[:] = cmaxvals
+            calstr.bias[:] = biasvals
+            calstr.eratio[:] = eratiovals
+
+            calstr.to_fits_file(self.config.redmagicfile, clobber=False, extname=calstr.name)
+
+            # Compute the redmagic selection...
+            # We're going to go back to all the galaxies here for simplicity
+            # though this is a bit inefficient.
+
+            spl = CubicSpline(calstr.nodes, calstr.cmax)
+            chi2max = np.clip(spl(zsamp, 0.1, self.config.redmagic_calib_chisqcut))
+
+            gals.zredmagic = gals.zuse
+            gals.zredmagic_e = gals.zuse_e
+
+            if self.config.redmagic_run_afterburner:
+                spl = CubicSpline(calstr.corrnodes, calstr.bias)
+                gals.zredmagic -= spl(gals.zuse)
+
+                spl = CubicSpline(calstr.corrnodes, calstr.eratio)
+                gals.zredmagic_e *= spl(gals.zuse)
+
+            zsamp = randomn * gals.zredmagic_e + gals.zredmagic
+
+            # these should be based on sampled redshift, even if idl code
+            # might be wrong.
+            mstar = zredstr.mstar(zsamp)
+
+            gd, = np.where((gals.chisq < chi2max) &
+                           (gals.refmag < (mstar - 2.5*np.log10(calstr.etamin))) &
+                           (zsamp < vmask.calc_zmax(gals.ra, gals.dec)))
 
             # make pretty plots
+            nzplot = NzPlot(self.config, binsize=self.config.redmagic_calib_zbinsize)
+            nzplot.plot_redmagic_catalog(gals[gd], calstr.name, calstr.eta, calstr.n0,
+                                         vlim_areas[i])
 
+            # This stringification can be streamlined, I think.
 
+            specplot = SpecPlot(self.config)
 
+            # spectroscopic comparison
+            okspec, = np.where(gals.zspec[gd] > 0.0)
+            if okspec.size > 100:
+                fig = specplot.plot_values(gals.zspec[gd[okspec]], gals.zredmagic[gd[okspec]],
+                                           gals.zredmagic_e[gd[okspec]],
+                                           name='z_{\mathrm{redmagic}}',
+                                           title='%s: %3.1f-%02d' %
+                                           (calstr.name, calstr.eta, int(calstr.n0)),
+                                           figure_return=True)
+                fig.savefig(self.config.redmapper_filename('redmagic_calib_zspec_%s_%3.1f-%02d' %
+                                                           (calstr.name, calstr.eta,
+                                                            int(calstr.n0)),
+                                                           paths=(self.config.plotpath,),
+                                                           filetype='png'))
+                plt.close(fig)
+
+            okcal, = np.where(gals.zcal[gd] > 0.0)
+            if okcal.size > 100:
+                fig = specplot.plot_values(gals.zcal[gd[okcal]], gals.zredmagic[gd[okcal]],
+                                           gals.zredmagic_e[gd[okcal]],
+                                           name='z_{\mathrm{redmagic}}',
+                                           specname='z_{\mathrm{cal}}',
+                                           title='%s: %3.1f-%02d' %
+                                           (calstr.name, calstr.eta, int(calstr.n0)),
+                                           figure_return=True)
+                fig.savefig(self.config.redmapper_filename('redmagic_calib_zcal_%s_%3.1f-%02d' %
+                                                           (calstr.name, calstr.eta,
+                                                            int(calstr.n0)),
+                                                           paths=(self.config.plotpath,),
+                                                           filetype='png'))

@@ -39,3 +39,4 @@ from .volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 from .utilities import read_members
 from . import calibration
 from . import pipeline
+from . import redmagic

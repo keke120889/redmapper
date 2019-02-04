@@ -280,4 +280,4 @@ class RedmapperConsolidateTask(object):
 
 
                     nzplot = NzPlot(self.config)
-                    nzplot.plot_cluster_catalog(cat, areastr=vlim_areas[j])
+                    nzplot.plot_cluster_catalog(cat, vlim_areas[j])
