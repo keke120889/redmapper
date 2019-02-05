@@ -5,7 +5,8 @@ import os
 import numpy as np
 import fitsio
 import time
-from scipy.optimize import least_squares
+import scipy.optimize
+import esutil
 
 from ..configuration import Configuration
 from ..fitters import MedZFitter
@@ -22,8 +23,7 @@ class RedmagicParameterFitter(object):
     def __init__(self, nodes, corrnodes, z, z_err,
                  chisq, mstar, zcal, zcal_err, refmag,
                  randomn, zmax, etamin, n0,
-                 volume, zrange, zbinsize, zredstr, maxchi=20.0,
-                 ab_use=None)
+                 volume, zrange, zbinsize, zredstr, maxchi=20.0, ab_use=None):
         """
         """
         self._nodes = np.atleast_1d(nodes)
@@ -47,10 +47,10 @@ class RedmagicParameterFitter(object):
         self._zrange = zrange
         self._zbinsize = zbinsize
         self._zredstr = zredstr
-        #self.run_afterburner = run_afterburner
-        self._ab_use = afterburner_use
+        self._ab_use = ab_use
 
         self._maxchi = maxchi
+        self._afterburner = False
 
         if self._z.size != self._z_err.size:
             raise ValueError("Number of z must be equal to z_err")
@@ -62,9 +62,9 @@ class RedmagicParameterFitter(object):
             raise ValueError("Number of z must be equal to zcal")
         if self._z.size != self._zcal_err.size:
             raise ValueError("Number of z must be equal to zcal_err")
-        if self._refmag.size != self._refmag.size:
+        if self._z.size != self._refmag.size:
             raise ValueError("Number of z must be equal to refmag")
-        if self._randomn.size != self._randomn.size:
+        if self._z.size != self._randomn.size:
             raise ValueError("Number of z must be equal to randomn")
         if len(self._zrange) != 2:
             raise ValueError("zrange must have 2 elements")
@@ -88,7 +88,7 @@ class RedmagicParameterFitter(object):
             self._pars_bias = p0_bias
             self._pars_eratio = p0_eratio
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
+        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-8, ftol=1e-8)
 
         retval = [pars]
         if afterburner:
@@ -134,6 +134,7 @@ class RedmagicParameterFitter(object):
             # apply the error fix
             spl = CubicSpline(self._corrnodes, self._pars_eratio)
             z_redmagic_e = self._z_err * spl(self._z)
+
         else:
             z_redmagic = self._z
             z_redmagic_e = self._z_err
@@ -141,7 +142,7 @@ class RedmagicParameterFitter(object):
         zsamp = self._randomn * z_redmagic_e + z_redmagic
 
         gd, = np.where((self._chisq < chi2max) &
-                       (self.refmag < (self._mstar - 2.5 * np.log10(self._etamin))) &
+                       (self._refmag < (self._mstar - 2.5 * np.log10(self._etamin))) &
                        (z_redmagic < self._zmax))
 
         if gd.size == 0:
@@ -151,10 +152,10 @@ class RedmagicParameterFitter(object):
         # Histogram the galaxies into bins
         h = esutil.stat.histogram(zsamp[gd],
                                   min=self._zrange[0], max=self._zrange[1] - 0.0001,
-                                  self._zbinsize)
+                                  binsize=self._zbinsize)
 
         # Compute density and error
-        den = float(h) / self._volume
+        den = h.astype(np.float64) / self._volume
         den_err = np.sqrt(self._n0 * 1e-4 * self._volume) / self._volume
 
         # Compute cost function
@@ -190,7 +191,6 @@ class RedmagicCalibrator(object):
 
         # this is the number of calibration runs we have
         nruns = len(self.config.redmagic_etas)
-
 
         # check for vlim files
         vlim_masks = []
@@ -333,7 +333,7 @@ class RedmagicCalibrator(object):
 
             # Compute the nodes
             nodes = make_nodes(redmagic_zrange, self.config.redmagic_calib_nodesize)
-            corrnodes = make_nodes(redmagic_zrange, self.config.calib_corr_nodesize)
+            corrnodes = make_nodes(redmagic_zrange, self.config.redmagic_calib_corr_nodesize)
 
             # Prepare calibration structure
             vmaskfile = ''

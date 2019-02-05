@@ -368,6 +368,7 @@ class Configuration(object):
     select_scaleval = ConfigField(default=False, required=True)
 
     redmagic_calib_nodesize = ConfigField(default=0.05, required=True)
+    redmagic_calib_corr_nodesize = ConfigField(default=0.05, required=True)
     redmagic_calib_zbinsize = ConfigField(default=0.02, required=True)
     redmagic_calib_chisqcut = ConfigField(default=20.0, required=True)
     redmagic_calib_pz_integrate = ConfigField(default=False, required=True)
