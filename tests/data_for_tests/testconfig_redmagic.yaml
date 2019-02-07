@@ -1,0 +1,91 @@
+galfile: ./data_for_tests/pixelized_dr8_test/dr8_test_galaxies_master_table.fit
+refmag: i
+area: 2.22
+
+catfile: ./data_for_tests/redmagic_test/redmagic_test_catalog.fit
+zredfile: None
+bkgfile: ./data_for_tests/test_bkg.fit
+bkgfile_color: ./data_for_tests/test_dr8_col_bkg.fit
+parfile: ./data_for_tests/test_dr8_pars.fit
+specfile: ./data_for_tests/redmagic_test/redmagic_test_spec.fit
+maskgalfile: ./data_for_tests/maskgals.fit
+#maskfile: ./data_for_tests/test_dr8_mask.fit
+#depthfile: ./data_for_tests/test_dr8_depth.fit
+zlambdafile: None
+outbase: dr8_testing
+chisq_max: 20.0
+zrange: [0.05,0.60]
+lval_reference: 0.2
+mask_mode: 3
+rsig: 0.05
+dldr_gamma: 0.6
+percolation_minlambda: 3.0
+zlambda_maxiter: 20.
+zlambda_tol: 0.0002
+zlambda_parab_step: 0.002
+zlambda_topfrac: 0.7
+npzbins: 21
+#zlambda_ncross_dz: 0.05
+#zlambda_ncross_step: 0.005
+percolation_maxcen: 5
+percolation_pbcg_cut: 0.5
+percolation_r0: 1.0
+percolation_beta: 0.2
+percolation_rmask_0: 1.5
+percolation_rmask_beta: 0.2
+percolation_rmask_gamma: 0.0
+percolation_rmask_zpivot: 0.1
+percolation_lmask: 0.1
+percolation_memlum: 0.0
+limmag_catalog: 21.5
+maskgal_ngals: 6000
+maskgal_nsamples: 5
+#wcen_zred_chisq_max: 100.0
+#wcen_Delta0: 0.0
+#wcen_Delta1: 0.0
+#wcen_pivot: 30.0
+#zlambda_correct_internal: False
+zlambda_epsilon: 0.005
+
+calib_nproc: 2
+
+calib_redgal_template: bc03_colors_sdss.fit
+
+wcen_Delta0: -1.39479
+wcen_Delta1: -0.293307
+wcen_sigma_m: 0.382187
+lnw_cen_sigma: 0.134934
+lnw_cen_mean: 0.216854
+lnw_sat_sigma: 0.273727
+lnw_sat_mean: 0.0310334
+lnw_fg_sigma: 0.283303
+lnw_fg_mean: -0.278723
+
+calib_color_nodesizes: [0.05, 0.05, 0.05, 0.05]
+calib_slope_nodesizes: [0.1, 0.1, 0.1, 0.1]
+calib_color_maxnodes: [0.4, -1.0, -1.0, -1.0]
+calib_covmat_maxnodes: [0.5, -1.0, -1.0, -1.0]
+calib_color_order: [1, 2, 3, 0]
+
+calib_colormem_r0: 0.5
+calib_colormem_beta: 0.0
+calib_colormem_smooth: 0.003
+calib_colormem_minlambda: 10.0
+calib_colormem_zbounds: [0.35, 0.72]
+calib_colormem_colormodes: [1, 2, 3]
+calib_colormem_sigint: [0.05, 0.03, 0.03]
+calib_color_pcut: 0.7
+
+#vlim_lstar: 0.2
+#vlim_depthfiles: [./data_for_tests/test_dr8_depth_r.fit]
+#vlim_bands: [r]
+#vlim_nsigs: [5.0]
+
+redmagic_calib_nodesize: 0.2
+redmagic_calib_corr_nodesize: 0.2
+redmagic_calib_zbinsize: 0.2
+redmagic_calib_fractrain: 1.0
+redmagic_n0s: [10.0]
+redmagic_etas: [0.5]
+redmagic_names: ['highdens']
+redmagic_zmaxes: [0.45]
