@@ -371,7 +371,7 @@ class Configuration(object):
     redmagic_calib_corr_nodesize = ConfigField(default=0.05, required=True)
     redmagic_calib_zbinsize = ConfigField(default=0.02, required=True)
     redmagic_calib_chisqcut = ConfigField(default=20.0, required=True)
-    redmagic_calib_pz_integrate = ConfigField(default=False, required=True)
+    redmagic_calib_pz_integrate = ConfigField(default=True, required=True)
     redmagic_zrange = ConfigField(default=[], required=False, isArray=True)
     redmagic_calib_fractrain = ConfigField(default=0.5, required=True)
     #redmagic_clean_nsig = ConfigField(default=0.0, required=True)
@@ -480,6 +480,12 @@ class Configuration(object):
         # will want to set defaults here...
         self.cosmo = Cosmo()
 
+        # Redmagic stuff
+        if len(self.redmagic_zrange) == 0 or self.redmagic_zrange[0] < 0.0 or self.redmagic_zrange[1] < 0.0:
+            self.redmagic_zrange = self.zrange[:]
+
+        self._set_lengths(['redmagic_zrange'], 2)
+
         # Finally, we can validate...
         self.validate()
 
@@ -549,7 +555,10 @@ class Configuration(object):
                 continue
             if key not in type(self).__dict__:
                 raise AttributeError("Unknown config variable: %s" % (key))
-            setattr(self, key, d[key])
+            try:
+                setattr(self, key, d[key])
+            except TypeError:
+                raise TypeError("Error with type of variable %s" % (key))
 
     def _set_lengths(self, l, length):
         """
