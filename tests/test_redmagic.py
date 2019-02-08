@@ -1,8 +1,8 @@
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
-#import matplotlib
-#matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 
 import unittest
 import os
@@ -60,7 +60,7 @@ class RedmagicCalTestCase(unittest.TestCase):
         p0_cval = np.zeros(calstr['nodes'][0, :].size) + 2.0
         testing.assert_almost_equal(rmfitter(p0_cval), 317.4524284321642)
 
-        cvals, = rmfitter.fit(p0_cval)
+        cvals = rmfitter.fit(p0_cval)
 
         # This does not match the IDL output, because this is doing a lot
         # better job minimizing the function, at least in this test.
@@ -70,20 +70,15 @@ class RedmagicCalTestCase(unittest.TestCase):
 
         # Now we have to check the fitting with the afterburner
 
-        # Read in the input data for comparison (no afterburner)
-        p0_cval = cvals
-        p0_bias = np.zeros(rmfitter._corrnodes.size)
-        p0_eratio = np.ones(rmfitter._corrnodes.size)
+        biasvals = np.zeros(rmfitter._corrnodes.size)
+        eratiovals = np.ones(rmfitter._corrnodes.size)
+        biasvals, eratiovals = rmfitter.fit_bias_eratio(cvals, biasvals, eratiovals)
 
-        cvals2, bias2, eratio2 = rmfitter.fit(p0_cval,
-                                              p0_bias=p0_bias, p0_eratio=p0_eratio,
-                                              afterburner=True)
+        cvals = rmfitter.fit(cvals, biaspars=biasvals, eratiopars=eratiovals, afterburner=True)
 
-        # These do not match IDL for these test galaxies, because (interestingly)
-        # the bias fitter is doing a better job here than in the IDL code
-        testing.assert_almost_equal(cvals2, np.array([2.78106143, 1.85507234, 0.96610749]))
-        testing.assert_almost_equal(bias2, np.array([0.04382844, -0.02649431, 0.02263671]))
-        testing.assert_almost_equal(eratio2, np.array([1.49999955, 1.01608847, 0.65644899]))
+        testing.assert_almost_equal(cvals, np.array([3.39002141, 1.74421087, 0.93541002]))
+        testing.assert_almost_equal(biasvals, np.array([0.00896487, -0.02456343, 0.02006761]))
+        testing.assert_almost_equal(eratiovals, np.array([1.49999937, 1.01673233, 0.65657318]))
 
     def test_redmagic_calibrate(self):
         """
@@ -112,9 +107,9 @@ class RedmagicCalTestCase(unittest.TestCase):
         # Check that they are what we think they should be
         # (these checks are arbitrary, just to make sure nothing has changed)
 
-        testing.assert_almost_equal(cal['cmax'][0, :], np.array([0.77604262, 2.47461063, 0.39455429]))
-        testing.assert_almost_equal(cal['bias'][0, :], np.array([0.09999896, -0.02114879, 0.02071999]))
-        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.49992553, 0.97574279, 1.14632657]))
+        testing.assert_almost_equal(cal['cmax'][0, :], np.array([0.94547447, 2.94205064, 0.06885203]))
+        testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.09999977, -0.04786643, 0.02424277]))
+        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.45716207, 1.32847991, 1.10525217]))
 
     def setUp(self):
         self.test_dir = None

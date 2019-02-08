@@ -18,7 +18,6 @@ from ..utilities import make_nodes, CubicSpline, interpol, read_members
 from ..plotting import SpecPlot, NzPlot
 from ..volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 
-
 class RedmagicParameterFitter(object):
     """
     """
@@ -36,6 +35,8 @@ class RedmagicParameterFitter(object):
 
         self._z = np.atleast_1d(z)
         self._z_err = np.atleast_1d(z_err)
+        self._zuse = self._z.copy()
+        self._zuse_err = self._z_err.copy()
         self._chisq = np.atleast_1d(chisq)
         self._mstar = np.atleast_1d(mstar)
         self._zcal = np.atleast_1d(zcal)
@@ -71,33 +72,55 @@ class RedmagicParameterFitter(object):
         if len(self._zrange) != 2:
             raise ValueError("zrange must have 2 elements")
 
-    def fit(self, p0_cval, p0_bias=None, p0_eratio=None, afterburner=False):
+    def fit(self, p0_cval, biaspars=None, eratiopars=None, afterburner=False):
         """
         """
 
         if self._ab_use is None and afterburner:
             raise RuntimeError("Must set afterburner_use if using the afterburner")
 
-        # always fit cval, that's what we're fitting.  The others are fit
-        # inside the loop (oof)
-
-        p0 = p0_cval
-
         self._afterburner = afterburner
         if afterburner:
-            if p0_bias is None or p0_eratio is None:
-                raise RuntimeError("Must set p0_bias, p0_ratio if using the afterburner")
-            self._pars_bias = p0_bias
-            self._pars_eratio = p0_eratio
+            if biaspars is None or eratiopars is None:
+                raise RuntimeError("Must set biaspars, eratiopars if using the afterburner")
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-8, ftol=1e-8)
+            # Set _zuse based on the afterburner values
+            spl = CubicSpline(self._corrnodes, biaspars)
+            self._zuse = self._z - spl(self._z)
 
-        retval = [pars]
-        if afterburner:
-            retval.append(self._pars_bias)
-            retval.append(self._pars_eratio)
+            spl = CubicSpline(self._corrnodes, eratiopars)
+            self._zuse_err = self._z_err * spl(self._z)
+        else:
+            self._zuse = self._z
+            self._zuse_err = self._z_err
 
-        return retval
+        # Compute here...
+        self._mstar = self._zredstr.mstar(self._zuse)
+
+        pars = scipy.optimize.fmin(self, p0_cval, disp=False, xtol=1e-8, ftol=1e-8)
+
+        return pars
+
+    def fit_bias_eratio(self, cval, p0_bias, p0_eratio):
+        """
+        """
+
+        spl = CubicSpline(self._nodes, cval)
+        chi2max = np.clip(spl(self._z), 0.1, self._maxchi)
+
+        ab_gd, = np.where((self._chisq[self._ab_use] < chi2max[self._ab_use]) &
+                          (self._refmag[self._ab_use] < (self._mstar[self._ab_use] - 2.5 * np.log10(self._etamin))))
+
+        ab_gd = self._ab_use[ab_gd]
+
+        mzfitter = MedZFitter(self._corrnodes, self._z[ab_gd], self._z[ab_gd] - self._zcal[ab_gd])
+        pars_bias = mzfitter.fit(p0_bias, min_val=-0.1, max_val=0.1)
+
+        y = 1.4826 * np.abs(self._z[ab_gd] - self._zcal[ab_gd]) / self._z_err[ab_gd]
+        efitter = MedZFitter(self._corrnodes, self._z[ab_gd], y)
+        pars_eratio = efitter.fit(p0_eratio, min_val=0.5, max_val=1.5)
+
+        return pars_bias, pars_eratio
 
     def __call__(self, pars):
         """
@@ -107,54 +130,17 @@ class RedmagicParameterFitter(object):
         spl = CubicSpline(self._nodes, pars)
         chi2max = np.clip(spl(self._z), 0.1, self._maxchi)
 
-        gd, = np.where(self._chisq < chi2max)
-        if gd.size == 0:
-            # This is bad.
-            return 1e11
-
-        if self._afterburner:
-            # get good afterburner guys
-            ab_gd, = np.where((self._chisq[self._ab_use] < chi2max[self._ab_use]) &
-                              (self._refmag[self._ab_use] < (self._mstar[self._ab_use] - 2.5 * np.log10(self._etamin))))
-            ab_gd = self._ab_use[ab_gd]
-
-            # fit the bias
-            mzfitter = MedZFitter(self._corrnodes, self._z[ab_gd], self._z[ab_gd] - self._zcal[ab_gd])
-            self._pars_bias = mzfitter.fit(self._pars_bias, min_val=-0.1, max_val=0.1)
-
-            # apply the bias
-            spl = CubicSpline(self._corrnodes, self._pars_bias)
-            z_redmagic = self._z - spl(self._z)
-
-            # update mstar
-            self._mstar = self._zredstr.mstar(z_redmagic)
-
-            # fit the error fix
-            y = 1.4826 * np.abs(self._z[ab_gd] - self._zcal[ab_gd]) / self._z_err[ab_gd]
-            efitter = MedZFitter(self._corrnodes, self._z[ab_gd], y)
-            self._pars_eratio = efitter.fit(self._pars_eratio, min_val=0.5, max_val=1.5)
-
-            # apply the error fix
-            spl = CubicSpline(self._corrnodes, self._pars_eratio)
-            z_redmagic_e = self._z_err * spl(self._z)
-
-        else:
-            z_redmagic = self._z
-            z_redmagic_e = self._z_err
-
-        zsamp = self._randomn * z_redmagic_e + z_redmagic
-
-        # Note that self._mstar is computed at z_redmagic
+        zsamp = self._randomn * self._zuse_err + self._zuse
 
         gd, = np.where((self._chisq < chi2max) &
                        (self._refmag < (self._mstar - 2.5 * np.log10(self._etamin))) &
-                       (z_redmagic < self._zmax))
+                       (self._zuse < self._zmax))
 
         if gd.size == 0:
-            # This is bad.
             return 1e11
 
         # Histogram the galaxies into bins
+        # This is done with the sampled redshifts
         h = esutil.stat.histogram(zsamp[gd],
                                   min=self._zrange[0], max=self._zrange[1] - 0.0001,
                                   binsize=self._zbinsize)
@@ -167,7 +153,6 @@ class RedmagicParameterFitter(object):
         t = np.sum(((den - self._n0 * 1e-4) / den_err)**2.)
 
         return t
-
 
 class RedmagicCalibrator(object):
     """
@@ -209,35 +194,17 @@ class RedmagicCalibrator(object):
             # If there is no depthfile, there are no proper vlim files...
             # So we're going to make temporary masks
             for vlim_lstar in self.config.redmagic_etas:
+                self.config.logger.info("Simulating volume-limit mask for %.2f" % (vlim_lstar))
                 vlim_masks.append(VolumeLimitMaskFixed(self.config))
                 vlim_areas.append(vlim_masks[-1].get_areas())
         else:
             # There is a depth file so we can create/read vlim masks.
             for vlim_lstar in self.config.redmagic_etas:
+                self.config.logger.info("Reading/creating volume-limit mask for %.2f" % (vlim_lstar))
                 vlim_masks.append(VolumeLimitMask(self.config, vlim_lstar))
                 vlim_areas.append(vlim_masks[-1].get_areas())
 
         # Note that the area is already scaled properly!
-
-        # make sure we compute area factors if less than full footprint.
-        #area_factors = np.ones(nruns)
-        #if self.config.d.hpix > 0:
-        #    for i in xrange(nruns):
-        #        astr = vlim_areas[i]
-        #        total_area = astr.area[0]
-
-        #        hpix, = np.where(vlim_masks[i].fracgood > 0.0)
-        #        hpix += vlim_masks[i].offset
-
-        #        theta, phi = hp.pix2ang(vlim_masks[i].nside, hpix)
-        #        ipring = hp.ang2pix(self.config.d.nside, theta, phi)
-
-        #        inpix, = np.where(ipring == self.config.d.hpix)
-
-        #        pix_area = np.sum(vlim_masks[i].fracgood[hpix - vlim_masks[i].offset]) * hp.nside2pixarea(vlim_masks[i].nside, degrees=True)
-
-        #        area_factors[i] = pix_area / total_area
-        #        self.config.logger.info("Computed area_factor: %.2f" % (area_factors[i]))
 
         if gals is None:
             # Read in galaxies with zreds
@@ -386,15 +353,6 @@ class RedmagicCalibrator(object):
                                       binsize=self.config.redmagic_calib_zbinsize)
             zbins = np.arange(h.size, dtype=np.float64) * self.config.redmagic_calib_zbinsize + corr_zrange[0] + self.config.redmagic_calib_zbinsize / 2.
 
-            # compute comoving volume
-            #vol_default = np.zeros(zbins.size)
-            #for j in xrange(zbins.size):
-            #    vol_default[j] = (self.config.cosmo.V(zbins[j] - self.config.redmagic_calib_zbinsize/2.,
-            #                                          zbins[j] + self.config.redmagic_calib_zbinsize/2.) *
-            #                      (self.config.area * area_factors[i] / 41252.961))
-
-            #dens = h.astype(np.float64) / vol_default
-
             etamin_ref = np.clip(self.config.redmagic_etas[i] - lstar_cushion, 0.1, None)
 
             # These are possible redmagic galaxies for this selection
@@ -467,16 +425,12 @@ class RedmagicCalibrator(object):
                 ind = np.searchsorted(test_den, self.config.redmagic_n0s[i] * 1e-4)
                 cmaxvals[j] = gals.chisq[red_poss[u[st[ind]]]]
 
-
-            print(cmaxvals)
-
-            # minimize chisquared parameters (need that function)
+            # minimize chisquared parameters
             rmfitter = RedmagicParameterFitter(nodes, corrnodes,
                                                gals.zuse[red_poss], gals.zuse_e[red_poss],
                                                gals.chisq[red_poss], mstar_init[red_poss],
                                                gals.zcal[red_poss], gals.zcal_e[red_poss],
                                                gals.refmag[red_poss], randomn,
-                                               #self.config.redmagic_zmaxes[i],
                                                zmax,
                                                self.config.redmagic_etas[i],
                                                self.config.redmagic_n0s[i],
@@ -487,9 +441,7 @@ class RedmagicCalibrator(object):
                                                ab_use=afterburner_use)
 
             self.config.logger.info("Fitting first pass...")
-            cmaxvals, = rmfitter.fit(cmaxvals, afterburner=False)
-
-            print(cmaxvals)
+            cmaxvals = rmfitter.fit(cmaxvals, afterburner=False)
 
             # default is no bias or eratio
             biasvals = np.zeros(corrnodes.size)
@@ -498,11 +450,16 @@ class RedmagicCalibrator(object):
             # run with afterburner
             if self.config.redmagic_run_afterburner:
                 self.config.logger.info("Fitting with afterburner...")
-                cmaxvals, biasvals, eratiovals = rmfitter.fit(cmaxvals, biasvals, eratiovals, afterburner=True)
 
-            print(cmaxvals)
-            print(biasvals)
-            print(eratiovals)
+                # Let's look at 5 iterations here...
+                for k in xrange(5):
+                    print("Afterburner Iteration: %d" % (k))
+                    # Fit the bias and eratio...
+                    biasvals, eratiovals = rmfitter.fit_bias_eratio(cmaxvals, biasvals, eratiovals)
+                    cmaxvals = rmfitter.fit(cmaxvals, biaspars=biasvals, eratiopars=eratiovals, afterburner=True)
+
+                # And a last fit of bias/eratio
+                biasvals, eratiovals = rmfitter.fit_bias_eratio(cmaxvals, biasvals, eratiovals)
 
             # Record the calibrations
             calstr.cmax[:] = cmaxvals
