@@ -13,9 +13,11 @@ import fitsio
 import tempfile
 from numpy import random
 
-from redmapper.configuration import Configuration
+from redmapper import Configuration
 from redmapper.redmagic import RedmagicParameterFitter, RedmagicCalibrator
-from redmapper.redsequence import RedSequenceColorPar
+from redmapper import RedSequenceColorPar
+from redmapper import GalaxyCatalog
+from redmapper import Catalog
 
 class RedmagicCalTestCase(unittest.TestCase):
     def test_redmagic_fitter(self):
@@ -81,17 +83,38 @@ class RedmagicCalTestCase(unittest.TestCase):
         # the bias fitter is doing a better job here than in the IDL code
         testing.assert_almost_equal(cvals2, np.array([2.78106143, 1.85507234, 0.96610749]))
         testing.assert_almost_equal(bias2, np.array([0.04382844, -0.02649431, 0.02263671]))
-        testing.assert_almost_equal(eratio2, np.array([9.45337232, 1.30820933, 0.53731065]))
+        testing.assert_almost_equal(eratio2, np.array([1.49999955, 1.01608847, 0.65644899]))
 
     def test_redmagic_calibrate(self):
+        """
+        """
+
+        np.random.seed(12345)
+
         file_path = 'data_for_tests'
-        conf_filename = 'testconfig.yaml'
+        conf_filename = 'testconfig_redmagic.yaml'
         config = Configuration(os.path.join(file_path, conf_filename))
 
         self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
         config.outpath = self.test_dir
 
+        testgals = GalaxyCatalog.from_fits_file(os.path.join('data_for_tests', 'redmagic_test', 'redmagic_test_input_gals.fit'))
 
+        cal = RedmagicCalibrator(config)
+        cal.run(gals=testgals)
+
+        # Read in the calibrated parameters
+
+        self.assertTrue(os.path.isfile(config.redmagicfile))
+
+        cal = fitsio.read(config.redmagicfile, ext=1)
+
+        # Check that they are what we think they should be
+        # (these checks are arbitrary, just to make sure nothing has changed)
+
+        testing.assert_almost_equal(cal['cmax'][0, :], np.array([0.77604262, 2.47461063, 0.39455429]))
+        testing.assert_almost_equal(cal['bias'][0, :], np.array([0.09999896, -0.02114879, 0.02071999]))
+        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.49992553, 0.97574279, 1.14632657]))
 
     def setUp(self):
         self.test_dir = None

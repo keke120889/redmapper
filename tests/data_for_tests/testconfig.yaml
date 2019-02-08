@@ -6,7 +6,7 @@ zredfile: None
 bkgfile: ./data_for_tests/test_bkg.fit
 bkgfile_color: ./data_for_tests/test_dr8_col_bkg.fit
 parfile: ./data_for_tests/test_dr8_pars.fit
-specfile: ./data_for_tests/dr8_test_spec.fit
+specfile: ./data_for_tests/test_dr8_spec.fit
 maskgalfile: ./data_for_tests/maskgals.fit
 maskfile: ./data_for_tests/test_dr8_mask.fit
 depthfile: ./data_for_tests/test_dr8_depth.fit
@@ -80,3 +80,4 @@ vlim_lstar: 0.2
 vlim_depthfiles: [./data_for_tests/test_dr8_depth_r.fit]
 vlim_bands: [r]
 vlim_nsigs: [5.0]
+

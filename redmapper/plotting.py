@@ -10,6 +10,7 @@ import fitsio
 import esutil
 import scipy.optimize
 import scipy.ndimage
+import copy
 
 from .configuration import Configuration
 from .utilities import gaussFunction, CubicSpline, interpol
@@ -113,7 +114,7 @@ class SpecPlot(object):
         return self.plot_values(mem_zmed, cat.z_lambda, cat.z_lambda_e, title=title,
                                 figure_return=figure_return)
 
-    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', specname='z_{\mathrm{spec}',
+    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', specname='z_{\mathrm{spec}}',
                     title=None, figure_return=False):
         """
         Make a pretty spectrscopic plot from an arbitrary list of values.
@@ -307,8 +308,10 @@ class SpecPlot(object):
 
             p0 = [use.size, np.median(dzvec), np.std(dzvec)]
             try:
-                coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, dz, spl[i, :], p0=p0)
-            except RuntimeError:
+                with np.warnings.catch_warnings():
+                    np.warnings.simplefilter('error')
+                    coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, dz, spl[i, :], p0=p0)
+            except (RuntimeError, RuntimeWarning, scipy.optimize.OptimizeWarning):
                 # set to the default?
                 coeff = p0
             spl[i, :] = spl[i, :] / coeff[0]
@@ -327,12 +330,14 @@ class SpecPlot(object):
 
             if (val < maxdz):
                 dz1 = z_bins - z_bins[i]
-                s = CubicSpline(dz, spl[index, :])
-                y = s(dz1)
+                ss = CubicSpline(dz, spl[index, :])
+                y = ss(dz1)
                 bad, = np.where((np.abs(dz1) > 0.1) | (y < 0.0))
                 y[bad] = 0.0
-
-                z_map_values[i, :] = y / y.max()
+                if y.max() == 0:
+                    z_map_values[i, :] = 0.0
+                else:
+                    z_map_values[i, :] = y / y.max()
 
         bad = np.where(z_map_values < 1e-3)
         z_map_values[bad] = 0.0
@@ -412,7 +417,7 @@ class NzPlot(object):
 
         import matplotlib.pyplot as plt
 
-        corr_zrange = zrange.copy()
+        corr_zrange = copy.copy(zrange)
         nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
         corr_zrange[1] = nbin * self.binsize + corr_zrange[0]
 
@@ -450,17 +455,20 @@ class NzPlot(object):
         fig.savefig(self.filename)
         plt.close(fig)
 
-    def plot_redmagic_catalog(self, cat, name, eta, n0, areastr, nosamp=False):
+    def plot_redmagic_catalog(self, cat, name, eta, n0, areastr, sample=True, zrange=None):
         """
         """
 
-        if nosamp:
-            zsamp = cat.z_redmagic
+        if sample:
+            zsamp = np.random.normal(size=cat.size) * cat.zredmagic_e + cat.zredmagic
         else:
-            zsamp = np.random.normal(cat.size) * cat.z_redmagic_e + cat.z_redmagic
+            zsamp = cat.zredmagic
+
+        if zrange is None:
+            zrange = self.config.redmagic_zrange
 
         redmapper_name = 'redmagic_%s_%3.1f-%02d_nz' % (name, eta, int(n0))
-        self.plot_nz(zsamp, areastr, self.config.redmagic_zrange,
+        self.plot_nz(zsamp, areastr, zrange,
                      xlabel=r'$z_{\mathrm{redmagic}}$',
                      ylabel=r'$n\,(1e4\,\mathrm{galaxies} / \mathrm{Mpc}^{3})$',
                      title='%s: %3.1f-%02d' % (name, eta, int(n0)),
