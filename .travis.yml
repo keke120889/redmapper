@@ -6,7 +6,7 @@ python:
   - 3.6
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -y gsl_bin
+  - sudo apt-get install -y gsl-bin
   - sudo apt-get install -y libgsl0-dev
   # fix multiprocessing bugs on Travis
   - sudo rm -rf /dev/shm
