@@ -28,8 +28,7 @@ class ZredRunCatalog(object):
     """
 
     def __init__(self, config):
-
-        self.config = copy.deepcopy(config)
+        self.config = config.copy()
         self.config.cosmo = None
 
     def run(self, galaxyfile, outfile, clobber=False, nperproc=None, maxperproc=500000):

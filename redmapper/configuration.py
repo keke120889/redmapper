@@ -414,7 +414,7 @@ class Configuration(object):
                 pass
 
     def copy(self):
-        return copy.deepcopy(self)
+        return copy.copy(self)
 
     def _reset_vars(self):
         for var in type(self).__dict__:
