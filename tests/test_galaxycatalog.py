@@ -109,7 +109,7 @@ class GalaxyCatalogTestCase(unittest.TestCase):
         self.assertEqual(tab.filenames.size, tab2.filenames.size)
 
         for filename in tab2.filenames:
-            self.assertTrue(os.path.isfile(os.path.join(self.test_dir, filename)))
+            self.assertTrue(os.path.isfile(os.path.join(self.test_dir, filename.decode())))
 
         # Test 2: Make a catalog that has an incomplete dtype
         dtype = [('id', 'i8'),

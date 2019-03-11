@@ -703,8 +703,14 @@ class GalaxyCatalogMaker(object):
                 raise RuntimeError("Required dtype %s not in galaxy catalog." % (d[0]))
 
             # and compare types...
-            if not np.issubdtype(d[1], dtype_types[index]):
-                raise RuntimeError("Required dtype %s not the right type (%s)" % (d[0], dtype_types[index]))
+            if issubclass(np.dtype(dtype_types[index]).type, np.floating):
+                # Check if floating point
+                if not issubclass(np.dtype(d[1]).type, np.floating):
+                    raise RuntimeError("Required dtype %s is not a floating-point field" % (d[0]))
+            elif issubclass(np.dtype(dtype_types[index]).type, np.integer):
+                if not issubclass(np.dtype(d[1]).type, np.integer):
+                    raise RuntimeError("Required dtype %s is not an integer field" % (d[0]))
+
             # Check for NaNs and infinities
             bad, = np.where(~np.isfinite(gals[d[0]].flatten()))
             if bad.size > 0:
