@@ -1,3 +1,7 @@
+"""Classes to run a galaxy catalog through zred galaxy redshift computation,
+using multiprocessing.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -25,14 +29,41 @@ from .redsequence import RedSequenceColorPar
 
 class ZredRunCatalog(object):
     """
+    Class to run a galaxy catalog file to compute zreds, using multiprocessing.
     """
 
     def __init__(self, config):
+        """
+        Instantiate a ZredRunCatalog object.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        """
+
         self.config = config.copy()
         self.config.cosmo = None
 
     def run(self, galaxyfile, outfile, clobber=False, nperproc=None, maxperproc=500000):
         """
+        Run a galaxy file to compute zreds and output zreds to output file.
+
+        Parameters
+        ----------
+        galaxyfile: `str`
+           Galaxy input file
+        outfile: `str`
+           Output zred file
+        clobber: `bool`, optional
+           Clobber existing outfile?  Default is False.
+        nperproc: `int`, optional
+           Number of galaxies to run per processor.
+           Default is None, which divides the catalog evenly with
+           a maximum of maxperproc.
+        maxperproc: `int`, optional
+           Maximum number to run per processor, when doing automatic
+           division.   Default is 500000.
         """
 
         self.galaxyfile = galaxyfile
@@ -78,6 +109,36 @@ class ZredRunCatalog(object):
         zreds.to_fits_file(outfile, clobber=clobber)
 
     def _worker(self, ind_range):
+        """
+        Do the run on a specific list of galaxies
+
+        Parameters
+        ----------
+        ind_range: `list`
+           2-element list with first and last index to compute zred.
+
+        Returns
+        -------
+        ind_range: `list`
+           Index range that was input
+        zred: `np.array`
+           Float array of zred for the galaxies in ind_range
+        zred_e: `np.array`
+           Float array of zred errors for the galaxies in ind_range
+        zred2: `np.array`
+           Float array of zred2 for the galaxies in ind_range
+        zred2_e: `np.array`
+           Float array of zred2 errors for the galaxies in ind_range
+        zred_uncorr: `np.array`
+           Float array of uncorrected zred for the galaxies in ind_range
+        zred_uncorr_e: `np.array`
+           Float array of uncorrected zred errors for the galaxies
+           in ind_range
+        lkhd: `np.array`
+           Float array of likelihoods for the galaxies in ind_range
+        chisq: `np.array`
+           Float array of chi-squared for the galaxies in ind_range
+        """
 
         # Need a GalaxyCatalog from a fits...
         in_cat = fitsio.read(self.galaxyfile, ext=1, upper=True,
@@ -96,14 +157,42 @@ class ZredRunCatalog(object):
 
 class ZredRunPixels(object):
     """
+    Class to run a pixelized galaxy catalog to compute zreds, using
+    multiprocessing.
     """
 
     def __init__(self, config):
+        """
+        Instantiate a ZredRunPixels object.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        """
         self.config = config.copy()
         self.config.cosmo = None
 
     def run(self, single_process=False, no_zred_table=False, verbose=False):
         """
+        Run all the galaxies in a pixelized self.config.galfile to compute
+        zreds and save zreds.
+
+        Parameters
+        ----------
+        single_process: `bool`, optional
+           Run as a single process only.  Useful for testing.  Default is False.
+        no_zred_table: `bool`, optional
+           Do not output a final zred table, instead return numbers.
+           Default is False.
+        verbose: `bool`, optional
+           Be verbose with output.  Default is False.
+
+        Returns
+        -------
+        retvals: `list`
+           Present only if no_zred_table is True.
+           List of (index, outfile) tuples describing output files.
         """
 
         if not self.config.galfile_pixelized:
@@ -151,6 +240,21 @@ class ZredRunPixels(object):
         self.make_zred_table(retvals)
 
     def _worker(self, index):
+        """
+        Do the run on a specific pixel index from the galaxy table.
+
+        Parameters
+        ----------
+        index: `int`
+           Pixel index in self.galtable from self.config.galfile
+
+        Returns
+        -------
+        index: `int`
+           Pixel index that was run
+        outfile: `str`
+           zredfile that was saved
+        """
 
         # Read in just one single pixel
         galaxies = GalaxyCatalog.from_galfile(self.config.galfile,
@@ -186,6 +290,14 @@ class ZredRunPixels(object):
 
     def make_zred_table(self, indices_and_filenames):
         """
+        Make a zred table from a list of indices and filenames
+
+        Saves to self.config.zredfile.
+
+        Parameters
+        ----------
+        indices_and_filenames: `list`
+           List of (index, outfile) tuples describing zred files.
         """
 
         # figure out longest filename
