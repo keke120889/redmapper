@@ -1,28 +1,3 @@
-#language: python
-#compiler:
-#  - gcc
-#python:
-#  - 2.7
-#  - 3.6
-#before_install:
-  #- sudo apt-get -qq update
-  #- sudo apt-get install -y gsl-bin
-  #- sudo apt-get install -y libgsl0-dev
-#  - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
-#  - sudo apt-get -qq update
-#  - sudo apt-get install -y python-dev gsl-bin libgsl0-dev
-  # fix multiprocessing bugs on Travis
-#  - sudo rm -rf /dev/shm
-#  - sudo ln -s /run/shm /dev/shm
-#cache:
-#  pip: true
-#install:
-#  - pip install -r requirements.txt
-#script:
-#  - python setup.py install
-#  - cd tests
-#  - nosetests
-
 branches:
   only:
     - master
@@ -36,10 +11,8 @@ python:
 before_install:
   - if [[ $TRAVIS_PYTHON_VERSION < 3.0 ]]; then wget http://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh; fi
   - if [[ $TRAVIS_PYTHON_VERSION > 3.0 ]]; then wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh; fi
-#  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
   - chmod +x miniconda.sh
   - ./miniconda.sh -b
-#  - export PATH=/home/travis/miniconda2/bin:$PATH
   - if [[ $TRAVIS_PYTHON_VERSION < 3.0 ]]; then export PATH=/home/travis/miniconda2/bin:$PATH; fi
   - if [[ $TRAVIS_PYTHON_VERSION > 3.0 ]]; then export PATH=/home/travis/miniconda3/bin:$PATH; fi
   - conda update --yes conda

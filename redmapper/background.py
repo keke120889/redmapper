@@ -242,7 +242,8 @@ class BackgroundGenerator(object):
 
     def __init__(self, config):
         # We need to delete "cosmo" from the config for pickling/multiprocessing
-        self.config = copy.deepcopy(config)
+        #self.config = copy.deepcopy(config)
+        self.config = copy.copy(config)
         self.config.cosmo = None
 
     def run(self, clobber=False, natatime=100000, deepmode=False):

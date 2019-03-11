@@ -271,7 +271,6 @@ class Mask(object):
             raise Exception('Unsupported mode!')
 
         p_det = theta_i*self.maskgals.mark
-        np.set_printoptions(threshold=np.nan)
         c = 1 - np.dot(p_det, self.maskgals.theta_r) / self.maskgals.nin[0]
 
         cpars = np.polyfit(self.maskgals.radbins[0], c, 3)
