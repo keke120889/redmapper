@@ -538,3 +538,6 @@ class RedmagicCalibrator(object):
                                                            paths=(self.config.plotpath,),
                                                            filetype='png'))
                 plt.close(fig)
+
+
+        # Output config file here!
