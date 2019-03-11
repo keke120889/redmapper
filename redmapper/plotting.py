@@ -113,8 +113,8 @@ class SpecPlot(object):
         return self.plot_values(mem_zmed, cat.z_lambda, cat.z_lambda_e, title=title,
                                 figure_return=figure_return)
 
-    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', title=None,
-                    figure_return=False):
+    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', specname='z_{\mathrm{spec}',
+                    title=None, figure_return=False):
         """
         Make a pretty spectrscopic plot from an arbitrary list of values.
 
@@ -178,8 +178,8 @@ class SpecPlot(object):
         ax.yaxis.set_minor_locator(minorLocator)
         minorLocator = MultipleLocator(0.02)
         ax.xaxis.set_minor_locator(minorLocator)
-        ax.set_ylabel(r'$z_\mathrm{spec}$', fontsize=16)
-
+        ax.set_ylabel(r'$%s$' % (specname), fontsize=16)
+ 
         # Plot the outliers
         bad, = np.where(np.abs(z_phot[use] - z_spec[use]) / z_phot_e[use] > self.nsig)
         if bad.size > 0:
@@ -224,7 +224,7 @@ class SpecPlot(object):
         ax2.tick_params(axis='y', which='minor', left=True, right=True, direction='in')
         ax2.tick_params(axis='x', which='minor', bottom=True, top=True, direction='in')
         ax2.set_xlabel(r'$%s$' % (name), fontsize=16)
-        ax2.set_ylabel(r'$z_\mathrm{spec} - %s$' % (name), fontsize=16)
+        ax2.set_ylabel(r'$%s - %s$' % (specname, name), fontsize=16)
         minorLocator = MultipleLocator(0.02)
         ax2.xaxis.set_minor_locator(minorLocator)
         minorLocator = MultipleLocator(0.002)
@@ -363,8 +363,9 @@ class NzPlot(object):
             self.config = conf
 
         self.binsize = binsize
+        self._redmapper_name = 'nz'
 
-    def plot_cluster_catalog(self, cat, areastr=None, nosamp=False):
+    def plot_cluster_catalog(self, cat, areastr, nosamp=False):
         """
         Plot the n(z) for a cluster catalog, using the default catalog values.
 
@@ -379,14 +380,6 @@ class NzPlot(object):
         nosamp: `bool`, optional
            Do not sample from z_lambda.  Default is False.
         """
-
-        import matplotlib.pyplot as plt
-
-        corr_zrange = self.config.zrange.copy()
-        nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
-        corr_zrange[1] = nbin * self.binsize + corr_zrange[0]
-
-        nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
 
         if nosamp:
             zsamp = cat.z_lambda
@@ -407,7 +400,23 @@ class NzPlot(object):
                 test, = np.where(cdfi >= rand)
                 zsamp[i] = xvals[test[0]]
 
-        hist = esutil.stat.histogram(zsamp, min=corr_zrange[0], max=corr_zrange[1]-0.0001, binsize=self.binsize, more=True)
+        self.plot_nz(zsamp, areastr, self.config.zrange,
+                     xlabel=r'$z_{\lambda}$',
+                     ylabel=r'$n\,(1e4\,\mathrm{clusters} / \mathrm{Mpc}^{3})$',
+                     redmapper_name='nz')
+
+    def plot_nz(self, z, areastr, zrange, xlabel=None, ylabel=None,
+                title=None, redmapper_name='nz'):
+        """
+        """
+
+        import matplotlib.pyplot as plt
+
+        corr_zrange = zrange.copy()
+        nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
+        corr_zrange[1] = nbin * self.binsize + corr_zrange[0]
+
+        hist = esutil.stat.histogram(z, min=corr_zrange[0], max=corr_zrange[1]-0.0001, binsize=self.binsize, more=True)
         h = hist['hist']
         zbins = hist['center']
 
@@ -428,13 +437,34 @@ class NzPlot(object):
         ax = fig.add_subplot(111)
 
         ax.errorbar(zbins, dens*1e4, yerr=err*1e4, fmt='r.', markersize=8)
-        ax.set_xlabel(r'$z_{\lambda}$', fontsize=16)
-        ax.set_ylabel(r'$n\,(1e4\,\mathrm{clusters} / \mathrm{Mpc}^{3})$', fontsize=16)
+        if xlabel is not None:
+            ax.set_xlabel(xlabel, fontsize=16)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel, fontsize=16)
+        if title is not None:
+            ax.set_title(title, fontsize=16)
         ax.tick_params(axis='both',which='major',labelsize=14)
         fig.tight_layout()
 
+        self._redmapper_name = redmapper_name
         fig.savefig(self.filename)
         plt.close(fig)
+
+    def plot_redmagic_catalog(self, cat, name, eta, n0, areastr, nosamp=False):
+        """
+        """
+
+        if nosamp:
+            zsamp = cat.z_redmagic
+        else:
+            zsamp = np.random.normal(cat.size) * cat.z_redmagic_e + cat.z_redmagic
+
+        redmapper_name = 'redmagic_%s_%3.1f-%02d_nz' % (name, eta, int(n0))
+        self.plot_nz(zsamp, areastr, self.config.redmagic_zrange,
+                     xlabel=r'$z_{\mathrm{redmagic}}$',
+                     ylabel=r'$n\,(1e4\,\mathrm{galaxies} / \mathrm{Mpc}^{3})$',
+                     title='%s: %3.1f-%02d' % (name, eta, int(n0)),
+                     redmapper_name=redmapper_name)
 
     @property
     def filename(self):
@@ -446,4 +476,4 @@ class NzPlot(object):
         filename: `str`
            Formatted filename to save figure.
         """
-        return self.config.redmapper_filename('nz', paths=(self.config.plotpath,), filetype='png')
+        return self.config.redmapper_filename(self._redmapper_name, paths=(self.config.plotpath,), filetype='png')
