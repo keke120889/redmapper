@@ -21,11 +21,16 @@ from redmapper import GalaxyCatalog
 from redmapper.calibration import SelectSpecSeeds
 from redmapper import Catalog
 
-class RunSelectSpecSeedsTestCase(unittest.TestCase):
+class SelectSpecSeedsTestCase(unittest.TestCase):
     """
+    Tests for creating spectroscopic seeds for a run in
+    redmapper.calibration.SelectSpecSeeds
     """
 
     def test_selectspecseeds(self):
+        """
+        Run tests on redmapper.calibration.SelectSpecSeeds
+        """
         file_path = 'data_for_tests'
         configfile = 'testconfig.yaml'
 

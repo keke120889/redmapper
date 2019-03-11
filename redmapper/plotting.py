@@ -1,4 +1,8 @@
+"""Classes for making pretty diagnostic plots for redmapper catalogs
+"""
+
 from __future__ import division, absolute_import, print_function
+from past.builtins import xrange
 
 import os
 import numpy as np
@@ -12,9 +16,26 @@ from .utilities import gaussFunction, CubicSpline, interpol
 
 class SpecPlot(object):
     """
+    Class to make plots comparing the cluster spec-z with cluster z_lambda (photo-z).
+
+    In the case of real data, the most likely central is used as a proxy for
+    the cluster redshift (so miscenters look like wrong redshifts).  In the
+    case of mock data, the mean redshift of the members can be used instead.
     """
 
     def __init__(self, conf, binsize=0.02, nsig=4.0):
+        """
+        Instantiate a SpecPlot.
+
+        Parameters
+        ----------
+        conf: `redmapper.Configuration` or `str`
+           Configuration object or filename
+        binsize: `float`, optional
+           Redshift smoothing bin size.  Default is 0.02.
+        nsig: `float`, optional
+           Number of sigma to be considered a redshift outlier.  Default is 4.0.
+        """
         if not isinstance(conf, Configuration):
             self.config = Configuration(conf)
         else:
@@ -25,6 +46,25 @@ class SpecPlot(object):
 
     def plot_cluster_catalog(self, cat, title=None, figure_return=False):
         """
+        Plot the spectroscopic comparison for a cluster catalog, using the
+        default catalog values.
+
+        This plot will compare the catalog cg_spec_z (most likely central
+        galaxy redshift) with the cluster z_lambda.
+
+        Parameters
+        ----------
+        cat: `redmapper.ClusterCatalog`
+           Cluster catalog to plot.
+        title: `str`, optional
+           Title string for plot.  Default is None.
+        figure_return: `bool`, optional
+           Return the figure instead of saving a png.  Default is False.
+
+        Returns
+        -------
+        fig: `matplotlib.Figure` or `None`
+           Figure to show, if figure_return is True.
         """
 
         return self.plot_values(cat.cg_spec_z, cat.z_lambda, cat.z_lambda_e, title=title,
@@ -32,6 +72,28 @@ class SpecPlot(object):
 
     def plot_cluster_catalog_from_members(self, cat, mem, title=None, figure_return=False):
         """
+        Plot the spectroscopic comparison for a cluster catalog, using the
+        average member redshift.
+
+        This plot will compare the catalog median redshift with the cluster
+        z_lambda.  Generally only useful for simulated catalogs where you have
+        complete coverage.
+
+        Parameters
+        ----------
+        cat: `redmapper.ClusterCatalog`
+           Cluster catalog to plot.
+        mem: `redmapper.Catalog`
+           Member catalog associated with cat.
+        title: `str`, optional
+           Title string for plot.  Default is None.
+        figure_return: `bool`, optional
+           Return the figure instead of saving a png.  Default is False.
+
+        Returns
+        -------
+        fig: `matplotlib.Figure` or `None`
+           Figure to show, if figure_return is True.
         """
 
         # Not sure why this is necessary on the mocks, but there are some -1s...
@@ -54,6 +116,27 @@ class SpecPlot(object):
     def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', title=None,
                     figure_return=False):
         """
+        Make a pretty spectrscopic plot from an arbitrary list of values.
+
+        Parameters
+        ----------
+        z_spec: `np.array`
+           Float array of spectroscopic redshifts
+        z_phot: `np.array`
+           Float array of photometric redshifts
+        z_phot_e: `np.array`
+           Float array of photometric redshift errors
+        name: `str`, optional
+           Name of photo-z field for label.  Default is 'z_\lambda'.
+        title: `str`, optional
+           Title string.  Default is None
+        figure_return: `bool`, optional
+           Return the figure instead of saving a png.  Default is False.
+
+        Returns
+        -------
+        fig: `matplotlib.Figure` or `None`
+           Figure to show, if figure_return is True.
         """
 
         # We will need to remove any underscores in name for some usage...
@@ -159,10 +242,43 @@ class SpecPlot(object):
 
     @property
     def filename(self):
+        """
+        Get the filename that should be used to save the figure.
+
+        Returns
+        -------
+        filename: `str`
+           Formatted filename to save figure.
+        """
         return self.config.redmapper_filename('zspec', paths=(self.config.plotpath,), filetype='png')
 
     def _make_photoz_map(self, z_spec, z_photo,
                          dzmax=0.1, nbins_coarse=20, nbins_fine=200, zrange=[0.0, 1.2]):
+        """
+        Internal method to make a photo-z map for contour plotting.
+
+        Parameters
+        ----------
+        z_spec: `np.array`
+           Float array of z_spec values.
+        z_photo: `np.array`
+           Float array of photometric redshift values.
+        dzmax: `float`, optional
+           Maximum delta-z when fitting in bin.  Default is 0.1
+        nbins_coarse: `int`, optional
+           Number of bins for initial coarse binning.  Default is 20
+        nbins_fine: `int`, optional
+           Number of bins for smooth fine binning for plot.  Default is 200
+        zrange: `list`, optional
+           Redshift range to build map.  Default is [0.0, 1.2]
+
+        Returns
+        -------
+        z_bins: `np.array`
+           Float array of redshift bins for map
+        z_map_smooth: `np.array`
+           Float array of image of smoothed map.
+        """
 
         zmin = z_photo.min()
         zmax = z_photo.max()
@@ -227,9 +343,20 @@ class SpecPlot(object):
 
 class NzPlot(object):
     """
+    Class to make a plot with cluster catalog n(z) with comoving coordinates.
     """
 
     def __init__(self, conf, binsize=0.02):
+        """
+        Instantiate a NzPlot.
+
+        Parameters
+        ----------
+        conf: `redmapper.Configuration` or `str`
+           Configuration object or filename
+        binsize: `float`, optional
+           Redshift smoothing bin size.  Default is 0.02.
+        """
         if not isinstance(conf, Configuration):
             self.config = Configuration(conf)
         else:
@@ -239,6 +366,18 @@ class NzPlot(object):
 
     def plot_cluster_catalog(self, cat, areastr=None, nosamp=False):
         """
+        Plot the n(z) for a cluster catalog, using the default catalog values.
+
+        This plot will sample redshifts from z_lambda +/- z_lambda_e.
+
+        Parameters
+        ----------
+        cat: `redmapper.ClusterCatalog`
+           Cluster catalog to plot.
+        areastr: `redmapper.Catalog`
+           Area structure, with .z and .area
+        nosamp: `bool`, optional
+           Do not sample from z_lambda.  Default is False.
         """
 
         import matplotlib.pyplot as plt
@@ -299,4 +438,12 @@ class NzPlot(object):
 
     @property
     def filename(self):
+        """
+        Get the filename that should be used to save the figure.
+
+        Returns
+        -------
+        filename: `str`
+           Formatted filename to save figure.
+        """
         return self.config.redmapper_filename('nz', paths=(self.config.plotpath,), filetype='png')

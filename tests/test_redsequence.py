@@ -9,36 +9,13 @@ import fitsio
 import redmapper
 
 class RedSequenceColorTestCase(unittest.TestCase):
+    """
+    Tests of redmapper.RedSequenceColorPar, including reading and interpolation.
+    """
+
     def runTest(self):
         """
-        This tests many aspects of the redsequence module
-        found in redmapper. The first section simply contains
-        tests to check for any raised errors that can occur if
-        the necessary data files aren't there, or if hte header
-        for the background isn't formatted correctly.
-
-        Next the zredstr is created, which is a parameterization
-        of the redsequence. The next battery of tests are simple checks
-        to see if the attributes are what we expect them to be,
-        including nmag, z edges, and the number of redshifts.
-
-        Next the outputs of the lookup tables are checked, including
-        the zindex, refmagindex, and lumrefmagindex are checked. These functions
-        return indices that these values would have in the look up tables.
-
-        Next the pivotmags are checked against the IDL outputs.
-
-        Next the c and slope spline outputs are checked 
-        against the IDL outputs.
-
-        Next there are four tests blocks where the sigma and covariance 
-        matrix elements are tested against the IDL outputs.
-
-        Next the lupcorr and corrections 1 and 2 are tested against 
-        IDL outputs.
-
-        Finally the volume factor, mstar, and lumnorm attributes of
-        the zredstr are tested against known values from IDL.
+        Run tests of redmapper.RedSequenceColorPar.
         """
         file_name = 'test_dr8_pars.fit'
         file_path = 'data_for_tests'
@@ -48,7 +25,7 @@ class RedSequenceColorTestCase(unittest.TestCase):
 
         # test that we fail if we read a non-fits file
         self.assertRaises(IOError,redmapper.RedSequenceColorPar,'%s/testconfig.yaml' % (file_path))
-        
+
         # test that we fail if we try a file without the right header info
         self.assertRaises(ValueError,redmapper.RedSequenceColorPar,'%s/test_bkg.fit' % (file_path))
 
@@ -57,7 +34,7 @@ class RedSequenceColorTestCase(unittest.TestCase):
 
         # make sure that nmag matches
         testing.assert_equal(zredstr.nmag,5)
-        
+
         # check the z range...
         testing.assert_almost_equal([zredstr.z[0],zredstr.z[zredstr.z.size-2]],np.array([0.01,0.665]))
 
@@ -68,9 +45,9 @@ class RedSequenceColorTestCase(unittest.TestCase):
         testing.assert_equal(zredstr.zindex([0.0,0.2,0.502,0.7]),[0, 38, 98, 132])
         testing.assert_equal(zredstr.refmagindex([11.0,15.19,19.195,50.0]),[0, 319, 720, 930])
         testing.assert_equal(zredstr.lumrefmagindex([11.0,15.19,19.195,50.0]),[0, 319, 720, 1153])
-        
+
         indices=np.array([0,20,50,100])
-        
+
         # spot check of pivotmags ... IDL & python
         testing.assert_almost_equal(zredstr.pivotmag[indices],np.array([14.648015, 17.199219, 19.013103, 19.877018]),decimal=5)
         testing.assert_almost_equal(zredstr.pivotmag[indices],np.array([ 14.64801598,  17.19921907,  19.01310458,  19.87701651])) #Redundant
@@ -78,7 +55,7 @@ class RedSequenceColorTestCase(unittest.TestCase):
         # spot check of c
         testing.assert_almost_equal(zredstr.c[indices,0],np.array([1.779668,  1.877657,  1.762201,  2.060556]),decimal=5)
         testing.assert_almost_equal(zredstr.c[indices,1],np.array([  0.712274,  0.963666,  1.419433,  1.620476]),decimal=5)
-        testing.assert_almost_equal(zredstr.c[indices,2],np.array([  0.376324,  0.411257,  0.524789,  0.873508]),decimal=5)        
+        testing.assert_almost_equal(zredstr.c[indices,2],np.array([  0.376324,  0.411257,  0.524789,  0.873508]),decimal=5)
         testing.assert_almost_equal(zredstr.c[indices,3],np.array([  0.272334,  0.327266,  0.333995,  0.448025]),decimal=5)
 
         # and slope ... lazy, just 0
@@ -101,7 +78,7 @@ class RedSequenceColorTestCase(unittest.TestCase):
         testing.assert_almost_equal(zredstr.covmat[1,1,indices],np.array([  0.001740,  0.001845,  0.006132,  0.004986]),decimal=5)
         testing.assert_almost_equal(zredstr.covmat[2,2,indices],np.array([  0.000336,  0.000431,  0.000476,  0.007655]),decimal=5)
         testing.assert_almost_equal(zredstr.covmat[3,3,indices],np.array([  0.000664,  0.000483,  0.000475,  0.000342]),decimal=5)
-        
+
         # and off-diagonal checks
         testing.assert_almost_equal(zredstr.covmat[1,2,indices],np.array([  0.000626,  0.000643,  0.001350,  0.004434]),decimal=5)
         testing.assert_almost_equal(zredstr.covmat[2,1,indices],np.array([  0.000626,  0.000643,  0.001350,  0.004434]),decimal=5)
@@ -118,7 +95,7 @@ class RedSequenceColorTestCase(unittest.TestCase):
         testing.assert_almost_equal(zredstr.corr[indices],np.array([ -0.001188,  0.004373,  0.006569,  0.008507]),decimal=5)
         testing.assert_almost_equal(zredstr.corr_slope[indices],np.array([  0.000000,  0.000000,  0.000000,  0.000000]),decimal=5)
         testing.assert_almost_equal(zredstr.corr_r[indices],np.array([  0.779448,  0.710422,  0.500000,  0.500000]),decimal=5)
-        
+
         # corr2 stuff
         testing.assert_almost_equal(zredstr.corr2[indices],np.array([  0.015072,  0.004148,  0.004810, -0.002500]),decimal=5)
         testing.assert_almost_equal(zredstr.corr2_slope[indices],np.array([  0.000000,  0.000000,  0.000000,  0.000000]),decimal=5)
@@ -133,7 +110,6 @@ class RedSequenceColorTestCase(unittest.TestCase):
         # lumnorm
         testing.assert_almost_equal(zredstr.lumnorm[400,indices],np.array([  3.589124,  0.105102,  0.000006,  0.000000]),decimal=5)
         testing.assert_almost_equal(zredstr.lumnorm[800,indices],np.array([  7.577478,  2.958363,  1.152083,  0.163357]),decimal=5)
-
 
 
 if __name__=='__main__':

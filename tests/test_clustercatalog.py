@@ -20,11 +20,15 @@ from redmapper import HPMask
 from redmapper import DepthMap
 
 
-
 class ClusterCatalogTestCase(unittest.TestCase):
     """
+    Tests for features of redmapper.ClusterCatalog, including reading and matching
+    galaxies.
     """
     def runTest(self):
+        """
+        Run the ClusterCatalog tests.
+        """
 
         random.seed(seed=12345)
 
@@ -84,7 +88,6 @@ class ClusterCatalogTestCase(unittest.TestCase):
         testing.assert_equal(c0.scaleval, cat.scaleval[0])
 
         # And make sure the numbers are correct
-        #testing.assert_almost_equal(richness, 23.86299324)
         testing.assert_almost_equal(richness, 24.4121723)
 
         # and we're done

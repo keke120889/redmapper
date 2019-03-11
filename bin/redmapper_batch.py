@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+"""
+Create a batch configuration script to submit to a cluster.
+"""
 
 from __future__ import division, absolute_import, print_function
 
@@ -22,6 +25,19 @@ batchname:
 """)
 
 def load_batchconfig(filename):
+    """
+    Load a batch configuration file.
+
+    Parameters
+    ----------
+    filename: `str`
+       Filename of batch configuration file
+
+    Returns
+    -------
+    yaml_data: `dict`
+       Dict of parameters from configuration file.
+    """
     with open(filename) as f:
         yaml_data = yaml.load(f)
 
@@ -53,7 +69,7 @@ parser = argparse.ArgumentParser(description="Create a batch file for running re
 parser.add_argument('-c', '--configfile', action='store', type=str, required=True,
                     help='YAML config file')
 parser.add_argument('-r', '--runmode', action='store', type=int, required=True,
-                    help='Run mode')
+                    help='Run mode.  0 is full finder run.  1 is zred run.')
 parser.add_argument('-b', '--batchmode', action='store', type=str, required=mode_required,
                     help='Batch mode, defined in ~/.redmapper_batch.yml')
 parser.add_argument('-w', '--walltime', action='store', type=int, required=False,
@@ -138,14 +154,25 @@ with open(jobfile, 'w') as jf:
 
         index_string = '$LSB_JOBINDEX-1'
 
+    elif (batchconfig[batchmode]['batch'] == 'pbs'):
+        # PBS mode
+        ppn = batchconfig[batchmode]['ppn']
+        n_nodes = int(np.ceil(float(hpix_run.size) / float(ppn)))
+        jf.write("#PBS -q %s\n" % (batchconfig[batchmode]['queue']))
+        jf.write("#PBS -l nodes=%d:ppn=%d\n" % (n_nodes, ppn))
+        jf.write("#PBS -l walltime=%d:00:00\n" % (int(walltime / 60)))
+        jf.write("#PBS -l mem=%dmb\n" % (memory))
+        jf.write("#PBS -j oe\n")
+        jf.write('N_CPU=%d\n' % (n_nodes * batchconfig[batchmode]['ppn']))
     else:
         # Nothing else supported
-        raise RuntimeError("Only LSF supported at this time.")
+        raise RuntimeError("Only LSF and PBS supported at this time.")
 
     jf.write("pixarr=(")
     for hpix in hpix_run:
         jf.write("%d " % (hpix))
     jf.write(")\n\n")
+
     jf.write("%s\n\n" % (batchconfig[batchmode]['setup']))
 
     if args.runmode == 0:

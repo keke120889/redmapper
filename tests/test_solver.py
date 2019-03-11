@@ -9,16 +9,12 @@ import fitsio
 import redmapper
 
 class SolverNFWTestCase(unittest.TestCase):
+    """
+    Tests for redmapper zero-finding solver.
+    """
     def runTest(self):
         """
-        The first party of this tests to see if the solver routine 
-        spits out any errors that it can raise internally. 
-        We sequencially check the ucounts, bcounts,
-        r, w, and cpars values.
-
-        The second part checks some results. It compares the lam, p_mem, and wt
-        values given by the solver to the values contained in the data file,
-        which are precomputed solver outputs (from IDL).
+        Run tests on redmapper.Solver
         """
         file_name = 'test_solver_data.fit'
         file_path = 'data_for_tests'
@@ -51,6 +47,7 @@ class SolverNFWTestCase(unittest.TestCase):
         testing.assert_array_almost_equal(wt,data[0]['WTVALS'])
         testing.assert_almost_equal(rlambda,data[0]['R0']*(data[0]['LAMBDA']/100.)**data[0]['BETA'])
         testing.assert_almost_equal(theta_r,data[0]['THETA_R'],6)
+
 
 if __name__=='__main__':
     unittest.main()

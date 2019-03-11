@@ -17,20 +17,17 @@ from redmapper import DepthMap
 from redmapper import Zlambda
 from redmapper import ZlambdaCorrectionPar
 
-class ClusterZlambdaTestCase(unittest.TestCase):
+class ZlambdaTestCase(unittest.TestCase):
     """
-    Unittest for testing the z_lambda functions
-
-    INCOMPLETE
-
+    Tests of redmapper.Zlambda z_lambda computation code.
     """
     def runTest(self):
+        """
+        Run tests on redmapper.Zlambda
+        """
         random.seed(seed=12345)
 
         file_path = 'data_for_tests'
-
-        #The configuration
-        #Used by the mask, background and richness calculation
 
         conf_filename = 'testconfig.yaml'
         config = Configuration(file_path + '/' + conf_filename)
@@ -47,8 +44,6 @@ class ClusterZlambdaTestCase(unittest.TestCase):
         cluster = Cluster(config=config, zredstr=zredstr, bkg=bkg, neighbors=neighbors)
 
         hdr=fitsio.read_header(file_path+'/'+filename,ext=1)
-        #cluster.z = hdr['Z']
-        #cluster.update_z(hdr['Z'])
         cluster.redshift = hdr['Z']
         richness_compare = hdr['LAMBDA']
         richness_compare_err = hdr['LAMBDA_E']
@@ -66,22 +61,18 @@ class ClusterZlambdaTestCase(unittest.TestCase):
 
         cluster.neighbors.dist = np.degrees(cluster.neighbors.r/cluster.cosmo.Dl(0,cluster.redshift))
 
-
         # make a zlambda object
         zlam = Zlambda(cluster)
 
         z_lambda, z_lambda_e = zlam.calc_zlambda(cluster.redshift, mask, calc_err=True, calcpz=True)
 
-        #testing.assert_almost_equal(cluster.z_lambda, 0.22700983)
         # I am not sure why this isn't repeatable better than this
-        #testing.assert_almost_equal(cluster.z_lambda,0.2270138, 4)
         testing.assert_almost_equal(cluster.z_lambda, 0.22666427, 6)
         testing.assert_almost_equal(cluster.z_lambda_err, 0.00443601, 4)
 
         # zlambda_err test
         z_lambda_err = zlam._zlambda_calc_gaussian_err(cluster.z_lambda)
 
-        #testing.assert_almost_equal(z_lambda_err, 0.00615043, 5)
         testing.assert_almost_equal(z_lambda_err, 0.0063738347, 5)
 
         # and test the correction on its own

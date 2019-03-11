@@ -14,7 +14,15 @@ from redmapper.fitters import CorrectionFitter
 from redmapper.utilities import make_nodes, CubicSpline
 
 class FitterTestCase(unittest.TestCase):
+    """
+    Tests for various fitters in redmapper.fitters, including EcgmmFitter,
+    MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, and
+    CorrectionFitter.
+    """
     def test_ecgmm(self):
+        """
+        Run tests of redmapper.fitters.EcgmmFitter
+        """
         random.seed(seed=1000)
 
         # Test Ecgmm Fitter
@@ -32,6 +40,9 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(sigma, [0.15283837, 0.04078598], 3)
 
     def test_make_nodes(self):
+        """
+        Run tests of redmapper.utilities.make_nodes()
+        """
         # Test make_nodes
         nodes = make_nodes([0.1,0.65], 0.05)
         testing.assert_almost_equal(nodes, [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65])
@@ -41,6 +52,10 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(nodes, [0.1, 0.2, 0.3, 0.4, 0.65])
 
     def test_red_sequence_fitting(self):
+        """
+        Run tests of redmapper.fitters.MedZFitter and
+        redmapper.fitters.RedSequenceFitter.
+        """
         # Test Median z Fitter
         file_path = 'data_for_tests'
 
@@ -130,6 +145,9 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(scatpars3, [0.03453208, 0.04054536, 0.03832689], 4)
 
     def test_off_diagonal_fitter(self):
+        """
+        Run tests of redmapper.fitters.RedSequenceOffDiagonalFitter
+        """
         file_path = 'data_for_tests'
 
         # And test the off-diagonal fitter
@@ -161,10 +179,13 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(pars, fitdata['RVALS'][0], 2)
         testing.assert_almost_equal(pars, [0.594956, 0.65475681], 4)
 
-    def test_red_sequence_fitter_with_probs(self):
-        pass
+    #def test_red_sequence_fitter_with_probs(self):
+    #    pass
 
     def test_zred_correction_fitter(self):
+        """
+        Run tests of redmapper.fitters.CorrectionFitter
+        """
 
         # Test the zred correction fitter.
         # No tests right now for the slope fitting, because we don't
@@ -206,7 +227,6 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(pars_mean, fitdata['CVALS'][0], 4)
         testing.assert_almost_equal(pars_r, fitdata['RVALS'][0], 3)
         testing.assert_almost_equal(pars_bkg, fitdata['BKG_CVALS'][0], 4)
-
 
 
 if __name__=='__main__':

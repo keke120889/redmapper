@@ -1,3 +1,8 @@
+"""Color-only galaxy background class for redmapper.
+
+This file contains classes to describe the b(x) background terms using colors only.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -14,9 +19,25 @@ from .galaxy import GalaxyCatalog
 
 class ColorBackground(object):
     """
+    Color-only galaxy background class.
+
+    This class describes the binned, interpolateable background term b(x), where x describes the color(s) and reference magnitude of the galaxy.
+
+    This contains all individual colors and color/color cross terms in a
+    matrix.
     """
 
     def __init__(self, filename, usehdrarea=False):
+        """
+        Instantiate a color background
+
+        Parameters
+        ----------
+        filename: `string`
+           Color background filename
+        usehdrarea: `bool`, optional
+           Use area from the header instead of as configured.  Default is False.
+        """
 
         refmagbinsize = 0.01
         colbinsize = 0.05
@@ -152,6 +173,21 @@ class ColorBackground(object):
 
     def sigma_g_diagonal(self, bkg_index, colors, refmags):
         """
+        Compute sigma_g(color, refmag) for a diagonal (single-color) background.
+
+        Parameters
+        ----------
+        bkg_index: `int`
+           Color index along the diagonal
+        colors: `np.array`
+           Float array of colors
+        refmags: `np.array`
+           Float array of reference magnitudes
+
+        Returns
+        -------
+        sigma_g: `np.array`
+           Sigma_g(x) for input values
         """
         bkg = self.bkgs[bkg_index * 100 + bkg_index]
 
@@ -173,6 +209,24 @@ class ColorBackground(object):
 
     def lookup_diagonal(self, bkg_index, colors, refmags, doRaise=True):
         """
+        Look up the normalized background value b(color, refmag) for a diagonal
+        (single-color) background.
+
+        Parameters
+        ----------
+        bkg_index: `int`
+           Color index along the diagonal
+        colors: `np.array`
+           Float array of colors
+        refmags: `np.array`
+           Float array of reference magnitudes
+        doRaise: `bool`, optional
+           Raise exception if color background does not exist.  Default is True.
+
+        Returns
+        -------
+        b: `np.array`
+           Background(x) for input values
         """
         try:
             bkg = self.bkgs[bkg_index * 100 + bkg_index]
@@ -188,11 +242,41 @@ class ColorBackground(object):
         return bkg['bc'][refmagindex, col_index] / bkg['n'][refmagindex]
 
     def get_colrange(self, bkg_index):
+        """
+        Get the background color range for a given background index.
+
+        Parameters
+        ----------
+        bkg_index: `int`
+           Color index along the diagonal
+
+        Returns
+        -------
+        range: `np.array`
+           2-element float array with color min, max
+        """
         bkg = self.bkgs[bkg_index * 100 + bkg_index]
         return bkg['colrange']
 
     def lookup_offdiag(self, bkg_index1, bkg_index2, colors1, colors2, refmags, doRaise=True):
         """
+        Look up the normalized background value b(color1, color2, refmag) for
+        an off-diagonal (two-color) background.
+
+        Parameters
+        ----------
+        bkg_index1: `int`
+           Color index for color 1
+        bkg_index2: `int`
+           Color index for color 2
+        colors1: `np.array`
+           Float array of colors (1)
+        colors2: `np.array`
+           Float array of colors (2)
+        refmags: `np.array`
+           Float array of reference mags
+        doRaise: `bool`, optional
+           Raise exception if color background does not exist.  Default is True.
         """
         key = bkg_index1 * 100 + bkg_index2
         if key not in self.bkgs:
@@ -214,14 +298,33 @@ class ColorBackground(object):
 
 class ColorBackgroundGenerator(object):
     """
+    Class to generate color-only galaxy background.
     """
 
     def __init__(self, config, minrangecheck=1000):
+        """
+        Instantiate a color background generator.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration information
+        minrangecheck: `int`, optional
+           Minimum number of galaxies in a color bin to determine full range.
+           Default is 1000
+        """
         self.config = config
         self.minrangecheck = minrangecheck
 
     def run(self, clobber=False):
         """
+        Generate the color galaxyt background.  The output filename is
+        specified in self.config.bkgfile_color.
+
+        Parameters
+        ----------
+        clobber: `bool`, optional
+           Overwrite any existing self.config.bkgfile_color file.  Default is False.
         """
 
         # Check if it's already there...

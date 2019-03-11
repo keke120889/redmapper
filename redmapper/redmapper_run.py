@@ -1,3 +1,7 @@
+"""Class for performing a local redmapper run with multiprocessing.
+
+This class is typically used during training.
+"""
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -28,9 +32,21 @@ from .run_percolation import RunPercolation
 
 class RedmapperRun(object):
     """
+    Class to run various stages of the redmapper finder using multiprocessing.
+
+    This is typically run during the training.  In production runs should be
+    farmed out to a compute cluster.
     """
 
     def __init__(self, config):
+        """
+        Instantiate a RedmapperRun object.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        """
         self.config = config.copy()
 
         # Record the cosmology parameters because we need to rebuild the object
@@ -40,9 +56,39 @@ class RedmapperRun(object):
         self._omega_m = config.cosmo.omega_m()
         self.config.cosmo = None
 
-    def run(self, specmode=False, specseed=None, seedfile=None, check=True,
-            percolation_only=False, consolidate_like=False, keepz=False, cleaninput=False):
+    def run(self, specmode=False, seedfile=None, check=True,
+            percolation_only=False, consolidate_like=False, keepz=False, cleaninput=False,
+            consolidate=True):
         """
+        Run the redmapper cluster finder using multiprocessing.
+
+        Parameters
+        ----------
+        specmode: `bool`, optional
+           Run with spectroscopic mode (firstpass uses zspec as seeds).
+           Default is False.
+        seedfile: `str`, optional
+           File containing spectroscopic seeds.  Default is None.
+        check: `bool`, optional
+           Check if files already exist, and skip if so.  Default is True.
+        percolation_only: `bool`, optional
+           Only run the percolation phase.  Default is False.
+        consolidate_like: `bool`, optional
+           Consolidate the pixel runs for the likelihood files?  Default is False.
+        keepz: `bool`, optional
+           Keep input redshifts or replace with z_lambda?  Default is False.
+        cleaninput: `bool`, optional
+           Processing stage should clean out bad clusters?  Default is False.
+        consolidate: `bool`, optional
+           Consolidate the pixel runs for the percolated files?  Default is True.
+
+        Returns
+        -------
+        finalfile: `str`
+           Filename for the final consolidated percolation file.
+        likefile: `str`
+           Filename for the final consolidated likelihood file
+           (if consolidate_like == True)
         """
 
         self.specmode = specmode
@@ -86,7 +132,11 @@ class RedmapperRun(object):
         likefiles = [x[2] for x in retvals]
         percfiles = [x[3] for x in retvals]
 
-        finalfile = self._consolidate(hpixels, percfiles, 'final', members=True, check=check)
+        # Allow for runs without consolidation
+        if consolidate:
+            finalfile = self._consolidate(hpixels, percfiles, 'final', members=True, check=check)
+        else:
+            finalfile = None
 
         if consolidate_like:
             likefile = self._consolidate(hpixels, likefiles, 'like', members=False, check=check)
@@ -99,6 +149,15 @@ class RedmapperRun(object):
 
     def _get_pixel_splits(self):
         """
+        Get the subpixels on which to run to optimally split the input catalog
+        based on the number of cores for the run.
+
+        Returns
+        -------
+        nside_split: `int`
+           Healpix nside for the split pixels
+        pixels_split: `list`
+           Integer list of healpix pixel numbers (ring format)
         """
 
         # need to redo logic here.  Dang.
@@ -147,6 +206,22 @@ class RedmapperRun(object):
 
     def _get_subpixels(self, nside_test, galtab):
         """
+        Get all the pixels from a galaxy table corresponding to a given nside.
+
+        Note that this takes into account the subregion of galtab that is being
+        processed.
+
+        Parameters
+        ----------
+        nside_test: `int`
+           Nside of the desired grouping of galtab.
+        galtab: `redmapper.Entry`
+           Galaxy table summary information.
+
+        Returns
+        -------
+        pixels: `np.array`
+           Integer array of pixels that cover galtab.
         """
 
         # generate all the pixels
@@ -168,6 +243,26 @@ class RedmapperRun(object):
 
     def _consolidate(self, hpixels, filenames, filetype, members=False, check=True):
         """
+        Consolidate pixel run files.
+
+        Parameters
+        ----------
+        hpixels: `np.array`
+           Integer array of healpix pixels to consolidate
+        filenames: `list`
+           List of strings of filenames to consolidate
+        filetype: `str`
+           Type of file (final, like)
+        members: `bool`, optional
+           Consolidte members as well?  Default is False.
+        check: `bool`, optional
+           Check to see if consolidated files exist (and exit if so).
+           Default is False
+
+        Returns
+        -------
+        outfile: `str`
+           Output filename
         """
 
         outfile = self.config.redmapper_filename(filetype)
@@ -179,9 +274,9 @@ class RedmapperRun(object):
 
             if (outfile_there and memfile_there and members):
                 # All files are accounted for
-                return
+                return outfile
             if outfile_there and not members:
-                return
+                return outfile
 
         # How many clusters are there?  (This is the maxmimum before cuts)
         ncluster = 0
@@ -271,6 +366,25 @@ class RedmapperRun(object):
         return outfile
 
     def _worker(self, hpix):
+        """
+        Do the run on one pixel (for multiprocessing).
+
+        Parameters
+        ----------
+        hpix: `int`
+           Healpix ring pixel to run.
+
+        Outputs
+        -------
+        hpix: `int`
+           Healpix ring number that was run.
+        firstpass_filename: `str`
+           Filename for firstpass file.
+        like_filename: `str`
+           Filename for likelihood file
+        perc_filename: `str`
+           Filename for percolation file.
+        """
 
         self.config.logger.info("Running on pixel %d" % (hpix))
 
@@ -281,7 +395,7 @@ class RedmapperRun(object):
         # Set the specific config stuff here
         config.d.hpix = hpix
 
-        config.d.outbase = '%s_%05d' % (self.config.d.outbase, hpix)
+        config.d.outbase = '%s_%d_%05d' % (self.config.d.outbase, self.config.d.nside, hpix)
 
         # Need to add checks about success, and whether a file was output
         #  (especially border pixels in sims)
@@ -316,6 +430,26 @@ class RedmapperRun(object):
         return (hpix, firstpass.filename, like.filename, perc.filename)
 
     def _percolation_only_worker(self, hpix):
+        """
+        Do a percolation only run on one pixel (for multiprocessing).
+
+        Parameters
+        ----------
+        hpix: `int`
+           Healpix ring pixel to run.
+
+        Outputs
+        -------
+        hpix: `int`
+           Healpix ring number that was run.
+        firstpass_filename: `str`
+           None
+        like_filename: `str`
+           None
+        perc_filename: `str`
+           Filename for percolation file.
+        """
+
         config = self.config.copy()
         config.cosmo = Cosmo(H0=self._H0, omega_l=self._omega_l, omega_m=self._omega_m)
 

@@ -17,7 +17,14 @@ from redmapper.configuration import Configuration
 from redmapper.calibration.selectspecred import SelectSpecRedGalaxies
 
 class SelectSpecRedTestCase(unittest.TestCase):
-    def test_selectred(self):
+    """
+    Tests for selecting red galaxies with spectra in
+    redmapper.calibration.SelectSpecRedGalaxies
+    """
+    def test_selectspecred(self):
+        """
+        Run tests on redmapper.calibration.SelectSpecRedGalaxies
+        """
         random.seed(seed=12345)
 
         file_path = 'data_for_tests'

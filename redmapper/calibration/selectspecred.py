@@ -1,3 +1,6 @@
+"""Select red galaxies from the spectroscopic catalog
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -15,9 +18,29 @@ from ..utilities import make_nodes, CubicSpline, interpol
 
 class SelectSpecRedGalaxies(object):
     """
+    Class to select red galaxies from a spectroscopic catalog.
     """
 
     def __init__(self, conf):
+        """
+        Instantiate a SelectSpecRedGalaxies object.
+
+        Requires a proper file in self.config.calib_redgal_template, that may
+        be contained in the redmapper/data/initcolors path or is a full pathname
+        to a file not in the repository.
+
+        This template file must have a header that contains BANDS, a string with
+        the bands used to construct the template (e.g. "griz").  The file should
+        contain two columns:
+
+        z: redshift in fine bins
+        color: the template red-sequence color, with nbands - 1 elements.
+
+        Parameters
+        ----------
+        conf: `str` or `redmapper.Configuration`
+           Configuration yaml filename or config object
+        """
         if not isinstance(conf, Configuration):
             self.config = Configuration(conf)
         else:
@@ -38,6 +61,10 @@ class SelectSpecRedGalaxies(object):
 
     def run(self):
         """
+        Run the SelectSpecRedGalaxies algorithm.
+
+        Output will be put in self.config.redgalfile.  Also, diagnostic plots
+        will be put in the plotting directory.
         """
 
         # first, we read the galaxies
@@ -114,7 +141,7 @@ class SelectSpecRedGalaxies(object):
             u, = np.where((delta > delta5) & (delta < delta99))
 
             ecfitter = EcgmmFitter(delta[u], galcolor_err[u, j])
-            wt, mu, sigma = ecfitter.fit([0.2], [-0.5, 0.0], [0.2, 0.05], offset=0.5)
+            wt, mu, sigma = ecfitter.fit([0.2], [-0.5, 0.0], [0.2, 0.05], offset=2.0)
 
             mvals = interpol(template.color[:, template_index], template.z, nodes) + mu[1]
             scvals = np.zeros(nodes.size) + sigma[1]

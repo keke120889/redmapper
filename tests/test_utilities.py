@@ -11,11 +11,12 @@ import redmapper
 from redmapper.utilities import CubicSpline, sample_from_pdf
 
 class SplineTestCase(unittest.TestCase):
+    """
+    Tests of cubic-spline interpolator, redmapper.utilities.CubicSpline
+    """
     def runTest(self):
         """
-        This tests the functionality of the redmapper.utilities
-        spline against the spline output values from a spline
-        implemented in IDL found in RM 6.3.1 DR8.
+        Run tests on redmapper.utilities.CubicSpline
         """
         # create test data
         # these numbers are from redMaPPer 6.3.1, DR8
@@ -49,10 +50,12 @@ class SplineTestCase(unittest.TestCase):
         testing.assert_almost_equal(fit[0], 1.98994079)
 
 class MStarTestCase(unittest.TestCase):
+    """
+    Tests of mstar(z) redmapper.utilities.MStar
+    """
     def runTest(self):
         """
-        This tests the MStar function found in the utilities
-        class at two different decimal levels.
+        Run tests of redmapper.utilities.MStar
         """
         # make sure invalid raises proper exception
         self.assertRaises(IOError,redmapper.utilities.MStar,'blah','junk')
@@ -66,20 +69,26 @@ class MStarTestCase(unittest.TestCase):
         # and against regressions...
         testing.assert_almost_equal(mstar,np.array([ 16.23748776,  17.85000035,  18.82812871,  19.58783337,  20.17514801]))
 
-class FunctionsTestCase(unittest.TestCase):
+class AstroToSphereTestCase(unittest.TestCase):
+    """
+    Tests of redmapper.utilities.astro_to_sphere
+    """
     def runTest(self):
         """
-        This tests the conversion between astronomical coordintates
-        (RA,DEC) to spherical coordinates (theta,phi). This is
-        implemented in the utilities.astro_to_sphere() function.
+        Test conversion of ra/dec to healpix spherical coordinates theta/phi
         """
         ra,dec = 40.1234, 55.9876
         testing.assert_almost_equal(redmapper.utilities.astro_to_sphere(ra,dec),np.array([ 0.5936,  0.7003]),decimal=4)
-        #Need a test for chisq_pdf
-        #TO DO
+
 
 class CicTestCase(unittest.TestCase):
+    """
+    Tests of redmapper.utilities.cic cloud-in-cell code.
+    """
     def runTest(self):
+        """
+        Run tests on redmapper.utilities.cic
+        """
         incat = fitsio.read('data_for_tests/test_cic_small.fits', ext=1)
 
         posx = incat[0]['POSX']
@@ -94,7 +103,6 @@ class CicTestCase(unittest.TestCase):
         avfield = redmapper.utilities.cic(value, posx, nx, posy, ny, posz, nz, average=True)
         testing.assert_almost_equal(field, incat[0]['FIELD'], decimal=6)
         testing.assert_almost_equal(avfield, incat[0]['AVFIELD'], decimal=6)
-
 
 
 # copy this for a new utility test

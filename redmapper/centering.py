@@ -1,3 +1,11 @@
+"""Classes to compute cluster centers with different algorithms.
+
+This file contains the generic centering class and various different
+implementations of different centering algorithms.  The main algorithm is
+CenteringWcenZred, but others are included as part of the centering training
+procedure.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -10,10 +18,20 @@ from .utilities import interpol
 
 class Centering(object):
     """
-    Class for computing cluster centers
+    Generic centering base class for computing cluster centers.
     """
 
     def __init__(self, cluster, zlambda_corr=None):
+        """
+        Instantiate a Centering object for a cluster.
+
+        Parameters
+        ----------
+        cluster: `redmapper.Cluster`
+           Cluster to compute centering
+        zlambda_corr: `redmapper.ZlambdaCorrectionPar`, optional
+           z_lambda correction parameters, if desired.  Default is None.
+        """
         # Reference to the cluster; may need to copy
         self.cluster = cluster
 
@@ -41,11 +59,34 @@ class Centering(object):
         self.p_c = np.zeros(self.config.percolation_maxcen)
 
     def find_center(self):
+        """
+        Stub to override to find center
+        """
         return False
 
 class CenteringBCG(Centering):
+    """
+    Centering class using the brightest cluster galaxy (BCG) algorithm.
+    """
 
     def find_center(self):
+        """
+        Find the center using the CenteringBCG algorithm.
+
+        This algorithm takes the brightest member with pmem > 0.8 and calls it
+        the central galaxy.
+
+        Will set self.maxind (index of best center); self.ra, self.dec
+        (position of best center); self.ngood (number of good candidates);
+        self.index[:] (indices of all the candidates); self.p_cen[:] (pcen
+        centering probabilities); self.q_cen[:] (qcen unused miss
+        probabilities); self.p_sat[:] (p_sat satellite probabilities).
+
+        Returns
+        -------
+        success: `bool`
+           True when a center is successfully found. (Always True).
+        """
         # This is somewhat arbitrary, and is not yet configurable
         pmem_cut = 0.8
 
@@ -70,8 +111,33 @@ class CenteringBCG(Centering):
         return True
 
 class CenteringWcenZred(Centering):
+    """
+    Centering class using the "wcen-zred" algorithm.
+
+    This algorithm computes the primary centering likelihood algorithm by
+    computing the connectivity of the members, as well as ensuring
+    consistency between zred of the candidates and the cluster redshift.
+    """
 
     def find_center(self):
+        """
+        Find the center using the CenteringWcenZred algorithm.
+
+        This algorithm computes the primary centering likelihood algorithm by
+        computing the connectivity of the members, as well as ensuring
+        consistency between zred of the candidates and the cluster redshift.
+
+        Will set self.maxind (index of best center); self.ra, self.dec
+        (position of best center); self.ngood (number of good candidates);
+        self.index[:] (indices of all the candidates); self.p_cen[:] (pcen
+        centering probabilities); self.q_cen[:] (qcen unused miss
+        probabilities); self.p_sat[:] (p_sat satellite probabilities).
+
+        Returns
+        -------
+        success: `bool`
+           True when a center is successfully found. (Always True).
+        """
         # These are the galaxies considered as candidate centers
         use, = np.where((self.cluster.neighbors.r < self.cluster.r_lambda) &
                         (self.cluster.neighbors.pfree >= self.config.percolation_pbcg_cut) &
@@ -270,9 +336,30 @@ class CenteringWcenZred(Centering):
         return True
 
 class CenteringRandom(Centering):
+    """
+    Centering class using the random-position algorithm.
+
+    This is used for filter calibration.
+    """
 
     def find_center(self):
+        """
+        Find the center using the CenteringRandom algorithm.
 
+        This algorithm takes a random position within cluster r_lambda and
+        calls it the center.  It is not a very good centering algorithm.
+
+        Will set self.maxind (index of best center); self.ra, self.dec
+        (position of best center); self.ngood (number of good candidates);
+        self.index[:] (indices of all the candidates); self.p_cen[:] (pcen
+        centering probabilities); self.q_cen[:] (qcen unused miss
+        probabilities); self.p_sat[:] (p_sat satellite probabilities).
+
+        Returns
+        -------
+        success: `bool`
+           True when a center is successfully found. (Always True).
+        """
         r = self.cluster.r_lambda * np.sqrt(np.random.random(size=1))
         phi = 2. * np.pi * np.random.random(size=1)
 
@@ -297,9 +384,31 @@ class CenteringRandom(Centering):
 
 
 class CenteringRandomSatellite(Centering):
+    """
+    Centering class using the random-satellite algorithm.
+
+    This is used for filter calibration.
+    """
 
     def find_center(self):
+        """
+        Find the center using the CenteringRandomSatellite algorithm.
 
+        This algorithm takes a random member (weighted by member pmem) and
+        calls it the center.  It is not a very good centering algorithm (but
+        better than pure random!)
+
+        Will set self.maxind (index of best center); self.ra, self.dec
+        (position of best center); self.ngood (number of good candidates);
+        self.index[:] (indices of all the candidates); self.p_cen[:] (pcen
+        centering probabilities); self.q_cen[:] (qcen unused miss
+        probabilities); self.p_sat[:] (p_sat satellite probabilities).
+
+        Returns
+        -------
+        success: `bool`
+           True when a center is successfully found. (Always True).
+        """
         st = np.argsort(self.cluster.neighbors.pmem)[::-1]
 
         pdf = self.cluster.neighbors.pmem[st]

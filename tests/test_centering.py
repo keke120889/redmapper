@@ -19,8 +19,15 @@ from redmapper import ZlambdaCorrectionPar
 
 
 class CenteringTestCase(unittest.TestCase):
+    """
+    Test application of the centering models (CenteringWcenZred, CenteringBCG,
+    CenteringRandom, CenteringRandomSatelliate).
+    """
 
     def test_wcenzred(self):
+        """
+        Test running of CenteringWcenZred.
+        """
         file_path = 'data_for_tests'
 
         cluster = self._setup_cluster()
@@ -42,8 +49,9 @@ class CenteringTestCase(unittest.TestCase):
         testing.assert_array_equal(cent.index, tempcat[0]['USE'][tempcat[0]['GOOD']])
 
     def test_bcg(self):
-        # Also will need to test BCG centering!
-
+        """
+        Test running of CenteringBcg.
+        """
         cluster = self._setup_cluster()
 
         cent = CenteringBCG(cluster)
@@ -58,6 +66,9 @@ class CenteringTestCase(unittest.TestCase):
         testing.assert_almost_equal(cent.p_sat[0], 0.0)
 
     def test_random(self):
+        """
+        Test running of CenteringRandom.
+        """
 
         random.seed(seed=12345)
 
@@ -75,6 +86,9 @@ class CenteringTestCase(unittest.TestCase):
         testing.assert_almost_equal(cent.p_sat[0], 0.0)
 
     def test_randsat(self):
+        """
+        Test running of CenteringRandomSatellite.
+        """
 
         random.seed(seed=12345)
 
@@ -94,6 +108,9 @@ class CenteringTestCase(unittest.TestCase):
         testing.assert_almost_equal(cent.p_sat[0], 0.0)
 
     def _setup_cluster(self):
+        """
+        Set up the cluster to run through the centering code.
+        """
         file_path = 'data_for_tests'
 
         cluster = Cluster()

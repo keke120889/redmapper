@@ -1,3 +1,7 @@
+"""Classes and routines for simple fits to galaxy catalog depth.
+
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -8,9 +12,25 @@ import scipy.optimize
 
 
 class DepthFunction(object):
-    """Function for fitting the depth.
+    """
+    Class to implement function for fitting depth.
+
     """
     def __init__(self,mag,magErr,zp,nSig):
+        """
+        Instantiate DepthFunction class.
+
+        Parameters
+        ----------
+        mag: `np.array`
+           Float array of magnitudes
+        magErr: `np.array`
+           Float array of magnitude errors
+        zp: `float`
+           Reference zeropoint
+        nSig: `float`
+           Number of sigma to compute depth limit
+        """
         self.const = 2.5/np.log(10.0)
 
         self.mag = mag
@@ -21,6 +41,19 @@ class DepthFunction(object):
         self.max_p1 = 1e10
 
     def __call__(self, x):
+        """
+        Compute total cost function for f(x)
+
+        Parameters
+        ----------
+        x: `np.array`, length 2
+           Float array of fit parameters
+
+        Returns
+        -------
+        t: `float`
+           Total cost function at parameters x
+        """
 
         if ((x[1] < 0.0) or
             (x[1] > self.max_p1)):
@@ -46,6 +79,25 @@ class DepthFunction(object):
 # FIXME: want to be able to reuse code from utilities!
 def applyErrorModel(pars, magIn, noNoise=False, lnscat=None):
     """
+    Apply error model to set of magnitudes
+
+    Parameters
+    ----------
+    pars: `np.ndarray`
+       Error parameter structure
+    magIn: `np.array`
+       Float array with input magnitudes
+    noNoise: `bool`, optional
+       Do not apply noise?  Default is False
+    lnscat: `float`, optional
+       Additional log-scatter.  Default is None.
+
+    Returns
+    -------
+    mag: `np.array`
+       Float array of magnitudes
+    magErr: `np.array`
+       Float array of magnitude errors
     """
 
     tFlux = pars['EXPTIME'][0]*10.**((magIn - pars['ZP'][0])/(-2.5))
@@ -69,6 +121,39 @@ def applyErrorModel(pars, magIn, noNoise=False, lnscat=None):
 def calcErrorModel(_mag, _magErr, nSig=10.0, doPlot=False, nTrial=100, calcErr=False,
                    useBoot=False, snCut=5.0, zp=22.5, oldIDL=False):
     """
+    Caluclate the error model for a given list of magnitudes and errors
+
+    Parameters
+    ----------
+    _mag: `np.array`
+       Float array of input magnitudes
+    _magErr: `np.array`
+       Float array of input magnitude errors
+    nSig: `float`, optional
+       Number of sigma to compute maglim.  Default is 10.0
+    doPlot: `bool`, optional
+       Plot results.  Default is False.
+    nTrial: `int`, optional
+       Number of trials for bootstrap errors.  Default is 100.
+    calcErr: `bool`, optional
+       Calculate parameter errors?  Default is False.
+    useBoot: `bool`, optional
+       Use bootstrap error estimation?  Default is False.
+    snCut: `float`, optional
+       Minimum signal/noise to use in the fit.  Default is 5.0
+    zp: `float`, optional
+       Default reference zeropoint.  Default is 22.5.
+    oldIDL: `bool`, optional
+       Use older (worse) IDL compatibility mode.  Default is False.
+
+    Returns
+    -------
+    pars: `np.ndarray`
+       Error model parameters
+    val: `int`
+       0 for success.  Alyways 0.
+    fig: `matplotlib.Figure`, if doPlot is True
+    ax: `matplotlib.Axis`, if doPlot is True
     """
     const = 2.5/np.log(10.)
 
@@ -241,8 +326,31 @@ def calcErrorModel(_mag, _magErr, nSig=10.0, doPlot=False, nTrial=100, calcErr=F
 
 class DepthLim(object):
     """
+    Class to compute depth limits from data, if external map is not available.
+
+    This class is used to compute depth in realtime from data.
     """
     def __init__(self, mag, mag_err, max_gals=100000):
+        """
+        Instantiate DepthLim object.
+
+        Upon initialization this will compute default global parameters that
+        will be used if a fit cannot be performed.
+
+        Parameters
+        ----------
+        mag: `np.array`
+           Float array of magnitudes from a large region of sky
+        mag_err: `np.array`
+           Float array of magnitude errors from a large region of sky
+        max_gals: `int`
+           Maximum number of galaxies to sample to get global default fit.
+
+        Raises
+        ------
+        RuntimeError:
+           If a global fit cannot be performed.
+        """
 
         # This gets a global fit, to use as a fallback
 
@@ -258,6 +366,19 @@ class DepthLim(object):
 
     def calc_maskdepth(self, maskgals, mag, mag_err):
         """
+        Calculate mask depth empirically for a set of galaxies.
+
+        This will modify maskgals.limmag, maskgals.exptime, maskgals.zp,
+        maskgals.nsig to the fit values (or global if fit cannot be performed).
+
+        Parameters
+        ----------
+        maskgals: `redmapper.Catalog`
+           maskgals catalog
+        mag: `np.array`
+           Float array of local magnitudes
+        mag_err: `np.array`
+           Float array of local magnitude errors
         """
 
         limpars, fail = calcErrorModel(mag, mag_err, calcErr=False)

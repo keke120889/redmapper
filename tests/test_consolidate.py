@@ -15,9 +15,13 @@ from redmapper.pipeline import RedmapperConsolidateTask
 from redmapper import Configuration, ClusterCatalog
 
 class ConsolidateTestCase(unittest.TestCase):
+    """
+    Test the parallelized cluster catalog consolidation code in
+    redmapper.pipeline.RedmapperConsolidateTask
+    """
     def runTest(self):
         """
-        Test consolidation
+        Test redmapper.pipeline.RedmapperConsolidateTask
         """
 
         file_path = "data_for_tests"

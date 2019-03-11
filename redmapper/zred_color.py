@@ -1,3 +1,6 @@
+"""Classes to compute zred with a color-based red sequence model.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -12,10 +15,29 @@ from .utilities import interpol
 
 class ZredColor(object):
     """
+    Class to compute zred galaxy photometric redshift using a color-based
+    red-sequence parametrization.
     """
 
     def __init__(self, zredstr, sigint=0.001, do_correction=True,
                  use_photoerr=True, zrange=None):
+        """
+        Instantiate a ZredColor object.
+
+        Parameters
+        ----------
+        zredstr: `redmapper.RedSequenceColorPar`
+           Red sequence parametrization
+        sigint: `float`, optional
+           Intrinsic scatter floor.  Default is 0.001.
+        do_correction: `bool`, optional
+           Apply zred correction terms?  Default is True.
+        use_photoerr: `bool`, optional
+           Use photometric errors in computing zred?  Default is True.
+        zrange: `list`, optional
+           Redshift range.  Useful for testing.  Default is None (use
+           zredstr redshift range).
+        """
         self.zredstr = zredstr
 
         self.sigint = sigint
@@ -37,6 +59,14 @@ class ZredColor(object):
 
     def compute_zreds(self, galaxies):
         """
+        Compute zreds for a catalog of galaxies.
+
+        Will set galaxies.zred, galaxies.zred_e, etc.
+
+        Parameters
+        ----------
+        galaxies: `redmapper.GalaxyCatalog`
+           Catalog of galaxies to compute zred.
         """
 
         for galaxy in galaxies:
@@ -67,6 +97,16 @@ class ZredColor(object):
 
     def compute_zred(self, galaxy, no_corrections=False):
         """
+        Compute zred for a single galaxy.
+
+        Will set galaxy.zred, galaxy.zred_e, etc.
+
+        Parameters
+        ----------
+        galaxy: `redmapper.Galaxy`
+           Galaxy to compute zred
+        no_corrections: `bool`, optional
+           Do not apply redshift corrections.  Default is False.
         """
 
         lndist = np.zeros(self.nz) - 1e12
@@ -225,6 +265,21 @@ class ZredColor(object):
 
     def _calculate_lndist(self, galaxy, zbins):
         """
+        Calculate the log-likelihood for a list of redshift bins.
+
+        Parameters
+        ----------
+        galaxy: `redmapper.Galaxy`
+           Galaxy to compute likelihoods
+        zbins: `np.array`
+           Integer array of redshift bins
+
+        Returns
+        -------
+        lndist: `np.array`
+           Log-likelihood for the redshift bins
+        chisq: `np.array`
+           Fit chi-squared for the redshift bins
         """
 
         # Note we need to deal with photoerr...
@@ -252,6 +307,12 @@ class ZredColor(object):
 
     def _reset_bad_values(self, galaxy):
         """
+        Reset all galaxy zred values to "bad" (-1s)
+
+        Parameters
+        ----------
+        galaxy: `redmapper.Galaxy`
+           Galaxy to set zred values.
         """
 
         galaxy.lkhd = -1000.0

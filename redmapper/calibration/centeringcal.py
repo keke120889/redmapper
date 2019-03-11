@@ -1,3 +1,6 @@
+"""Classes related to calibrating the centering model
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -16,13 +19,37 @@ from ..galaxy import GalaxyCatalog
 
 class WcenFgFitter(object):
     """
+    Class to fit the wcen foreground or satellite model.
     """
     def __init__(self, w, lscale):
+        """
+        Instantiate a WcenFgFitter
+
+        Parameters
+        ----------
+        w: `np.array`
+           Float array of w values
+        lscale `float`
+           Richness scaled by richness pivot value (lambda / lambda_pivot)
+        """
         self._w = w
         self._lscale = lscale
 
     def fit(self, p0):
         """
+        Fit the foreground centering parameters
+
+        Parameters
+        ----------
+        p0: `list`
+           Initial parameters
+           p0[0]: log-mean w of foreground galaxies
+           p0[1]: log-sigma w of foreground galaxies
+
+        Returns
+        -------
+        pars: `list`
+           Best-fit parameters
         """
 
         pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
@@ -31,6 +58,18 @@ class WcenFgFitter(object):
 
     def __call__(self, pars):
         """
+        Compute the (negative) likelihood cost function to minimize.
+
+        Parameters
+        ----------
+        pars: `list`
+           pars[0]: log-mean w of foreground galaxies
+           pars[1]: log-sigma w of foreground galaxies
+
+        Returns
+        -------
+        t: `float`
+           Negative likelihood to minimize
         """
         sig = pars[1] * self._lscale
 
@@ -44,8 +83,33 @@ class WcenFgFitter(object):
 
 class WcenCFitter(object):
     """
+    Class to fit the mean magnitude model of the central galaxies.
     """
     def __init__(self, pcen, psat, mstar, lamscale, refmag, cwt, phi1, bcounts):
+        """
+        Instantiate a WcenCFitter
+
+        Parameters
+        ----------
+        pcen: `np.array`
+           Float array of probability of being the correct center
+        psat: `np.array`
+           Float array of probability of being a satellite galaxy
+        mstar: `np.array`
+           Float array of mstar for the galaxies
+        lamscale: `np.array`
+           Float array of lambda/pivot for the galaxies
+        refmag: `np.array`
+           Float array of Total magnitude in the reference band
+        cwt: `np.array`
+           Float array of chi-squared weight from chisq_pdf()
+        phi1: `np.array`
+           Float array of Gaussian pdf of brightest galaxy sampled
+           from a Schechter function
+        bcounts: `np.array`
+           Float array of background probability, assuming uniform
+           background (not nfw)
+        """
         self._pcen = pcen
         self._psat = psat
         self._mstar = mstar
@@ -57,6 +121,20 @@ class WcenCFitter(object):
 
     def fit(self, p0):
         """
+        Fit the mean magnitude model
+
+        Parameters
+        ----------
+        p0: `list`
+           p0[0]: Delta0
+           p0[1]: Delta1
+           p0[2]: sigma_m
+           mean mag mbar = mstar + Delta0 + delta1 * log(lambda / pivot)
+
+        Returns
+        -------
+        pars: `list`
+           Best fit parameters
         """
 
         pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
@@ -65,6 +143,20 @@ class WcenCFitter(object):
 
     def __call__(self, pars):
         """
+        Compute the (negative) likelihood cost function to minimize.
+
+        Parameters
+        ----------
+        pars: `list`
+           pars[0]: Delta0
+           pars[1]: Delta1
+           pars[2]: sigma_m
+           mean mag mbar = mstar + Delta0 + delta1 * log(lambda / pivot)
+
+        Returns
+        -------
+        t: `float`
+           Negative likelihood to minimize
         """
         mbar = self._mstar + pars[0] + pars[1] * self._lamscale
         phicen = (1./(np.sqrt(2.*np.pi) * pars[2])) * np.exp(-0.5*(self._refmag - mbar)**2. / (pars[2]**2.))
@@ -80,8 +172,27 @@ class WcenCFitter(object):
 
 class WcenCwFitter(object):
     """
+    Class to fit f(w) model for central galaxies
     """
     def __init__(self, pcen, psat, wcen, ffg, fsat, lscale):
+        """
+        Instantiate a WcenCwFitter
+
+        Parameters
+        ----------
+        pcen: `np.array`
+           Float array of probability of being the correct center
+        psat: `np.array`
+           Float array of probability of being a satellite galaxy
+        wcen: `np.array`
+           Float array of w connectivity from previous iteration
+        ffg: `np.array`
+           Float array of f_fg(w) for foreground galaxies
+        fsat: `np.array`
+           Float array of f_sat(w) for satellite galaxies
+        lscale: `np.array`
+           Float array of lambda/pivot for the galaxies
+        """
         self._pcen = pcen
         self._psat = psat
         self._wcen = wcen
@@ -91,6 +202,18 @@ class WcenCwFitter(object):
 
     def fit(self, p0):
         """
+        Fit the model
+
+        Parameters
+        ----------
+        p0: `list`
+           p0[0]: wcen_mean
+           p0[1]: wcen_sigma
+
+        Returns
+        -------
+        pars: `list`
+           Best fit parameters
         """
 
         pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-5, ftol=1e-5)
@@ -99,6 +222,18 @@ class WcenCwFitter(object):
 
     def __call__(self, pars):
         """
+        Compute the (negative) likelihood cost function to minimize.
+
+        Parameters
+        ----------
+        pars: `list`
+           pars[0]: wcen_mean
+           pars[1]: wcen_sigma
+
+        Returns
+        -------
+        t: `float`
+           Negative likelihood to minimize
         """
         sig = pars[1] * self._lscale
 
@@ -113,9 +248,27 @@ class WcenCwFitter(object):
 
 class WcenCalibrator(object):
     """
+    Class to calibrate the parameters of the wcen centering model.
     """
 
     def __init__(self, config, iteration, randcatfile=None, randsatcatfile=None):
+        """
+        Instantiate a WcenCalibrator
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        iteration: `int`
+           Iteration number.  If iteration==1, then must set randcatfile and
+           randsatfile to calibrate foreground and satellite functions
+        randcatfile: `str`, optional
+           Catalog file with richness information on random (foreground)
+           points. Default is None, but must be set if iteration==1.
+        randsatcatfile: `str`, optional
+           Catalog file with richness information on randomly selected
+           satellites.  Default is None, but must be set if iteration==1.
+        """
         self.config = config
 
         if iteration == 1:
@@ -132,6 +285,12 @@ class WcenCalibrator(object):
 
     def run(self, testing=False):
         """
+        Run the wcen calibration routine.
+
+        Parameters
+        ----------
+        testing: `bool`, optional
+           Run in fast testing mode, for unit tests.  Default is False.
         """
 
         # Calibrate the brightest galaxy from the schechter function
@@ -281,8 +440,25 @@ class WcenCalibrator(object):
 
     def _schechter_montecarlo_calib(self, testing=False):
         """
-        Calibrate the brightest galaxy sampled from a schechter function with a simple
-        monte carlo
+        Calibrate the brightest galaxy sampled from a schechter function with a
+        simple monte carlo.
+
+        m1mstar is the magnitude of the brightest galaxy sampled from a
+        schechter function minus mstar.
+
+        The functional form of the parametrizations are:
+
+        mmstar1 = phi1_mmstar_m * log(lambda/pivot)**phi1_mmstar_slope
+        msig1 = phi1_msig_m * log(lambda/pivot)**phi1_msig_slope
+
+        Such that if you want to sample from the brightest galaxy of a
+        schechter function for a given richness, you sample from a Gaussian of
+        mean mmstar1 and sigma msig1.
+
+        Parameters
+        ----------
+        testing: `bool`, optional
+           Run in testing mode.  Used for unit tests.  Default is False.
         """
 
         if testing:

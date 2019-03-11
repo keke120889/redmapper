@@ -1,3 +1,8 @@
+"""Classes for describing geometry masks in redmapper.
+
+This file contains classes for reading and using geometry masks.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -16,38 +21,66 @@ from .utilities import get_hpmask_subpix_indices
 
 class Mask(object):
     """
-    A super-class for (pixelized) footprint masks
-
-    This should not be instantiated directly (yet).
-
-    parameters
-    ----------
-    config: Config object
-       configuration
+    A super-class to describe geometry footpint masks.
     """
 
     # note: not sure how to organize this.
     #   We need a routine that looks at the mask_mode and instantiates
     #   the correct type.  How is this typically done?
 
-    def __init__(self, config):
+    def __init__(self, config, include_maskgals=True):
+        """
+        Instantiate a placeholder geometry mask that will describe all galaxies
+        as in the mask.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        include_maskgals: `bool`, optional
+           Also read in the maskgals.  Default is True.
+        """
         self.config = config
 
         # This will generate a maskgalfile if necessary
-        self.read_maskgals(config.maskgalfile)
+        if include_maskgals:
+            self.read_maskgals(config.maskgalfile)
 
     def compute_radmask(self, ra, dec):
+        """
+        Compute the geometric mask value at a list of positions.
+
+        Parameters
+        ----------
+        ra: `np.array`
+           Float array of right ascensions
+        dec: `np.array`
+           Float array of declinations
+
+        Returns
+        -------
+        maskvals: `np.array`
+           Bool array of True ("in the footprint") for each ra/dec.
+        """
         _ra = np.atleast_1d(ra)
         _dec = np.atleast_1d(dec)
 
         if (_ra.size != _dec.size):
             raise ValueError("ra, dec must be same length")
 
-        radmask = np.ones(_ra.size, dtype=np.bool_)
-        return radmask
+        maskvals = np.ones(_ra.size, dtype=np.bool_)
+        return maskvals
 
     def read_maskgals(self, maskgalfile):
         """
+        Read the "maskgal" file for monte carlo estimation of coverage.
+
+        Note that this reads the file into the object.
+
+        Parameters
+        ----------
+        maskgalfile: `str`
+           Filename of maskgal file with monte carlo galaxies
         """
 
         make_maskgals = False
@@ -70,6 +103,15 @@ class Mask(object):
 
     def select_maskgals_sample(self, maskgal_index=None):
         """
+        Select a subset of maskgals by sampling.
+
+        This will set self.maskgals to the subset in question.
+
+        Parameters
+        ----------
+        maskgal_index: `int`, optional
+           Pre-selected index to sample from (for reproducibility).
+           Default is None (select randomly).
         """
 
         if maskgal_index is None:
@@ -82,6 +124,12 @@ class Mask(object):
 
     def _gen_maskgals(self, maskgalfile):
         """
+        Internal method to generate the maskgal monte carlo galaxies.
+
+        Parameters
+        ----------
+        maskgalfile: `str`
+           Name of maskgal file to generate.
         """
 
         minrad = np.clip(np.floor(10.*self.config.percolation_r0 * (3./100.)**self.config.percolation_beta) / 10., None, 0.5)
@@ -212,18 +260,13 @@ class Mask(object):
 
     def set_radmask(self, cluster):
         """
-        Assign mask (0/1) values to maskgals for a given cluster
+        Assign mask (0: out; 1: in) values to self.maskgals.mark for a given cluster.
 
-        parameters
+        Parameters
         ----------
-        cluster: Cluster object
-
-        results
-        -------
-        sets maskgals.mark
-
+        cluster: `redmapper.Cluster`
+           Cluster to get position/redshift/scaling
         """
-
         # note this probably can be in the superclass, no?
         ras = cluster.ra + self.maskgals.x/(cluster.mpc_scale)/np.cos(np.radians(cluster.dec))
         decs = cluster.dec + self.maskgals.y/(cluster.mpc_scale)
@@ -231,23 +274,23 @@ class Mask(object):
 
     def calc_maskcorr(self, mstar, maxmag, limmag):
         """
-        Obtain mask correction c parameters. From calclambda_chisq_calc_maskcorr.pro
+        Calculate mask correction cpars, a third-order polynomial which describes the
+        mask fraction of a cluster as a function of radius.
 
-        parameters
+        Parameters
         ----------
-        maskgals : Object holding mask galaxy parameters
-        mstar    :
-        maxmag   : Maximum magnitude
-        limmag   : Limiting Magnitude
-        config  : Configuration object
-                    containing configuration info
+        mstar: `float`
+           mstar (mag) at cluster redshift
+        maxmag: `float`
+           maximum magnitude for use in luminosity function filter
+        limmag: `float`
+           Survey or local limiting magnitude
 
-        returns
+        Returns
         -------
-        cpars
-
+        cpars: `np.array`
+           Third-order polynomial parameters describing maskfrac as function of radius
         """
-
         mag_in = self.maskgals.m + mstar
         self.maskgals.refmag = mag_in
 
@@ -260,7 +303,7 @@ class Mask(object):
             mag = mag_in
             mag_err = 0*mag_in
             raise ValueError('Survey limiting magnitude <= 0!')
-            #Raise error here as this would lead to divide by zero if called.
+            # Raise error here as this would lead to divide by zero if called.
 
         if (self.maskgals.w[0] < 0) or (self.maskgals.w[0] == 0 and
             np.amax(self.maskgals.m50) == 0):
@@ -279,16 +322,22 @@ class Mask(object):
 
 class HPMask(Mask):
     """
-    A class to use a healpix mask (mask_mode == 3)
+    A class to use a redmapper healpix geometric mask.
 
-    parameters
-    ----------
-    config: Config object
-        Configuration object with maskfile
-
+    This is described as mask_mode == 3 for compatibility with the old IDL code.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
+        """
+        Instantiate an HPMask
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object.  Reads mask from config.maskfile.
+        include_maskgals: `bool`, optional
+           Also read in the maskgals.  Default is True.
+        """
         # record for posterity
         self.maskfile = config.maskfile
         maskinfo, hdr = fitsio.read(config.maskfile, ext=1, header=True, upper=True)
@@ -322,21 +371,26 @@ class HPMask(Mask):
         except AttributeError:
             self.fracgood_float = 0
             self.fracgood[hpix_ring[muse] - offset] = 1
-        super(HPMask, self).__init__(config)
+        super(HPMask, self).__init__(config, **kwargs)
 
     def compute_radmask(self, ra, dec):
         """
-        Determine if a given set of ra/dec points are in or out of mask
+        Compute the geometric mask value at a list of positions.
 
-        parameters
+        In the footprint is True, outside is False.
+
+        Parameters
         ----------
-        ra: array of doubles
-        dec: array of doubles
+        ra: `np.array`
+           Float array of right ascensions
+        dec: `np.array`
+           Float array of declinations
 
-        returns
+        Returns
         -------
-        radmask: array of booleans
-
+        maskvals: `np.array`
+           Bool array of True (in footprint) and False (out of footprint) for
+           each ra/dec.
         """
         _ra  = np.atleast_1d(ra)
         _dec = np.atleast_1d(dec)
@@ -353,22 +407,23 @@ class HPMask(Mask):
         return radmask
 
 
-def get_mask(config):
+def get_mask(config, include_maskgals=True):
     """
     Convenience function to look at a config file and load the appropriate type of mask.
 
-    parameters
+    Uses config.mask_mode to determine mask type and config.maskfile for mask filename,
+
+    Parameters
     ----------
-    config: Config object
-        Configuration object with maskfile
+    config: `redmapper.Configuration`
+       Configuration object
     """
 
     if config.mask_mode == 0:
         # This is no mask!
         # Return a bare object with maskgal functionality
-        return Mask(config)
+        return Mask(config, include_maskgals=include_maskgals)
     elif config.mask_mode == 3:
         # This is a healpix mask
         #  (don't ask about 1 and 2)
-        return HPMask(config)
-
+        return HPMask(config, include_maskgals=include_maskgals)

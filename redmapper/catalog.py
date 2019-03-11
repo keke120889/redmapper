@@ -1,3 +1,10 @@
+"""Generic object and catalog classes for redmapper.
+
+This file contains classes to describe numpy wrappers which makes things look
+like the old idl code (for good or ill).  It also makes some things a bit more
+readable.
+"""
+
 import fitsio
 import esutil as eu
 import numpy as np
@@ -5,18 +12,22 @@ import itertools
 
 
 class DataObject(object):
-    """Abstract base class to encapsulate info from FITS files."""
+    """
+    Generic DataObject class.
+
+    This class wraps numpy ndarrays for more convenient use, and contains useful methods to saving/reading from fits files.
+    """
 
     def __init__(self, *arrays):
-        """Constructs DataObject from arbitrary number of ndarrays.
+        """
+        Instantiate a DataObject from an arbitrary number of numpy ndarrays
 
-        Each ndarray can have an arbitrary number of fields. Field
-        names should all be capitalized and words in multi-word field 
-        names should be separated by underscores if necessary. ndarrays
-        have a 'size' property---their sizes should all be equivalent.
+        Each ndarray can have an arbitrary number of fields.  Each ndarray must
+        have the same number of rows, and field names must be unique.
 
-        Args:
-            arrays (numpy.ndarray): ndarrays with equivalent sizes.
+        Parameters
+        ----------
+        *arrays: `np.ndarray` parameters
         """
         for array in arrays:
             self._lower_array(array)
@@ -24,23 +35,21 @@ class DataObject(object):
         if len(arrays) == 1:
             self._ndarray = arrays[0]
         else:
-            #self._ndarray = merge_arrays(arrays, flatten=True)
             self._ndarray = self._merge_arrays(arrays)
 
     @classmethod
     def from_fits_file(cls, filename, ext=1, rows=None):
         """
-        Constructs DataObject directly from FITS file.
+        Construct a DataObject from a fits file.
 
-        Makes use of Erin Sheldon's fitsio reading routine. The fitsio
-        package wraps cfitsio for maximum efficiency.
-
-        Args:
-            filename (string): the file path and name.
-            ext: optional extension (default == 1)
-
-        Returns:
-            DataObject, properly constructed.
+        Parameters
+        ----------
+        filename: `string`
+           Filename to read
+        ext: `int` or `string`, optional
+           Extension number or name.  Default is 1.
+        rows: `np.array`, optional
+           Row indices to read.  Default is None (read all rows).
         """
         array = fitsio.read(filename, ext=ext, rows=rows, lower=True, trim_strings=True)
         return cls(array)
@@ -48,12 +57,28 @@ class DataObject(object):
     @classmethod
     def from_fits_ext(cls, fits_ext):
         """
+        Construct a DataObject from a fitsio fits extension
+
+        Parameters
+        ----------
+        fits_ext: `fitsio.fitslib.TableHDU`
+           Fits extension table
         """
         array = fits_ext.read(upper=True)
         return cls(array)
 
     @classmethod
     def zeros(cls, size, dtype):
+        """
+        Construct a DataObject filled with all 0s.
+
+        Parameters
+        ----------
+        size: `int`
+           Size of DataObject
+        dtype: data-type
+           `np.dtype` description
+        """
         return cls(np.zeros(size, dtype=dtype))
 
     def __getattr__(self, attr):
@@ -72,16 +97,42 @@ class DataObject(object):
 
     @property
     def dtype(self):
-        """numpy.dtype: dtype associated with the DataObject."""
+        """
+        Return the numpy dtype associated with the DataObject.
+        """
         return self._ndarray.dtype
 
     def add_fields(self, newdtype):
+        """
+        Add new fields to an existing DataObject (all filled with zeros).
+        Modifications are done in-place.
+
+        Parameters
+        ----------
+        newdtype: data-type
+           `np.dtype` description
+        """
         array = np.zeros(self._ndarray.size, newdtype)
         self._lower_array(array)
-        #self._ndarray = merge_arrays([self._ndarray, array], flatten=True)
         self._ndarray = self._merge_arrays([self._ndarray, array])
 
     def to_fits_file(self, filename, clobber=False, header=None, extname=None, indices=None):
+        """
+        Save DataObject to a fits file.
+
+        Parameters
+        ----------
+        filename: `str`
+           Filename for output
+        clobber: `bool`, optional
+           Clobber existing file?  Default is False.
+        header: `fitsio.FITSHDR`, optional
+           Header to put on output file.  Default is None.
+        extname: `str`, optional
+           Extension name to put on output structure.  Default is None.
+        indices: `np.array`, optional
+           Indices of rows to output.  Default is None (output all).
+        """
         if self._ndarray.size == 1:
             temp_array = np.zeros(1, dtype=self._ndarray.dtype)
             temp_array[0] = self._ndarray
@@ -94,6 +145,17 @@ class DataObject(object):
 
     def _merge_arrays(self, arrays):
         """
+        Internal method to merge multiple `np.ndarray`s relatively efficiently.
+
+        Parameters
+        ----------
+        arrays: `list` of `np.ndarray`
+           Arrays to merge.
+
+        Returns
+        -------
+        merged_array: `np.ndarray`
+           Merged array
         """
 
         dtype = None
@@ -126,6 +188,13 @@ class DataObject(object):
         return merged_array
 
     def _lower_array(self, array):
+        """
+        Change all array names to lower case.
+
+        Parameters
+        ----------
+        array: `np.array`
+        """
         names = list(array.dtype.names)
         array.dtype.names = [n.lower() for n in names]
 
@@ -140,7 +209,6 @@ class DataObject(object):
     def __dir__(self):
         # lower case list of all the available variables
         # also need to know original __dir__!
-        #return [x.lower() for x in self._ndarray.dtype.names]
         return sorted(set(
                 dir(type(self)) +
                 self.__dict__.keys() +
@@ -148,18 +216,18 @@ class DataObject(object):
 
 
 class Entry(DataObject):
-    """Entries are extensions of DataObjects.
-
-    The __init__ method simply calls the 
-    constructor for DataObject after it has verified that
-    there is only a single entry being passed in.
     """
-
-    #def __init__(self, *arrays):
-    #    if any([arr.size != 1 for arr in arrays]):
-    #        raise ValueError("Input arrays must have length one.")
-    #    super(Entry, self).__init__(*arrays)
+    An Entry is an extension of a DataObject.  It is intended to be used as a
+    single Entry in a Catalog object.
+    """
     def __init__(self, array):
+        """
+        Instantiate an Entry.
+
+        Parameters
+        ----------
+        array: `np.ndarray` of length 1
+        """
         if array.size != 1:
             raise ValueError("Input array must have length one.")
         # If this is an array of length 1, we want it to be a scalar-ish
@@ -168,45 +236,68 @@ class Entry(DataObject):
         else:
             super(Entry, self).__init__(array[0])
 
-    @classmethod
-    def from_dict(cls, dict): pass
+    # @classmethod
+    # def from_dict(cls, dict): pass
 
     def add_fields(self, newdtype):
+        """
+        Add fields to an Entry.
+
+        Parameters
+        ----------
+        newdtype: data-type
+           `np.dtype` description
+        """
         array = np.zeros(self._ndarray.size, newdtype)
         self._lower_array(array)
-        #self._ndarray = merge_arrays([self._ndarray, array], flatten=True)[0]
         self._ndarray = self._merge_arrays([self._ndarray, array])[0]
-
 
     def __getattr__(self, attr):
         try:
-            #return self._ndarray[attr.lower()][0]
             return self._ndarray[attr.lower()]
         except:
             return object.__getattribute__(self, attr)
 
 
 class Catalog(DataObject):
-    """Catalogs are extensions of DataObjects.
-
-    Catalogs are composed of may Entry objects.
-    Tom - I am not sure that this object is complete. TODO
-    Eli - It might be.  The tricks here are so you can access
-           these with "catalog.key" rather than "catalog['KEY']"
+    """
+    A Catalog is an extension of a DataObject.  It can be decomposed into
+    individual Entry objects.  This class is used to describe catalogs of all
+    sorts, including galaxy catalogs, cluster catalogs, and other ndarrays.
     """
 
     entry_class = Entry
 
     @property
-    def size(self): return self._ndarray.size
+    def size(self):
+        """
+        Return the size of the Catalog.
+        """
+        return self._ndarray.size
 
     def append(self, append_cat):
+        """
+        Append a number of rows to the catalog, in-place.
+
+        Parameters
+        ----------
+        append_cat: `redmapper.Catalog` or `np.ndarray`
+           Catalog to append
+        """
         if isinstance(append_cat, Catalog):
             self._ndarray = np.append(self._ndarray, append_cat._ndarray)
         else:
             self._ndarray = np.append(self._ndarray, append_cat)
 
     def extend(self, n_new):
+        """
+        Extend catalog with zero-filled rows, in-place.
+
+        Parameters
+        ----------
+        n_new: `int`
+           Number of new rows to append
+        """
         temp = np.zeros(n_new, dtype=self._ndarray.dtype)
         self._ndarray = np.append(self._ndarray, temp)
 

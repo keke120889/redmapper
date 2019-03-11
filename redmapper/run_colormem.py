@@ -1,3 +1,9 @@
+"""Class to compute richnesses on a catalog by fitting a linear red-sequence
+model, for use in the first part of training before a red-sequence model has
+been found.
+
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -32,15 +38,35 @@ from .utilities import CubicSpline
 
 class RunColormem(ClusterRunner):
     """
+    The RunColormem class is derived from ClusterRunner, and will compute a
+    richness and membership probabilities using only an individual color per
+    cluster.  The central galaxy is assumed to be close to the mean color of
+    the cluster, and the red sequence is fit in a single color-magnitude space
+    for a first richness estimate.
     """
 
     def _additional_initialization(self, **kwargs):
+        """
+        Additional initialization for RunColormem
+        """
         self.runmode = "calib_colormem"
         self.filetype = "colormem"
         self.use_colorbkg = True
         self.use_parfile = False
 
+    def run(self, *args, **kwargs):
+        """
+        Run a catalog through RunColormem.
+
+        Loop over all clusters and perform RunColormem computations on each cluster.
+        """
+
+        return super(RunColormem, self).run(*args, **kwargs)
+
     def _more_setup(self, *args, **kwargs):
+        """
+        More setup for RunColormem.
+        """
         self.rmask_0 = self.config.calib_colormem_r0
         self.rmask_beta = self.config.calib_colormem_beta
 
@@ -78,10 +104,21 @@ class RunColormem(ClusterRunner):
         self.doublerun = True
 
     def _doublerun_sort(self):
+        """
+        Sort the catalog for when doing a second pass with percolation masking.
+        """
         st = np.argsort(self.cat.Lambda)[::-1]
         self.cat = self.cat[st]
 
     def _process_cluster(self, cluster):
+        """
+        Process a single cluster with RunColormem.
+
+        Parameters
+        ----------
+        cluster: `redmapper.Cluster`
+           Cluster to compute richness.
+        """
 
         bad = False
 
@@ -116,6 +153,12 @@ class RunColormem(ClusterRunner):
 
     def _postprocess(self):
         """
+        RunColormem post-processing.
+
+        This will select good clusters that are above the configured thresholds
+        (self.config.calib_colormem_minlambda), and smooth the member redshifts
+        with a configurable gaussian kernel
+        (self.config.calib_colormem_smooth).
         """
 
         use, = np.where((self.cat.Lambda/self.cat.scaleval >= self.config.calib_colormem_minlambda) & (self.cat.scaleval > 0.0) & (self.cat.maskfrac < self.config.max_maskfrac))
@@ -129,6 +172,10 @@ class RunColormem(ClusterRunner):
 
     def output_training(self):
         """
+        Output the training members and catalog.
+
+        Member catalog is given by config.zmemfile, and cluster catalog is of
+        'colorcat' type.
         """
 
         use, = np.where(self.members.pcol > self.config.calib_pcut)

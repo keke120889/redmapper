@@ -1,3 +1,7 @@
+"""Classes to describe a redmapper depth map.
+
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -13,17 +17,28 @@ from .catalog import Catalog, Entry
 
 class DepthMap(object):
     """
-    A class to use a healpix depth map
+    A class to use a healpix-based redmapper depth map.
 
-    parameters
+    FIXME: Put a description of the format here.
+
+    Parameters
     ----------
-    config: Config object
-        Configuration object with depthfile
-    depthfile: string, optional
-        Override config depthfile
-
+    config: `redmapper.Configuration`
+       Configuration object, with config.depthfile set
+    depthfile: `str`, optional
+       Name of depthfile to use instead of config.depthfile
     """
     def __init__(self, config, depthfile=None):
+        """
+        Instantiate a healpix-based redmapper depth map.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object, with config.depthfile set
+        depthfile: `str`, optional
+           Name of depthfile to use instead of config.depthfile
+        """
         # record for posterity
         if depthfile is None:
             self.depthfile = config.depthfile
@@ -96,6 +111,23 @@ class DepthMap(object):
 
     def get_depth_values(self, ras, decs):
         """
+        Get the depth values for a set of positions.
+
+        Parameters
+        ----------
+        ras: `np.array`
+           Float array of right ascensions
+        decs: `np.array`
+           Float array of declinations
+
+        Returns
+        -------
+        limmag: `np.array`
+           Limiting magnitude values
+        exptime: `np.array`
+           Effective exposure times
+        m50: `np.array`
+           50% completeness depth values.  Should be same as limmag for now.
         """
 
         theta = np.clip((90.0 - decs) * np.pi / 180., -np.pi, np.pi)
@@ -110,6 +142,19 @@ class DepthMap(object):
 
     def get_fracgoods(self, ras, decs):
         """
+        Get the fraction of good coverage of each pixel
+
+        Parameters
+        ----------
+        ras: `np.array`
+           Float array of right ascensions
+        decs: `np.array`
+           Float array of declinations
+
+        Returns
+        -------
+        fracgoods: `np.array`
+           Float array of fracgoods
         """
 
         theta = np.clip((90.0 - decs) * np.pi / 180., -np.pi, np.pi)
@@ -122,16 +167,22 @@ class DepthMap(object):
 
     def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):
         """
-        set masgals parameters: limmag, exptime, m50
-        parameters
+        Calculate depth for maskgals structure.
+
+        This will modify maskgals.limmag, maskgals.exptime, maskgals.zp,
+        maskgals.nsig.
+
+        Parameters
         ----------
-        maskgals: Object holding mask galaxy parameters
-        ra: Right ascention of cluster
-        dec: Declination of cluster
-        mpc_scale: scaling in Mpc / degree at cluster redshift
-
+        masgkals: `redmapper.Catalog`
+           maskgals catalog
+        ra: `float`
+           Right ascension to center maskgals
+        dec: `float`
+           Declination ot center maskgals
+        mpc_scale: `float`
+           Scaling in Mpc / degree at cluster redshift
         """
-
         unseen = hp.pixelfunc.UNSEEN
 
         # compute ra and dec based on maskgals
@@ -174,6 +225,17 @@ class DepthMap(object):
 
     def calc_areas(self, mags):
         """
+        Calculate total area from the depth map as a function of magnitude.
+
+        Parameters
+        ----------
+        mags: `np.array`
+           Float array of magnitudes at which to compute area
+
+        Returns
+        -------
+        areas: `np.array`
+           Float array of total areas for each of the mags
         """
 
         pixsize = hp.nside2pixarea(self.nside, degrees=True)
@@ -219,21 +281,9 @@ class DepthMap(object):
         return areas
 
 # This is incomplete, since I worry the general-use depthmap will be too memory
-# intensive for the volume limit mask.  TBD 
-
+# intensive for the volume limit mask.  TBD
+"""
 class MultibandDepthMap(object):
-    """
-    A class to use a multi-band depth map
-
-    parameters
-    ----------
-    config: Config object
-    depthfiles: string list
-        additional depthfiles
-    bands: string list
-        additional depthfile bands
-
-    """
 
     def __init__(self, config, depthfiles, bands):
 
@@ -252,3 +302,4 @@ class MultibandDepthMap(object):
                                                    ('exptime', 'f4', self.nband),
                                                    ('limmag', 'f4', self.nband),
                                                    ('m50', 'f4', self.nband)]))
+"""

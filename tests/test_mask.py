@@ -14,9 +14,13 @@ from redmapper import get_mask, Mask, HPMask
 from redmapper import Configuration
 
 class MaskTestCase(unittest.TestCase):
+    """
+    Tests for reading and using geometric masks, and generating maskgals
+    monte-carlo estimation tables.
+    """
     def test_readmask(self):
         """
-        Test reading of mask files
+        Test reading and using of mask files in redmapper.HPMask
         """
 
         file_path = "data_for_tests"
@@ -78,7 +82,7 @@ class MaskTestCase(unittest.TestCase):
 
     def test_maskgals(self):
         """
-        Test generation of maskgals file
+        Test generation of maskgals file.
         """
 
         # Note that due to historical reasons, this is testing the

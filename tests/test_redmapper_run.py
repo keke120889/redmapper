@@ -21,9 +21,14 @@ from redmapper import Catalog
 
 class RedmapperRunTestCase(unittest.TestCase):
     """
+    Tests of redmapper.RedmapperRun, which runs all the redmapper steps on an
+    input catalog.
     """
 
     def test_redmapper_run(self):
+        """
+        Run test of redmapper.RedmapperRun.
+        """
 
         random.seed(seed=12345)
 

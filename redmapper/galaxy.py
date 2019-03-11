@@ -1,3 +1,8 @@
+"""Classes for describing a galaxy catalog for redmapper.
+
+This file contains the classes for reading, using, and making galaxy tables.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -10,6 +15,7 @@ import healpy as hp
 import os
 
 from .catalog import Catalog, Entry
+from .mask import get_mask
 
 zred_extra_dtype = [('ZRED', 'f4'),
                     ('ZRED_E', 'f4'),
@@ -23,25 +29,45 @@ zred_extra_dtype = [('ZRED', 'f4'),
 
 class Galaxy(Entry):
     """
+    Class to describe a single galaxy.
+
+    This just has convenience methods for individual elements in a GalaxyCatalog.
     """
 
     @property
     def galcol(self):
+        """
+        Get the array of galaxy colors.
+
+        Returns
+        -------
+        galcol: `np.array`
+           Float array of galaxy colors.
+        """
         return self.mag[:-1] - self.mag[1:]
 
 
 class GalaxyCatalog(Catalog):
     """
-    Name:
-        GalaxyCatalog
-    Purpose:
-        An object for holding galaxy catalogs, including all of
-        the attributes that a galaxy would have.
-    """
+    Class to describe a redmapper galaxy Catalog.
 
+    This contains ways of reading galaxy catalogs, getting colors, and matching
+    galaxies to clusters.
+    """
     entry_class = Galaxy
 
     def __init__(self, *arrays, **kwargs):
+        """
+        Instantiate a GalaxyCatalog
+
+        Parameters
+        ----------
+        *arrays: `np.ndarray`
+           Parameters for arrays to build galaxy catalog (e.g. galaxy and zred
+           information)
+        depth: `int`, optional
+           HTM matcher depth, default is 10.
+        """
         super(GalaxyCatalog, self).__init__(*arrays)
         self._htm_matcher = None
         self.depth = 10 if 'depth' not in kwargs else kwargs['depth']
@@ -49,26 +75,25 @@ class GalaxyCatalog(Catalog):
     @classmethod
     def from_galfile(cls, filename, zredfile=None, nside=0, hpix=0, border=0.0, truth=False):
         """
-        Name:
-            from_galfile
-        Purpose:
-            do the actual reading in of the data fields in some galaxy
-            catalog file
-        Calling Squence:
-            TODO
-        Inputs:
-            filename: a name of a galaxy catalog file
-        Optional Inputs:
-            nside: integer
-                healpix nside of sub-pixel
-            hpix: integer
-                healpix pixel (ring order) of sub-pixel
-            zredfile: string
-                name of zred file
-            truth: boolean
-                read truth info (default false)
-        Outputs:
-            A galaxy catalog object
+        Generate a GalaxyCatalog from a redmapper "galfile."
+
+        Parameters
+        ----------
+        filename: `str`
+           Filename of the redmapper "galfile" galaxy file.
+           This file may be a straight fits file or (recommended) a
+           galaxy table "master_table.fit" summary file.
+        zredfile: `str`, optional
+           Filename of the redmapper zred "zreds_master_table.fit" summary file.
+        nside: `int`, optional
+           Nside of healpix sub-region to read in.  Default is 0 (full catalog).
+        hpix: `int`, optional
+           Healpix number (ring format) of sub-region to read in.
+           Default is 0 (full catalog).
+        border: `float`, optional
+           Border around hpix (in degrees) to read in.  Default is 0.0.
+        truth: `bool`, optional
+           Read in truth information if available (e.g. mocks)?  Default is False.
         """
         if zredfile is not None:
             use_zred = True
@@ -224,42 +249,65 @@ class GalaxyCatalog(Catalog):
 
     @property
     def galcol(self):
+        """
+        Get the array of galaxy colors.
+
+        Returns
+        -------
+        galcol: `np.array`
+           Float array of colors [ngal, nmag - 1]
+        """
         galcol = self.mag[:,:-1] - self.mag[:,1:]
         return galcol
 
     @property
     def galcol_err(self):
+        """
+        Get the array of galaxy color errors.
+
+        Returns
+        -------
+        galcol_err: `np.array`
+           Float array of errors [ngal, nmag - 1]
+        """
         galcol_err = np.sqrt(self.mag_err[:, :-1]**2. + self.mag_err[:, 1:]**2.)
         return galcol_err
 
     def add_zred_fields(self):
         """
-        """
+        Add default columns for storing zreds.
 
+        Note that this will do nothing if the columns are already there.
+
+        Modifies GalaxyCatalog in place.
+        """
         dtype_augment = [dt for dt in zred_extra_dtype if dt[0].lower() not in self.dtype.names]
         if len(dtype_augment) > 0:
             self.add_fields(dtype_augment)
 
     def match_one(self, ra, dec, radius):
         """
-        match an ra/dec to the galaxy catalog
+        Match one ra/dec position to the galaxy catalog.
 
-        parameters
+        This is typically used when finding all the neighbors around a cluster
+        over a relatively large area.
+
+        Parameters
         ----------
-        ra: input ra
-        dec: input dec
-        radius: float
-           radius in degrees
+        ra: `float`
+           Right ascension to match to.
+        dec: `float`
+           Declination to match to.
+        radius: `float`
+           Match radius (degrees)
 
-        returns
+        Returns
         -------
-        #(indices, dists)
-        #indices: array of integers
-        #    indices in galaxy catalog of matches
-        #dists: array of floats
-        #    match distance for each match (degrees)
+        indices: `np.array`
+           Integer array of GalaxyCatalog indices that match to input ra/dec
+        dists: `np.array`
+           Float array of distance (degrees) from each galaxy in indices
         """
-
         if self._htm_matcher is None:
             self._htm_matcher = Matcher(self.depth, self.ra, self.dec)
 
@@ -269,28 +317,34 @@ class GalaxyCatalog(Catalog):
 
     def match_many(self, ras, decs, radius, maxmatch=0):
         """
-        match many ras/decs to the galaxy catalog
+        Match many ra/dec positions to the galaxy catalog.
 
-        parameters
+        This is typically used when matching a galaxy catalog to another
+        catalog (e.g. a spectroscopic catalog).  Running this with a large
+        number of positions with a large radii is possible to run out of
+        memory!
+
+        Parameters
         ----------
-        ras: input ras
-        decs: input decs
-        radius: float
-           radius/radii in degrees
-        maxmatch: int, optional
-           set to 0 for multiple matches, or max number of matches
+        ras: `np.array`
+           Float arrays of right ascensions to match to.
+        decs: `np.array`
+           Float arrays of declinations to match to.
+        radius: `np.array` or `float`
+           Float array or float match radius in degrees.
+        maxmatch: `int`
+           Maximum number of galaxy matches to each ra/dec.
+           Default is 0 (no maximum)
 
-        returns
+        Returns
         -------
-        (i0, i1, dists)
-        i0: array of integers
-            indices for input ra/dec
-        i1: array of integers
-            indices for galaxy catalog
-        dists: array of floats
-            match distance (degrees)
+        i0: `np.array`
+           Integer array of indices matched to input ra/dec
+        i1: `np.array`
+           Integer array of indices matched to galaxy ra/dec
+        dists: `np.array`
+           Float array of match distances for each i0/i1 pair (degrees).
         """
-
         if self._htm_matcher is None:
             self._htm_matcher = Matcher(self.depth, self.ra, self.dec)
 
@@ -298,6 +352,23 @@ class GalaxyCatalog(Catalog):
 
 def get_subpixel_indices(galtable, hpix=None, border=0.0, nside=0):
     """
+    Routine to get subpixel indices from a galaxy table.
+
+    Parameters
+    ----------
+    galtable: `redmapper.Catalog`
+       A redmapper galaxy table master catalog
+    hpix: `int`, optional
+       Healpix number (ring format) of sub-region.  Default is 0 (full catalog).
+    border: `float`, optional
+       Border around hpix (in degrees) to find pixels.  Default is 0.0.
+    nside: `int`, optional
+       Nside of healpix subregion.  Default is 0 (full catalog).
+
+    Returns
+    -------
+    indices: `np.array`
+       Integer array of indices of galaxy table pixels in the subregion.
     """
 
     if hpix is None or nside == 0:
@@ -319,11 +390,90 @@ def get_subpixel_indices(galtable, hpix=None, border=0.0, nside=0):
 
     return indices
 
-class GalaxyCatalogMaker(object):
+class FakeMaskConfig(object):
     """
+    A simple fake config to read in a mask
     """
 
-    def __init__(self, outbase, info_dict, nside=32):
+    def __init__(self, maskfile, mask_mode):
+        """
+        Instantiate a FakeMaskConfig.
+
+        Parameters
+        ----------
+        maskfile: `str`
+           Mask filename
+        mask_mode: `int`
+           Mask mode
+        """
+        self.maskfile = maskfile
+        self.mask_mode = mask_mode
+
+        class TempD(object):
+            def __init__(self):
+                self.hpix = 0
+                self.nside = 0
+
+        self.d = TempD()
+
+class GalaxyCatalogMaker(object):
+    """
+    Class to generate a redmapper galaxy catalog from an input catalog.
+
+    The input galaxy catalog must have the following values:
+
+    'id': unique galaxy id ('i8')
+    'ra': right ascension ('f8')
+    'dec': declination ('f8')
+    'refmag': total magnitude in reference band ('f4')
+    'refmag_err': error in total reference magnitude ('f4')
+    'mag': array of nband magnitudes, sorted by wavelength (e.g. grizy) ('f4', nmag)
+    'mag_err': error in magnitudes ('f4', nmag)
+    'ebv': E(B-V) at galaxy location (for systematics checks) ('f4')
+    'ztrue': ztrue from a simulated catalog (optional) ('f4')
+    'm200': m200 of halo from a simulated catalog (optional) ('f4')
+    'central': central? 1 if yes (from simulated catalog) (optional) ('i2')
+    'halo_id': Unique halo identifier from a simulated catalog (optional) ('i8')
+
+    The typical usage will be:
+
+    maker = redmapper.GalaxyCatalogMaker(filename_base, info_dict)
+    for input_file in input_files:
+        # insert code to translate to file format
+        maker.append_galaxies(galaxies)
+    maker.finalize_catalog()
+    """
+
+    def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0):
+        """
+        Instantiate a GalaxyCatalogMaker
+
+        Parameters
+        ----------
+        outbase: `str`
+           Output filename base string
+        info_dict: `dict`
+           Dictionary with following keys:
+           ['LIM_REF']: overall limiting magnitude in reference band
+           ['REF_IND']: magnitude index for reference band
+           ['AREA']: total area of the catalog (deg^2)
+           ['NMAG']: number of bands in the catalog
+           ['MODE']: Catalog mode (SDSS, DES, LSST...)
+           ['ZP']: Reference zeropoint, used if inputs are luptitudes
+           ['B']: float array (nmag) of luptitude softening parameters (optional)
+           ['U_IND']: u-band index (optional)
+           ['G_IND']: g-band index (optional)
+           ['R_IND']: r-band index (optional)
+           ['I_IND']: i-band index (optional)
+           ['Z_IND']: z-band index (optional)
+           ['Y_IND']: y-band index (optional)
+        nside: `int`
+           Split catalog into subpixels with nside of nside.
+        maskfile: `str`, optional
+           Geometric mask file.  Default is None (mask already applied).
+        mask_mode: `int`, optional
+           Geometric mask file mode.  Default is 0.
+        """
 
         # Record values
         self.outbase = outbase
@@ -368,6 +518,9 @@ class GalaxyCatalogMaker(object):
 
         self.filename = '%s_master_table.fit' % (self.outbase)
 
+        if os.path.basename(self.filename) == self.filename:
+            raise RuntimeError("outbase %s must contain a path (absolute or relative)" % (self.outbase))
+
         # Start the file
         self.outpath = os.path.dirname(self.filename)
         self.outbase_nopath = os.path.basename(self.outbase)
@@ -378,15 +531,46 @@ class GalaxyCatalogMaker(object):
         # create a table
         self.ngals = np.zeros(hp.nside2npix(self.nside), dtype=np.int32)
 
+        # And read in mask if necessary
+        self.mask = None
+        if maskfile is not None:
+            fake_config = FakeMaskConfig(maskfile, mask_mode)
+            self.mask = get_mask(fake_config, include_maskgals=False)
+
+        self.is_finalized = False
+
     def split_galaxies(self, gals):
         """
+        Split a full galaxy catalog into pixels.
+
+        Parameters
+        ----------
+        gals: `np.ndarray`
+           Galaxy catalog structure.  See class docstring for what is in the catalog.
         """
+        if self.is_finalized:
+            raise RuntimeError("Cannot split galaxies for an already finalized catalog.")
+
         self.append_galaxies(gals)
         self.finalize_catalog()
 
     def append_galaxies(self, gals):
         """
+        Append a set of galaxies to a galaxy catalog.
+
+        Parameters
+        ----------
+        gals: `np.ndarray`
+           Galaxy catalog structure.  See class docstring for what is in this catalog.
         """
+        if self.is_finalized:
+            raise RuntimeError("Cannot append galaxies for an already finalized catalog.")
+
+        self._check_galaxies(gals)
+
+        if self.mask is not None:
+            good = self.mask.compute_radmask(gals['ra'], gals['dec'])
+            gals = gals[good]
 
         theta = (90.0 - gals['dec']) * np.pi / 180.
         phi = gals['ra'] * np.pi / 180.
@@ -416,6 +600,9 @@ class GalaxyCatalogMaker(object):
 
     def finalize_catalog(self):
         """
+        Finish writing a galaxy catalog master table.
+
+        This should be the last step.
         """
 
         hpix, = np.where(self.ngals > 0)
@@ -486,3 +673,103 @@ class GalaxyCatalogMaker(object):
         hdr['FITS'] = 1
 
         tab.to_fits_file(self.filename, header=hdr, clobber=True)
+
+        self.is_finalized = True
+
+    def _check_galaxies(self, gals):
+        """
+        Check the galaxies for the data-type and for NaNs and illegal values.
+
+        Parameters
+        ----------
+        gals: `np.ndarray`
+           Galaxy catalog structure.  See class docstring for what is in this catalog.
+
+        Raises
+        ------
+        RuntimeError: If anything illegal is found.
+        """
+
+        dtype = gals.dtype.descr
+        dtype_required = self.get_galaxy_dtype(self.nmag)
+
+        dtype_names = [d[0].lower() for d in dtype]
+        dtype_types = [d[1] for d in dtype]
+
+        for d in dtype_required:
+            try:
+                index = dtype_names.index(d[0])
+            except ValueError:
+                raise RuntimeError("Required dtype %s not in galaxy catalog." % (d[0]))
+
+            # and compare types...
+            if issubclass(np.dtype(dtype_types[index]).type, np.floating):
+                # Check if floating point
+                if not issubclass(np.dtype(d[1]).type, np.floating):
+                    raise RuntimeError("Required dtype %s is not a floating-point field" % (d[0]))
+            elif issubclass(np.dtype(dtype_types[index]).type, np.integer):
+                if not issubclass(np.dtype(d[1]).type, np.integer):
+                    raise RuntimeError("Required dtype %s is not an integer field" % (d[0]))
+
+            # Check for NaNs and infinities
+            bad, = np.where(~np.isfinite(gals[d[0]].flatten()))
+            if bad.size > 0:
+                raise RuntimeError("Input column %s contains %d non-finite elements" % (d[0], bad.size))
+            # And if it's a mag, check the size
+            if d[0] == 'mag' or d[0] == 'mag_err':
+                if isinstance(dtype[index][2], tuple):
+                    dtype_nmag = dtype[index][2][0]
+                else:
+                    dtype_nmag = dtype[index][2]
+                if dtype_nmag != self.nmag:
+                    raise RuntimeError("dtype %s does not have the right size (%d instead of %d)" % (d[0], dtype_nmag, self.nmag))
+
+                bad, = np.where(gals[d[0]].flatten() >= 90.0)
+                if bad.size > 0:
+                    raise RuntimeError("Input magnitude/error column %s contains %d elements with >= 90." % (d[0], bad.size))
+
+                bad, = np.where(gals[d[0]].flatten() <= 0.0)
+                if bad.size > 0:
+                    raise RuntimeError("Input magnitude/error column %s contains %d elements with <=0.0" % (d[0], bad.size))
+
+        bad, = np.where((gals['ra'] < 0.0) | (gals['ra'] > 360.0))
+        if bad.size > 0:
+            raise RuntimeError("Input ra has %d values that are out of range 0.0 <= ra <= 360.0" % (bad.size))
+        bad, = np.where((gals['dec'] < -90.0) | (gals['dec'] > 90.0))
+        if bad.size > 0:
+            raise RuntimeError("Input dec has %d values that are out of range -90.0 <= dec <= 90.0" % (bad.size))
+
+    @staticmethod
+    def get_galaxy_dtype(nmag, truth=False):
+        """
+        Get the recommended galaxy dtype.
+
+        Parameters
+        ----------
+        nmag: `int`
+           Number of bands
+        truth: `bool`, optional
+           Include truth fields.  Default is False.
+
+        Returns
+        -------
+        dtype: `list`
+           Numpy dtype list of tuples
+        """
+
+        dtype = [('id', 'i8'),
+                 ('ra', 'f8'),
+                 ('dec', 'f8'),
+                 ('refmag', 'f4'),
+                 ('refmag_err', 'f4'),
+                 ('mag', 'f4', nmag),
+                 ('mag_err', 'f4', nmag),
+                 ('ebv', 'f4')]
+
+        if truth:
+            dtype.extend([('ztrue', 'f4'),
+                          ('m200', 'f4'),
+                          ('central', 'i2'),
+                          ('halo_id', 'i8')])
+
+        return dtype

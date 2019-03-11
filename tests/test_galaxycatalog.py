@@ -7,15 +7,25 @@ import numpy as np
 import fitsio
 from numpy import random
 import healpy as hp
+import tempfile
+import shutil
+import os
 
 from redmapper import Configuration
 from redmapper import GalaxyCatalog
+from redmapper import GalaxyCatalogMaker
+from redmapper import Catalog, Entry
 
 
 class GalaxyCatalogTestCase(unittest.TestCase):
     """
+    Tests for redmapper.GalaxyCatalog class, including reading full catalogs,
+    reading sub-regions, and matching neighbors.
     """
-    def runTest(self):
+    def test_galaxycatalog_read(self):
+        """
+        Run redmapper.GalaxyCatalog tests,
+        """
 
         file_path = 'data_for_tests'
 
@@ -59,6 +69,93 @@ class GalaxyCatalogTestCase(unittest.TestCase):
         test, = np.where(i0 == 1)
         testing.assert_equal(test.size, 666 - 521)
         testing.assert_array_less(dists[test], 0.1)
+
+    def test_galaxycatalog_create(self):
+        """
+        Run `redmapper.GalaxyCatalogMaker` tests.
+        """
+
+        # Make a test directory
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+
+        info_dict = {'LIM_REF': 21.0,
+                     'REF_IND': 3,
+                     'AREA': 25.0,
+                     'NMAG': 5,
+                     'MODE': 'SDSS',
+                     'ZP': 22.5,
+                     'U_IND': 0,
+                     'G_IND': 1,
+                     'R_IND': 2,
+                     'I_IND': 3,
+                     'Z_IND': 3}
+
+        # Test 1: read in catalog, write it to a single file, and then
+        # try to split it up
+        # make sure that it makes it properly, and that the output number
+        # of files is the same as input number of files.
+
+        configfile = os.path.join('data_for_tests', 'testconfig.yaml')
+        config = Configuration(configfile)
+        gals = GalaxyCatalog.from_galfile(config.galfile)
+        tab = Entry.from_fits_file(config.galfile)
+
+        maker = GalaxyCatalogMaker(os.path.join(self.test_dir, 'test_working'), info_dict, nside=tab.nside)
+        maker.append_galaxies(gals._ndarray)
+        maker.finalize_catalog()
+
+        tab2 = Entry.from_fits_file(os.path.join(self.test_dir, 'test_working_master_table.fit'))
+        self.assertEqual(tab.nside, tab2.nside)
+        self.assertEqual(tab.filenames.size, tab2.filenames.size)
+
+        for filename in tab2.filenames:
+            self.assertTrue(os.path.isfile(os.path.join(self.test_dir, filename.decode())))
+
+        # Test 2: Make a catalog that has an incomplete dtype
+        dtype = [('id', 'i8'),
+                 ('ra', 'f8')]
+        maker = GalaxyCatalogMaker(os.path.join(self.test_dir, 'test'), info_dict)
+        testgals = np.zeros(10, dtype=dtype)
+        self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
+
+        # Test 3: make a catalog that has the wrong number of magnitudes
+        dtype = GalaxyCatalogMaker.get_galaxy_dtype(3)
+        testgals = np.zeros(10, dtype=dtype)
+        self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
+
+        # Test 4: make a catalog that has some NaNs
+        dtype = GalaxyCatalogMaker.get_galaxy_dtype(info_dict['NMAG'])
+        testgals = np.ones(10, dtype=dtype)
+        testgals['mag'][0, 1] = np.nan
+        self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
+
+        # Test 5: make a catalog that has ra/dec out of range
+        testgals = np.ones(10, dtype=dtype)
+        testgals['ra'][1] = -1.0
+        self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
+
+        testgals = np.ones(10, dtype=dtype)
+        testgals['dec'][1] = -100.0
+        self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
+
+        # Test 6: make a catalog that has mag > 90.0
+        testgals = np.ones(10, dtype=dtype)
+        testgals['mag'][0, 1] = 100.0
+        self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
+
+        # Test 7: make a catalog that has mag_err == 0.0
+        testgals = np.ones(10, dtype=dtype)
+        testgals['mag_err'][0, 1] = 0.0
+        self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
+
+    def setUp(self):
+        self.test_dir = None
+
+    def tearDown(self):
+        if self.test_dir is not None:
+            if os.path.exists(self.test_dir):
+                shutil.rmtree(self.test_dir, True)
+
 
 if __name__=='__main__':
     unittest.main()

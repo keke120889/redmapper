@@ -1,3 +1,5 @@
+"""Select seed galaxies
+"""
 from __future__ import division, absolute_import, print_function
 
 import os
@@ -11,9 +13,20 @@ from ..catalog import Catalog
 
 class SelectSpecSeeds(object):
     """
+    Class to match a galaxy catalog to a spectroscopic catalog to create seeds
+    for cluster training.
     """
 
     def __init__(self, conf):
+        """
+        Instantiate a SelectSpecSeeds object.
+
+        Parameters
+        ----------
+        conf: `str` or `redmapper.Configuration`
+           Configuration yaml filename or config object
+        """
+
         if not isinstance(conf, Configuration):
             self.config = Configuration(conf)
         else:
@@ -21,6 +34,18 @@ class SelectSpecSeeds(object):
 
     def run(self, usetrain=True):
         """
+        Select spectroscopic seeds for training.
+
+        May be run with or without zreds being available.
+
+        Output will be placed in self.config.seedfile.
+
+        Parameters
+        ----------
+        usetrain: `bool`, optional
+           Use spectra from self.config.specfile_train rather than
+           self.config.specfile (the first being an external down-
+           selection of sources).  Default is True.
         """
 
         # Read in the galaxies, but check if we have zreds

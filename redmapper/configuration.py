@@ -1,3 +1,8 @@
+"""Configuration class for redmapper.
+
+This file contains the generic redmapper configuration class and associated classes.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -15,10 +20,29 @@ from ._version import __version__
 
 class ConfigField(object):
     """
-    A validatable field with a default
+    A class that describes a field that can be of various types, can specify a
+    default, and can be validated.
     """
 
     def __init__(self, value=None, default=None, isArray=False, required=False, array_length=None, isList=False):
+        """
+        Instantiate a ConfigField
+
+        Parameters
+        ----------
+        value: any type, optional
+           The value to set to the config field.  Default is None.
+        default: any type, optional
+           The default value for the field.  Default is None.
+        isArray: `bool`, optional
+           Is the field an array type?  Default is False.
+        required: `bool`, optional
+           Is the field required to be set?  Default is False.
+        array_length: `int`, optional
+           Required array length for validation.  Default is None.
+        isList: `bool`, optional
+           Is the field a list type?  Default is False.
+        """
         self._value = value
         self._isArray = isArray
         self._isList = isList
@@ -57,12 +81,33 @@ class ConfigField(object):
             self._value = value
 
     def reset(self):
+        """Reset the value to the default."""
         self._value = self._default
 
     def set_length(self, length):
+        """Set the desired array length.
+
+        Parameters
+        ----------
+        length: `int`
+           Desired array length to pass validation.
+        """
         self._array_length = length
 
     def validate(self, name):
+        """Validate the field.
+
+        This needs the name because of python object weirdness.
+
+        Parameters
+        ----------
+        name: `str`
+           Name of the field that is being validated.
+
+        Raises
+        ------
+        ValueError: if field does not validate.
+        """
         if self._required:
             if self._value is None:
                 raise ValueError("Required ConfigField %s is not set" % (name))
@@ -76,18 +121,19 @@ class ConfigField(object):
         return True
 
 def read_yaml(filename):
-
     """
-    Name:
-        read_yaml
-    Purpose:
-        Read in a YAML file with key/value pairs and put into dict.
-    Calling Sequence:
-        outdict = read_yaml(filename, defaults=None)
-    Inputs:
-        filename: YAML file name
-    Outputs:
-        outdict: a dictionary of the key/value pairs in the YAML file.
+    Read a yaml file into a dictionary.
+
+    Parameters
+    ----------
+    filename: `str`
+       File to read
+
+    Returns
+    -------
+    outdict: `dict`
+       Dictionary from yaml file
+
     """
 
     # The output dictionary
@@ -111,12 +157,29 @@ class DuplicatableConfig(object):
     """
 
     def __init__(self, config):
+        """
+        Instantiate a DuplicatableConfig.
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration struct to copy values from
+
+        """
         self.outbase = config.outbase
         self.hpix = config.hpix
         self.nside = config.nside
 
 
 class Configuration(object):
+    """
+    Configuration class for redmapper.
+
+    This class holds all the relevant configuration information, and had
+    convenient methods for validating parameters as well as generating
+    filenames, etc.
+
+    """
     version = ConfigField(default=__version__, required=True)
 
     galfile = ConfigField(required=True)
@@ -305,7 +368,21 @@ class Configuration(object):
     select_scaleval = ConfigField(default=False, required=True)
 
     def __init__(self, configfile, outpath=None):
+        """
+        Instantiate a Configuration object
 
+        Parameters
+        ----------
+        configfile: `str`
+           Configuration yaml filename
+        outpath: `str`, optional
+           Path for output.  Default is None, which uses yaml value.
+
+        Raises
+        ------
+        RuntimeError:
+           When invalid configs are used
+        """
         self._reset_vars()
 
         # First, read in the yaml file
@@ -355,7 +432,7 @@ class Configuration(object):
                                    ('PZ', 'f4', self.npzbins),
                                    ('RA_CENT', 'f8', self.percolation_maxcen),
                                    ('DEC_CENT', 'f8', self.percolation_maxcen),
-                                   ('ID_CENT', 'i4', self.percolation_maxcen),
+                                   ('ID_CENT', 'i8', self.percolation_maxcen),
                                    ('LAMBDA_CENT', 'f4', self.percolation_maxcen),
                                    ('ZLAMBDA_CENT', 'f4', self.percolation_maxcen),
                                    ('P_CEN', 'f4', self.percolation_maxcen),
@@ -405,6 +482,12 @@ class Configuration(object):
 
     def validate(self):
         """
+        Validate the configuration.
+
+        Raises
+        ------
+        ValueError:
+           If any config field is not legal, ValueError is raised.
         """
 
         for var in type(self).__dict__:
@@ -414,9 +497,15 @@ class Configuration(object):
                 pass
 
     def copy(self):
+        """
+        Return a copy of the configuration struct
+        """
         return copy.copy(self)
 
     def _reset_vars(self):
+        """
+        Internal method to reset variables to defaults
+        """
         for var in type(self).__dict__:
             try:
                 type(self).__dict__[var].reset()
@@ -424,6 +513,17 @@ class Configuration(object):
                 pass
 
     def _set_vars_from_dict(self, d, check_none=False):
+        """
+        Internal method to set config variables from a dictionary.
+
+        Parameters
+        ----------
+        d: `dict`
+           Dictionary of key/value pairs to set
+        check_none: `bool`, optional
+           If true, don't set any variables that have a value of None in the dict.
+           Default is False
+        """
         for key in d:
             if check_none and d[key] is None:
                 continue
@@ -432,6 +532,16 @@ class Configuration(object):
             setattr(self, key, d[key])
 
     def _set_lengths(self, l, length):
+        """
+        Internal method to set the validation length for a list of field names
+
+        Parameters
+        ----------
+        l: `list`
+           Field names to set
+        length: `int`
+           Validation length
+        """
         for arr in l:
             if arr not in type(self).__dict__:
                 raise AttributeError("Unknown config variable: %s" % (arr))
@@ -440,6 +550,17 @@ class Configuration(object):
 
     def _galfile_stats(self):
         """
+        Internal method to get statistics from the galfile
+
+        Returns
+        -------
+        gal_stats: `dict`
+           Dictionary with galaxy file stats
+
+        Raises
+        ------
+        ValueError:
+           Raise error if galaxy file is incorrect format.
         """
 
         hdr = fitsio.read_header(self.galfile, ext=1)
@@ -531,6 +652,8 @@ class Configuration(object):
 
     def set_wcen_vals(self):
         """
+        Set wcen centering values.  These will be loaded from self.wcenfile if
+        available.
         """
 
         wcen_vals = self._wcen_vals()
@@ -539,7 +662,12 @@ class Configuration(object):
 
     def _wcen_vals(self):
         """
-        Load in wcen values from config if available
+        Load in wcen values from self.wcenfile
+
+        Returns
+        -------
+        vals: `dict`
+           Dictionary of wcen centering parameters
         """
 
         if self.wcenfile is None or not os.path.isfile(self.wcenfile):
@@ -570,12 +698,31 @@ class Configuration(object):
 
     @property
     def zrange_cushioned(self):
+        """Return zrange with additional cushion."""
         zrange_cushioned = self.zrange.copy()
         zrange_cushioned[0] = np.clip(zrange_cushioned[0] - self.calib_zrange_cushion, 0.05, None)
         zrange_cushioned[1] += self.calib_zrange_cushion
         return zrange_cushioned
 
     def redmapper_filename(self, redmapper_name, paths=None, filetype='fit'):
+        """
+        Generate a redmapper filename with all the appropriate infixes.
+
+        Parameters
+        ----------
+        redmapper_name: `str`
+           String describing the redmapper file type
+        paths: `list` or `tuple`, optional
+           List or tuple of path strings to join for filename.
+           Default is None, just use self.outpath
+        filetype: `str`, optional
+           File extension.  Default is 'fit`
+
+        Returns
+        -------
+        filename: `str`
+           Properly formatted full-path redmapper filename
+        """
         if paths is None:
             return os.path.join(self.outpath,
                                 '%s_%s.%s' % (self.d.outbase, redmapper_name, filetype))
@@ -589,6 +736,28 @@ class Configuration(object):
 
     def check_files(self, check_zredfile=False, check_bkgfile=False, check_bkgfile_components=False,
                     check_parfile=False, check_zlambdafile=False):
+        """
+        Check that all calibration files are available for a cluster finder run.
+
+        Parameters
+        ----------
+        check_zredfile: `bool`, optional
+           Check that the zred file is available.  Default is False.
+        check_bkgfile: `bool`, optional
+           Check that the background file is available.  Default is False.
+        check_bkgfile_components: `bool`, optional
+           Check that the background file zred/chisq components are available.
+           Default is False.
+        check_parfile: `bool`, optional
+           Check that the red sequence parameter file is available.  Default is False.
+        check_zlambdafile: `bool`, optional
+           Check that the zlambda calibration file is available.  Default is False.
+
+        Raises
+        ------
+        ValueError:
+           Raise ValueError if any of the check files is missing.
+        """
         if check_zredfile:
             if not os.path.isfile(self.zredfile):
                 raise ValueError("zredfile %s not found." % (self.zredfile))
@@ -613,6 +782,14 @@ class Configuration(object):
                 raise ValueError("zlambdafile %s not found." % (self.zlambdafile))
 
     def output_yaml(self, filename):
+        """
+        Output config into a yaml file.
+
+        Parameters
+        ----------
+        filename: `str`
+           Output yaml filename
+        """
         out_dict = {}
         for key in type(self).__dict__:
             if isinstance(type(self).__dict__[key], ConfigField):
@@ -629,3 +806,19 @@ class Configuration(object):
 
         with open(filename, 'w') as f:
             yaml.dump(out_dict, stream=f)
+
+    def compute_border(self):
+        """
+        Compute the border radii based on the largest expected cluster at the lowest
+        redshift.
+
+        Returns
+        -------
+        rad: `float`
+           Border radius for overlapping tiles for parallel runs.
+        """
+
+        maxdist = 1.05 * self.percolation_rmask_0 * (300. / 100.)**self.percolation_rmask_beta
+        radius = maxdist / (np.radians(1.) * self.cosmo.Da(0, self.zrange[0]))
+
+        return 3.0 * radius

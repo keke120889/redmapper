@@ -21,8 +21,13 @@ from redmapper import RunCatalog
 
 class RuncatTestCase(unittest.TestCase):
     """
+    Tests of redmapper.RunCatalog, which computes richness for an input catalog with
+    ra/dec/z.
     """
     def runTest(self):
+        """
+        Run the redmapper.RunCatalog tests.
+        """
         random.seed(seed=12345)
 
         file_path = 'data_for_tests'

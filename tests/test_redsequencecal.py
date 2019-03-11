@@ -16,8 +16,15 @@ from numpy import random
 from redmapper.configuration import Configuration
 from redmapper.calibration import RedSequenceCalibrator
 
-class SelectRedSequenceCalTestCase(unittest.TestCase):
-    def test_selectredsequencecal(self):
+class RedSequenceCalTestCase(unittest.TestCase):
+    """
+    Tests of redmapper.calibration.RedSequenceCalibrator which calibrates the
+    red sequence.
+    """
+    def test_redsequencecal(self):
+        """
+        Run tests of redmapper.calibration.RedSequenceCalibrator
+        """
         file_path = 'data_for_tests'
         conf_filename = 'testconfig.yaml'
         config = Configuration(os.path.join(file_path, conf_filename))

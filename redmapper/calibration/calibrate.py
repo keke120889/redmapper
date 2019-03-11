@@ -1,3 +1,6 @@
+"""Class to run the full red-sequence calibration
+"""
+
 from __future__ import division, absolute_import, print_function
 
 import os
@@ -27,9 +30,18 @@ from ..run_colormem import RunColormem
 
 class RedmapperCalibrator(object):
     """
+    Class to perform red-sequence calibration
     """
 
     def __init__(self, conf):
+        """
+        Instantiate a RedmapperCalibrator
+
+        Parameters
+        ----------
+        conf: `str` or `redmapper.Calibration`
+           Configuration yaml file or configuration object
+        """
         if not isinstance(conf, Configuration):
             self.config = Configuration(conf)
         else:
@@ -37,6 +49,7 @@ class RedmapperCalibrator(object):
 
     def run(self):
         """
+        Run the red-sequence calibration.
         """
 
         # Select the red galaxies to start
@@ -168,10 +181,12 @@ class RedmapperCalibrator(object):
 
     def output_configuration(self):
         """
+        Output a configuration yaml file that has all the calibration products
+        inserted.
         """
 
         new_zreds = False
-        new_bkg = False
+        new_bkgfile = False
 
         # Compute the path that the cluster finder will be run in
 
@@ -260,13 +275,33 @@ class RedmapperCalibrator(object):
 
 class RedmapperCalibrationIteration(object):
     """
+    Class to perform a single iteration of the redmapper calibration.
     """
 
     def __init__(self, config):
+        """
+        Instantiate a RedmapperCalibrationIteration
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        """
         self.config = config
 
     def run(self, iteration):
         """
+        Run a single iteration of the redmapper calibration.
+
+        Files will include the name "iter%{iteration}".  Extra files are
+        created in iteration 1 to start the calibration of the centering model.
+        (Note that "iteration 0" is the color-based run that happens before the
+        first iteration).
+
+        Parameters
+        ----------
+        iteration: `int`
+           Iteration number.
         """
 
         # Generate the name of the parfile
@@ -486,13 +521,33 @@ class RedmapperCalibrationIteration(object):
 
 class RedmapperCalibrationIterationFinal(object):
     """
+    Class to run the final iteration of the red-sequence calibration.
+
+    This run does not start with the spectroscopic redshifts in the run to test
+    the performance using zred as the cluster seed redshift.
     """
 
     def __init__(self, config):
+        """
+        Instantiate a RedmapperCalibrationIterationFinal
+
+        Parameters
+        ----------
+        config: `redmapper.Configuration`
+           Configuration object
+        """
         self.config = config
 
     def run(self, iteration):
         """
+        Run the final iteration of the red-sequence calibration.
+
+        Files will be output with the iteration name "iter%{iteration}b".
+
+        Parameters
+        ----------
+        iteration: `int`
+           Iteration number.  Used for naming files.
         """
 
         # Generate the names

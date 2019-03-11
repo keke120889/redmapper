@@ -1,3 +1,12 @@
+"""Base class to run a cluster catalog through one stage of processing.
+
+The ClusterRunner class is the base class for looping over all the clusters in
+a catalog and performing computations on each cluster.  This includes first
+passes, percolation, richness computation at existing positions/redshifts, etc.
+
+This class has numerous methods that are overridden by the derived classes.
+"""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -22,7 +31,6 @@ from .zlambda import Zlambda
 from .zlambda import ZlambdaCorrectionPar
 from .redsequence import RedSequenceColorPar
 from .depth_fitting import DepthLim
-# from .utilities import getMemoryString
 
 ###################################################
 # Order of operations:
@@ -38,9 +46,20 @@ from .depth_fitting import DepthLim
 
 class ClusterRunner(object):
     """
+    The ClusterRunner class is the base class for looping over all cluster in a
+    catalog and performing computations on each cluster.
     """
 
     def __init__(self, conf, **kwargs):
+        """
+        Instantiate a ClusterRunner object.
+
+        Parameters
+        ----------
+        conf: `redmapper.Configuration` or `str`
+           Configuration object or filename of configuration object
+        **kwargs: Defined by derived classes.
+        """
         if not isinstance(conf, Configuration):
             # this needs to be read
             self.config = Configuration(conf)
@@ -64,6 +83,9 @@ class ClusterRunner(object):
 
     def _additional_initialization(self, **kwargs):
         """
+        Perform additional initialization, specific to each derived class.
+
+        Must be overridden.
         """
 
         # must be overridden
@@ -74,6 +96,8 @@ class ClusterRunner(object):
 
     def _setup(self):
         """
+        General setup for ClusterRunner, configuring quantities that are common
+        across all derived classes.
         """
         self.r0 = self.config.__getattribute__(self.runmode + '_r0')
         self.beta = self.config.__getattribute__(self.runmode + '_beta')
@@ -202,15 +226,20 @@ class ClusterRunner(object):
         self.do_pz = False
 
     def _more_setup(self, *args, **kwargs):
+        """
+        Additional setup for derived ClusterRunner classes.
+
+        This may be overridden if necessary.
+        """
         # This is to be overridden if necessary
         # this can receive all the keywords.
-
-        # THIS NEEDS TO SET MEM_MATCH_ID!!!
-        # make a common convenience function ... hey!
 
         pass
 
     def _generate_mem_match_ids(self):
+        """
+        Internal method to compute unique cluster mem_match_ids
+        """
         min_id = self.cat.mem_match_id.min()
         max_id = self.cat.mem_match_id.max()
 
@@ -223,6 +252,9 @@ class ClusterRunner(object):
                 raise RuntimeError("Input values for mem_match_id are not unique (and not all unset)")
 
     def _reset_bad_values(self, cluster):
+        """
+        Internal method to reset all cluster values to "bad" values.
+        """
         cluster.Lambda = -1.0
         cluster.Lambda_e = -1.0
         cluster.scaleval = -1.0
@@ -230,11 +262,20 @@ class ClusterRunner(object):
         cluster.z_lambda_e = -1.0
 
     def _process_cluster(self, cluster):
+        """
+        Process a single cluster.
+
+        This must be overridden by the derived classes.
+        """
         # This must be overridden
         raise RuntimeError("_process_cluster must have an override")
 
     def run(self, *args, **kwargs):
         """
+        Run a catalog through the ClusterRunner.
+
+        Loop over all clusters and perform computations as described in
+        self._process_cluster(cluster) on each cluster.
         """
 
         # General setup
@@ -460,6 +501,11 @@ class ClusterRunner(object):
         self._cleanup()
 
     def _postprocess(self):
+        """
+        Perform cluster catalog post-processing.
+
+        This may be overridden in derived classes.
+        """
         # default post-processing...
 
         use, = np.where(self.cat.Lambda >= self.min_lambda)
@@ -470,6 +516,7 @@ class ClusterRunner(object):
 
     def _cleanup(self):
         """
+        Clean up memory usage.
         """
 
         # Release references to allow garbage collection to run
@@ -486,6 +533,18 @@ class ClusterRunner(object):
 
     def output(self, savemembers=True, withversion=True, clobber=False, outbase=None):
         """
+        Output the cluster catalog.
+
+        Parameters
+        ----------
+        savemembers: `bool`, optional
+           Save the members along with the catalog?  Default is True.
+        withversion: `bool`, optional
+           Should the filename contain the redmapper code version?  Default is True.
+        clobber: `bool`, optional
+           Clobber existing file?  Default is False.
+        outbase: `str`, optional
+           Override file output base (from self.config.d.outbase).  Default is None.
         """
 
         # Try with a universal method.
@@ -520,6 +579,9 @@ class ClusterRunner(object):
 
     @property
     def filename(self):
+        """
+        Get filename used to save the derived catalog.
+        """
         if self._filename is None:
             # Return the unversioned, default filename
             return self.config.redmapper_filename(self.filetype)

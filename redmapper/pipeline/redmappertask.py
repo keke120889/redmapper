@@ -1,3 +1,6 @@
+"""Class to run redmapper on a single pixel, for distributed runs.
+"""
+
 from __future__ import division, absolute_import, print_function
 
 import os
@@ -12,9 +15,25 @@ from ..run_percolation import RunPercolation
 
 class RunRedmapperPixelTask(object):
     """
+    Class to run redmapper on a single healpix pixel, for distributed runs.
     """
 
     def __init__(self, configfile, pixel, nside, path=None):
+        """
+        Instantiate a RunRedmapperPixelTask.
+
+        Parameters
+        ----------
+        configfile: `str`
+           Configuration yaml filename.
+        pixel: `int`
+           Healpix pixel to run on.
+        nside: `int`
+           Healpix nside associated with pixel.
+        path: `str`, optional
+           Output path.  Default is None, use same absolute
+           path as configfile.
+        """
         if path is None:
             outpath = os.path.dirname(os.path.abspath(configfile))
         else:
@@ -26,6 +45,15 @@ class RunRedmapperPixelTask(object):
 
     def run(self):
         """
+        Run redmapper on a single healpix pixel.
+
+        This method will check if files already exist, and will
+        skip any steps that already exist.  The border radius
+        will automatically be calculated based on the richest
+        possible cluster at the lowest possible redshift.
+
+        All files will be placed in self.config.outpath (see
+        self.__init__)
         """
 
         # need to think about outpath
@@ -39,10 +67,7 @@ class RunRedmapperPixelTask(object):
 
         # Compute the border size
 
-        maxdist = 1.05 * self.config.percolation_rmask_0 * (300. / 100.)**self.config.percolation_rmask_beta
-        radius = maxdist / (np.radians(1.) * self.config.cosmo.Da(0, self.config.zrange[0]))
-
-        self.config.border = 3.0 * radius
+        self.config.border = self.config.compute_border()
 
         self.config.d.hpix = self.pixel
         self.config.d.nside = self.nside
