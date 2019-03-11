@@ -99,7 +99,7 @@ class ZredRunPixels(object):
     """
 
     def __init__(self, config):
-        self.config = copy.deepcopy(config)
+        self.config = config.copy()
         self.config.cosmo = None
 
     def run(self, single_process=False, no_zred_table=False, verbose=False):
