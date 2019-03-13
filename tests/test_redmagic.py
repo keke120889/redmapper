@@ -95,8 +95,10 @@ class RedmagicCalTestCase(unittest.TestCase):
 
         testgals = GalaxyCatalog.from_fits_file(os.path.join('data_for_tests', 'redmagic_test', 'redmagic_test_input_gals.fit'))
 
+        testgals.add_fields([('mag', 'f4', 5), ('mag_err', 'f4', 5)])
+
         cal = RedmagicCalibrator(config)
-        cal.run(gals=testgals)
+        cal.run(gals=testgals, do_run=False)
 
         # Read in the calibrated parameters
 

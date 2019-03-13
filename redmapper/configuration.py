@@ -208,7 +208,6 @@ class Configuration(object):
 
     outpath = ConfigField(default='./', required=True)
     plotpath = ConfigField(default='', required=True)
-    configpath = ConfigField(default='', required=True)
 
     border = ConfigField(default=0.0, required=True)
     hpix = ConfigField(default=0, required=True)
@@ -405,7 +404,10 @@ class Configuration(object):
         # First, read in the yaml file
         confdict = read_yaml(configfile)
 
-        confdict['configpath'] = os.path.abspath(configfile)
+        #confdict['configpath'] = os.path.abspath(configfile)
+        #confdict['configfile'] = os.path.basename(configfile)
+        self.configpath = os.path.dirname(os.path.abspath(configfile))
+        self.configfile = os.path.basename(configfile)
 
         # And now set the config variables
         self._set_vars_from_dict(confdict)

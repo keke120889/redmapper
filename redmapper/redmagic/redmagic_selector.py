@@ -17,6 +17,8 @@ from ..catalog import Entry
 from ..galaxy import GalaxyCatalog
 from ..configuration import Configuration
 from ..volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
+from ..redsequence import RedSequenceColorPar
+from ..utilities import CubicSpline
 
 class RedmagicSelector(object):
     """
@@ -47,7 +49,9 @@ class RedmagicSelector(object):
             for ext in xrange(self.n_modes):
                 data = Entry(fits[ext + 1].read())
 
-                self.calib_data[data.name] = data
+                name = data.name.decode().rstrip()
+
+                self.calib_data[name] = data
 
         self.modes = self.calib_data.keys()
 
@@ -98,6 +102,8 @@ class RedmagicSelector(object):
         """
 
         if mode not in self.modes:
+            for mode in self.modes:
+                print("mode = [%s]" % (mode))
             raise RuntimeError("Requested redMaGiC mode %s not available." % (mode))
 
         calstr = self.calib_data[mode]
@@ -144,7 +150,7 @@ class RedmagicSelector(object):
                                                                   ('zspec', 'f4')]))
 
         redmagic_catalog.id = gals.id[gd]
-        redmagic_catalig.ra = gals.ra[gd]
+        redmagic_catalog.ra = gals.ra[gd]
         redmagic_catalog.dec = gals.dec[gd]
         redmagic_catalog.refmag = gals.refmag[gd]
         redmagic_catalog.refmag_err = gals.refmag_err[gd]

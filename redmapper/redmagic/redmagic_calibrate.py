@@ -1,3 +1,5 @@
+"""Classes for calibrating a redMaGiC parameter file."""
+
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -18,15 +20,61 @@ from ..catalog import Catalog, Entry
 from ..utilities import make_nodes, CubicSpline, interpol, read_members
 from ..plotting import SpecPlot, NzPlot
 from ..volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
+from .redmagic_selector import RedmagicSelector
+from .redmagictask import RunRedmagicTask
 
 class RedmagicParameterFitter(object):
     """
+    Class for fitting redMaGiC parameters.
     """
     def __init__(self, nodes, corrnodes, z, z_err,
                  chisq, mstar, zcal, zcal_err, refmag,
                  randomn, zmax, etamin, n0,
                  volume, zrange, zbinsize, zredstr, maxchi=20.0, ab_use=None):
         """
+        Instantiate a RedmagicParameterFitter
+
+        Parameters
+        ----------
+        nodes: `np.array`
+           Float array of redshift spline nodes for chi2(z)
+        corrnodes: `np.array`
+           Float array of redshift spline nodes for afterburner correction
+        z: `np.array`
+           Float array of galaxy (raw) redshifts
+        z_err: `np.array`
+           Float array of galaxy (raw) redshift errors
+        chisq: `np.array`
+           Float array of galaxy chisq values
+        mstar: `np.array`
+           Float array of galaxy mstar values
+        zcal: `np.array`
+           Float array of calibration redshifts for afterburner
+        zcal_err: `np.array`
+           Float array of calibration redshift errors (unused)
+        refmag: `np.array`
+           Float array of galaxy refmags
+        randomn: `np.array`
+           Float array of normal random draws for sampling
+        zmax: `np.array`
+           Float array of maximum redshifts for each galaxy position
+        etamin: `float`
+           Target luminosity cut
+        n0: `float`
+           Target density
+        volume: `np.array`
+           Float array of volumes at histogram redshift bins
+        zrange: `np.array`
+           Two-element float array of redshift range
+        zbinsize: `float`
+           Redshift histogram bin size
+        zredstr: `redmapper.RedSequenceColorPar`
+           Red-sequence structure
+        maxchi: `float`, optional
+           Maximum chi2 possible.  Default is 20.0
+        ab_use: `np.array`, optional
+           Integer array of indices for galaxies to use in afterburner
+           Required only if running in afterburner mode
         """
         self._nodes = np.atleast_1d(nodes)
         self._corrnodes = np.atleast_1d(corrnodes)
@@ -75,6 +123,23 @@ class RedmagicParameterFitter(object):
 
     def fit(self, p0_cval, biaspars=None, eratiopars=None, afterburner=False):
         """
+        Fit the redMaGiC parameters.
+
+        Parameters
+        ----------
+        p0_cval: `np.array`
+           Float array of starting values for chi2(z) at nodes
+        biaspars: `np.array`, optional
+           Parameters of afterburner bias.  Default is None
+        eratiopars: `np.array`, optional
+           Parameters of afterburner eratio.  Default is None
+        afterburner: `bool`, optional
+           Run the afterburner?  Default is False.
+
+        Returns
+        -------
+        pars: `np.array`
+           Float array of best-fit chi2(z) parameters
         """
 
         if self._ab_use is None and afterburner:
@@ -104,6 +169,23 @@ class RedmagicParameterFitter(object):
 
     def fit_bias_eratio(self, cval, p0_bias, p0_eratio):
         """
+        Fit the bias and eratio afterburner parameters.
+
+        Parameters
+        ----------
+        cval: `np.array`
+           Float array of chi2(z) parameters
+        p0_bias: `np.array`
+           Float array of initial guess of bias parameters.
+        p0_eratio: `np.array`
+           Float array of initial guess of eratio parameters
+
+        Returns
+        -------
+        pars_bias: `np.array`
+           Float array of best-fit bias parameters
+        pars_eratio: `np.array`
+           Float array of best-fit eratio parameters
         """
 
         spl = CubicSpline(self._nodes, cval)
@@ -125,6 +207,17 @@ class RedmagicParameterFitter(object):
 
     def __call__(self, pars):
         """
+        Call the cost function.
+
+        Parameters
+        ----------
+        pars: `np.array`
+           Float array of parameters
+
+        Returns
+        -------
+        t: `float`
+           Cost-function at pars
         """
 
         # chi2max is computed at the raw redshift
@@ -157,18 +250,32 @@ class RedmagicParameterFitter(object):
 
 class RedmagicCalibrator(object):
     """
+    Class to calibration the redMaGiC parmaeters.
     """
     def __init__(self, conf):
         """
+        Instantiate a RedmagicCalibrator
+
+        Parameters
+        ----------
+        conf: `redmapper.Configuration` or `str
+           Configuration object or config filename
         """
         if not isinstance(conf, Configuration):
             self.config = Configuration(conf)
         else:
             self.config = conf
 
-    def run(self, gals=None):
+    def run(self, gals=None, do_run=True):
         """
+        Run the redMaGiC calibration
 
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`, optional
+           Galaxy catalog to calibrate.  Default is None.  Used for testing.
+        do_run: `bool`, optional
+           Do the full run after calibration.  Default is True.
         """
         import matplotlib.pyplot as plt
 
@@ -354,6 +461,7 @@ class RedmagicCalibrator(object):
                                               ('n0', 'f8'),
                                               ('cmax', 'f8', nodes.size),
                                               ('corrnodes', 'f8', corrnodes.size),
+                                              ('run_afterburner', 'i2'),
                                               ('bias', 'f8', corrnodes.size),
                                               ('eratio', 'f8', corrnodes.size),
                                               ('vmaskfile', 'a%d' % (len(vmaskfile) + 1))]))
@@ -366,6 +474,7 @@ class RedmagicCalibrator(object):
             calstr.etamin = self.config.redmagic_etas[i]
             calstr.n0 = self.config.redmagic_n0s[i]
             calstr.vmaskfile = vmaskfile
+            calstr.run_afterburner = self.config.redmagic_run_afterburner
 
             # Initial histogram
             h = esutil.stat.histogram(gals.zuse,
@@ -488,6 +597,14 @@ class RedmagicCalibrator(object):
 
             calstr.to_fits_file(self.config.redmagicfile, clobber=False, extname=calstr.name)
 
+            # Do the redmagic selection on our calibration galaxies
+            selector = RedmagicSelector(self.config, vlim_masks=vlim_masks)
+            redgals, gd = selector.select_redmagic_galaxies(gals, calstr.name,
+                                                            return_indices=True)
+            gals.zredmagic[gd] = redgals.zredmagic
+            gals.zredmagic_e[gd] = redgals.zredmagic_e
+
+            """
             # Compute the redmagic selection...
             # We're going to go back to all the galaxies here for simplicity
             # though this is a bit inefficient.
@@ -516,11 +633,12 @@ class RedmagicCalibrator(object):
             gd, = np.where((gals.chisq < chi2max) &
                            (gals.refmag < (mstar - 2.5*np.log10(calstr.etamin))) &
                            (gals.zredmagic < zmax))
-
+                           """
             # make pretty plots
             nzplot = NzPlot(self.config, binsize=self.config.redmagic_calib_zbinsize)
             nzplot.plot_redmagic_catalog(gals[gd], calstr.name, calstr.etamin, calstr.n0,
-                                         vlim_areas[i], zrange=corr_zrange,
+                                         vlim_areas[self.config.redmagic_names[i]],
+                                         zrange=corr_zrange,
                                          sample=self.config.redmagic_calib_pz_integrate)
 
             # This stringification can be streamlined, I think.
@@ -561,3 +679,16 @@ class RedmagicCalibrator(object):
 
 
         # Output config file here!
+        runfile = self.config.configfile.replace('cal', 'run')
+        if runfile == self.config.configfile:
+            # We didn't find anything to replace
+            parts = self.config.configfile.split('.y')
+            runfile = parts[0] + '_run.yaml'
+
+        runfile = os.path.join(self.config.outpath, runfile)
+        self.config.output_yaml(runfile)
+
+        if do_run:
+            # Call the redmagic runner here.
+            run_redmagic = RunRedmagicTask(runfile)
+            run_redmagic.run()
