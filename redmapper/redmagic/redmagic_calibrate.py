@@ -1,6 +1,7 @@
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
+from collections import OrderedDict
 import os
 import numpy as np
 import fitsio
@@ -188,6 +189,25 @@ class RedmagicCalibrator(object):
         nruns = len(self.config.redmagic_etas)
 
         # check for vlim files
+
+        vlim_masks = OrderedDict()
+        vlim_areas = OrderedDict()
+        if self.config.depthfile is None or not os.path.isfile(self.config.depthfile):
+            # If there is no depthfile, there are no proper vlim files...
+            # So we're going to make temporary masks
+
+            for i, vlim_lstar in enumerate(self.config.redmagic_etas):
+                self.config.logger.info("Simulating volume-limit mask for %.2f" % (vlim_lstar))
+                vlim_masks[self.config.redmagic_names[i]] = VolumeLimitMaskFixed(self.config)
+                vlim_areas[self.config.redmagic_names[i]] = vlim_masks[self.config.redmagic_names[i]].get_areas()
+        else:
+            # There is a depth file so we can create/read vlim masks.
+            for i, vlim_lstar in enumerate(self.config.redmagic_etas):
+                self.config.logger.info("Reading/creating volume-limit mask for %.2f" % (vlim_lstar))
+                vlim_masks[self.config.redmagic_names[i]] = VolumeLimitMask(self.config, vlim_lstar)
+                vlim_areas[self.config.redmagic_names[i]] = vlim_masks[self.config.redmagic_names[i]].get_areas()
+
+        """
         vlim_masks = []
         vlim_areas = []
         if self.config.depthfile is None or not os.path.isfile(self.config.depthfile):
@@ -203,7 +223,7 @@ class RedmagicCalibrator(object):
                 self.config.logger.info("Reading/creating volume-limit mask for %.2f" % (vlim_lstar))
                 vlim_masks.append(VolumeLimitMask(self.config, vlim_lstar))
                 vlim_areas.append(vlim_masks[-1].get_areas())
-
+                """
         # Note that the area is already scaled properly!
 
         if gals is None:
@@ -323,8 +343,8 @@ class RedmagicCalibrator(object):
 
             # Prepare calibration structure
             vmaskfile = ''
-            if isinstance(vlim_masks[i], VolumeLimitMask):
-                vmaskfile = vlim_masks[i].vlimfile
+            if isinstance(vlim_masks[self.config.redmagic_names[i]], VolumeLimitMask):
+                vmaskfile = vlim_masks[self.config.redmagic_names[i]].vlimfile
 
             calstr = Entry(np.zeros(1, dtype=[('zrange', 'f4', 2),
                                               ('name', 'a%d' % (len(self.config.redmagic_names[i]) + 1)),
@@ -366,8 +386,8 @@ class RedmagicCalibrator(object):
             afterburner_use = gd[st[0: ntrain]]
 
             # Compute the volume
-            vmask = vlim_masks[i]
-            astr = vlim_areas[i]
+            vmask = vlim_masks[self.config.redmagic_names[i]]
+            astr = vlim_areas[self.config.redmagic_names[i]]
 
             aind = np.searchsorted(astr.z, zbins)
             z_areas = astr.area[aind] #* area_factors[i]
