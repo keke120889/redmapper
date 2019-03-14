@@ -595,11 +595,11 @@ class RedmagicCalibrator(object):
             calstr.bias[:] = biasvals
             calstr.eratio[:] = eratiovals
 
-            calstr.to_fits_file(self.config.redmagicfile, clobber=False, extname=calstr.name)
+            calstr.to_fits_file(self.config.redmagicfile, clobber=False, extname=self.config.redmagic_names[i])
 
             # Do the redmagic selection on our calibration galaxies
             selector = RedmagicSelector(self.config, vlim_masks=vlim_masks)
-            redgals, gd = selector.select_redmagic_galaxies(gals, calstr.name,
+            redgals, gd = selector.select_redmagic_galaxies(gals, self.config.redmagic_names[i],
                                                             return_indices=True)
             gals.zredmagic[gd] = redgals.zredmagic
             gals.zredmagic_e[gd] = redgals.zredmagic_e

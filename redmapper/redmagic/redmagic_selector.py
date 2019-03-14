@@ -101,12 +101,16 @@ class RedmagicSelector(object):
            Integer array of selection (if return_indices is True)
         """
 
-        if mode not in self.modes:
-            for mode in self.modes:
-                print("mode = [%s]" % (mode))
-            raise RuntimeError("Requested redMaGiC mode %s not available." % (mode))
+        # Check if we have to decode mode (py2/py3)
+        if hasattr(mode, 'decode'):
+            _mode = mode.decode()
+        else:
+            _mode = mode
 
-        calstr = self.calib_data[mode]
+        if _mode not in self.modes:
+            raise RuntimeError("Requested redMaGiC mode %s not available." % (_mode))
+
+        calstr = self.calib_data[_mode]
 
         # Takes in galaxies...
 
@@ -128,7 +132,7 @@ class RedmagicSelector(object):
         mstar = self.zredstr.mstar(zredmagic)
 
         # Compute the maximum redshift
-        vmask = self.vlim_masks[mode]
+        vmask = self.vlim_masks[_mode]
         zmax = vmask.calc_zmax(gals.ra, gals.dec)
 
         # Do the redmagic selection
