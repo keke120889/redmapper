@@ -639,7 +639,8 @@ class RedmagicCalibrator(object):
             nzplot.plot_redmagic_catalog(gals[gd], calstr.name, calstr.etamin, calstr.n0,
                                          vlim_areas[self.config.redmagic_names[i]],
                                          zrange=corr_zrange,
-                                         sample=self.config.redmagic_calib_pz_integrate)
+                                         sample=self.config.redmagic_calib_pz_integrate,
+                                         extraname='calib')
 
             # This stringification can be streamlined, I think.
 
@@ -685,8 +686,8 @@ class RedmagicCalibrator(object):
             parts = self.config.configfile.split('.y')
             runfile = parts[0] + '_run.yaml'
 
-        runfile = os.path.join(self.config.outpath, runfile)
-        self.config.output_yaml(runfile)
+        self.runfile = os.path.join(self.config.outpath, runfile)
+        self.config.output_yaml(self.runfile)
 
         if do_run:
             # Call the redmagic runner here.

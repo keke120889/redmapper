@@ -13,7 +13,7 @@ import scipy.optimize
 import esutil
 import healpy as hp
 
-from ..catalog import Entry
+from ..catalog import Entry, Catalog
 from ..galaxy import GalaxyCatalog
 from ..configuration import Configuration
 from ..volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
@@ -61,16 +61,17 @@ class RedmagicSelector(object):
             self.vlim_masks = OrderedDict()
 
             for mode in self.modes:
-                if self.calib_data[mode].vmaskfile == '':
+                vmaskfile = self.calib_data[mode].vmaskfile.decode().rstrip()
+                if vmaskfile == '':
                     # There is no vmaskfile, we need to do a fixed area one
                     self.vlim_masks[mode] = VolumeLimitMaskFixed(self.config)
                 else:
-                    if os.path.isfile(self.calib_data[mode].vmaskfile):
-                        vmaskfile = self.calib_data[mode].vmaskfile
-                    elif os.path.isfile(os.path.join(self.config.abspath, self.calib_data[mode].vmaskfile)):
-                        vmaskfile = os.path.join(self.config.abspath, self.calib_data[mode].vmaskfile)
+                    if os.path.isfile(vmaskfile):
+                        vmaskfile = vmaskfile
+                    elif os.path.isfile(os.path.join(self.config.configpath, vmaskfile)):
+                        vmaskfile = os.path.join(self.config.configpath, vmaskfile)
                     else:
-                        raise RuntimeError("Could not find vmaskfile %s" % (self.calib_data[mode].vmaskfile))
+                        raise RuntimeError("Could not find vmaskfile %s" % (vmaskfile))
                     self.vlim_masks[mode] = VolumeLimitMask(self.config,
                                                             self.calib_data[mode].vlim_lstar,
                                                             vlimfile=vmaskfile)

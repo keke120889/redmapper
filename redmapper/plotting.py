@@ -413,6 +413,24 @@ class NzPlot(object):
     def plot_nz(self, z, areastr, zrange, xlabel=None, ylabel=None,
                 title=None, redmapper_name='nz'):
         """
+        Plot the n(z) for an arbitrary list of objects
+
+        Parameters
+        ----------
+        z: `np.array`
+           Float array of redshifts
+        areastr: `redmapper.Catalog`
+           Structure describing area as a function of redshift
+        zrange: `np.array` or `list`
+           Redshift range to plot
+        xlabel: `str`, optional
+           Plot x label.  Default is None.
+        ylabel: `str`, optional
+           Plot y label.  Default is None.
+        title: `str`, optional
+           Plot title.  Default is None.
+        redmapper_name: `str`, optional
+           Name to put into filename.  Default is 'nz'
         """
 
         import matplotlib.pyplot as plt
@@ -455,8 +473,28 @@ class NzPlot(object):
         fig.savefig(self.filename)
         plt.close(fig)
 
-    def plot_redmagic_catalog(self, cat, name, eta, n0, areastr, sample=True, zrange=None):
+    def plot_redmagic_catalog(self, cat, name, eta, n0, areastr, sample=True, zrange=None, extraname=None):
         """
+        Plot the n(z) for a redmagic catalog.
+
+        Parameters
+        ----------
+        cat: `redmapper.Catalog`
+           Galaxy catalog of redmagic galaxies
+        name: `str`
+           Name (mode) of redmagic catalog
+        eta: `float`
+           Luminosity cut of catalog (for labeling)
+        n0: `float`
+           Target n0 of catalog (for labeling)
+        areastr: `redmapper.Catalog`
+           Structure describing area as a function of redshift
+        sample: `bool`, optional
+           Sample the p(z)s? Default is True.
+        zrange: `np.array` or `list`, optional
+           Redshift range to plot.  Default is None (full range)
+        extraname: `str`, optional
+           Extra name to insert (E.g. 'calib').  Default is None
         """
 
         if sample:
@@ -467,7 +505,11 @@ class NzPlot(object):
         if zrange is None:
             zrange = self.config.redmagic_zrange
 
-        redmapper_name = 'redmagic_%s_%3.1f-%02d_nz' % (name, eta, int(n0))
+        if extraname is None:
+            redmapper_name = 'redmagic_%s_%3.1f-%02d_nz' % (name, eta, int(n0))
+        else:
+            redmapper_name = 'redmagic_%s_%s_%3.1f-%02d_nz' % (extraname, name, eta, int(n0))
+
         self.plot_nz(zsamp, areastr, zrange,
                      xlabel=r'$z_{\mathrm{redmagic}}$',
                      ylabel=r'$n\,(1e4\,\mathrm{galaxies} / \mathrm{Mpc}^{3})$',

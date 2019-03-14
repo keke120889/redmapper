@@ -12,9 +12,10 @@ import numpy as np
 import fitsio
 import tempfile
 from numpy import random
+import glob
 
 from redmapper import Configuration
-from redmapper.redmagic import RedmagicParameterFitter, RedmagicCalibrator
+from redmapper.redmagic import RedmagicParameterFitter, RedmagicCalibrator, RunRedmagicTask
 from redmapper import RedSequenceColorPar
 from redmapper import GalaxyCatalog
 from redmapper import Catalog
@@ -97,8 +98,10 @@ class RedmagicCalTestCase(unittest.TestCase):
 
         testgals.add_fields([('mag', 'f4', 5), ('mag_err', 'f4', 5)])
 
-        cal = RedmagicCalibrator(config)
-        cal.run(gals=testgals, do_run=False)
+        redmagic_cal = RedmagicCalibrator(config)
+        # We have to have do_run=False here because we don't have a real
+        # galaxy training set with associated zreds!
+        redmagic_cal.run(gals=testgals, do_run=False)
 
         # Read in the calibrated parameters
 
@@ -112,6 +115,21 @@ class RedmagicCalTestCase(unittest.TestCase):
         testing.assert_almost_equal(cal['cmax'][0, :], np.array([0.94547447, 2.94205064, 0.06885203]))
         testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.09999977, -0.04786643, 0.02424277]))
         testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.45716207, 1.32847991, 1.10525217]))
+
+        pngs = glob.glob(os.path.join(self.test_dir, '*.png'))
+        self.assertEqual(len(pngs), 3)
+
+        # Now test the running, using the output file which has valid galaxies/zreds
+        run_redmagic = RunRedmagicTask(redmagic_cal.runfile)
+        run_redmagic.run()
+
+        # check that we have a redmagic catalog
+        self.assertTrue(os.path.isfile(config.redmapper_filename('redmagic_%s' % ('highdens'))))
+
+        # And check that the plot is there
+
+        pngs = glob.glob(os.path.join(self.test_dir, '*.png'))
+        self.assertEqual(len(pngs), 4)
 
     def setUp(self):
         self.test_dir = None

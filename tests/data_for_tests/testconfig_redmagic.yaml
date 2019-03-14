@@ -1,9 +1,9 @@
 galfile: ./data_for_tests/pixelized_dr8_test/dr8_test_galaxies_master_table.fit
+zredfile: ./data_for_tests/zreds_test/dr8_test_zreds_master_table.fit
 refmag: i
 area: 2.22
 
 catfile: ./data_for_tests/redmagic_test/redmagic_test_catalog.fit
-zredfile: None
 bkgfile: ./data_for_tests/test_bkg.fit
 bkgfile_color: ./data_for_tests/test_dr8_col_bkg.fit
 parfile: ./data_for_tests/test_dr8_pars.fit

@@ -10,6 +10,7 @@ from ..configuration import Configuration
 from .redmagic_selector import RedmagicSelector
 from ..catalog import Entry
 from ..galaxy import GalaxyCatalog
+from ..plotting import SpecPlot, NzPlot
 
 class RunRedmagicTask(object):
     """
@@ -35,7 +36,7 @@ class RunRedmagicTask(object):
 
         self.config = Configuration(configfile, outpath=path)
 
-    def run(self, modes=None, clobber=False):
+    def run(self, modes=None, clobber=False, do_plots=True):
         """
         Run redMaGiC selection over a full catalog.
 
@@ -48,6 +49,8 @@ class RunRedmagicTask(object):
            List of strings of modes to run
         clobber: `bool`, optional
            Overwrite any existing files.  Default is False.
+        do_plots: `bool`, optional
+           Make the output plots
         """
 
         if not self.config.galfile_pixelized:
@@ -74,7 +77,7 @@ class RunRedmagicTask(object):
 
         started = [False] * n_modes
 
-        for i, pix in tab.hpix:
+        for i, pix in enumerate(tab.hpix):
             gals = GalaxyCatalog.from_galfile(self.config.galfile,
                                               zredfile=self.config.zredfile,
                                               nside=tab.nside,
@@ -83,7 +86,7 @@ class RunRedmagicTask(object):
                                               truth=True)
 
             # Loop over all modes
-            for j, mode in modes:
+            for j, mode in enumerate(modes):
                 # Select the red galaxies
                 red_gals = selector.select_redmagic_galaxies(gals, mode)
 
@@ -95,5 +98,34 @@ class RunRedmagicTask(object):
                 else:
                     with fitsio.FITS(filenames[j], mode='rw') as fits:
                         fits[1].append(red_gals._ndarray)
+
+        # Load in catalogs and make plots!
+        if do_plots:
+            for j, mode in enumerate(modes):
+                gals = GalaxyCatalog.from_fits_file(filenames[j])
+
+                nzplot = NzPlot(self.config, binsize=self.config.redmagic_calib_zbinsize)
+                nzplot.plot_redmagic_catalog(gals, mode, selector.calib_data[mode].etamin,
+                                             selector.calib_data[mode].n0,
+                                             selector.vlim_masks[mode].get_areas(),
+                                             zrange=selector.calib_data[mode].zrange,
+                                             sample=self.config.redmagic_calib_pz_integrate)
+
+                okspec, = np.where(gals.zspec > 0.0)
+                if okspec.size > 0:
+                    specplot = SpecPlot(self.config)
+                    fig = specplot.plot_values(gals.zspec[okspec], gals.zredmagic[okspec],
+                                               gals.zredmagic_e[okspec],
+                                               name='z_{\mathrm{redmagic}}',
+                                               title='%s: %3.1f-%02d' %
+                                               (mode, selector.calib_data[mode].etamin,
+                                                int(selector.calib_data[mode].n0)),
+                                               figure_return=True)
+                    fig.savefig(self.config.redmapper_filename('redmagic_zspec_%s_%3.1f-%02d' %
+                                                               (mode, selector.calib_data[mode].etamin,
+                                                                int(selector.calib_data[mode].n0)),
+                                                               paths=(self.config.plotpath,),
+                                                               filetype='png'))
+                    plt.close(fig)
 
         # All done!  (Except for randoms, tbd...)

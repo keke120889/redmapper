@@ -201,6 +201,7 @@ class Configuration(object):
     redgalmodelfile = ConfigField()
     seedfile = ConfigField()
     zmemfile = ConfigField()
+    redmagicfile = ConfigField()
 
     calib_nproc = ConfigField(default=1, required=True)
     calib_run_nproc = ConfigField(default=1, required=True)
@@ -404,8 +405,6 @@ class Configuration(object):
         # First, read in the yaml file
         confdict = read_yaml(configfile)
 
-        #confdict['configpath'] = os.path.abspath(configfile)
-        #confdict['configfile'] = os.path.basename(configfile)
         self.configpath = os.path.dirname(os.path.abspath(configfile))
         self.configfile = os.path.basename(configfile)
 
