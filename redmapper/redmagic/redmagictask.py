@@ -5,6 +5,7 @@ from __future__ import division, absolute_import, print_function
 import os
 import numpy as np
 import glob
+import fitsio
 
 from ..configuration import Configuration
 from .redmagic_selector import RedmagicSelector
@@ -26,7 +27,7 @@ class RunRedmagicTask(object):
         configfile: `str`
            Configuration yaml filename
         path: `str`, optional
-           Output path.  Default is None, use same absolute
+l           Output path.  Default is None, use same absolute
            path as configfile.
         """
         if path is None:
@@ -77,6 +78,8 @@ class RunRedmagicTask(object):
 
         started = [False] * n_modes
 
+        self.config.logger.info("Making redMaGiC selection for %d modes and %d pixels" % (n_modes, tab.hpix.size))
+
         for i, pix in enumerate(tab.hpix):
             gals = GalaxyCatalog.from_galfile(self.config.galfile,
                                               zredfile=self.config.zredfile,
@@ -95,12 +98,15 @@ class RunRedmagicTask(object):
                     # write a new file (and overwrite if necessary, since we
                     # already did the clobber check)
                     red_gals.to_fits_file(filenames[j], clobber=True)
+                    started[j] = True
                 else:
                     with fitsio.FITS(filenames[j], mode='rw') as fits:
                         fits[1].append(red_gals._ndarray)
 
         # Load in catalogs and make plots!
         if do_plots:
+            import matplotlib.pyplot as plt
+
             for j, mode in enumerate(modes):
                 gals = GalaxyCatalog.from_fits_file(filenames[j])
 

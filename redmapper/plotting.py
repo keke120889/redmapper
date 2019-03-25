@@ -435,9 +435,13 @@ class NzPlot(object):
 
         import matplotlib.pyplot as plt
 
+        """
         corr_zrange = copy.copy(zrange)
         nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
         corr_zrange[1] = nbin * self.binsize + corr_zrange[0]
+        if corr_zrange[1] > zrange[1]:
+            corr_zrange[1] -= self.binsize
+            nbin -= 1
 
         hist = esutil.stat.histogram(z, min=corr_zrange[0], max=corr_zrange[1]-0.0001, binsize=self.binsize, more=True)
         h = hist['hist']
@@ -449,6 +453,19 @@ class NzPlot(object):
         for i in xrange(zbins.size):
             vol[i] = (self.config.cosmo.V(zbins[i] - self.binsize/2.,
                                           zbins[i] + self.binsize/2.) *
+                      (areastr.area[indices[i]] / 41252.961))
+                      """
+
+        hist = esutil.stat.histogram(z, min=zrange[0], max=zrange[1]-0.0001, binsize=self.binsize, more=True)
+        h = hist['hist']
+        zbins = hist['center']
+
+        indices = np.clip(np.searchsorted(areastr.z, zbins), 0, areastr.size - 1)
+
+        vol = np.zeros(zbins.size)
+        for i in xrange(zbins.size):
+            vol[i] = (self.config.cosmo.V(np.clip(zbins[i] - self.binsize/2., zrange[0], None),
+                                          np.clip(zbins[i] + self.binsize/2., None, zrange[1])) *
                       (areastr.area[indices[i]] / 41252.961))
 
         dens = h.astype(np.float32) / vol

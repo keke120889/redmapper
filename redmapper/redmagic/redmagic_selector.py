@@ -73,7 +73,7 @@ class RedmagicSelector(object):
                     else:
                         raise RuntimeError("Could not find vmaskfile %s" % (vmaskfile))
                     self.vlim_masks[mode] = VolumeLimitMask(self.config,
-                                                            self.calib_data[mode].vlim_lstar,
+                                                            self.calib_data[mode].etamin,
                                                             vlimfile=vmaskfile)
         else:
             # Check that it's an OrderedDict?  Must it be ordered?
@@ -114,10 +114,23 @@ class RedmagicSelector(object):
         calstr = self.calib_data[_mode]
 
         # Takes in galaxies...
+        # Which are the possibly red galaxies?
+        lstar_cushion = calstr.lstar_cushion
+        z_cushion = calstr.z_cushion
+
+        mstar_init = self.zredstr.mstar(gals.zred_uncorr)
+
+        cut_zrange = [calstr.corr_zrange[0] - z_cushion, calstr.corr_zrange[1] + z_cushion]
+        minlstar = np.clip(np.min(calstr.etamin) - lstar_cushion, 0.1, None)
+
+        red_poss_mask = ((gals.zred_uncorr > cut_zrange[0]) &
+                         (gals.zred_uncorr < cut_zrange[1]) &
+                         (gals.chisq < calstr.maxchi) &
+                         (gals.refmag < (mstar_init - 2.5*np.log10(minlstar))))
 
         # Creates a new catalog...
-        zredmagic = gals.zred_uncorr
-        zredmagic_e = gals.zred_uncorr_e
+        zredmagic = np.copy(gals.zred_uncorr)
+        zredmagic_e = np.copy(gals.zred_uncorr_e)
 
         spl = CubicSpline(calstr.nodes, calstr.cmax)
         chi2max = np.clip(spl(gals.zred_uncorr), 0.1, calstr.maxchi)
@@ -138,8 +151,9 @@ class RedmagicSelector(object):
 
         # Do the redmagic selection
         gd, = np.where((gals.chisq < chi2max) &
-                       (gals.refmag < (mstar - 2.*np.log10(calstr.etamin))) &
-                       (zredmagic < zmax))
+                       (gals.refmag < (mstar - 2.5 * np.log10(calstr.etamin))) &
+                       (zredmagic < zmax) &
+                       (red_poss_mask))
 
         redmagic_catalog = GalaxyCatalog(np.zeros(gd.size, dtype=[('id', 'i8'),
                                                                   ('ra', 'f8'),
@@ -153,6 +167,12 @@ class RedmagicSelector(object):
                                                                   ('zredmagic_e', 'f4'),
                                                                   ('chisq', 'f4'),
                                                                   ('zspec', 'f4')]))
+
+        if gd.size == 0:
+            if return_indices:
+                return redmagic_catalog, gd
+            else:
+                return redmagic_catalog
 
         redmagic_catalog.id = gals.id[gd]
         redmagic_catalog.ra = gals.ra[gd]
@@ -180,13 +200,14 @@ class RedmagicSelector(object):
             if self.spec is None:
                 self.config.logger.info("Reading in spectroscopic information...")
 
-                self.spec = Catalog.from_fits_file(self.config.specfile)
+                self.spec = GalaxyCatalog.from_fits_file(self.config.specfile)
                 use, = np.where(self.spec.z_err < 0.001)
                 self.spec = self.spec[use]
+                self.config.logger.info("Done reading in spectroscopic information.")
 
             redmagic_catalog.zspec[:] = -1.0
-            i0, i1, dists = redmagic_catalog.match_many(self.spec.ra, self.spec.dec, 3./3600., maxmatch=1)
-            redmagic_catalog.zspec[i1] = self.spec.z[i0]
+            i0, i1, dists = self.spec.match_many(redmagic_catalog.ra, redmagic_catalog.dec, 3./3600., maxmatch=1)
+            redmagic_catalog.zspec[i0] = self.spec.z[i1]
 
         if return_indices:
             return redmagic_catalog, gd
