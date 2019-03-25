@@ -15,7 +15,8 @@ from numpy import random
 import glob
 
 from redmapper import Configuration
-from redmapper.redmagic import RedmagicParameterFitter, RedmagicCalibrator, RunRedmagicTask
+from redmapper.redmagic import RedmagicParameterFitter, RedmagicCalibrator
+from redmapper.pipeline import RunRedmagicTask
 from redmapper import RedSequenceColorPar
 from redmapper import GalaxyCatalog
 from redmapper import Catalog
@@ -112,12 +113,12 @@ class RedmagicCalTestCase(unittest.TestCase):
         # Check that they are what we think they should be
         # (these checks are arbitrary, just to make sure nothing has changed)
 
-        testing.assert_almost_equal(cal['cmax'][0, :], np.array([0.94547447, 2.94205064, 0.06885203]))
-        testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.09999977, -0.04786643, 0.02424277]))
-        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.45716207, 1.32847991, 1.10525217]))
+        testing.assert_almost_equal(cal['cmax'][0, :], np.array([1.24330657, 2.94100893, -0.04402284]))
+        testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.09227668, -0.04118877, 0.01460366]))
+        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.49999795, 1.16995239, 0.5]))
 
         pngs = glob.glob(os.path.join(self.test_dir, '*.png'))
-        self.assertEqual(len(pngs), 3)
+        self.assertEqual(len(pngs), 2)
 
         # Now test the running, using the output file which has valid galaxies/zreds
         run_redmagic = RunRedmagicTask(redmagic_cal.runfile)
@@ -129,7 +130,7 @@ class RedmagicCalTestCase(unittest.TestCase):
         # And check that the plot is there
 
         pngs = glob.glob(os.path.join(self.test_dir, '*.png'))
-        self.assertEqual(len(pngs), 4)
+        self.assertEqual(len(pngs), 3)
 
     def setUp(self):
         self.test_dir = None
