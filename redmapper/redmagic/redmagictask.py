@@ -8,7 +8,7 @@ import glob
 import fitsio
 
 from ..configuration import Configuration
-from ..redmagic import RedmagicSelector
+from .redmagic_selector import RedmagicSelector
 from ..catalog import Entry
 from ..galaxy import GalaxyCatalog
 from ..plotting import SpecPlot, NzPlot

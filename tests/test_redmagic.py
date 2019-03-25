@@ -16,7 +16,7 @@ import glob
 
 from redmapper import Configuration
 from redmapper.redmagic import RedmagicParameterFitter, RedmagicCalibrator
-from redmapper.pipeline import RunRedmagicTask
+from redmapper.redmagic import RunRedmagicTask
 from redmapper import RedSequenceColorPar
 from redmapper import GalaxyCatalog
 from redmapper import Catalog

@@ -10,6 +10,10 @@ from ._version import __version__, __version_info__
 
 version = __version__
 
+from . import calibration
+from . import pipeline
+from . import redmagic
+
 from .configuration import Configuration
 from .runcat import RunCatalog
 from .solver_nfw import Solver
@@ -37,6 +41,3 @@ from .depth_fitting import DepthLim, applyErrorModel
 from .plotting import SpecPlot, NzPlot
 from .volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 from .utilities import read_members
-from . import calibration
-from . import pipeline
-from . import redmagic
