@@ -22,7 +22,7 @@ class ReadConfigTestCase(unittest.TestCase):
         config = redmapper.Configuration('%s/%s' % (file_path, file_name))
 
         self.assertEqual(config.galfile,'./data_for_tests/pixelized_dr8_test/dr8_test_galaxies_master_table.fit')
-        self.assertEqual(config.specfile,'./data_for_tests/dr8_test_spec.fit')
+        self.assertEqual(config.specfile,'./data_for_tests/test_dr8_spec.fit')
         self.assertEqual(config.parfile,'./data_for_tests/test_dr8_pars.fit')
         self.assertEqual(config.bkgfile,'./data_for_tests/test_bkg.fit')
         testing.assert_almost_equal(config.zrange, [0.05, 0.60])

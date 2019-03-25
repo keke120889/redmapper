@@ -10,6 +10,7 @@ import fitsio
 import esutil
 import scipy.optimize
 import scipy.ndimage
+import copy
 
 from .configuration import Configuration
 from .utilities import gaussFunction, CubicSpline, interpol
@@ -113,8 +114,8 @@ class SpecPlot(object):
         return self.plot_values(mem_zmed, cat.z_lambda, cat.z_lambda_e, title=title,
                                 figure_return=figure_return)
 
-    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', title=None,
-                    figure_return=False):
+    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', specname='z_{\mathrm{spec}}',
+                    title=None, figure_return=False):
         """
         Make a pretty spectrscopic plot from an arbitrary list of values.
 
@@ -178,8 +179,8 @@ class SpecPlot(object):
         ax.yaxis.set_minor_locator(minorLocator)
         minorLocator = MultipleLocator(0.02)
         ax.xaxis.set_minor_locator(minorLocator)
-        ax.set_ylabel(r'$z_\mathrm{spec}$', fontsize=16)
-
+        ax.set_ylabel(r'$%s$' % (specname), fontsize=16)
+ 
         # Plot the outliers
         bad, = np.where(np.abs(z_phot[use] - z_spec[use]) / z_phot_e[use] > self.nsig)
         if bad.size > 0:
@@ -224,7 +225,7 @@ class SpecPlot(object):
         ax2.tick_params(axis='y', which='minor', left=True, right=True, direction='in')
         ax2.tick_params(axis='x', which='minor', bottom=True, top=True, direction='in')
         ax2.set_xlabel(r'$%s$' % (name), fontsize=16)
-        ax2.set_ylabel(r'$z_\mathrm{spec} - %s$' % (name), fontsize=16)
+        ax2.set_ylabel(r'$%s - %s$' % (specname, name), fontsize=16)
         minorLocator = MultipleLocator(0.02)
         ax2.xaxis.set_minor_locator(minorLocator)
         minorLocator = MultipleLocator(0.002)
@@ -307,8 +308,10 @@ class SpecPlot(object):
 
             p0 = [use.size, np.median(dzvec), np.std(dzvec)]
             try:
-                coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, dz, spl[i, :], p0=p0)
-            except RuntimeError:
+                with np.warnings.catch_warnings():
+                    np.warnings.simplefilter('error')
+                    coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, dz, spl[i, :], p0=p0)
+            except (RuntimeError, RuntimeWarning, scipy.optimize.OptimizeWarning):
                 # set to the default?
                 coeff = p0
             spl[i, :] = spl[i, :] / coeff[0]
@@ -327,12 +330,14 @@ class SpecPlot(object):
 
             if (val < maxdz):
                 dz1 = z_bins - z_bins[i]
-                s = CubicSpline(dz, spl[index, :])
-                y = s(dz1)
+                ss = CubicSpline(dz, spl[index, :])
+                y = ss(dz1)
                 bad, = np.where((np.abs(dz1) > 0.1) | (y < 0.0))
                 y[bad] = 0.0
-
-                z_map_values[i, :] = y / y.max()
+                if y.max() == 0:
+                    z_map_values[i, :] = 0.0
+                else:
+                    z_map_values[i, :] = y / y.max()
 
         bad = np.where(z_map_values < 1e-3)
         z_map_values[bad] = 0.0
@@ -363,8 +368,9 @@ class NzPlot(object):
             self.config = conf
 
         self.binsize = binsize
+        self._redmapper_name = 'nz'
 
-    def plot_cluster_catalog(self, cat, areastr=None, nosamp=False):
+    def plot_cluster_catalog(self, cat, areastr, nosamp=False):
         """
         Plot the n(z) for a cluster catalog, using the default catalog values.
 
@@ -379,14 +385,6 @@ class NzPlot(object):
         nosamp: `bool`, optional
            Do not sample from z_lambda.  Default is False.
         """
-
-        import matplotlib.pyplot as plt
-
-        corr_zrange = self.config.zrange.copy()
-        nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
-        corr_zrange[1] = nbin * self.binsize + corr_zrange[0]
-
-        nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
 
         if nosamp:
             zsamp = cat.z_lambda
@@ -407,7 +405,45 @@ class NzPlot(object):
                 test, = np.where(cdfi >= rand)
                 zsamp[i] = xvals[test[0]]
 
-        hist = esutil.stat.histogram(zsamp, min=corr_zrange[0], max=corr_zrange[1]-0.0001, binsize=self.binsize, more=True)
+        self.plot_nz(zsamp, areastr, self.config.zrange,
+                     xlabel=r'$z_{\lambda}$',
+                     ylabel=r'$n\,(1e4\,\mathrm{clusters} / \mathrm{Mpc}^{3})$',
+                     redmapper_name='nz')
+
+    def plot_nz(self, z, areastr, zrange, xlabel=None, ylabel=None,
+                title=None, redmapper_name='nz'):
+        """
+        Plot the n(z) for an arbitrary list of objects
+
+        Parameters
+        ----------
+        z: `np.array`
+           Float array of redshifts
+        areastr: `redmapper.Catalog`
+           Structure describing area as a function of redshift
+        zrange: `np.array` or `list`
+           Redshift range to plot
+        xlabel: `str`, optional
+           Plot x label.  Default is None.
+        ylabel: `str`, optional
+           Plot y label.  Default is None.
+        title: `str`, optional
+           Plot title.  Default is None.
+        redmapper_name: `str`, optional
+           Name to put into filename.  Default is 'nz'
+        """
+
+        import matplotlib.pyplot as plt
+
+        """
+        corr_zrange = copy.copy(zrange)
+        nbin = int(np.ceil((corr_zrange[1] - corr_zrange[0]) / self.binsize))
+        corr_zrange[1] = nbin * self.binsize + corr_zrange[0]
+        if corr_zrange[1] > zrange[1]:
+            corr_zrange[1] -= self.binsize
+            nbin -= 1
+
+        hist = esutil.stat.histogram(z, min=corr_zrange[0], max=corr_zrange[1]-0.0001, binsize=self.binsize, more=True)
         h = hist['hist']
         zbins = hist['center']
 
@@ -417,6 +453,19 @@ class NzPlot(object):
         for i in xrange(zbins.size):
             vol[i] = (self.config.cosmo.V(zbins[i] - self.binsize/2.,
                                           zbins[i] + self.binsize/2.) *
+                      (areastr.area[indices[i]] / 41252.961))
+                      """
+
+        hist = esutil.stat.histogram(z, min=zrange[0], max=zrange[1]-0.0001, binsize=self.binsize, more=True)
+        h = hist['hist']
+        zbins = hist['center']
+
+        indices = np.clip(np.searchsorted(areastr.z, zbins), 0, areastr.size - 1)
+
+        vol = np.zeros(zbins.size)
+        for i in xrange(zbins.size):
+            vol[i] = (self.config.cosmo.V(np.clip(zbins[i] - self.binsize/2., zrange[0], None),
+                                          np.clip(zbins[i] + self.binsize/2., None, zrange[1])) *
                       (areastr.area[indices[i]] / 41252.961))
 
         dens = h.astype(np.float32) / vol
@@ -428,13 +477,61 @@ class NzPlot(object):
         ax = fig.add_subplot(111)
 
         ax.errorbar(zbins, dens*1e4, yerr=err*1e4, fmt='r.', markersize=8)
-        ax.set_xlabel(r'$z_{\lambda}$', fontsize=16)
-        ax.set_ylabel(r'$n\,(1e4\,\mathrm{clusters} / \mathrm{Mpc}^{3})$', fontsize=16)
+        if xlabel is not None:
+            ax.set_xlabel(xlabel, fontsize=16)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel, fontsize=16)
+        if title is not None:
+            ax.set_title(title, fontsize=16)
         ax.tick_params(axis='both',which='major',labelsize=14)
         fig.tight_layout()
 
+        self._redmapper_name = redmapper_name
         fig.savefig(self.filename)
         plt.close(fig)
+
+    def plot_redmagic_catalog(self, cat, name, eta, n0, areastr, sample=True, zrange=None, extraname=None):
+        """
+        Plot the n(z) for a redmagic catalog.
+
+        Parameters
+        ----------
+        cat: `redmapper.Catalog`
+           Galaxy catalog of redmagic galaxies
+        name: `str`
+           Name (mode) of redmagic catalog
+        eta: `float`
+           Luminosity cut of catalog (for labeling)
+        n0: `float`
+           Target n0 of catalog (for labeling)
+        areastr: `redmapper.Catalog`
+           Structure describing area as a function of redshift
+        sample: `bool`, optional
+           Sample the p(z)s? Default is True.
+        zrange: `np.array` or `list`, optional
+           Redshift range to plot.  Default is None (full range)
+        extraname: `str`, optional
+           Extra name to insert (E.g. 'calib').  Default is None
+        """
+
+        if sample:
+            zsamp = np.random.normal(size=cat.size) * cat.zredmagic_e + cat.zredmagic
+        else:
+            zsamp = cat.zredmagic
+
+        if zrange is None:
+            zrange = self.config.redmagic_zrange
+
+        if extraname is None:
+            redmapper_name = 'redmagic_%s_%3.1f-%02d_nz' % (name, eta, int(n0))
+        else:
+            redmapper_name = 'redmagic_%s_%s_%3.1f-%02d_nz' % (extraname, name, eta, int(n0))
+
+        self.plot_nz(zsamp, areastr, zrange,
+                     xlabel=r'$z_{\mathrm{redmagic}}$',
+                     ylabel=r'$n\,(1e4\,\mathrm{galaxies} / \mathrm{Mpc}^{3})$',
+                     title='%s: %3.1f-%02d' % (name, eta, int(n0)),
+                     redmapper_name=redmapper_name)
 
     @property
     def filename(self):
@@ -446,4 +543,4 @@ class NzPlot(object):
         filename: `str`
            Formatted filename to save figure.
         """
-        return self.config.redmapper_filename('nz', paths=(self.config.plotpath,), filetype='png')
+        return self.config.redmapper_filename(self._redmapper_name, paths=(self.config.plotpath,), filetype='png')

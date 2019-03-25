@@ -13,7 +13,7 @@ import os
 from .catalog import Catalog, Entry
 from .depthmap import DepthMap
 from .redsequence import RedSequenceColorPar
-from .utilities import astro_to_sphere
+from .utilities import astro_to_sphere, get_hpmask_subpix_indices
 
 class VolumeLimitMask(object):
     """
@@ -83,7 +83,7 @@ class VolumeLimitMask(object):
 
         if self.submask_hpix > 0:
             muse = get_hpmask_subpix_indices(self.submask_nside, self.submask_hpix,
-                                             self.submask_border, nside_meask, hpix_ring)
+                                             self.submask_border, nside_mask, hpix_ring)
         else:
             muse = np.arange(hpix_ring.size, dtype='i4')
 

@@ -227,13 +227,14 @@ class RedmapperConsolidateTask(object):
                         started[i, j] = True
                     else:
                         # Append to existing fits files
-                        fits = fitsio.FITS(cat_filename_dict[(i, j)][1], mode='rw')
-                        fits[1].append(cat._ndarray[cat_use])
-                        fits.close()
+                        with fitsio.FITS(cat_filename_dict[(i, j)][1], mode='rw') as fits:
+                            #fits = fitsio.FITS(cat_filename_dict[(i, j)][1], mode='rw')
+                            fits[1].append(cat._ndarray[cat_use])
+                            #fits.close()
 
-                        fits = fitsio.FITS(cat_filename_dict[(i, j)][2], mode='rw')
-                        fits[1].append(mem._ndarray[mem_use])
-                        fits.close()
+                        with fitsio.FITS(cat_filename_dict[(i, j)][2], mode='rw') as fits:
+                            fits[1].append(mem._ndarray[mem_use])
+                            #fits.close()
 
         # Sort and renumber ...
         st = np.argsort(all_likelihoods)[::-1]
@@ -280,4 +281,4 @@ class RedmapperConsolidateTask(object):
 
 
                     nzplot = NzPlot(self.config)
-                    nzplot.plot_cluster_catalog(cat, areastr=vlim_areas[j])
+                    nzplot.plot_cluster_catalog(cat, vlim_areas[j])
