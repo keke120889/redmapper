@@ -192,7 +192,10 @@ class RedmagicSelector(object):
         # require some k-corrections.
 
         # Compute the zspec (check this)
-        if 'zspec' in gals.dtype.names:
+        if 'ztrue' in gals.dtype.names:
+            # We have truth zspec
+            redmagic_catalog.zspec = gals.ztrue[gd]
+        elif 'zspec' in gals.dtype.names:
             # We have already done a zspec match
             redmagic_catalog.zspec = gals.zspec[gd]
         else:

@@ -16,5 +16,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    run_redmagic = redmapper.redmagic.RunRedmagicTask(args.configfile, clobber=args.clobber)
-    run_redmagic.run()
+    run_redmagic = redmapper.redmagic.RunRedmagicTask(args.configfile)
+    run_redmagic.run(clobber=args.clobber)
