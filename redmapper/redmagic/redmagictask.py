@@ -86,7 +86,7 @@ l           Output path.  Default is None, use same absolute
                                               nside=tab.nside,
                                               hpix=pix,
                                               border=0.0,
-                                              truth=True)
+                                              truth=self.config.redmagic_mock_truthspec)
 
             # Loop over all modes
             for j, mode in enumerate(modes):
