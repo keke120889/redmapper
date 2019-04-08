@@ -299,14 +299,11 @@ def convert_depthfile_to_healsparse(depthfile, healsparsefile, nsideCoverage, cl
             names.append(d[0])
 
     sparseMap = healsparse.HealSparseMap.makeEmpty(nsideCoverage, nside, dtype_new, primary='fracgood')
-    print('dtype_new:')
-    print(dtype_new)
-    print('names:')
-    print(names)
-    print('old_depth[names]')
-    print(old_depth[names])
-    print('old_depth[names].dtype')
-    print(old_depth[names].dtype)
+
+    old_depth_sub = np.zeros(old_depth.size, dtype=dtype_new)
+    for name in names:
+        old_depth_sub[name] = old_depth[name]
+
     sparseMap.updateValues(old_depth['hpix'], old_depth[names], nest=old_hdr['nest'])
 
     hdr = fitsio.FITSHDR()
