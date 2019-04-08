@@ -49,21 +49,12 @@ class MaskTestCase(unittest.TestCase):
 
         # Test the healpix configuration
         testing.assert_equal(mask.nside,2048)
-        testing.assert_equal(mask.offset,2100800)
-        testing.assert_equal(mask.npix,548292)
-
-        # Next test that the fracgood is working properly
-        indices = [396440, 445445, 99547, 354028, 516163] #Random indices
-        true_fracgoods = np.array([0, 0, 0.828125, 0.796875, 0.828125]) #known fracgoods at indices
-        testing.assert_equal(mask.fracgood_float, 1)
-        testing.assert_equal(mask.fracgood.shape[0], 548292)
-        testing.assert_equal(mask.fracgood[indices], true_fracgoods)
 
         # Next test the compute_radmask() function
         # Note: RA and DECs are in degrees here
 
-        RAs = np.array([142.10934, 142.04090, 142.09242, 142.11448, 50.0])
-        Decs = np.array([65.022666, 65.133844, 65.084844, 65.109541, 50.0])
+        RAs = np.array([140.00434405, 142.04090, 142.09242, 142.11448, 50.0])
+        Decs = np.array([63.47175301, 65.133844, 65.084844, 65.109541, 50.0])
 
         comp = np.array([True, True, True, True, False])
 

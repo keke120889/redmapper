@@ -237,6 +237,7 @@ class Configuration(object):
     maskgalfile = ConfigField(default='maskgals.fit', required=True)
     mask_mode = ConfigField(default=0, required=True)
     max_maskfrac = ConfigField(default=0.2, required=True)
+    covmask_nside_default = ConfigField(default=32, required=True)
 
     maskgal_ngals = ConfigField(default=6000, required=True)
     maskgal_nsamples = ConfigField(default=100, required=True)

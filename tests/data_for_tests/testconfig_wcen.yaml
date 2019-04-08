@@ -8,8 +8,8 @@ bkgfile_color: ./data_for_tests/test_dr8_col_bkg.fit
 parfile: ./data_for_tests/test_dr8_pars.fit
 specfile: ./data_for_tests/dr8_test_spec.fit
 maskgalfile: ./data_for_tests/maskgals.fit
-maskfile: ./data_for_tests/test_dr8_mask.fit
-depthfile: ./data_for_tests/test_dr8_depth.fit
+maskfile: ./data_for_tests/test_dr8_mask_hs.fit
+depthfile: ./data_for_tests/test_dr8_depth_hs.fit
 #wcenfile: None
 zlambdafile: None
 outbase: dr8_testing

@@ -1085,3 +1085,91 @@ def get_hpmask_subpix_indices(submask_nside, submask_hpix, submask_border, nside
     _, use = esutil.numpy_util.match(inhpix, ipring)
 
     return use
+
+def get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, coverage_nside):
+    """
+    Retrieve the coverage pixels that intersect the region, with a border.
+
+    Parameters
+    ----------
+    subpix_nside: `int`
+       Nside for the subregion
+    subpix_hpix: `int`
+       Pixel number for the subregion (ring format)
+    subpix_border: `float`
+       Border radius to cover outside subpix_hpix
+    coverage_nside: `int`
+       Nside of the healsparse coverage map
+    """
+
+    # First, we need to know which pixel(s) from nside_coverage are covered by
+    # subpix_hpix
+
+    if subpix_nside == coverage_nside:
+        # simply convert to nest
+        covpix = hp.ring2nest(subpix_nside, subpix_hpix)
+    elif subpix_nside > coverage_nside:
+        # what pixel is this contained in?
+        theta, phi = hp.pix2ang(subpix_nside, subpix_hpix, nest=False)
+        covpix = hp.ang2pix(coverage_nside, theta, phi, nest=True)
+    else:
+        # This is subpix_nside < coverage_nside
+        # what coverage pixels are contained in subpix_hpix?
+        subpix_hpix_nest = hp.ring2nest(subpix_nside, subpix_hpix)
+        bit_shift = 2 * int(np.round(np.log(coverage_nside / subpix_nside) / np.log(2)))
+        n_pix = 2**bit_shift
+        covpix = np.left_shift(subpix_hpix_nest, bit_shift) + np.arange(n_pix)
+
+    # And now if we have a border...
+    if subpix_border > 0.0:
+        nside_testing = max([coverage_nside * 4, subpix_nside * 4])
+        boundaries = hp.boundaries(subpix_nside, subpix_hpix, step=nside_testing/subpix_nside)
+
+        extrapix = np.zeros(0, dtype=np.int64)
+
+        # These are pixels that touch the boundary
+        for i in xrange(boundaries.shape[1]):
+            pixint = hp.query_disc(nside_testing, boundaries[:, i],
+                                   np.radians(subpix_border), inclusive=True, fact=8)
+            extrapix = np.append(extrapix, pixint)
+
+        extrapix = np.unique(extrapix)
+        theta, phi = hp.pix2ang(nside_testing, extrapix)
+        covpix = np.unique(np.append(covpix, hp.ang2pix(coverage_nside, theta, phi, nest=True)))
+
+    return covpix
+
+"""
+
+    # Second, if border > 0.0, we need to know the boundary pixels
+
+    # THIS IS WRONG-O.  AND SUPER SLOW FOR DUMB REASONS
+
+    # We test at 512 or the subpix_nside, whichever is greater.
+    # But watch out, because if subpix_nside is huge this will break.
+    # However, I don't think that can/should happen
+    nside_testing = np.clip(subpix_nside, 512, None)
+
+    # First, find all pixels that are in the coverage map
+    theta, phi = hp.pix2ang(subpix_nside, np.arange(hp.nside2npix(nside_testing)))
+    ipring_coarse = hp.ang2pix(subpix_nside, theta, phi)
+    inhpix, = np.where(ipring_coarse == subpix_hpix)
+
+    # If there is a border, we need to find the boundary pixels
+    if subpix_border > 0.0:
+        boundaries = hp.boundaries(subpix_nside, subpix_hpix, step=nside_testing/subpix_nside)
+
+        # These are the pixels that touch the boundary
+        for i in xrange(boundaries.shape[1]):
+            pixint = hp.query_disc(nside_testing, boundaries[:, i],
+                                   np.radians(subpix_border), inclusive=True, fact=8)
+            inhpix = np.append(inhpix, pixint)
+
+        inhpix = np.unique(inhpix)
+
+    # And convert these to nside_coverage (nest format!)
+    theta, phi = hp.pix2ang(nside_testing, inhpix)
+    ipnest = hp.ang2pix(nside_coverage, theta, phi, nest=True)
+
+    return np.unique(ipnest)
+"""

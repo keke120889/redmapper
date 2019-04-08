@@ -25,12 +25,12 @@ class DepthMapTestCase(unittest.TestCase):
         # Check the regular depth
         depthstr = DepthMap(config)
 
-        RAs = np.array([142.10934, 142.04090, 142.09242, 142.11448, 50.0])
-        Decs = np.array([65.022666, 65.133844, 65.084844, 65.109541, 50.0])
+        RAs = np.array([140.00434405, 142.04090, 142.09242, 142.11448, 50.0])
+        Decs = np.array([63.47175301, 65.133844, 65.084844, 65.109541, 50.0])
 
-        comp_limmag = np.array([20.6847, 20.5915, 20.5966, 20.5966, -1.63750e+30], dtype='f4')
-        comp_exptime = np.array([70.3742, 63.5621, 63.5621, 63.5621, -1.63750e+30], dtype='f4')
-        comp_m50 = np.array([20.8964, 20.8517, 20.8568, 20.8568, -1.63750e+30], dtype='f4')
+        comp_limmag = np.array([20.810108, 20.59153, 20.59663, 20.59663, -1.63750e+30], dtype='f4')
+        comp_exptime = np.array([78.849754, 63.56208, 63.56208, 63.56209, -1.63750e+30], dtype='f4')
+        comp_m50 = np.array([20.967576, 20.85170, 20.85677, 20.85677, -1.63750e+30], dtype='f4')
 
         limmag, exptime, m50 = depthstr.get_depth_values(RAs, Decs)
 

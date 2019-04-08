@@ -6,7 +6,7 @@ import os
 import sys
 import argparse
 import fitsio
-import healsparse
+import redmapper
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Convert old redmapper geometry mask to healsparse mask')
@@ -22,11 +22,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    old_mask, hdr = fitsio.read(args.maskfile, ext=1, header=True, lower=True)
-
-    nside = hdr['nside']
-
-    sparseMap = healsparse.HealSparseMap.makeEmpty(args.nsideCoverage, nside, old_mask['fracgood'].dtype)
-    sparseMap.updateValues(old_mask['hpix'], old_mask['fracgood'], nest=hdr['nest'])
-
-    sparseMap.write(args.healsparsefile, clobber=args.clobber)
+    redmapper.mask.convert_maskfile_to_healsparse(args.maskfile, args.healsparsefile,
+                                                  args.nsideCoverage, clobber=args.clobber)

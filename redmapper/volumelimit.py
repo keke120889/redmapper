@@ -9,11 +9,13 @@ import healpy as hp
 import numpy as np
 import esutil
 import os
+import healsparse
 
 from .catalog import Catalog, Entry
 from .depthmap import DepthMap
 from .redsequence import RedSequenceColorPar
-from .utilities import astro_to_sphere, get_hpmask_subpix_indices
+from .utilities import astro_to_sphere, get_healsparse_subpix_indices
+
 
 class VolumeLimitMask(object):
     """
@@ -65,46 +67,25 @@ class VolumeLimitMask(object):
         Read an existing volume-limit mask into the VolumeLimitMask structure.
         """
 
-        vliminfo, hdr = fitsio.read(self.vlimfile, ext=1, header=True, lower=True)
-        vliminfo = Catalog(vliminfo)
+        hdr = fitsio.read_header(self.vlimfile, ext=1)
+        if 'PIXTYPE' not in hdr or hdr['PIXTYPE'] != 'HEALSPARSE':
+            raise RuntimeError("Need to specify vlimfile in healsparse format.")
 
-        nside_mask = hdr['NSIDE']
-        nest = hdr['NEST']
+        cov_hdr = fitsio.read_header(self.vlimfile, ext='COV')
+        nside_coverage = cov_hdr['NSIDE']
 
-        self.submask_hpix = self.config.d.hpix
-        self.submask_nside = self.config.d.nside
-        self.submask_border = self.config.border
-        self.galfile_nside = self.config.galfile_nside
-
-        if nest != 1:
-            hpix_ring = vliminfo.hpix
+        if self.config.d.hpix > 0:
+            covpixels = get_healsparse_subpix_indices(self.config.d.nside, self.config.d.hpix,
+                                                      self.config.border, nside_coverage)
         else:
-            hpix_ring = hp.nest2ring(nside_mask, vliminfo.hpix)
+            covpixels = None
 
-        if self.submask_hpix > 0:
-            muse = get_hpmask_subpix_indices(self.submask_nside, self.submask_hpix,
-                                             self.submask_border, nside_mask, hpix_ring)
-        else:
-            muse = np.arange(hpix_ring.size, dtype='i4')
+        self.sparse_vlimmap = healsparse.HealSparseMap.read(self.vlimfile, pixels=covpixels)
 
-        self.nside = nside_mask
-        self.offset = np.min(hpix_ring[muse]) - 1
-        self.ntot = np.max(hpix_ring[muse]) - np.min(hpix_ring[muse]) + 3
-
-        self.npix = muse.size
-
-        self.fracgood = np.zeros(self.npix + 1, dtype='f4')
-        self.fracgood[0: self.npix] = vliminfo.fracgood[muse]
-        self.zmax = np.zeros(self.npix + 1, dtype='f4')
-        self.zmax[0: self.npix] = vliminfo.zmax[muse]
-
-        # overflow bins
-        self.fracgood[self.npix] = hp.UNSEEN
-        self.zmax[self.npix] = 0.0
-
-        # the look-up table
-        self.hpix_to_index = np.zeros(self.ntot, dtype='i4') + self.npix
-        self.hpix_to_index[hpix_ring[muse] - self.offset] = np.arange(self.npix)
+        self.nside = self.sparse_vlimmap.nsideSparse
+        self.subpix_nside = self.config.d.hpix
+        self.subpix_hpix = self.config.d.nside
+        self.subpix_border = self.config.border
 
     def _build_mask(self):
         """
@@ -135,31 +116,36 @@ class VolumeLimitMask(object):
         ref_ind = self.config.bands.index(self.config.refmag)
 
         # Read in the primary depth structure
-        depthinfo, hdr = fitsio.read(self.config.depthfile, ext=1, header=True, lower=True)
-        dstr = Catalog(depthinfo)
+        sparse_depthmap = healsparse.HealSparseMap.read(self.config.depthfile)
 
-        vmask = Catalog(np.zeros(dstr.size, dtype=[('hpix', 'i8'),
-                                                   ('fracgood', 'f4'),
-                                                   ('zmax', 'f4')]))
-        vmask.hpix = dstr.hpix
-        vmask.fracgood = dstr.fracgood
+        dtype_vlimmap = [('fracgood', 'f4'),
+                         ('zmax', 'f4')]
 
-        nside = hdr['NSIDE']
-        nest = hdr['NEST']
+        sparse_vlimmap = healsparse.HealSparseMap.makeEmpty(sparse_depthmap.nsideCoverage,
+                                                            sparse_depthmap.nsideSparse,
+                                                            dtype=dtype_vlimmap,
+                                                            primary='fracgood')
 
-        lo, = np.where(dstr.m50 < limmags.min())
-        vmask.zmax[lo] = zbins.min()
-        hi, = np.where(dstr.m50 > limmags.max())
-        vmask.zmax[hi] = zbins.max()
-        mid, = np.where((dstr.m50 >= limmags.min()) & (dstr.m50 <= limmags.max()))
+        validPixels = sparse_depthmap.validPixels
+        depthValues = sparse_depthmap.getValuePixel(validPixels)
+        vlimmap = np.zeros(validPixels.size, dtype=dtype_vlimmap)
+        vlimmap['fracgood'] = depthValues['fracgood']
+
+        lo, = np.where(depthValues['m50'] < limmags.min())
+        vlimmap['zmax'][lo] = zbins.min()
+        hi, = np.where(depthValues['m50'] > limmags.max())
+        vlimmap['zmax'][hi] = zbins.max()
+        mid, = np.where((depthValues['m50'] >= limmags.min()) & (depthValues['m50'] <= limmags.max()))
         if mid.size > 0:
-            l = np.searchsorted(limmags, dstr.m50[mid], side='right')
-            vmask.zmax[mid] = zbins[l]
+            l = np.searchsorted(limmags, depthValues['m50'][mid], side='right')
+            vlimmap['zmax'][mid] = zbins[l]
 
-        # And read in any additional depth structures
+        # Read in any additional depth maps
         for i, depthfile in enumerate(self.config.vlim_depthfiles):
-            depthinfo2, hdr2 = fitsio.read(depthfile, ext=1, header=True, lower=True)
-            dstr2 = Catalog(depthinfo2)
+            sparse_depthmap2, hdr2 = healsparse.HealSparseMap.read(depthfile, header=True)
+
+            validPixels2 = sparse_depthmap2.validPixels
+            depthValues2 = sparse_depthmap2.getValuePixel(validPixels2)
 
             nsig = hdr2['NSIG']
             zp = hdr2['ZP']
@@ -169,14 +155,13 @@ class VolumeLimitMask(object):
             map_ind = self.config.bands.index(self.config.vlim_bands[i])
 
             # match pixels
-            a, b = esutil.numpy_util.match(vmask.hpix, dstr2.hpix)
+            a, b = esutil.numpy_util.match(validPixels, validPixels2)
 
-            # compute the limit (this should be moved to a utility function)
             n2 = self.config.vlim_nsigs[i]**2.
-            flim_in = 10.**((dstr2.limmag[b] - zp) / (-2.5))
-            fn = np.clip((flim_in**2. * dstr2.exptime[b]) / (nsig**2.) - flim_in, 0.001, None)
-            flim_mask = (n2 + np.sqrt(n2**2. + 4.*dstr2.exptime[b] * n2 * fn)) / (2.*dstr2.exptime[b])
-            lim_mask = np.zeros(vmask.size)
+            flim_in = 10.**((depthValues2['limmag'][b] - zp) / (-2.5))
+            fn = np.clip((flim_in**2. * depthValues2['exptime'][b]) / (nsig**2.) - flim_in, 0.001, None)
+            flim_mask = (n2 + np.sqrt(n2**2. + 4.*depthValues2['exptime'][b] * n2 * fn)) / (2.*depthValues2['exptime'][b])
+            lim_mask = np.zeros(vlimmap.size)
             lim_mask[a] = zp - 2.5*np.log10(flim_mask)
 
             zinds = np.searchsorted(zredstr.z, zbins, side='right')
@@ -197,7 +182,7 @@ class VolumeLimitMask(object):
                         limmags_temp -= (zredstr.c[zinds, jj] + zredstr.slope[zinds, jj]) * (refmag_lim - zredstr.pivotmag[zinds])
 
             # adjust zmax with zmax_temp
-            zmax_temp = np.zeros(vmask.size)
+            zmax_temp = np.zeros(vlimmap.size)
 
             lo, = np.where(lim_mask < limmags_temp.min())
             zmax_temp[lo] = zbins.min()
@@ -208,27 +193,25 @@ class VolumeLimitMask(object):
                 l = np.searchsorted(limmags_temp, lim_mask[mid], side='right')
                 zmax_temp[mid] = zbins[l]
 
-            limited, = np.where(zmax_temp < vmask.zmax)
-            vmask.zmax[limited] = zmax_temp[limited]
+            limited, = np.where(zmax_temp < vlimmap['zmax'])
+            vlimmap['zmax'][limited] = zmax_temp[limited]
 
-        gd, = np.where(vmask.zmax > zbins[0])
-        vmask = vmask[gd]
 
-        outhdr = fitsio.FITSHDR()
-        outhdr['NSIDE'] = nside
-        outhdr['NEST'] = nest
+        gd, = np.where(vlimmap['zmax'] > zbins[0])
 
-        vmask.to_fits_file(self.vlimfile, header=outhdr)
+        sparse_vlimmap.updateValues(validPixels[gd], vlimmap[gd])
 
-    def calc_zmax(self, ra, dec, get_fracgood=False):
+        sparse_vlimmap.write(self.vlimfile)
+
+    def calc_zmax(self, ras, decs, get_fracgood=False):
         """
         Calculate the maximum redshifts associated with a set of ra/decs.
 
         Parameters
         ----------
-        ra: `np.array` or `float`
+        ras: `np.array` or `float`
            Float array of right ascensions
-        dec: `np.array` or `float`
+        decs: `np.array` or `float`
            Float array of declinations
         get_fracgood: `bool`, optional
            Also retrieve the fracgood pixel coverage.  Default is False.
@@ -241,21 +224,15 @@ class VolumeLimitMask(object):
            Float array of fracgood, if get_fracgood=True
         """
 
-        _ra = np.atleast_1d(ra)
-        _dec = np.atleast_1d(dec)
+        if (len(ras) != len(decs)):
+            raise ValueError("ras, decs must be same length")
 
-        if (_ra.size != _dec.size):
-            raise ValueError("ra, dec must be same length")
-
-        theta, phi = astro_to_sphere(_ra, _dec)
-        ipring = hp.ang2pix(self.nside, theta, phi)
-        ipring_offset = np.clip(ipring - self.offset, 0, self.ntot-1)
+        values = self.sparse_vlimmap.getValueRaDec(ras, decs)
 
         if not get_fracgood:
-            return self.zmax[self.hpix_to_index[ipring_offset]]
+            return np.clip(values['zmax'], 0.0, None)
         else:
-            return (self.zmax[self.hpix_to_index[ipring_offset]],
-                    self.fracgood[self.hpix_to_index[ipring_offset]])
+            return (np.clip(values['zmax'], 0.0, None), values['fracgood'])
 
     def get_areas(self):
         """
@@ -277,13 +254,13 @@ class VolumeLimitMask(object):
 
         pixsize = hp.nside2pixarea(self.nside, degrees=True)
 
-        # ignore the last overflow pixel
-        st = np.argsort(self.zmax[:-1])
-        zmax = self.zmax[st]
+        validPixels = self.sparse_vlimmap.validPixels
+        zmax = self.sparse_vlimmap.getValuePixel(validPixels)['zmax']
+        st = np.argsort(zmax)
 
-        fracgoods = self.fracgood[st]
+        fracgoods = self.sparse_vlimmap.getValuePixel(validPixels)['fracgood'][st]
 
-        inds = np.searchsorted(zmax, zbins, side='right')
+        inds = np.searchsorted(zmax[st], zbins, side='right')
 
         lo = (inds <= 0)
         astr.area[lo] = np.sum(fracgoods.astype(np.float64)) * pixsize
@@ -293,6 +270,7 @@ class VolumeLimitMask(object):
             astr.area[~lo] = carea[carea.size - inds[~lo]]
 
         return astr
+
 
 class VolumeLimitMaskFixed(object):
     """

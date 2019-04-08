@@ -13,11 +13,12 @@ import numpy as np
 import os
 from scipy.special import erf
 import scipy.integrate
+import healsparse
 
 from .catalog import Catalog,Entry
 from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels
 from .utilities import make_lockfile, sample_from_pdf, chisq_pdf, schechter_pdf, nfw_pdf
-from .utilities import get_hpmask_subpix_indices
+from .utilities import get_healsparse_subpix_indices
 
 class Mask(object):
     """
@@ -340,40 +341,32 @@ class HPMask(Mask):
         """
         # record for posterity
         self.maskfile = config.maskfile
-        maskinfo, hdr = fitsio.read(config.maskfile, ext=1, header=True, upper=True)
-        # maskinfo converted to a catalog (array of Entrys)
-        maskinfo = Catalog(maskinfo)
-        nside_mask = hdr['NSIDE']
-        nest = hdr['NEST']
 
-        hpix_ring = maskinfo.hpix if nest != 1 else hp.nest2ring(nside_mask, maskinfo.hpix)
+        # Check if the file is of healsparse type... if not, raise and suggest
+        # the conversion code
 
-        # if we have a sub-region of the sky, cut down the mask to save memory
+        hdr = fitsio.read_header(self.maskfile, ext=1)
+        if 'PIXTYPE' not in hdr or hdr['PIXTYPE'] != 'HEALSPARSE':
+            raise RuntimeError("Need to specify mask in healsparse format.  See redmapper_convert_mask_to_healsparse.py")
+
+        cov_hdr = fitsio.read_header(self.maskfile, ext='COV')
+        nside_coverage = cov_hdr['NSIDE']
+
+        # Which subpixels are we reading?
         if config.d.hpix > 0:
-            muse = get_hpmask_subpix_indices(config.d.nside, config.d.hpix,
-                                             config.border, nside_mask, hpix_ring)
+            covpixels = get_healsparse_subpix_indices(config.d.nside, config.d.hpix,
+                                                      config.border, nside_coverage)
         else:
-            muse = np.arange(hpix_ring.size, dtype='i4')
+            # Read in the whole thing
+            covpixels = None
 
-        offset = np.min(hpix_ring[muse]) - 1
-        ntot = np.max(hpix_ring[muse]) - np.min(hpix_ring[muse]) + 3
+        self.sparse_fracgood = healsparse.HealSparseMap.read(self.maskfile, pixels=covpixels)
 
-        self.nside = nside_mask
-        self.offset = offset
-        self.npix = ntot
+        self.nside = self.sparse_fracgood.nsideSparse
 
-        self.fracgood = np.zeros(ntot, dtype='f4')
-
-        # check if we have a fracgood in the input maskinfo
-        try:
-            self.fracgood_float = 1
-            self.fracgood[hpix_ring[muse] - offset] = maskinfo.fracgood[muse]
-        except AttributeError:
-            self.fracgood_float = 0
-            self.fracgood[hpix_ring[muse] - offset] = 1
         super(HPMask, self).__init__(config, **kwargs)
 
-    def compute_radmask(self, ra, dec):
+    def compute_radmask(self, ras, decs):
         """
         Compute the geometric mask value at a list of positions.
 
@@ -381,9 +374,9 @@ class HPMask(Mask):
 
         Parameters
         ----------
-        ra: `np.array`
+        ras: `np.array`
            Float array of right ascensions
-        dec: `np.array`
+        decs: `np.array`
            Float array of declinations
 
         Returns
@@ -392,18 +385,14 @@ class HPMask(Mask):
            Bool array of True (in footprint) and False (out of footprint) for
            each ra/dec.
         """
-        _ra  = np.atleast_1d(ra)
-        _dec = np.atleast_1d(dec)
 
-        if (_ra.size != _dec.size):
+        if (ras.size != decs.size):
             raise ValueError("ra, dec must be same length")
 
-        theta, phi = astro_to_sphere(_ra, _dec)
-        ipring = hp.ang2pix(self.nside, theta, phi)
-        ipring_offset = np.clip(ipring - self.offset, 0, self.npix-1)
-        ref = 0 if self.fracgood_float == 0 else np.random.rand(_ra.size)
-        radmask = np.zeros(_ra.size, dtype=np.bool_)
-        radmask[np.where(self.fracgood[ipring_offset] > ref)] = True
+        fracgood = self.sparse_fracgood.getValueRaDec(ras, decs)
+
+        radmask = np.zeros(ras.size, dtype=np.bool)
+        radmask[np.where(fracgood > np.random.rand(ras.size))] = True
         return radmask
 
 
@@ -427,3 +416,29 @@ def get_mask(config, include_maskgals=True):
         # This is a healpix mask
         #  (don't ask about 1 and 2)
         return HPMask(config, include_maskgals=include_maskgals)
+
+def convert_maskfile_to_healsparse(maskfile, healsparsefile, nsideCoverage, clobber=False):
+    """
+    Convert an old maskfile to a new healsparsefile
+
+    Parameters
+    ----------
+    maskfile: `str`
+       Input mask file
+    healsparsefile: `str`
+       Output healsparse file
+    nsideCoverage: `int`
+       Nside for sparse coverage map
+    clobber: `bool`, optional
+       Clobber existing healsparse file?  Default is false.
+    """
+
+    old_mask, old_hdr = fitsio.read(maskfile, ext=1, header=True, lower=True)
+
+    nside = old_hdr['nside']
+
+    sparseMap = healsparse.HealSparseMap.makeEmpty(nsideCoverage, nside, old_mask['fracgood'].dtype)
+    sparseMap.updateValues(old_mask['hpix'], old_mask['fracgood'], nest=old_hdr['nest'])
+
+    sparseMap.write(healsparsefile, clobber=clobber)
+
