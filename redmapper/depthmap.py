@@ -304,7 +304,7 @@ def convert_depthfile_to_healsparse(depthfile, healsparsefile, nsideCoverage, cl
     for name in names:
         old_depth_sub[name] = old_depth[name]
 
-    sparseMap.updateValues(old_depth['hpix'], old_depth[names], nest=old_hdr['nest'])
+    sparseMap.updateValues(old_depth['hpix'], old_depth_sub, nest=old_hdr['nest'])
 
     hdr = fitsio.FITSHDR()
     hdr['NSIG'] = old_hdr['NSIG']
