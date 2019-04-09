@@ -1139,37 +1139,3 @@ def get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, cove
 
     return covpix
 
-"""
-
-    # Second, if border > 0.0, we need to know the boundary pixels
-
-    # THIS IS WRONG-O.  AND SUPER SLOW FOR DUMB REASONS
-
-    # We test at 512 or the subpix_nside, whichever is greater.
-    # But watch out, because if subpix_nside is huge this will break.
-    # However, I don't think that can/should happen
-    nside_testing = np.clip(subpix_nside, 512, None)
-
-    # First, find all pixels that are in the coverage map
-    theta, phi = hp.pix2ang(subpix_nside, np.arange(hp.nside2npix(nside_testing)))
-    ipring_coarse = hp.ang2pix(subpix_nside, theta, phi)
-    inhpix, = np.where(ipring_coarse == subpix_hpix)
-
-    # If there is a border, we need to find the boundary pixels
-    if subpix_border > 0.0:
-        boundaries = hp.boundaries(subpix_nside, subpix_hpix, step=nside_testing/subpix_nside)
-
-        # These are the pixels that touch the boundary
-        for i in xrange(boundaries.shape[1]):
-            pixint = hp.query_disc(nside_testing, boundaries[:, i],
-                                   np.radians(subpix_border), inclusive=True, fact=8)
-            inhpix = np.append(inhpix, pixint)
-
-        inhpix = np.unique(inhpix)
-
-    # And convert these to nside_coverage (nest format!)
-    theta, phi = hp.pix2ang(nside_testing, inhpix)
-    ipnest = hp.ang2pix(nside_coverage, theta, phi, nest=True)
-
-    return np.unique(ipnest)
-"""
