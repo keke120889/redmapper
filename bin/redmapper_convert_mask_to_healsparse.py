@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-m', '--maskfile', action='store', type=str, required=True,
                         help='Input mask file (old format)')
-    parser.add_argument('-h', '--healsparsefile', action='store', type=str, required=True,
+    parser.add_argument('-f', '--healsparsefile', action='store', type=str, required=True,
                         help='Output mask healsparse file (new format)')
     parser.add_argument('-n', '--nsideCoverage', action='store', type=int, default=32,
                         help='Coverage nside for healsparse file')
