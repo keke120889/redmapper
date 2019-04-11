@@ -173,7 +173,7 @@ class SpecPlot(object):
         ax.set_ylim(plot_xrange)
         ax.tick_params(axis='y', which='major', labelsize=14, length=5, left=True, right=True, direction='in')
         ax.tick_params(axis='y', which='minor', left=True, right=True, direction='in')
-        ax.tick_params(axis='x', labelbottom='off', which='major', length=5, direction='in', bottom=True, top=True)
+        ax.tick_params(axis='x', labelbottom=False, which='major', length=5, direction='in', bottom=True, top=True)
         ax.tick_params(axis='x', which='minor', bottom=True, top=True, direction='in')
         minorLocator = MultipleLocator(0.05)
         ax.yaxis.set_minor_locator(minorLocator)
