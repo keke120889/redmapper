@@ -27,7 +27,7 @@ class VolumeLimitMask(object):
 
     """
 
-    def __init__(self, config, vlim_lstar, vlimfile=None):
+    def __init__(self, config, vlim_lstar, vlimfile=None, use_geometry=False):
         """
         Instantiate a VolumeLimitMask
 
@@ -45,6 +45,9 @@ class VolumeLimitMask(object):
         vlimfile: `str`, optional
            Filename to store volume limit mask.  Default is None, which
            means generate the filename of the 'vlim_zmask' type.
+        use_geometry: `bool`, optional
+           Use the geometric mask info only.  Only use if necessary.
+           Default is False.
         """
         self.config = config
         self.vlim_lstar = vlim_lstar
@@ -58,9 +61,11 @@ class VolumeLimitMask(object):
         if os.path.isfile(self.vlimfile):
             self._read_mask()
         else:
-            self._build_mask()
+            if use_geometry:
+                self._build_geometry_mask()
+            else:
+                self._build_mask()
             self._read_mask()
-
 
     def _read_mask(self):
         """
@@ -200,6 +205,35 @@ class VolumeLimitMask(object):
         gd, = np.where(vlimmap['zmax'] > zbins[0])
 
         sparse_vlimmap.updateValues(validPixels[gd], vlimmap[gd])
+
+        sparse_vlimmap.write(self.vlimfile)
+
+    def _build_geometry_mask(self):
+        """
+        Build a VolumeLimitMask from the geometric mask from the config file,
+        and store the mask in self.vlimfile
+        """
+
+        if self.config.maskfile is None or not os.path.isfile(self.config.maskfile):
+            raise RuntimeError("Cannot create a geometry volume limit mask without a mask file")
+
+        sparse_mask = healsparse.HealSparseMap.read(self.config.maskfile)
+
+        dtype_vlimmap = [('fracgood', 'f4'),
+                         ('zmax', 'f4')]
+
+        sparse_vlimmap = healsparse.HealSparseMap.makeEmpty(sparse_mask.nsideCoverage,
+                                                            sparse_mask.nsideSparse,
+                                                            dtype=dtype_vlimmap,
+                                                            primary='fracgood')
+
+        validPixels = sparse_mask.validPixels
+        maskValues = sparse_mask.getValuePixel(validPixels)
+        vlimmap = np.zeros(validPixels.size, dtype=dtype_vlimmap)
+        vlimmap['fracgood'] = maskValues
+        vlimmap['zmax'] = self.config.zrange[1]
+
+        sparse_vlimmap.updateValues(validPixels, vlimmap)
 
         sparse_vlimmap.write(self.vlimfile)
 
