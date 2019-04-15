@@ -44,6 +44,7 @@ The following modules are required:
 * healpy
 * scipy
 * future
+* [healsparse](https://github.com/lsstdesc/healsparse)
 
 How-To
 ------

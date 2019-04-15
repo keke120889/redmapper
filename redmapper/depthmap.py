@@ -11,8 +11,9 @@ import numpy as np
 from healpy import pixelfunc
 import esutil
 import scipy.optimize
+import healsparse
 
-from .utilities import astro_to_sphere, get_hpmask_subpix_indices
+from .utilities import astro_to_sphere, get_healsparse_subpix_indices
 from .catalog import Catalog, Entry
 
 class DepthMap(object):
@@ -45,69 +46,36 @@ class DepthMap(object):
         else:
             self.depthfile = depthfile
 
-        depthinfo, hdr = fitsio.read(self.depthfile, ext=1, header=True, upper=True)
-        # convert into catalog for convenience...
-        depthinfo = Catalog(depthinfo)
+        hdr = fitsio.read_header(self.depthfile, ext=1)
+        if 'PIXTYPE' not in hdr or hdr['PIXTYPE'] != 'HEALSPARSE':
+            raise RuntimeError("Need to specify depthfile in healsparse format.  See redmapper_convert_depthfile_to_healsparse.py")
 
-        #self.npix = depthinfo.hpix.size
-        nside_mask = hdr['NSIDE']
-        nest = hdr['NEST']
-        self.nsig = hdr['NSIG']
-        self.zp = hdr['ZP']
-        self.nband = hdr['NBAND']
-        self.w = hdr['W']
-        self.eff = hdr['EFF']
+        cov_hdr = fitsio.read_header(self.depthfile, ext='COV')
+        nside_coverage = cov_hdr['NSIDE']
 
-        self.config_area = config.area
-        self.submask_hpix = config.d.hpix
-        self.submask_nside = config.d.nside
-        self.submask_border = config.border
+        self.nsig = cov_hdr['NSIG']
+        self.zp = cov_hdr['ZP']
+        self.nband = cov_hdr['NBAND']
+        self.w = cov_hdr['W']
+        self.eff = cov_hdr['EFF']
+
+        if config.d.hpix > 0:
+            covpixels = get_healsparse_subpix_indices(config.d.nside, config.d.hpix,
+                                                      config.border, nside_coverage)
+        else:
+            covpixels = None
+
+        self.sparse_depthmap = healsparse.HealSparseMap.read(self.depthfile, pixels=covpixels)
+
         self.galfile_nside = config.galfile_nside
         self.config_logger = config.logger
+        self.nside = self.sparse_depthmap.nsideSparse
+        self.config_area = config.area
 
-        if nest != 1:
-            hpix_ring = depthinfo.hpix
-        else:
-            hpix_ring = hp.nest2ring(nside_mask, depthinfo.hpix)
-
-        # if we have a sub-region of the sky, cut down mask to save memory
-        if self.submask_hpix > 0:
-            duse = get_hpmask_subpix_indices(self.submask_nside, self.submask_hpix,
-                                             self.submask_border, nside_mask, hpix_ring)
-        else:
-            duse = np.arange(hpix_ring.size, dtype='i4')
-
-        self.nside = nside_mask
-        self.offset = np.min(hpix_ring[duse]) - 1
-        self.ntot = np.max(hpix_ring[duse]) - np.min(hpix_ring[duse]) + 3
-
-        self.npix = duse.size
-
-        self.fracgood = np.zeros(self.npix + 1, dtype='f4')
-        try:
-            self.fracgood_float = 1
-            self.fracgood[0: self.npix] = depthinfo.fracgood[duse]
-        except AttributeError:
-            self.fracgood_float = 0
-            self.fracgood[0: self.npix] = 0
-
-        self.exptime = np.zeros(self.npix + 1, dtype='f4')
-        self.exptime[0: self.npix] = depthinfo.exptime[duse]
-        self.limmag = np.zeros(self.npix + 1, dtype='f4')
-        self.limmag[0: self.npix] = depthinfo.limmag[duse]
-        self.m50 = np.zeros(self.npix + 1, dtype='f4')
-        self.m50[0: self.npix] = depthinfo.m50[duse]
-
-        # And the overflow bins
-        self.fracgood[self.npix] = hp.UNSEEN
-        self.exptime[self.npix] = hp.UNSEEN
-        self.limmag[self.npix] = hp.UNSEEN
-        self.m50[self.npix] = hp.UNSEEN
-
-        # The look-up table
-        #  Set default to overflow bin
-        self.hpix_to_index = np.zeros(self.ntot, dtype='i4') + self.npix
-        self.hpix_to_index[hpix_ring[duse] - self.offset] = np.arange(self.npix)
+        # Record the coverage of the subregion that we read
+        self.subpix_nside = config.d.nside
+        self.subpix_hpix = config.d.hpix
+        self.subpix_border = config.border
 
     def get_depth_values(self, ras, decs):
         """
@@ -130,15 +98,14 @@ class DepthMap(object):
            50% completeness depth values.  Should be same as limmag for now.
         """
 
-        theta = np.clip((90.0 - decs) * np.pi / 180., -np.pi, np.pi)
-        phi = ras * np.pi / 180.
+        if ras.size != decs.size:
+            raise ValueError("ra, dec must be the same length")
 
-        ipring_offset = np.clip(hp.ang2pix(self.nside, theta, phi) - self.offset,
-                                0, self.ntot - 1)
+        values = self.sparse_depthmap.getValueRaDec(ras, decs)
 
-        return (self.limmag[self.hpix_to_index[ipring_offset]],
-                self.exptime[self.hpix_to_index[ipring_offset]],
-                self.m50[self.hpix_to_index[ipring_offset]])
+        return (values['limmag'],
+                values['exptime'],
+                values['m50'])
 
     def get_fracgoods(self, ras, decs):
         """
@@ -157,13 +124,12 @@ class DepthMap(object):
            Float array of fracgoods
         """
 
-        theta = np.clip((90.0 - decs) * np.pi / 180., -np.pi, np.pi)
-        phi = ras * np.pi / 180.
+        if (ras.size != decs.size):
+            raise ValueError("ra, dec must be the same length")
 
-        ipring_offset = np.clip(hp.ang2pix(self.nside, theta, phi) - self.offset,
-                                0, self.ntot - 1)
+        values = self.sparse_depthmap.getValueRaDec(ras, decs)
 
-        return self.fracgood[self.hpix_to_index[ipring_offset]]
+        return values['fracgood']
 
     def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):
         """
@@ -245,31 +211,30 @@ class DepthMap(object):
             areas = np.zeros(mags.size) + self.config_area
             return areas
 
-        if self.submask_hpix > 0:
+        if self.subpix_hpix > 0:
             # for the subregion, we need the area covered in the main pixel
             # I'm not sure what to do about border...but you shouldn't
             # be running this with a subregion with a border
-            if self.submask_border > 0.0:
-                raise ValueError("Cannot run calc_areas() with a subregion with a border")
+            if self.subpix_border > 0.0:
+                raise RuntimeError("Cannot run calc_areas() with a subregion with a border")
 
-            hpix = np.arange(self.ntot) + self.offset
-            theta, phi = hp.pix2ang(self.nside, hpix)
-            #hpix_submask = hp.ang2pix(self.galfile_nside, theta, phi)
-            hpix_submask = hp.ang2pix(self.submask_nside, theta, phi)
-
-            use, = np.where(hpix_submask == self.submask_hpix)
+            bitShift = 2 * int(np.round(np.log(self.nside / self.subpix_nside) / np.log(2)))
+            nFinePerSub = 2**bitShift
+            ipnest = np.left_shift(hp.ring2nest(self.subpix_nside, self.subpix_hpix), bitShift) + np.arange(nFinePerSub)
         else:
-            use = np.arange(self.ntot)
+            ipnest = self.sparse_depthmap.validPixels
 
         areas = np.zeros(mags.size)
 
-        gd, = np.where((self.m50[self.hpix_to_index[use]] >= 0.0))
+        values = self.sparse_depthmap.getValuePixel(ipnest)
 
-        depths = self.m50[self.hpix_to_index[use[gd]]]
+        gd, = np.where(values['m50'] > 0.0)
+
+        depths = values['m50'][gd]
         st = np.argsort(depths)
         depths = depths[st]
 
-        fracgoods = self.fracgood[self.hpix_to_index[use[gd[st]]]]
+        fracgoods = values['fracgood'][gd[st]]
 
         inds = np.clip(np.searchsorted(depths, mags) - 1, 1, depths.size - 1)
 
@@ -303,3 +268,50 @@ class MultibandDepthMap(object):
                                                    ('limmag', 'f4', self.nband),
                                                    ('m50', 'f4', self.nband)]))
 """
+
+def convert_depthfile_to_healsparse(depthfile, healsparsefile, nsideCoverage, clobber=False):
+    """
+    Convert an old depthfile to a new healsparsefile
+
+    Parameters
+    ----------
+    depthfile: `str`
+       Input depth file
+    healsparsefile: `str`
+       Output healsparse file
+    nsideCoverage: `int`
+       Nside for sparse coverage map
+    clobber: `bool`, optional
+       Clobber existing healsparse file?  Default is False.
+    """
+
+    old_depth, old_hdr = fitsio.read(depthfile, ext=1, header=True, lower=True)
+
+    nside = old_hdr['nside']
+
+    # Need to remove the HPIX from the dtype
+
+    dtype_new = []
+    names = []
+    for d in old_depth.dtype.descr:
+        if d[0] != 'hpix':
+            dtype_new.append(d)
+            names.append(d[0])
+
+    sparseMap = healsparse.HealSparseMap.makeEmpty(nsideCoverage, nside, dtype_new, primary='fracgood')
+
+    old_depth_sub = np.zeros(old_depth.size, dtype=dtype_new)
+    for name in names:
+        old_depth_sub[name] = old_depth[name]
+
+    sparseMap.updateValues(old_depth['hpix'], old_depth_sub, nest=old_hdr['nest'])
+
+    hdr = fitsio.FITSHDR()
+    hdr['NSIG'] = old_hdr['NSIG']
+    hdr['ZP'] = old_hdr['ZP']
+    hdr['NBAND'] = old_hdr['NBAND']
+    hdr['W'] = old_hdr['W']
+    hdr['EFF'] = old_hdr['EFF']
+
+    sparseMap.write(healsparsefile, clobber=clobber, header=hdr)
+

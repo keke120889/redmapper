@@ -308,19 +308,26 @@ class RedmagicCalibrator(object):
 
         vlim_masks = OrderedDict()
         vlim_areas = OrderedDict()
-        if self.config.depthfile is None or not os.path.isfile(self.config.depthfile):
-            # If there is no depthfile, there are no proper vlim files...
-            # So we're going to make temporary masks
 
+        if self.config.depthfile is not None and os.path.isfile(self.config.depthfile):
+            # Best way: generate volume-limit mask from depth map
             for i, vlim_lstar in enumerate(self.config.redmagic_etas):
-                self.config.logger.info("Simulating volume-limit mask for %.2f" % (vlim_lstar))
-                vlim_masks[self.config.redmagic_names[i]] = VolumeLimitMaskFixed(self.config)
+                self.config.logger.info("Reading/creating volume-limit mask from depth maps for %.2f" % (vlim_lstar))
+                vlim_masks[self.config.redmagic_names[i]] = VolumeLimitMask(self.config, vlim_lstar)
+                vlim_areas[self.config.redmagic_names[i]] = vlim_masks[self.config.redmagic_names[i]].get_areas()
+        elif self.config.maskfile is not None and os.path.isfile(self.config.maskfile):
+            # Okay way: generate volume-limit mask from geometry mask
+            for i, vlim_lstar in enumerate(self.config.redmagic_etas):
+                self.config.logger.info("Reading/creating volume-limit mask from geometry map for %.2f" % (vlim_lstar))
+                self.config.logger.info("NOTE: this is not optimal if the high redshift end is near the depth of the survey.")
+                vlim_masks[self.config.redmagic_names[i]] = VolumeLimitMask(self.config, vlim_lstar, use_geometry=True)
                 vlim_areas[self.config.redmagic_names[i]] = vlim_masks[self.config.redmagic_names[i]].get_areas()
         else:
-            # There is a depth file so we can create/read vlim masks.
+            # Just simulated it.
             for i, vlim_lstar in enumerate(self.config.redmagic_etas):
-                self.config.logger.info("Reading/creating volume-limit mask for %.2f" % (vlim_lstar))
-                vlim_masks[self.config.redmagic_names[i]] = VolumeLimitMask(self.config, vlim_lstar)
+                self.config.logger.info("Simulating volume-limit mask for %.2f" % (vlim_lstar))
+                self.config.logger.info("NOTE: You will not be able to create randoms without any geometry/depth information.")
+                vlim_masks[self.config.redmagic_names[i]] = VolumeLimitMaskFixed(self.config)
                 vlim_areas[self.config.redmagic_names[i]] = vlim_masks[self.config.redmagic_names[i]].get_areas()
 
         # Note that the area is already scaled properly!
@@ -604,7 +611,7 @@ class RedmagicCalibrator(object):
 
             # make pretty plots
             nzplot = NzPlot(self.config, binsize=self.config.redmagic_calib_zbinsize)
-            nzplot.plot_redmagic_catalog(gals[gd], calstr.name, calstr.etamin, calstr.n0,
+            nzplot.plot_redmagic_catalog(gals[gd], calstr.name.decode(), calstr.etamin, calstr.n0,
                                          vlim_areas[self.config.redmagic_names[i]],
                                          zrange=corr_zrange,
                                          sample=self.config.redmagic_calib_pz_integrate,
@@ -621,10 +628,10 @@ class RedmagicCalibrator(object):
                                            gals.zredmagic_e[gd[okspec]],
                                            name='z_{\mathrm{redmagic}}',
                                            title='%s: %3.1f-%02d' %
-                                           (calstr.name, calstr.etamin, int(calstr.n0)),
+                                           (calstr.name.decode(), calstr.etamin, int(calstr.n0)),
                                            figure_return=True)
                 fig.savefig(self.config.redmapper_filename('redmagic_calib_zspec_%s_%3.1f-%02d' %
-                                                           (calstr.name, calstr.etamin,
+                                                           (calstr.name.decode(), calstr.etamin,
                                                             int(calstr.n0)),
                                                            paths=(self.config.plotpath,),
                                                            filetype='png'))
@@ -637,10 +644,10 @@ class RedmagicCalibrator(object):
                                            name='z_{\mathrm{redmagic}}',
                                            specname='z_{\mathrm{cal}}',
                                            title='%s: %3.1f-%02d' %
-                                           (calstr.name, calstr.etamin, int(calstr.n0)),
+                                           (calstr.name.decode(), calstr.etamin, int(calstr.n0)),
                                            figure_return=True)
                 fig.savefig(self.config.redmapper_filename('redmagic_calib_zcal_%s_%3.1f-%02d' %
-                                                           (calstr.name, calstr.etamin,
+                                                           (calstr.name.decode(), calstr.etamin,
                                                             int(calstr.n0)),
                                                            paths=(self.config.plotpath,),
                                                            filetype='png'))

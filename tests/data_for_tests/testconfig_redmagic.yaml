@@ -9,8 +9,7 @@ bkgfile_color: ./data_for_tests/test_dr8_col_bkg.fit
 parfile: ./data_for_tests/test_dr8_pars.fit
 specfile: ./data_for_tests/redmagic_test/redmagic_test_spec.fit
 maskgalfile: ./data_for_tests/maskgals.fit
-#maskfile: ./data_for_tests/test_dr8_mask.fit
-#depthfile: ./data_for_tests/test_dr8_depth.fit
+maskfile: ./data_for_tests/redmagic_test/redmagic_test_mask_hs.fit
 zlambdafile: None
 outbase: dr8_testing
 chisq_max: 20.0

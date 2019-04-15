@@ -140,10 +140,10 @@ def read_yaml(filename):
     outdict = {}
 
     # Open the yaml file and find key/value pairs
-    with open(filename) as f: yaml_data = yaml.load(f)
+    with open(filename) as f: yaml_data = yaml.load(f, Loader=yaml.SafeLoader)
     for tag in outdict:
         if outdict[tag] is None:
-            raise ValueError('A value for the required tag \"' 
+            raise ValueError('A value for the required tag \"'
                                 + tag + '\" must be specified.')
 
     # Add the pairs to the dictionary
@@ -237,6 +237,7 @@ class Configuration(object):
     maskgalfile = ConfigField(default='maskgals.fit', required=True)
     mask_mode = ConfigField(default=0, required=True)
     max_maskfrac = ConfigField(default=0.2, required=True)
+    covmask_nside_default = ConfigField(default=32, required=True)
 
     maskgal_ngals = ConfigField(default=6000, required=True)
     maskgal_nsamples = ConfigField(default=100, required=True)
@@ -833,8 +834,8 @@ class Configuration(object):
                     # Try to use numpy to convert to scalar; if it doesn't work then
                     # it's not numpy and we can use the value directly
                     try:
-                        out_dict[key] = np.asscalar(type(self).__dict__[key]._value)
-                    except (ValueError, AttributeError):
+                        out_dict[key] = type(self).__dict__[key]._value.item()
+                    except (ValueError, AttributeError, TypeError):
                         out_dict[key] = type(self).__dict__[key]._value
 
         with open(filename, 'w') as f:

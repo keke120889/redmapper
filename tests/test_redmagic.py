@@ -20,6 +20,7 @@ from redmapper.redmagic import RunRedmagicTask
 from redmapper import RedSequenceColorPar
 from redmapper import GalaxyCatalog
 from redmapper import Catalog
+from redmapper import VolumeLimitMask
 
 class RedmagicCalTestCase(unittest.TestCase):
     def test_redmagic_fitter(self):
@@ -113,24 +114,53 @@ class RedmagicCalTestCase(unittest.TestCase):
         # Check that they are what we think they should be
         # (these checks are arbitrary, just to make sure nothing has changed)
 
-        testing.assert_almost_equal(cal['cmax'][0, :], np.array([1.24330657, 2.94100893, -0.04402284]))
-        testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.09227668, -0.04118877, 0.01460366]))
-        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.49999795, 1.16995239, 0.5]))
+        testing.assert_almost_equal(cal['cmax'][0, :], np.array([1.14588386, 3.89420298, -0.36792211]))
+        testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.09999912, -0.04537928, 0.01599778]))
+        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.4999998, 1.48021495, 0.50000003]))
 
         pngs = glob.glob(os.path.join(self.test_dir, '*.png'))
-        self.assertEqual(len(pngs), 2)
+        self.assertEqual(len(pngs), 3)
+
+        # This is a hack of the volume limit mask to change from the one used for
+        # calibration to the one used for the run (which uses a different footprint
+        # because of reasons)
+
+        config_regular = Configuration(os.path.join(file_path, 'testconfig.yaml'))
+        maskfile = config_regular.maskfile
+
+        config = Configuration(redmagic_cal.runfile)
+
+        cal, hdr = fitsio.read(config.redmagicfile, ext=1, header=True)
+        config.maskfile = maskfile
+        os.remove(cal['vmaskfile'][0].decode().rstrip())
+        mask = VolumeLimitMask(config, cal['etamin'], use_geometry=True)
 
         # Now test the running, using the output file which has valid galaxies/zreds
         run_redmagic = RunRedmagicTask(redmagic_cal.runfile)
         run_redmagic.run()
 
         # check that we have a redmagic catalog
-        self.assertTrue(os.path.isfile(config.redmapper_filename('redmagic_%s' % ('highdens'))))
+        rmcatfile = config.redmapper_filename('redmagic_%s' % ('highdens'))
+        self.assertTrue(os.path.isfile(rmcatfile))
+
+        # And a random catalog
+        rmrandfile = config.redmapper_filename('redmagic_%s_randoms' % ('highdens'))
+        self.assertTrue(os.path.isfile(config.redmapper_filename('redmagic_%s_randoms' % ('highdens'))))
 
         # And check that the plot is there
 
         pngs = glob.glob(os.path.join(self.test_dir, '*.png'))
-        self.assertEqual(len(pngs), 3)
+        self.assertEqual(len(pngs), 4)
+
+        # And that we have the desired number of redmagic and randoms
+        red_cat = GalaxyCatalog.from_fits_file(rmcatfile)
+        rand_cat = GalaxyCatalog.from_fits_file(rmrandfile)
+
+        self.assertEqual(rand_cat.size, red_cat.size * 10)
+
+        # And confirm that all the randoms are in the footprint
+        zmax = mask.calc_zmax(rand_cat.ra, rand_cat.dec)
+        self.assertTrue(np.all(rand_cat.z < zmax))
 
     def setUp(self):
         self.test_dir = None
@@ -139,6 +169,7 @@ class RedmagicCalTestCase(unittest.TestCase):
         if self.test_dir is not None:
             if os.path.exists(self.test_dir):
                 shutil.rmtree(self.test_dir, True)
+
 
 if __name__=='__main__':
     unittest.main()

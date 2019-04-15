@@ -12,6 +12,8 @@ from .redmagic_selector import RedmagicSelector
 from ..catalog import Entry
 from ..galaxy import GalaxyCatalog
 from ..plotting import SpecPlot, NzPlot
+from .redmagic_randoms import RedmagicGenerateRandoms
+from ..volumelimit import VolumeLimitMaskFixed
 
 class RunRedmagicTask(object):
     """
@@ -37,7 +39,7 @@ l           Output path.  Default is None, use same absolute
 
         self.config = Configuration(configfile, outpath=path)
 
-    def run(self, modes=None, clobber=False, do_plots=True):
+    def run(self, modes=None, clobber=False, do_plots=True, n_randoms=None):
         """
         Run redMaGiC selection over a full catalog.
 
@@ -52,6 +54,10 @@ l           Output path.  Default is None, use same absolute
            Overwrite any existing files.  Default is False.
         do_plots: `bool`, optional
            Make the output plots
+        n_randoms: `int`, optional
+           If None, then 10x the number of redmagic galaxies are generated.
+           If 0, then no randoms are generated.
+           If >0, then that many randoms are generated.
         """
 
         if not self.config.galfile_pixelized:
@@ -134,4 +140,25 @@ l           Output path.  Default is None, use same absolute
                                                                filetype='png'))
                     plt.close(fig)
 
-        # All done!  (Except for randoms, tbd...)
+        # Need a check on when to kick out
+        if (n_randoms is not None and n_randoms == 0):
+            # We are not generating randoms
+            return
+
+        # Random generation
+        for j, mode in enumerate(modes):
+            if isinstance(selector.vlim_masks[mode], VolumeLimitMaskFixed):
+                self.config.logger.info("Cannot construct randoms for %s, because we don't have geometry/depth info." % (mode))
+                continue
+
+            gals = GalaxyCatalog.from_fits_file(filenames[j])
+
+            rand_generator = RedmagicGenerateRandoms(self.config, selector.vlim_masks[mode], gals)
+            if n_randoms is None:
+                _n_randoms = gals.size * 10
+            else:
+                _n_randoms = n_randoms
+
+            randfile = self.config.redmapper_filename('redmagic_%s_randoms' % (mode))
+
+            rand_generator.generate_randoms(_n_randoms, randfile, clobber=clobber)

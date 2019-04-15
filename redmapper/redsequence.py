@@ -373,7 +373,7 @@ class RedSequenceColorPar(object):
 
         zind = np.searchsorted(self.zinteger,np.round(np.atleast_1d(z)*self.zbinscale).astype(np.int64))
         if (zind.size == 1):
-            return np.asscalar(zind)
+            return np.ndarray.item(zind)
         else:
             return zind
 
@@ -396,7 +396,7 @@ class RedSequenceColorPar(object):
 
         refmagind = np.searchsorted(self.refmaginteger,np.round(np.atleast_1d(refmag)*self.refmagbinscale).astype(np.int64))
         if (refmagind.size == 1):
-            return np.asscalar(refmagind)
+            return np.ndarray.item(refmagind)
         else:
             return refmagind
 
@@ -416,7 +416,7 @@ class RedSequenceColorPar(object):
         """
         lumrefmagind = np.searchsorted(self.lumrefmaginteger,np.round(np.atleast_1d(lumrefmag)*self.refmagbinscale).astype(np.int64))
         if (lumrefmagind.size == 1):
-            return np.asscalar(lumrefmagind)
+            return np.ndarray.item(lumrefmagind)
         else:
             return lumrefmagind
 

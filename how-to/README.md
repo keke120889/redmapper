@@ -80,6 +80,7 @@ maker = redmapper.GalaxyCatalogMaker(filename_base, info_dict)
 
 for input_file in input_files:
     # insert code to translate to file format
+
     maker.append_galaxies(galaxies)
 
 maker.finalize_catalog()
@@ -118,36 +119,28 @@ spec_dtype = [('ra', 'f8'),        # right ascension (degrees)
 ### Survey Geometry Mask (Strongly Recommended)
 
 Although redMaPPer does not require a survey geometry mask in order to run, it
-is strongly recommended when running on real data.  For certain types of sim
+is strongly recommended when running on real data.  For certain types of simulated
 data that cover a large contiguous area with limited boundaries and no
 star-holes or bad fields, you can definitely get away without a survey geometry
 mask!
 
 The only type of mask currently supported in the `redmapper` package is a
-healpix geometry mask, although if a different type of mask has reasonably
-efficient ways of doing a position lookup, then this can be easily added to the
-code.
+healpix geometry mask as described by the
+[`healsparse`](https://github.com/lsstdesc/healsparse) format.  Other types of
+mask could have supported added provided they have reasonably efficient ways of doing a
+position lookup.
 
-The `redmapper` survey mask is not described as a standard `healpy` healpix
-file because it has a couple of other advantages for memory efficiency.  You
-also have the ability to specify `FRACGOOD`, the fractional good coverage of
-each pixel, if this is known, to approximate a higher resolution mask.  If it
-is not known, simply set this to 1.0 for each pixel.
+The `healsparse` format is much more memory efficient and faster to read than a
+standard `healpy` healpix file or the older `redmapper` format.  The format of
+the mask is a standard `healsparse` map with a float value for `fracgood` (the
+fractional "good" coverage) in each pixel.  Using `fracgood` allows you to
+approximate a higher resolution mask via sub-sampling.  If you do not have
+`fracgood`, then you should set each pixel that is in the mask to 1.0, and each
+pixel that is outside the mask to `healpy.UNSEEN` (the default value).
 
-The header of the file and the datatype should be:
-
-```python
-
-import fitsio
-
-hdr = fitsio.FITSHDR()
-hdr['NSIDE'] = healpix_nside
-hdr['NEST'] = 0 # 0 for RING, or 1 for NEST
-hdr['AREA'] = total_coverage_area
-
-mask_dtype = [('HPIX', 'i8'),     # healpix number (nest or ring as in header)
-              ('FRACGOOD', 'f4')] # fraction of pixel with good coverage
-```
+If you have an old-style `redmapper` mask, this can be converted to the
+`healsparse` format with the executable
+`redmapper_convert_mask_to_healsparse.py`.
 
 ### Survey Depth Maps (Recommended)
 
@@ -160,28 +153,34 @@ depth map is not specified, the code will do its best to approximate it with a
 fit to the galaxies (see Appendix B of [Rozo et
 al. (2015)](http://adsabs.harvard.edu/abs/2015MNRAS.453...38R)).
 
-The depth map has the format described below, with values consistent with the
-model in Section 3 of [Rykoff et
+The depth map should be in
+[`healsparse`](https://github.com/lsstdesc/healsparse) format.  Other types of
+mask could have supported added provided they have reasonably efficient ways of doing a
+position lookup (as with the survey geometry masks).
+
+The depth map `healsparse` file has the format described below, with values
+consistent with the model in Section 3 of [Rykoff et
 al. (2015)](http://adsabs.harvard.edu/abs/2015arXiv150900870R).
 
 ```python
 import fitsio
 
 hdr = fitsio.FITSHDR()
-hdr['NSIDE'] = healpix_nside
-hdr['NEST'] = 0 # 0 for RING, or 1 for NEST
 hdr['ZP'] = reference_zeropoint
 hdr['NSIG'] = signal_to_noise_at_limmag
 hdr['NBAND'] = 1  # not used
 hdr['W'] = 0.0  # not used
 hdr['EFF'] = 1.0 # not used
 
-depth_dtype = [('HPIX', 'i8'),     # healpix number (nest or ring as in header)
-               ('EXPTIME', 'f4'),  # effective exposure time
-               ('LIMMAG', 'f4'),   # limited magnitude at nsig (in header)
-               ('M50', 'f4'),      # Should be same as LIMMAG (for now)
-               ('FRACGOOD', 'f4')] # fraction of good coverage (see mask above)
+depth_dtype = [('exptime', 'f4'),  # effective exposure time
+               ('limmag', 'f4'),   # limited magnitude at nsig (in header)
+               ('m50', 'f4'),      # Should be same as LIMMAG (for now)
+               ('fracgood', 'f4')] # fraction of good coverage (see mask above)
 ```
+
+If you have an old-style `redmapper` depth file, this can be converted to the
+`healsparse` format with the executable
+`redmapper_convert_depthfile_to_healsparse.py`.
 
 ### m\* as a Function of Redshift
 

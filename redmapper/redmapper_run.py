@@ -128,18 +128,19 @@ class RedmapperRun(object):
         self.config.seedfile = orig_seedfile
 
         # Consolidate (adds additional mask cuts)
-        hpixels = [x[0] for x in retvals]
-        likefiles = [x[2] for x in retvals]
-        percfiles = [x[3] for x in retvals]
+        hpixels_like = [x[0] for x in retvals if x[2] is not None]
+        likefiles = [x[2] for x in retvals if x[2] is not None]
+        hpixels_perc = [x[0] for x in retvals if x[3] is not None]
+        percfiles = [x[3] for x in retvals if x[3] is not None]
 
         # Allow for runs without consolidation
         if consolidate:
-            finalfile = self._consolidate(hpixels, percfiles, 'final', members=True, check=check)
+            finalfile = self._consolidate(hpixels_perc, percfiles, 'final', members=True, check=check)
         else:
             finalfile = None
 
         if consolidate_like:
-            likefile = self._consolidate(hpixels, likefiles, 'like', members=False, check=check)
+            likefile = self._consolidate(hpixels_like, likefiles, 'like', members=False, check=check)
 
         # And done
         if consolidate_like:
@@ -403,6 +404,13 @@ class RedmapperRun(object):
 
         if not os.path.isfile(firstpass.filename) or not self.check:
             firstpass.run(keepz=self.keepz, cleaninput=self.cleaninput)
+
+            if (firstpass.cat is None or
+                (firstpass.cat is not None and firstpass.cat.size == 0)):
+                # We did not get a firstpass catalog
+                print("FAIL ON FIRSTPASS")
+                return (hpix, None, None, None)
+
             firstpass.output(savemembers=False, withversion=False, clobber=True)
         else:
             self.config.logger.info("Firstpass file %s already present.  Skipping..." % (firstpass.filename))
@@ -413,6 +421,13 @@ class RedmapperRun(object):
 
         if not os.path.isfile(like.filename) or not self.check:
             like.run(keepz=self.keepz)
+
+            if (like.cat is None or
+                (like.cat is not None and like.cat.size == 0)):
+                # We did not get a likelihood catalog
+                print("FAIL ON LIKE")
+                return (hpix, firstpass.filename, None, None)
+
             like.output(savemembers=False, withversion=False, clobber=True)
         else:
             self.config.logger.info("Likelihood file %s already present.  Skipping..." % (like.filename))
@@ -423,6 +438,13 @@ class RedmapperRun(object):
 
         if not os.path.isfile(perc.filename) or not self.check:
             perc.run(keepz=self.keepz)
+
+            if (perc.cat is None or
+                (perc.cat is not None and perc.cat.size == 0)):
+                # We did not get a percolation catalog
+                print("FAIL ON PERC")
+                return (hpix, firstpass.filename, like.filename, None)
+
             perc.output(savemembers=True, withversion=False, clobber=True)
         else:
             self.config.logger.info("Percolation file %s already present.  Skipping..." % (perc.filename))
