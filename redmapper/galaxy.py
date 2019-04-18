@@ -726,7 +726,10 @@ class GalaxyCatalogMaker(object):
 
                 bad, = np.where(gals[d[0]].flatten() >= 90.0)
                 if bad.size > 0:
-                    raise RuntimeError("Input magnitude/error column %s contains %d elements with >= 90." % (d[0], bad.size))
+                    if d[0] == 'mag':
+                        raise RuntimeError("Input magnitude column %s contains %d elements with >= 90." % (d[0], bad.size))
+                    elif d[0] == 'mag_err' and self.b[0] == 0.0:
+                        raise RuntimeError("Input mag_err column %s contains %d elements with >= 90." % (d[0], bad.size))
 
                 bad, = np.where(gals[d[0]].flatten() <= 0.0)
                 if bad.size > 0:
