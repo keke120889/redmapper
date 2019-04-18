@@ -161,11 +161,22 @@ class RunFirstPass(ClusterRunner):
 
             use, = np.where((self.cat.zred >= self.config.zrange[0]) &
                             (self.cat.zred <= self.config.zrange[1]))
+
+            if use.size == 0:
+                self.cat = None
+                self.config.logger.info("No good zred inputs for firstpass on pixel %d" % (self.config.d.hpix))
+                return False
+
             self.cat = self.cat[use]
 
             if self.cleaninput:
                 catmask = self.mask.compute_radmask(self.cat.ra, self.cat.dec)
                 self.cat = self.cat[catmask]
+
+                if self.cat.size == 0:
+                    self.cat = None
+                    self.config.logger.info("No zred positions are in the mask on pixel %d" % (self.config.d.hpix))
+                    return False
         else:
             # We do not have an input catalog
             # we must not have a seedfile, and did_read_zreds
@@ -175,8 +186,9 @@ class RunFirstPass(ClusterRunner):
                           (self.gals.zred <= self.config.zrange[1]))
 
             if use.size == 0:
-                self.fail = True
-                return
+                self.cat = None
+                self.config.logger.info("No good zred inputs for firstpass on pixel %d" % (self.config.d.hpix))
+                return False
 
             mstar = self.zredstr.mstar(self.gals.zred[use])
             mlim = mstar - 2.5 * np.log10(self.config.lval_reference)
@@ -184,8 +196,9 @@ class RunFirstPass(ClusterRunner):
             good, = np.where(self.gals.refmag[use] < mlim)
 
             if good.size == 0:
-                self.fail = True
-                return
+                self.cat = None
+                self.config.logger.info("No usable zred inputs for firstpass on pixel %d" % (self.config.d.hpix))
+                return False
 
             self.cat = ClusterCatalog.zeros(good.size,
                                             zredstr=self.zredstr,
@@ -222,6 +235,8 @@ class RunFirstPass(ClusterRunner):
             self.maxiter = 1
 
         self.min_lambda = self.config.firstpass_minlambda
+
+        return True
 
     def _process_cluster(self, cluster):
         """

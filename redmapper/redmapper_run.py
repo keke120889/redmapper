@@ -408,7 +408,7 @@ class RedmapperRun(object):
             if (firstpass.cat is None or
                 (firstpass.cat is not None and firstpass.cat.size == 0)):
                 # We did not get a firstpass catalog
-                print("FAIL ON FIRSTPASS")
+                self.config.logger.info("Did not produce a firstpass catalog for pixel %d" % (hpix))
                 return (hpix, None, None, None)
 
             firstpass.output(savemembers=False, withversion=False, clobber=True)
@@ -425,7 +425,7 @@ class RedmapperRun(object):
             if (like.cat is None or
                 (like.cat is not None and like.cat.size == 0)):
                 # We did not get a likelihood catalog
-                print("FAIL ON LIKE")
+                self.config.logger.info("Did not produce a likelihood catalog for pixel %d" % (hpix))
                 return (hpix, firstpass.filename, None, None)
 
             like.output(savemembers=False, withversion=False, clobber=True)
@@ -442,7 +442,7 @@ class RedmapperRun(object):
             if (perc.cat is None or
                 (perc.cat is not None and perc.cat.size == 0)):
                 # We did not get a percolation catalog
-                print("FAIL ON PERC")
+                self.config.logger.info("Did not produce a percolation catalog for pixel %d" % (hpix))
                 return (hpix, firstpass.filename, like.filename, None)
 
             perc.output(savemembers=True, withversion=False, clobber=True)
@@ -472,6 +472,8 @@ class RedmapperRun(object):
            Filename for percolation file.
         """
 
+        self.config.logger.info("Running percolation on pixel %d" % (hpix))
+
         config = self.config.copy()
         config.cosmo = Cosmo(H0=self._H0, omega_l=self._omega_l, omega_m=self._omega_m)
 
@@ -482,6 +484,12 @@ class RedmapperRun(object):
         perc = RunPercolation(config)
         if not os.path.isfile(perc.filename) or not self.check:
             perc.run(keepz=self.keepz, cleaninput=self.cleaninput)
+
+            if (perc.cat is None or
+                (perc.cat is not None and perc.cat.size == 0)):
+                # we did not get a percolation catalog
+                self.config.logger.info("Did not produce a percolation catalog for pixel %d" % (hpix))
+                return (hpix, None, None, None)
             perc.output(savemembers=True, withversion=False, clobber=True)
 
         return (hpix, None, None, perc.filename)

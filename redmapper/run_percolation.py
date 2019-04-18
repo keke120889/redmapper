@@ -153,6 +153,10 @@ class RunPercolation(ClusterRunner):
                         (self.cat.Lambda > self.config.percolation_minlambda))
 
         # How to bail if use.size == 0?  Need a framework for fail...
+        if use.size == 0:
+            self.cat = None
+            self.config.logger.info("No good inputs for percolation on pixel %d" % (self.config.d.hpix))
+            return False
 
         if self.keepid:
             st = np.argsort(self.cat.mem_match_id[use])
@@ -167,7 +171,13 @@ class RunPercolation(ClusterRunner):
             catmask = self.mask.compute_radmask(self.cat.ra, self.cat.dec)
             self.cat = self.cat[catmask]
 
+            if self.cat.size == 0:
+                self.cat = None
+                self.config.logger.info("No input cluster positions are in the mask on pixel %d" % (self.config.d.hpix))
+                return False
+
         # This preserves previously set ids
+
         self._generate_mem_match_ids()
 
         self.cat.ra_orig = self.cat.ra
@@ -200,6 +210,8 @@ class RunPercolation(ClusterRunner):
 
         self.maxiter = self.config.percolation_niter
         self.min_lambda = self.config.percolation_minlambda
+
+        return True
 
     def _process_cluster(self, cluster):
         """

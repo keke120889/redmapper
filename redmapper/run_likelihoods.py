@@ -124,11 +124,21 @@ class RunLikelihoods(ClusterRunner):
                         (self.cat.z < zrange[1]) &
                         (self.cat.Lambda > 0.0))
 
+        if use.size == 0:
+            self.cat = None
+            self.config.logger.info("No good inputs for likelihood on pixel %d" % (self.config.d.hpix))
+            return False
+
         self.cat = self.cat[use]
 
         if self.cleaninput:
             catmask = self.mask.compute_radmask(self.cat.ra, self.cat.dec)
             self.cat = self.cat[catmask]
+
+            if self.cat.size == 0:
+                self.cat = None
+                self.config.logger.info("No input cluster positions are in the mask on pixel %d" % (self.config.d.hpix))
+                return False
 
         self.do_lam_plusminux = False
         self.match_centers_to_galaxies = False
@@ -136,7 +146,7 @@ class RunLikelihoods(ClusterRunner):
         self.do_correct_zlambda = False
         self.do_pz = False
 
-        #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
+        return True
 
     def _reset_bad_values(self, cluster):
         """
