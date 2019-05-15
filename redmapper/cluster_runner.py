@@ -216,7 +216,7 @@ class ClusterRunner(object):
             try:
                 self.depthlim = DepthLim(self.gals.refmag, self.gals.refmag_err)
             except RuntimeError:
-                self.config.logger.info("Failed to obtain depth info in %d for pixel %d with %d galaxies.  Skipping pixel." % (self.runmode, self.config.d.hpix, len(self.gals)))
+                self.config.logger.info("Failed to obtain depth info in %s for pixel %d with %d galaxies.  Skipping pixel." % (self.runmode, self.config.d.hpix, len(self.gals)))
                 return False
 
         # default limiting luminosity
