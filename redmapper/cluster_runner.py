@@ -206,6 +206,11 @@ class ClusterRunner(object):
         # Cut the input galaxy file
         self.gals = self.gals[guse]
 
+        if len(self.gals) == 0:
+            self.config.logger.info("No good galaxies for %s in pixel %d" %
+                                    (self.runmode, self.config.d.hpix))
+            return False
+
         # If we don't have a depth map, get ready to compute local depth
         if self.depthstr is None:
             self.depthlim = DepthLim(self.gals.refmag, self.gals.refmag_err)
@@ -225,6 +230,8 @@ class ClusterRunner(object):
         self.do_correct_zlambda = False
         self.do_pz = False
 
+        return True
+
     def _more_setup(self, *args, **kwargs):
         """
         Additional setup for derived ClusterRunner classes.
@@ -234,7 +241,7 @@ class ClusterRunner(object):
         # This is to be overridden if necessary
         # this can receive all the keywords.
 
-        pass
+        return True
 
     def _generate_mem_match_ids(self):
         """
@@ -279,7 +286,9 @@ class ClusterRunner(object):
         """
 
         # General setup
-        self._setup()
+        if not self._setup():
+            self.config.logger.info("Cluster initialization failed on pixel %d. No catalog will be produced." % (self.config.d.hpix))
+            return
 
         # Setup specific for a given task.  Will read in the galaxy catalog.
         if not self._more_setup(*args, **kwargs):
