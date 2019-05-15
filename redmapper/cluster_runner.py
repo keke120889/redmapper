@@ -288,11 +288,13 @@ class ClusterRunner(object):
         # General setup
         if not self._setup():
             self.config.logger.info("Cluster initialization failed on pixel %d. No catalog will be produced." % (self.config.d.hpix))
+            self.cat = None
             return
 
         # Setup specific for a given task.  Will read in the galaxy catalog.
         if not self._more_setup(*args, **kwargs):
             self.config.logger.info("Cluster initialization failed on pixel %d. No catalog will be produced." % (self.config.d.hpix))
+            self.cat = None
             return
 
         # Match centers and galaxies if required
