@@ -171,7 +171,11 @@ class GalaxyCatalog(Catalog):
             # Also, we are assuming that the files actually match up in terms of length, etc.
             mark = np.zeros(indices.size, dtype=np.bool)
             for i, f in enumerate(ztab.filenames[indices]):
-                if os.path.isfile(os.path.join(zpath, f.decode())):
+                try:
+                    fname = os.path.join(zpath, f.decode())
+                except AttributeError:
+                    fname = os.path.join(zpath, f)
+                if os.path.isfile(fname):
                     mark[i] = True
 
             bad, = np.where(~mark)
@@ -185,7 +189,11 @@ class GalaxyCatalog(Catalog):
         # will need to also get the list of columns from the thingamajig.
 
         # and need to be able to cut?
-        elt = fitsio.read(os.path.join(path, tab.filenames[indices[0]].decode()), ext=1, rows=0, lower=True)
+        try:
+            first_fname = os.path.join(path, tab.filenames[indices[0]].decode())
+        except AttributeError:
+            first_fname = os.path.join(path, tab.filenames[indices[0]])
+        elt = fitsio.read(first_fname, ext=1, rows=0, lower=True)
         dtype_in = elt.dtype.descr
         if not truth:
             mark = []
@@ -205,16 +213,29 @@ class GalaxyCatalog(Catalog):
         cat = np.zeros(np.sum(tab.ngals[indices]), dtype=dtype)
 
         if use_zred:
-            zelt = fitsio.read(os.path.join(zpath, ztab.filenames[indices[0]].decode()), ext=1, rows=0, upper=False)
+            try:
+                fname = os.path.join(zpath, ztab.filenames[indices[0]].decode())
+            except AttributeError:
+                fname = os.path.join(zpath, ztab.filenames[indices[0]])
+
+            zelt = fitsio.read(fname, ext=1, rows=0, upper=False)
             zcat = np.zeros(cat.size, dtype=zelt.dtype)
 
         # read the files
         ctr = 0
         for index in indices:
-            cat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(path, tab.filenames[index].decode()), ext=1, lower=True, columns=columns)
+            try:
+                fname = os.path.join(path, tab.filenames[index].decode())
+            except AttributeError:
+                fname = os.path.join(path, tab.filenames[index])
+            cat[ctr: ctr + tab.ngals[index]] = fitsio.read(fname, ext=1, lower=True, columns=columns)
             if use_zred:
                 # Note that this effectively checks that the numbers of rows in each file match properly (though the exception will be cryptic...)
-                zcat[ctr: ctr + tab.ngals[index]] = fitsio.read(os.path.join(zpath, ztab.filenames[index].decode()), ext=1, upper=False)
+                try:
+                    fname = os.path.join(zpath, ztab.filenames[index].decode())
+                except AttributeError:
+                    fname = os.path.join(zpath, ztab.filenames[index])
+                zcat[ctr: ctr + tab.ngals[index]] = fitsio.read(fname, ext=1, upper=False)
             ctr += tab.ngals[index]
 
         if _hpix is not None and nside > 0 and border > 0.0:

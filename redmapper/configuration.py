@@ -646,7 +646,11 @@ class Configuration(object):
 
             master=fitsio.read(self.galfile, ext=1, upper=True)
 
-            mode = master['MODE'][0].rstrip().decode()
+            try:
+                # Support for old fits reading
+                mode = master['MODE'][0].rstrip().decode()
+            except AttributeError:
+                mode = master['MODE'][0].rstrip()
             if (mode == 'SDSS'):
                 gal_stats['survey_mode'] = 0
             elif (mode == 'DES'):

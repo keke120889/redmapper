@@ -132,7 +132,11 @@ class RedmagicCalTestCase(unittest.TestCase):
 
         cal, hdr = fitsio.read(config.redmagicfile, ext=1, header=True)
         config.maskfile = maskfile
-        os.remove(cal['vmaskfile'][0].decode().rstrip())
+        try:
+            fname = cal['vmaskfile'][0].decode().rstrip()
+        except AttributeError:
+            fname = cal['vmaskfile'][0].rstrip()
+        os.remove(fname)
         mask = VolumeLimitMask(config, cal['etamin'], use_geometry=True)
 
         # Now test the running, using the output file which has valid galaxies/zreds
