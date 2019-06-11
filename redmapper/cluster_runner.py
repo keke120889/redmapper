@@ -31,6 +31,7 @@ from .zlambda import Zlambda
 from .zlambda import ZlambdaCorrectionPar
 from .redsequence import RedSequenceColorPar
 from .depth_fitting import DepthLim
+from .utilities import getMemoryString
 
 ###################################################
 # Order of operations:
@@ -179,11 +180,15 @@ class ClusterRunner(object):
         if self.zreds_required and zredfile is None:
             raise RuntimeError("zreds are required, but zredfile is None")
 
+        print(getMemoryString("About to read in galaxies, %d" % (self.config.d.hpix)))
+
         self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
                                                nside=self.config.d.nside,
                                                hpix=self.config.d.hpix,
                                                border=self.config.border,
                                                zredfile=zredfile)
+
+        print(getMemoryString("Have read in galaxies, %d" % (self.config.d.hpix)))
 
         # If the zredfile is not None and we didn't raise an exception,
         # then we successfully read in the zreds
@@ -327,6 +332,8 @@ class ClusterRunner(object):
             nruniter = 2
         else:
             nruniter = 1
+
+        print(getMemoryString("About to loop over clusters on pixel %d" % (self.config.d.hpix)))
 
         for it in xrange(nruniter):
 
