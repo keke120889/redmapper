@@ -10,6 +10,7 @@ import copy
 import fitsio
 import re
 import os
+import time
 
 import multiprocessing
 from multiprocessing import Pool
@@ -221,6 +222,8 @@ class ZredRunPixels(object):
         self.galtable = Entry.from_fits_file(self.config.galfile)
         indices = list(get_subpixel_indices(self.galtable, hpix=self.config.d.hpix, border=self.config.border, nside=self.config.d.nside))
 
+        starttime = time.time()
+
         if not self.single_process:
             pool = Pool(processes=self.config.calib_nproc)
             retvals = pool.map(self._worker, indices, chunksize=1)
@@ -233,6 +236,7 @@ class ZredRunPixels(object):
                 self.config.logger.info("Computing zred for %d galaxies in %d pixels." % (self.total_galaxies, len(indices)))
             retvals = map(self._worker, indices)
 
+        self.config.logger.info("Done computing zreds in %.2f seconds" % (time.time() - starttime))
 
         if no_zred_table:
             return retvals
@@ -284,6 +288,7 @@ class ZredRunPixels(object):
         outfile_nopath = '%s_zreds_%07d.fit' % (self.outbase, self.galtable.hpix[index])
         outfile = os.path.join(self.zredpath, outfile_nopath)
 
+        print("Writing out %s" % (outfile))
         fitsio.write(outfile, zreds, clobber=True)
 
         return (index, outfile)
