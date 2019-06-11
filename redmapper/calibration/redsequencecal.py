@@ -714,7 +714,8 @@ class RedSequenceCalibrator(object):
                                                     self.config.calib_covmat_prior,
                                                     min_eigenvalue=self.config.calib_covmat_min_eigenvalue)
 
-            rvals = odfitter.fit(np.zeros(self.pars.covmat_z.size), full_covmats=full_covmats)
+            #rvals = odfitter.fit(np.zeros(self.pars.covmat_z.size), full_covmats=full_covmats)
+            rvals = np.zeros(self.pars.covmat_z.size) # + 0.4
 
             self.pars.sigma[j, k, :] = rvals
             self.pars.sigma[k, j, :] = rvals
