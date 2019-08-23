@@ -159,8 +159,13 @@ class RunFirstPass(ClusterRunner):
                 self.cat.z_init = incat.zred
                 self.cat.z = incat.zred
 
-            use, = np.where((self.cat.zred >= self.config.zrange[0]) &
-                            (self.cat.zred <= self.config.zrange[1]))
+            cuse = ((self.cat.zred >= self.config.zrange[0]) &
+                    (self.cat.zred <= self.config.zrange[1]))
+
+            if self.cutgals_chisqmax:
+                cuse &= (self.cat.chisq < self.config.chisq_max)
+
+            use, = np.where(cuse)
 
             if use.size == 0:
                 self.cat = None
@@ -182,12 +187,17 @@ class RunFirstPass(ClusterRunner):
             # we must not have a seedfile, and did_read_zreds
             # so generate a cluster catalog from self.gals
 
-            use,=np.where((self.gals.zred >= self.config.zrange[0]) &
-                          (self.gals.zred <= self.config.zrange[1]))
+            cuse = ((self.gals.zred >= self.config.zrange[0]) &
+                    (self.gals.zred <= self.config.zrange[1]))
+
+            if self.cutgals_chisqmax:
+                cuse &= (self.gals.chisq < self.config.chisq_max)
+
+            use, = np.where(cuse)
 
             if use.size == 0:
                 self.cat = None
-                self.config.logger.info("No good zred inputs for firstpass on pixel %d" % (self.config.d.hpix))
+                self.config.logger.info("No usable zred inputs for firstpass on pixel %d" % (self.config.d.hpix))
                 return False
 
             mstar = self.zredstr.mstar(self.gals.zred[use])
@@ -197,7 +207,7 @@ class RunFirstPass(ClusterRunner):
 
             if good.size == 0:
                 self.cat = None
-                self.config.logger.info("No usable zred inputs for firstpass on pixel %d" % (self.config.d.hpix))
+                self.config.logger.info("No good zred inputs for firstpass on pixel %d" % (self.config.d.hpix))
                 return False
 
             self.cat = ClusterCatalog.zeros(good.size,

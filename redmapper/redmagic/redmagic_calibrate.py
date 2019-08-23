@@ -164,6 +164,7 @@ class RedmagicParameterFitter(object):
         # Compute here...
         self._mstar = self._zredstr.mstar(self._zredmagic)
 
+        # FIXME
         pars = scipy.optimize.fmin(self, p0_cval, disp=False, xtol=1e-8, ftol=1e-8)
 
         return pars

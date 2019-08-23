@@ -264,7 +264,6 @@ class GalaxyCatalog(Catalog):
         else:
             # No cuts
             if use_zred:
-                print(nside, hpix, cat.size, zcat.size)
                 return cls(cat, zcat)
             else:
                 return cls(cat)

@@ -585,6 +585,32 @@ class RedSequenceCalibrator(object):
 
     def _calc_offdiagonal_pars(self, gals, doRaise=True):
         """
+        Set the off-diagonal elements of the covariance matrix.
+
+        These are just set to self.config.calib_covmat_constant
+
+        Parameters
+        ----------
+        gals: `redmapper.GalaxyCatalog`
+           Galaxy catalog with fields required for fit.
+        doRaise: `bool`, optional
+           Raise if there's a problem with the background?  Default is True.
+        """
+
+        ncol = self.config.nmag - 1
+
+        for j in xrange(ncol):
+            for k in xrange(j + 1, ncol):
+                self.pars.sigma[j, k, :] = self.config.calib_covmat_constant
+                self.pars.sigma[k, j, :] = self.pars.sigma[j, k, :]
+
+                self.pars.covmat_amp[j, k, :] = self.config.calib_covmat_constant * self.pars.sigma[j, j, :] * self.pars.sigma[k, k, :]
+                self.pars.covmat_amp[k, j, :] = self.pars.covmat_amp[j, k, :]
+
+    def _calc_offdiagonal_pars_old(self, gals, doRaise=True):
+        """
+        DEPRECATED, this doesn't work right.
+
         Calculate the off-diagonal elements of the covariance matrix.
 
         Sets self.pars.sigma, self.pars.covmat_amp (off-diagonal).
@@ -596,6 +622,7 @@ class RedSequenceCalibrator(object):
         doRaise: `bool`, optional
            Raise if there's a problem with the background?  Default is True.
         """
+
         # The routine to compute the off-diagonal elements
 
         ncol = self.config.nmag - 1
@@ -715,7 +742,7 @@ class RedSequenceCalibrator(object):
                                                     min_eigenvalue=self.config.calib_covmat_min_eigenvalue)
 
             #rvals = odfitter.fit(np.zeros(self.pars.covmat_z.size), full_covmats=full_covmats)
-            rvals = np.zeros(self.pars.covmat_z.size) # + 0.4
+            rvals = np.zeros(self.pars.covmat_z.size) + 0.9
 
             self.pars.sigma[j, k, :] = rvals
             self.pars.sigma[k, j, :] = rvals

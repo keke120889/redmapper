@@ -266,13 +266,14 @@ class Configuration(object):
     calib_color_maxnodes = ConfigField(isArray=True, default=np.array([-1.0]))
     calib_covmat_maxnodes = ConfigField(isArray=True, default=np.array([-1.0]))
     calib_covmat_nodesize = ConfigField(default=0.15)
-    calib_covmat_min_eigenvalue = ConfigField(default=0.0001)
-    calib_covmat_prior = ConfigField(default=0.45)
+    # calib_covmat_min_eigenvalue = ConfigField(default=0.0001)
+    # calib_covmat_prior = ConfigField(default=0.45)
+    calib_covmat_constant = ConfigField(default=0.9)
     calib_corr_nodesize = ConfigField(default=0.05)
     calib_corr_slope_nodesize = ConfigField(default=0.1)
     calib_corr_nocorrslope = ConfigField(default=True)
     calib_corr_pcut = ConfigField(default=0.9)
-    calib_color_order = ConfigField(isArray=True, default=np.array([-1]))
+    # calib_color_order = ConfigField(isArray=True, default=np.array([-1]))
 
     calib_color_nsig = ConfigField(default=1.5)
     calib_redspec_nsig = ConfigField(default=2.0)
@@ -471,8 +472,9 @@ class Configuration(object):
         self._set_lengths(['calib_colormem_colormodes', 'calib_colormem_sigint'],
                           len(self.calib_colormem_zbounds) + 1)
         self._set_lengths(['calib_color_nodesizes', 'calib_slope_nodesizes',
-                           'calib_color_maxnodes', 'calib_covmat_maxnodes',
-                           'calib_color_order'], self.nmag - 1)
+                           'calib_color_maxnodes', 'calib_covmat_maxnodes'],
+                           self.nmag - 1)
+                           #'calib_color_order'], self.nmag - 1)
 
         # redmagic size checks
         self._set_lengths(['redmagic_n0s', 'redmagic_etas', 'redmagic_names',

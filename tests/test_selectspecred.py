@@ -58,12 +58,13 @@ class SelectSpecRedTestCase(unittest.TestCase):
                                     np.array([0.78199643, 1.0870744, 1.47273993]), 4)
         # These numbers have been updated for the symmetric truncation cut, which
         # looks like it works better.  An "upgrade" from the IDL code.
+        # Also tweaks with new fitter.
         testing.assert_almost_equal(redgalmodel['meancol_scatter'][0][:, 1],
-                                    np.array([0.03599163, 0.04471073, 0.0295432]), 4)
+                                    np.array([0.0356834, 0.04462893, 0.02842339]), 4)
         testing.assert_almost_equal(redgalmodel['medcol'][0][:, 1],
-                                    np.array([0.78384757, 1.08609426, 1.45208037]), 4)
+                                    np.array([0.78378993, 1.0860957, 1.4518951]), 4)
         testing.assert_almost_equal(redgalmodel['medcol_width'][0][:, 1],
-                                    np.array([0.02173372, 0.04535974, 0.0172476]), 4)
+                                    np.array([0.02168681, 0.04540279, 0.01736297]), 4)
 
     def setUp(self):
         self.test_dir = None

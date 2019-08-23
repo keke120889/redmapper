@@ -126,10 +126,20 @@ class RunLikelihoods(ClusterRunner):
 
         if use.size == 0:
             self.cat = None
+            self.config.logger.info("No usable inputs for likelihood on pixel %d" % (self.config.d.hpix))
+            return False
+
+        mstar = self.zredstr.mstar(self.cat.z[use])
+        mlim = mstar - 2.5 * np.log10(self.limlum)
+
+        good, = np.where(self.cat.refmag[use] < mlim)
+
+        if good.size == 0:
+            self.cat = None
             self.config.logger.info("No good inputs for likelihood on pixel %d" % (self.config.d.hpix))
             return False
 
-        self.cat = self.cat[use]
+        self.cat = self.cat[use[good]]
 
         if self.cleaninput:
             catmask = self.mask.compute_radmask(self.cat.ra, self.cat.dec)
@@ -222,7 +232,10 @@ class RunLikelihoods(ClusterRunner):
             sig = self.config.lnw_cen_sigma / np.sqrt(((np.clip(cluster.Lambda, None, self.config.wcen_maxlambda)) / cluster.scaleval) / self.config.wcen_pivot)
             fw = (1. / (np.sqrt(2. * np.pi) * sig)) * np.exp(-0.5 * (np.log(w) - self.config.lnw_cen_mean)**2. / (sig**2.))
 
-            cluster.lnbcglike = np.log(phi_cen * g * fw)
+            with np.warnings.catch_warnings():
+                np.warnings.simplefilter("error")
+
+                cluster.lnbcglike = np.log(phi_cen * g * fw)
 
             cluster.lnlike = cluster.lnbcglike + cluster.lnlamlike
 
@@ -240,4 +253,4 @@ class RunLikelihoods(ClusterRunner):
         use, = np.where(self.cat.lnlamlike > -1e11)
         self.cat = self.cat[use]
 
-        # should I delete unused columns here before saving?  
+        # should I delete unused columns here before saving?

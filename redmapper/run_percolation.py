@@ -155,8 +155,20 @@ class RunPercolation(ClusterRunner):
         # How to bail if use.size == 0?  Need a framework for fail...
         if use.size == 0:
             self.cat = None
+            self.config.logger.info("No usable inputs for percolation on pixel %d" % (self.config.d.hpix))
+            return False
+
+        mstar = self.zredstr.mstar(self.cat.z[use])
+        mlim = mstar - 2.5 * np.log10(self.limlum)
+
+        good, = np.where(self.cat.refmag[use] < mlim)
+
+        if good.size == 0:
+            self.cat = None
             self.config.logger.info("No good inputs for percolation on pixel %d" % (self.config.d.hpix))
             return False
+
+        use = use[good]
 
         if self.keepid:
             st = np.argsort(self.cat.mem_match_id[use])

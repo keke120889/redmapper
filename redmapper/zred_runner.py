@@ -288,7 +288,6 @@ class ZredRunPixels(object):
         outfile_nopath = '%s_zreds_%07d.fit' % (self.outbase, self.galtable.hpix[index])
         outfile = os.path.join(self.zredpath, outfile_nopath)
 
-        print("Writing out %s" % (outfile))
         fitsio.write(outfile, zreds, clobber=True)
 
         return (index, outfile)

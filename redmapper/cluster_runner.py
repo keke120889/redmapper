@@ -180,15 +180,11 @@ class ClusterRunner(object):
         if self.zreds_required and zredfile is None:
             raise RuntimeError("zreds are required, but zredfile is None")
 
-        print(getMemoryString("About to read in galaxies, %d" % (self.config.d.hpix)))
-
         self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
                                                nside=self.config.d.nside,
                                                hpix=self.config.d.hpix,
                                                border=self.config.border,
                                                zredfile=zredfile)
-
-        print(getMemoryString("Have read in galaxies, %d" % (self.config.d.hpix)))
 
         # If the zredfile is not None and we didn't raise an exception,
         # then we successfully read in the zreds
@@ -333,8 +329,6 @@ class ClusterRunner(object):
         else:
             nruniter = 1
 
-        print(getMemoryString("About to loop over clusters on pixel %d" % (self.config.d.hpix)))
-
         for it in xrange(nruniter):
 
             if self.doublerun:
@@ -433,6 +427,10 @@ class ClusterRunner(object):
                 # compute additional dlambda bits (if desired)
                 if self.do_lam_plusminus:
                     cluster_temp = cluster.copy()
+
+                    if (cluster.z_lambda - self.config.zlambda_epsilon) < 0.0:
+                        self.config.output_yaml('testing_failed_config.yml')
+                        raise RuntimeError("Error on cluster %d on pixel %d" % (cluster.mem_match_id, self.config.d.hpix))
 
                     cluster_temp.redshift = cluster.z_lambda - self.config.zlambda_epsilon
                     lam_zmeps = cluster_temp.calc_richness(self.mask)

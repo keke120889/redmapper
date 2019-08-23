@@ -11,6 +11,7 @@ from past.builtins import xrange
 import numpy as np
 from scipy import special
 import scipy.optimize
+import warnings
 
 from .utilities import CubicSpline, interpol
 
@@ -55,7 +56,18 @@ class MedZFitter(object):
         self._min = min_val
         self._max = max_val
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
+        res = scipy.optimize.minimize(self,
+                                      p0,
+                                      method='L-BFGS-B',
+                                      bounds=None,
+                                      jac=False,
+                                      options={'maxfun': 2000,
+                                               'maxiter': 2000,
+                                               'maxcor': 20,
+                                               'eps': 1e-5,
+                                               'gtol': 1e-8},
+                                      callback=None)
+        pars = res.x
 
         return pars
 
@@ -273,14 +285,23 @@ class RedSequenceFitter(object):
             self._mean_index = 0
             ctr += self._n_mean_nodes
             p0 = np.append(p0, p0_mean)
+            for i in range(self._n_mean_nodes):
+                bounds.append([-np.inf, np.inf])
         if self._fit_slope:
             self._slope_index = ctr
             ctr += self._n_slope_nodes
             p0 = np.append(p0, p0_slope)
+            for i in range(self._n_slope_nodes):
+                bounds.append([-np.inf, np.inf])
         if self._fit_scatter:
             self._scatter_index = ctr
             ctr += self._n_scatter_nodes
             p0 = np.append(p0, p0_scatter)
+            for i in range(self._n_scatter_nodes):
+                if self._has_scatter_max:
+                    bounds.append([self._min_scatter, self._scatter_max[i]])
+                else:
+                    bounds.append([self._min_scatter, np.inf])
 
         if ctr == 0:
             raise ValueError("Must select at least one of fit_mean, fit_slope, fit_scatter")
@@ -299,7 +320,18 @@ class RedSequenceFitter(object):
         if not self._fit_scatter and self._trunc is not None:
             self._phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
+        res = scipy.optimize.minimize(self,
+                                      p0,
+                                      method='L-BFGS-B',
+                                      bounds=bounds,
+                                      jac=False,
+                                      options={'maxfun': 2000,
+                                               'maxiter': 2000,
+                                               'maxcor': 20,
+                                               'eps': 1e-5,
+                                               'gtol': 1e-8},
+                                      callback=None)
+        pars = res.x
 
         retval = []
         if self._fit_mean:
@@ -367,10 +399,16 @@ class RedSequenceFitter(object):
 
         if self._has_probs:
             # Use probabilities and bkgs
-            vals = np.log(self._probs * gci + (1.0 - self._probs) * self._bkgs)
+            with np.warnings.catch_warnings():
+                np.warnings.simplefilter("ignore")
+
+                vals = np.log(self._probs * gci + (1.0 - self._probs) * self._bkgs)
         else:
             # No probabilities or bkgs
-            vals = np.log(gci)
+            with np.warnings.catch_warnings():
+                np.warnings.simplefilter("ignore")
+
+                vals = np.log(gci)
 
         bad, = np.where(~np.isfinite(vals))
         vals[bad] = -100.0
@@ -379,14 +417,6 @@ class RedSequenceFitter(object):
             t = -(np.sum(vals) - np.sum(np.log(np.clip(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes], self._min_scatter, None))))
         else:
             t = -np.sum(vals)
-
-        # artificially hit a wall if scatter goes too low or too high
-        if self._fit_scatter:
-            if pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes].min() < self._min_scatter:
-                t += 100000
-            if self._has_scatter_max:
-                if np.min(self._scatter_max - pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes]) < 0.0:
-                    t += 100000
 
         return t
 
@@ -501,7 +531,22 @@ class RedSequenceOffDiagonalFitter(object):
 
         self._full_covmats = full_covmats
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
+        bounds = []
+        for i in range(self._nodes.size):
+            bounds.append((-0.9, 0.9))
+
+        res = scipy.optimize.minimize(self,
+                                      p0,
+                                      method='L-BFGS-B',
+                                      bounds=bounds,
+                                      jac=False,
+                                      options={'maxfun': 2000,
+                                               'maxiter': 2000,
+                                               'maxcor': 20,
+                                               'eps': 1e-3,
+                                               'gtol': 1e-8},
+                                      callback=None)
+        pars = res.x
 
         return pars
 
@@ -557,18 +602,16 @@ class RedSequenceOffDiagonalFitter(object):
             t = 1e11
         else:
             wall = False
-            if (pars.max() > 0.9 or pars.min() < -0.9) :
-                wall = True
 
-                # Check for negative eigenvalues
-                if self._full_covmats is not None:
-                    for i in xrange(self._nodes.size):
-                        a = self._full_covmats[:, :, i]
-                        d = np.linalg.eigvalsh(a)
-                        if (np.min(d) < self._min_eigenvalue):
-                            wall = True
+            # Check for negative eigenvalues
+            if self._full_covmats is not None:
+                for i in xrange(self._nodes.size):
+                    a = self._full_covmats[:, :, i]
+                    d = np.linalg.eigvalsh(a)
+                    if (np.min(d) < self._min_eigenvalue):
+                        wall = True
             if wall:
-                t += 10000
+                t += 100000
 
         return t
 
@@ -745,6 +788,7 @@ class CorrectionFitter(object):
             self._gbkg = np.clip(spl(self._redshifts), 1e-10, None)
             self._gci1 = (1. / np.sqrt(2. * np.pi * self._gbkg)) * np.exp(-self._dzs**2. / (2. * self._gbkg))
 
+        # FIXME
         pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
         retval = []
@@ -896,6 +940,7 @@ class EcgmmFitter(object):
         else:
             self._bounds = bounds
 
+        # FIXME
         pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
         wt = np.array([pars[0], 1.0 - pars[0]])

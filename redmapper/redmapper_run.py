@@ -399,14 +399,13 @@ class RedmapperRun(object):
         config.d.hpix = hpix
 
         config.d.outbase = '%s_%d_%05d' % (self.config.d.outbase, self.config.d.nside, hpix)
-        print(getMemoryString("About to do firstpass thing on pixel %d" % (hpix)))
+
         # Need to add checks about success, and whether a file was output
         #  (especially border pixels in sims)
         firstpass = RunFirstPass(config, specmode=self.specmode)
 
         if not os.path.isfile(firstpass.filename) or not self.check:
             firstpass.run(keepz=self.keepz, cleaninput=self.cleaninput)
-            print(getMemoryString("After firstpass thing on pixel %d" % (hpix)))
 
             if (firstpass.cat is None or
                 (firstpass.cat is not None and firstpass.cat.size == 0)):
@@ -420,13 +419,10 @@ class RedmapperRun(object):
 
         config.catfile = firstpass.filename
 
-        print(getMemoryString("About to do like thing on pixel %d" % (hpix)))
-
         like = RunLikelihoods(config)
 
         if not os.path.isfile(like.filename) or not self.check:
             like.run(keepz=self.keepz)
-            print(getMemoryString("After like thing on pixel %d" % (hpix)))
 
             if (like.cat is None or
                 (like.cat is not None and like.cat.size == 0)):
@@ -440,13 +436,10 @@ class RedmapperRun(object):
 
         config.catfile = like.filename
 
-        print(getMemoryString("About to do perc thing on pixel %d" % (hpix)))
-
         perc = RunPercolation(config)
 
         if not os.path.isfile(perc.filename) or not self.check:
             perc.run(keepz=self.keepz)
-            print(getMemoryString("Afger perc thing on pixel %d" % (hpix)))
 
             if (perc.cat is None or
                 (perc.cat is not None and perc.cat.size == 0)):
