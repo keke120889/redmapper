@@ -753,22 +753,31 @@ class CorrectionFitter(object):
 
         ctr = 0
         p0 = np.array([])
+        bounds = []
         if self._fit_mean:
             self._mean_index = 0
             ctr += self._n_mean_nodes
             p0 = np.append(p0, p0_mean)
+            for i in range(self._n_mean_nodes):
+                bounds.append([-np.inf, np.inf])
         if self._fit_slope:
             self._slope_index = ctr
             ctr += self._n_slope_nodes
             p0 = np.append(p0, p0_slope)
+            for i in range(self._n_slope_nodes):
+                bounds.append([-np.inf, np.inf])
         if self._fit_r:
             self._r_index = ctr
             ctr += self._n_r_nodes
             p0 = np.append(p0, p0_r)
+            for i in range(self._n_r_nodes):
+                bounds.append([0.0, np.inf])
         if self._fit_bkg:
             self._bkg_index = ctr
             ctr += self._n_bkg_nodes
             p0 = np.append(p0, p0_bkg)
+            for i in range(self._n_bkg_nodes):
+                bounds.append([0.0, np.inf])
 
         if ctr == 0:
             raise ValueError("Must select at least one of fit_mean, fit_slope")
@@ -788,7 +797,6 @@ class CorrectionFitter(object):
             self._gbkg = np.clip(spl(self._redshifts), 1e-10, None)
             self._gci1 = (1. / np.sqrt(2. * np.pi * self._gbkg)) * np.exp(-self._dzs**2. / (2. * self._gbkg))
 
-        # FIXME
         pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
 
         retval = []
