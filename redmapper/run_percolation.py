@@ -125,7 +125,7 @@ class RunPercolation(ClusterRunner):
 
         self.cleaninput = kwargs.pop('cleaninput', False)
 
-        self.config.logger.info("%d: Percolation using catfile: %s" % (self.config.d.hpix, self.config.catfile))
+        self.config.logger.info("%s: Percolation using catfile: %s" % (self.hpix_logstr, self.config.catfile))
 
         # read in the catalog...
         self.cat = ClusterCatalog.from_catfile(self.config.catfile,
@@ -155,7 +155,7 @@ class RunPercolation(ClusterRunner):
         # How to bail if use.size == 0?  Need a framework for fail...
         if use.size == 0:
             self.cat = None
-            self.config.logger.info("No usable inputs for percolation on pixel %d" % (self.config.d.hpix))
+            self.config.logger.info("No usable inputs for percolation on pixel %s" % (self.hpix_logstr))
             return False
 
         mstar = self.zredstr.mstar(self.cat.z[use])
@@ -165,7 +165,7 @@ class RunPercolation(ClusterRunner):
 
         if good.size == 0:
             self.cat = None
-            self.config.logger.info("No good inputs for percolation on pixel %d" % (self.config.d.hpix))
+            self.config.logger.info("No good inputs for percolation on pixel %s" % (self.hpix_logstr))
             return False
 
         use = use[good]
@@ -185,7 +185,7 @@ class RunPercolation(ClusterRunner):
 
             if self.cat.size == 0:
                 self.cat = None
-                self.config.logger.info("No input cluster positions are in the mask on pixel %d" % (self.config.d.hpix))
+                self.config.logger.info("No input cluster positions are in the mask on pixel %s" % (self.hpix_logstr))
                 return False
 
         # This preserves previously set ids

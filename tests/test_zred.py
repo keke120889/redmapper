@@ -149,7 +149,7 @@ class ZredTestCase(unittest.TestCase):
 
         config = Configuration(os.path.join(file_path, configfile))
 
-        config.d.hpix = 2163
+        config.d.hpix = [2163]
         config.d.nside = 64
         config.border = 0.0
 

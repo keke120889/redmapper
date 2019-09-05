@@ -211,7 +211,7 @@ class Configuration(object):
     plotpath = ConfigField(default='', required=True)
 
     border = ConfigField(default=0.0, required=True)
-    hpix = ConfigField(default=0, required=True)
+    hpix = ConfigField(default=[], required=True, isArray=True)
     nside = ConfigField(default=0, required=True)
     galfile_pixelized = ConfigField(required=True)
 
@@ -432,7 +432,7 @@ class Configuration(object):
                 self.logger.info("Config area is not equal to galaxy file area.  Using config area.")
                 gal_stats.pop('area')
         else:
-            if self.depthfile is None and self.nside > 0 and self.hpix > 0:
+            if self.depthfile is None and self.nside > 0 and len(self.hpix) > 0:
                 raise RuntimeError("You must set a config file area if no depthfile is present and you are running a sub-region")
         self._set_vars_from_dict(gal_stats, check_none=True)
 

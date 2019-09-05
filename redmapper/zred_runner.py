@@ -220,7 +220,8 @@ class ZredRunPixels(object):
         self.zredc = ZredColor(zredstr)
 
         self.galtable = Entry.from_fits_file(self.config.galfile)
-        indices = list(get_subpixel_indices(self.galtable, hpix=self.config.d.hpix, border=self.config.border, nside=self.config.d.nside))
+        indices = list(get_subpixel_indices(self.galtable,
+                                            hpix=self.config.d.hpix, border=self.config.border, nside=self.config.d.nside))
 
         starttime = time.time()
 
@@ -263,7 +264,7 @@ class ZredRunPixels(object):
         # Read in just one single pixel
         galaxies = GalaxyCatalog.from_galfile(self.config.galfile,
                                               nside=self.galtable.nside,
-                                              hpix=self.galtable.hpix[index],
+                                              hpix=[self.galtable.hpix[index]],
                                               border=0.0)
         galaxies.add_zred_fields()
 

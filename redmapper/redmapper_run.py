@@ -116,7 +116,6 @@ class RedmapperRun(object):
             # Use the specified seedfile if desired
             self.config.seedfile = seedfile
         pool = Pool(processes=self.config.calib_run_nproc)
-        self.config.logger.info(getMemoryString("About to map"))
         if self.percolation_only:
             retvals = pool.map(self._percolation_only_worker, pixels_split, chunksize=1)
             #retvals = list(map(self._percolation_only_worker, pixels_split))
@@ -175,7 +174,8 @@ class RedmapperRun(object):
             return (nside_test, subpixels)
 
         # start with the pixel and resolution in the config file
-        if self.config.d.hpix == 0:
+        #if self.config.d.hpix == 0:
+        if len(self.config.d.hpix) == 0:
             nside_splits = [self.config.calib_run_min_nside]
             pixels_splits = [self._get_subpixels(nside_splits[0], tab)]
         else:
@@ -231,7 +231,7 @@ class RedmapperRun(object):
         pixels = np.arange(hp.nside2npix(nside_test))
 
         # Which of these match the parent?
-        if self.config.d.hpix > 0:
+        if len(self.config.d.hpix) > 0:
             theta, phi = hp.pix2ang(nside_test, pixels)
             hpix_test = hp.ang2pix(self.config.d.nside, theta, phi)
             a, b = esutil.numpy_util.match(self.config.d.hpix, hpix_test)
@@ -396,7 +396,7 @@ class RedmapperRun(object):
         config.cosmo = Cosmo(H0=self._H0, omega_l=self._omega_l, omega_m=self._omega_m)
 
         # Set the specific config stuff here
-        config.d.hpix = hpix
+        config.d.hpix = [hpix]
 
         config.d.outbase = '%s_%d_%05d' % (self.config.d.outbase, self.config.d.nside, hpix)
 

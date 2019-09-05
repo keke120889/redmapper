@@ -208,8 +208,8 @@ class ClusterRunner(object):
         self.gals = self.gals[guse]
 
         if len(self.gals) == 0:
-            self.config.logger.info("No good galaxies for %s in pixel %d" %
-                                    (self.runmode, self.config.d.hpix))
+            self.config.logger.info("No good galaxies for %s in pixel %s" %
+                                    (self.runmode, self.hpix_logstr))
             return False
 
         # If we don't have a depth map, get ready to compute local depth
@@ -217,7 +217,7 @@ class ClusterRunner(object):
             try:
                 self.depthlim = DepthLim(self.gals.refmag, self.gals.refmag_err)
             except RuntimeError:
-                self.config.logger.info("Failed to obtain depth info in %s for pixel %d with %d galaxies.  Skipping pixel." % (self.runmode, self.config.d.hpix, len(self.gals)))
+                self.config.logger.info("Failed to obtain depth info in %s for pixel %s with %d galaxies.  Skipping pixel." % (self.runmode, self.hpix_logstr, len(self.gals)))
                 return False
 
         # default limiting luminosity
@@ -234,6 +234,11 @@ class ClusterRunner(object):
         self.doublerun = False
         self.do_correct_zlambda = False
         self.do_pz = False
+
+        if len(self.config.d.hpix) == 0:
+            self.hpix_logstr = "-1"
+        else:
+            self.hpix_logstr = ", ".join(str(x) for x in self.config.d.hpix)
 
         return True
 
@@ -292,13 +297,13 @@ class ClusterRunner(object):
 
         # General setup
         if not self._setup():
-            self.config.logger.info("Cluster initialization failed on pixel %d. No catalog will be produced." % (self.config.d.hpix))
+            self.config.logger.info("Cluster initialization failed on pixel %s. No catalog will be produced." % (self.hpix_logstr))
             self.cat = None
             return
 
         # Setup specific for a given task.  Will read in the galaxy catalog.
         if not self._more_setup(*args, **kwargs):
-            self.config.logger.info("Cluster initialization failed on pixel %d. No catalog will be produced." % (self.config.d.hpix))
+            self.config.logger.info("Cluster initialization failed on pixel %s. No catalog will be produced." % (self.hpix_logstr))
             self.cat = None
             return
 
@@ -348,7 +353,7 @@ class ClusterRunner(object):
                 cluster.maskgal_index = self.mask.select_maskgals_sample()
 
                 if ((cctr % 1000) == 0):
-                    self.config.logger.info("%d: Working on cluster %d of %d" % (self.config.d.hpix, cctr, self.cat.size))
+                    self.config.logger.info("%s: Working on cluster %d of %d" % (self.hpix_logstr, cctr, self.cat.size))
                 cctr += 1
 
                 # Note that the cluster is set with .z if available! (which becomes .redshift)
@@ -427,10 +432,6 @@ class ClusterRunner(object):
                 # compute additional dlambda bits (if desired)
                 if self.do_lam_plusminus:
                     cluster_temp = cluster.copy()
-
-                    if (cluster.z_lambda - self.config.zlambda_epsilon) < 0.0:
-                        self.config.output_yaml('testing_failed_config.yml')
-                        raise RuntimeError("Error on cluster %d on pixel %d" % (cluster.mem_match_id, self.config.d.hpix))
 
                     cluster_temp.redshift = cluster.z_lambda - self.config.zlambda_epsilon
                     lam_zmeps = cluster_temp.calc_richness(self.mask)

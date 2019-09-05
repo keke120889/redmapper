@@ -102,7 +102,7 @@ class RunLikelihoods(ClusterRunner):
 
         self.cleaninput = kwargs.pop('cleaninput', False)
 
-        self.config.logger.info("%d: Likelihoods using catfile: %s" % (self.config.d.hpix, self.config.catfile))
+        self.config.logger.info("%s: Likelihoods using catfile: %s" % (self.hpix_logstr, self.config.catfile))
 
         self.cat = ClusterCatalog.from_catfile(self.config.catfile,
                                                zredstr=self.zredstr,
@@ -126,7 +126,7 @@ class RunLikelihoods(ClusterRunner):
 
         if use.size == 0:
             self.cat = None
-            self.config.logger.info("No usable inputs for likelihood on pixel %d" % (self.config.d.hpix))
+            self.config.logger.info("No usable inputs for likelihood on pixel %s" % (self.hpix_logstr))
             return False
 
         mstar = self.zredstr.mstar(self.cat.z[use])
@@ -136,7 +136,7 @@ class RunLikelihoods(ClusterRunner):
 
         if good.size == 0:
             self.cat = None
-            self.config.logger.info("No good inputs for likelihood on pixel %d" % (self.config.d.hpix))
+            self.config.logger.info("No good inputs for likelihood on pixel %s" % (self.hpix_logstr))
             return False
 
         self.cat = self.cat[use[good]]
@@ -147,7 +147,7 @@ class RunLikelihoods(ClusterRunner):
 
             if self.cat.size == 0:
                 self.cat = None
-                self.config.logger.info("No input cluster positions are in the mask on pixel %d" % (self.config.d.hpix))
+                self.config.logger.info("No input cluster positions are in the mask on pixel %s" % (self.hpix_logstr))
                 return False
 
         self.do_lam_plusminux = False
