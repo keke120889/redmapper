@@ -5,7 +5,7 @@ language: python
 compiler:
   - gcc
 python:
-  - 2.7
+#  - 2.7
   - 3.6
 # setup anaconda
 before_install:
