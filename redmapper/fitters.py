@@ -38,7 +38,7 @@ class MedZFitter(object):
         self._redshifts = redshifts
         self._values = values
 
-    def fit(self, p0, min_val=None, max_val=None):
+    def fit(self, p0, min_val=-np.inf, max_val=np.inf):
         """
         Perform a spline fit to the median value as a function of redshift.
 
@@ -53,13 +53,16 @@ class MedZFitter(object):
            Spline node parameters
         """
         # add bounds if we need it...
-        self._min = min_val
-        self._max = max_val
+        bounds = []
+        for i in range(len(p0)):
+            bounds.append([min_val, max_val])
+        #self._min = min_val
+        #self._max = max_val
 
         res = scipy.optimize.minimize(self,
                                       p0,
                                       method='L-BFGS-B',
-                                      bounds=None,
+                                      bounds=bounds,
                                       jac=False,
                                       options={'maxfun': 2000,
                                                'maxiter': 2000,
@@ -91,12 +94,12 @@ class MedZFitter(object):
         absdev = np.abs(self._values - m)
         t = np.sum(absdev.astype(np.float64))
 
-        if self._min is not None:
-            if pars.min() < self._min:
-                t += 100000
-        if self._max is not None:
-            if pars.max() > self._max:
-                t += 100000
+        #if self._min is not None:
+        #    if pars.min() < self._min:
+        #        t += 100000
+        #if self._max is not None:
+        #    if pars.max() > self._max:
+        #        t += 100000
 
         return t
 

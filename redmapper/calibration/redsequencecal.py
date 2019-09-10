@@ -419,7 +419,7 @@ class RedSequenceCalibrator(object):
             spl = CubicSpline(self.pars.pivotmag_z, mvals)
             med = spl(gals.z)
             medfitter = MedZFitter(self.pars.pivotmag_z, gals.z, np.abs(col - med))
-            scvals = medfitter.fit(scvals)
+            scvals = medfitter.fit(scvals, min_val=0.01)
 
             self.pars.medcol[:, j] = mvals
             self.pars.medcol_width[:, j] = 1.4826 * scvals
@@ -504,7 +504,6 @@ class RedSequenceCalibrator(object):
             # Need to go through the _ndarray because ztag and zstag are strings
             cvals = np.zeros(self.pars._ndarray[self.ztag[j]].size)
             svals = np.zeros(self.pars._ndarray[self.zstag[j]].size)
-            scvals = np.zeros(self.pars.covmat_z.size) + 0.05
             photo_err = np.zeros_like(cvals)
 
             # Calculate median truncation
@@ -518,6 +517,9 @@ class RedSequenceCalibrator(object):
             # error, and should always be larger.  This helps regularize the edges
             # where things otherwise can run away.
             scatter_max = spl(self.pars.covmat_z)
+
+            # Initial guess for scvals should be halfway between 0.01 and scatter_max
+            scvals = (scatter_max - 0.01) / 2.0 + 0.01
 
             u, = np.where((galcolor[:, j] > (med - self.config.calib_color_nsig * sc)) &
                           (galcolor[:, j] < (med + self.config.calib_color_nsig * sc)))
@@ -569,10 +571,6 @@ class RedSequenceCalibrator(object):
             # fit combined
             cvals, svals, scvals = rsfitter.fit(cvals, svals, scvals,
                                                 fit_mean=True, fit_slope=True, fit_scatter=True)
-            # Re-fit...
-            #cvals, svals, scvals = rsfitter.fit(cvals, svals, scvals,
-            #                                    fit_mean=True, fit_slope=True, fit_scatter=True)
-
 
             # And record in the parameters
             self.pars._ndarray[self.ctag[j]] = cvals

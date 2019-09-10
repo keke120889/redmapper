@@ -54,7 +54,6 @@ class RedmapperCalibrator(object):
         """
         Run the red-sequence calibration.
         """
-        self.config.logger.info(getMemoryString("Starting"))
 
         # Select the red galaxies to start
         self.config.redgalfile = self.config.redmapper_filename('zspec_redgals')
@@ -79,8 +78,6 @@ class RedmapperCalibrator(object):
 
         # Generate maskgals
         self.config.maskgalfile = self.config.redmapper_filename('maskgals')
-
-        self.config.logger.info(getMemoryString("after maskgals (?)"))
 
         if os.path.isfile(self.config.maskgalfile):
             self.config.logger.info("%s already there.  Skipping..." % (self.config.maskgalfile))
@@ -109,12 +106,10 @@ class RedmapperCalibrator(object):
             self.config.logger.info("Generating spectroscopic seeds (training spec)...")
             sss = SelectSpecSeeds(self.config)
             sss.run(usetrain=True)
-        self.config.logger.info(getMemoryString("Before iteration"))
         calib_iteration = RedmapperCalibrationIteration(self.config)
 
         for iteration in range(1, self.config.calib_niter + 1):
             # Run the calibration iteration
-            self.config.logger.info(getMemoryString("Before iteration run"))
             calib_iteration.run(iteration)
 
             # Clean out the members
@@ -172,7 +167,7 @@ class RedmapperCalibrator(object):
             # Note that the config file has been updated!
             self.config.logger.info("Running full background...")
 
-            self.config.d.hpix = 0
+            self.config.d.hpix = []
             self.config.d.nside = 0
 
             bkg_gen = BackgroundGenerator(self.config)
@@ -416,9 +411,7 @@ class RedmapperCalibrationIteration(object):
             self.config.logger.info("Running redmapper in specmode with seeds...")
             self.config.zlambdafile = None
 
-            self.config.logger.info(getMemoryString("Pre run thing"))
             redmapper_run = RedmapperRun(self.config)
-            self.config.logger.info(getMemoryString("About to run thing"))
             catfile, likefile = redmapper_run.run(specmode=True, keepz=True, consolidate_like=True, seedfile=iter_seedfile, cleaninput=True)
             # check that catfile is the same as finalfile?
             if catfile != finalfile:

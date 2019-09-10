@@ -256,6 +256,11 @@ class RedmagicParameterFitter(object):
         # Compute cost function
         t = np.sum(((den - self._n0 * 1e-4) / den_err)**2.)
 
+        # Penalize (arbitrarily) if any of them are negative
+        test, = np.where(pars < 0.1)
+        if (test.size > 0):
+            t += 10000.0
+
         return t
 
 class RedmagicCalibrator(object):
@@ -665,7 +670,7 @@ class RedmagicCalibrator(object):
         self.runfile = os.path.join(self.config.outpath, runfile)
 
         # Reset the pixel to do the full sky when we create a catalog.
-        self.config.hpix = 0
+        self.config.hpix = []
         self.config.nside = 0
         self.config.area = None
         self.config.output_yaml(self.runfile)

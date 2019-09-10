@@ -174,7 +174,6 @@ class RedmapperRun(object):
             return (nside_test, subpixels)
 
         # start with the pixel and resolution in the config file
-        #if self.config.d.hpix == 0:
         if len(self.config.d.hpix) == 0:
             nside_splits = [self.config.calib_run_min_nside]
             pixels_splits = [self._get_subpixels(nside_splits[0], tab)]
@@ -479,7 +478,7 @@ class RedmapperRun(object):
         config = self.config.copy()
         config.cosmo = Cosmo(H0=self._H0, omega_l=self._omega_l, omega_m=self._omega_m)
 
-        config.d.hpix = hpix
+        config.d.hpix = [hpix]
 
         config.d.outbase = '%s_%05d' % (self.config.d.outbase, hpix)
 

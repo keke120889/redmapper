@@ -538,6 +538,7 @@ class RedSequenceColorPar(object):
         ax = fig.add_subplot(223)
         ax.plot(self.z[: -1], self.sigma[ind, ind, : -1], 'r--')
         ax.plot(self.z[not_extrap], self.sigma[ind, ind, not_extrap], 'r-')
+        ax.set_ylim(bottom=0.0)
         ax.set_xlabel('Redshift')
         ax.set_ylabel('(%s - %s) sigma' % (bands[ind], bands[ind + 1]))
 

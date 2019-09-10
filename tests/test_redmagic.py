@@ -78,9 +78,10 @@ class RedmagicCalTestCase(unittest.TestCase):
         biasvals, eratiovals = rmfitter.fit_bias_eratio(cvals, biasvals, eratiovals)
 
         cvals = rmfitter.fit(cvals, biaspars=biasvals, eratiopars=eratiovals, afterburner=True)
-        testing.assert_almost_equal(cvals, np.array([3.58662825, 1.67061696, 0.9397708]))
-        testing.assert_almost_equal(biasvals, np.array([0.00117748, -0.02484213, 0.01969823]))
-        testing.assert_almost_equal(eratiovals, np.array([1.02367968, 0.99858633, 0.66357692]))
+
+        testing.assert_almost_equal(cvals, np.array([3.47536146, 1.73731071, 0.92347906]))
+        testing.assert_almost_equal(biasvals, np.array([0.01754498, -0.02426337, 0.02046245]))
+        testing.assert_almost_equal(eratiovals, np.array([1.5, 1.01640766, 0.65280974]))
 
     def test_redmagic_calibrate(self):
         """
@@ -113,9 +114,9 @@ class RedmagicCalTestCase(unittest.TestCase):
         # Check that they are what we think they should be
         # (these checks are arbitrary, just to make sure nothing has changed)
 
-        testing.assert_almost_equal(cal['cmax'][0, :], np.array([1.35835947, 3.82774024, -0.17341573]))
-        testing.assert_almost_equal(cal['bias'][0, :], np.array([0.00365773, -0.03470116, 0.01882654]))
-        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.01762883, 0.9582095, 0.5000112]))
+        testing.assert_almost_equal(cal['cmax'][0, :], np.array([1.31757901, 3.62985245, 0.10363746]))
+        testing.assert_almost_equal(cal['bias'][0, :], np.array([0.02494364, -0.03852236, 0.02313449]))
+        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.49999837, 1.47993215, 0.50000744]))
 
         pngs = glob.glob(os.path.join(self.test_dir, '*.png'))
         self.assertEqual(len(pngs), 3)
