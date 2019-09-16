@@ -798,6 +798,9 @@ class RedSequenceCalibrator(object):
         hdr['ZBINCOAR'] = self.config.zredc_binsize_coarse
         hdr['LOWZMODE'] = 0
         hdr['REF_IND'] = self.config.ref_ind
+        hdr['BANDS'] = ''.join(self.config.bands)
+        if self.config.calib_redgal_template is not None:
+            hdr['TEMPLATE'] = self.config.calib_redgal_template
         # Only save the b values if they're > 0 (that means we have
         # luptitudes).
         if self.config.b[0] > 0.0:
