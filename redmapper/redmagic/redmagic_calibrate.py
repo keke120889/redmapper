@@ -77,23 +77,23 @@ class RedmagicParameterFitter(object):
            Integer array of indices for galaxies to use in afterburner
            Required only if running in afterburner mode
         """
-        self._nodes = np.atleast_1d(nodes)
-        self._corrnodes = np.atleast_1d(corrnodes)
+        self._nodes = np.atleast_1d(nodes).astype(np.float64)
+        self._corrnodes = np.atleast_1d(corrnodes).astype(np.float64)
 
         self._n_nodes = self._nodes.size
         self._n_corrnodes = self._corrnodes.size
 
-        self._z = np.atleast_1d(z)
-        self._z_err = np.atleast_1d(z_err)
+        self._z = np.atleast_1d(z).astype(np.float64)
+        self._z_err = np.atleast_1d(z_err).astype(np.float64)
         self._zredmagic = self._z.copy()
         self._zredmagic_e = self._z_err.copy()
-        self._chisq = np.atleast_1d(chisq)
-        self._mstar = np.atleast_1d(mstar)
-        self._zcal = np.atleast_1d(zcal)
-        self._zcal_err = np.atleast_1d(zcal_err)
-        self._refmag = np.atleast_1d(refmag)
-        self._randomn = np.atleast_1d(randomn)
-        self._zmax = np.atleast_1d(zmax)
+        self._chisq = np.atleast_1d(chisq).astype(np.float64)
+        self._mstar = np.atleast_1d(mstar).astype(np.float64)
+        self._zcal = np.atleast_1d(zcal).astype(np.float64)
+        self._zcal_err = np.atleast_1d(zcal_err).astype(np.float64)
+        self._refmag = np.atleast_1d(refmag).astype(np.float64)
+        self._randomn = np.atleast_1d(randomn).astype(np.float64)
+        self._zmax = np.atleast_1d(zmax).astype(np.float64)
         self._etamin = etamin
         self._n0 = n0
         self._volume = volume
@@ -164,6 +164,7 @@ class RedmagicParameterFitter(object):
         # Compute here...
         self._mstar = self._zredstr.mstar(self._zredmagic)
 
+        # FIXME
         pars = scipy.optimize.fmin(self, p0_cval, disp=False, xtol=1e-8, ftol=1e-8)
 
         return pars
@@ -208,9 +209,10 @@ class RedmagicParameterFitter(object):
         mzfitter = MedZFitter(self._corrnodes, self._z[ab_gd], self._z[ab_gd] - self._zcal[ab_gd])
         pars_bias = mzfitter.fit(p0_bias, min_val=-0.1, max_val=0.1)
 
+        # I am now sure that this is wrong.
         y = 1.4826 * np.abs(self._z[ab_gd] - self._zcal[ab_gd]) / self._z_err[ab_gd]
         efitter = MedZFitter(self._corrnodes, self._z[ab_gd], y)
-        pars_eratio = efitter.fit(p0_eratio, min_val=0.5, max_val=1.5)
+        pars_eratio = efitter.fit(p0_eratio, min_val=0.5, max_val=2.0)
 
         return pars_bias, pars_eratio
 
@@ -254,6 +256,13 @@ class RedmagicParameterFitter(object):
 
         # Compute cost function
         t = np.sum(((den - self._n0 * 1e-4) / den_err)**2.)
+
+        # Penalize (arbitrarily) if any of them are negative
+        test, = np.where(pars < 0.1)
+        if (test.size > 0):
+            t += 10000.0
+
+        #print(t, pars)
 
         return t
 
@@ -664,7 +673,7 @@ class RedmagicCalibrator(object):
         self.runfile = os.path.join(self.config.outpath, runfile)
 
         # Reset the pixel to do the full sky when we create a catalog.
-        self.config.hpix = 0
+        self.config.hpix = []
         self.config.nside = 0
         self.config.area = None
         self.config.output_yaml(self.runfile)
