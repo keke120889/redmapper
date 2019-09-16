@@ -34,9 +34,9 @@ class MedZFitter(object):
         values: `np.array`
            Float array of color values to fit
         """
-        self._z_nodes = z_nodes
-        self._redshifts = redshifts
-        self._values = values
+        self._z_nodes = z_nodes.astype(np.float64)
+        self._redshifts = redshifts.astype(np.float64)
+        self._values = values.astype(np.float64)
 
     def fit(self, p0, min_val=-np.inf, max_val=np.inf):
         """
@@ -56,8 +56,6 @@ class MedZFitter(object):
         bounds = []
         for i in range(len(p0)):
             bounds.append([min_val, max_val])
-        #self._min = min_val
-        #self._max = max_val
 
         res = scipy.optimize.minimize(self,
                                       p0,
@@ -93,13 +91,6 @@ class MedZFitter(object):
 
         absdev = np.abs(self._values - m)
         t = np.sum(absdev.astype(np.float64))
-
-        #if self._min is not None:
-        #    if pars.min() < self._min:
-        #        t += 100000
-        #if self._max is not None:
-        #    if pars.max() > self._max:
-        #        t += 100000
 
         return t
 
@@ -163,19 +154,19 @@ class RedSequenceFitter(object):
 
         self._use_scatter_prior = use_scatter_prior
 
-        self._mean_nodes = np.atleast_1d(mean_nodes)
+        self._mean_nodes = np.atleast_1d(mean_nodes).astype(np.float64)
         if slope_nodes is None:
             self._slope_nodes = self._mean_nodes
         else:
-            self._slope_nodes = np.atleast_1d(slope_nodes)
+            self._slope_nodes = np.atleast_1d(slope_nodes).astype(np.float64)
         if scatter_nodes is None:
             self._scatter_nodes = self._mean_nodes
         else:
-            self._scatter_nodes = np.atleast_1d(scatter_nodes)
+            self._scatter_nodes = np.atleast_1d(scatter_nodes).astype(np.float64)
 
-        self._redshifts = np.atleast_1d(redshifts)
-        self._colors = np.atleast_1d(colors)
-        self._err2s = np.atleast_1d(errs)**2.
+        self._redshifts = np.atleast_1d(redshifts).astype(np.float64)
+        self._colors = np.atleast_1d(colors).astype(np.float64)
+        self._err2s = np.atleast_1d(errs).astype(np.float64)**2.
 
         self._n_mean_nodes = self._mean_nodes.size
         self._n_slope_nodes = self._slope_nodes.size
@@ -187,23 +178,23 @@ class RedSequenceFitter(object):
             raise ValueError("Number of redshifts must be equal to errs")
 
         if trunc is not None:
-            self._trunc = np.atleast_1d(trunc)
+            self._trunc = np.atleast_1d(trunc).astype(np.float64)
             if self._redshifts.size != self._trunc.size:
                 raise ValueError("Number of redshifts must be equal to truncs")
         else:
             self._trunc = None
 
         if dmags is not None:
-            self._dmags = np.atleast_1d(dmags)
+            self._dmags = np.atleast_1d(dmags).astype(np.float64)
             if self._redshifts.size != self._dmags.size:
                 raise ValueError("Number of redshifts must be equal to dmags")
             self._has_dmags = True
         else:
-            self._dmags = np.zeros(self._redshifts.size)
+            self._dmags = np.zeros(self._redshifts.size).astype(np.float64)
             self._has_dmags = False
 
         if lupcorrs is not None:
-            self._lupcorrs = np.atleast_1d(lupcorrs)
+            self._lupcorrs = np.atleast_1d(lupcorrs).astype(np.float64)
             if self._redshifts.size != self._lupcorrs.size:
                 raise ValueError("Number of redshifts must be equal to lupcorrs")
             self._has_lupcorrs = True
@@ -212,7 +203,7 @@ class RedSequenceFitter(object):
             self._has_lupcorrs = False
 
         if probs is not None:
-            self._probs = np.atleast_1d(probs)
+            self._probs = np.atleast_1d(probs).astype(np.float64)
             if self._redshifts.size != self._probs.size:
                 raise ValueError("Number of redshifts must be equal to probs")
             self._has_probs = True
@@ -220,7 +211,7 @@ class RedSequenceFitter(object):
             self._has_probs = False
 
         if bkgs is not None:
-            self._bkgs = np.atleast_1d(bkgs)
+            self._bkgs = np.atleast_1d(bkgs).astype(np.float64)
             if self._redshifts.size != self._bkgs.size:
                 raise ValueError("Number of redshifts must be equal to bkgs")
             self._has_bkgs = True
@@ -228,7 +219,7 @@ class RedSequenceFitter(object):
             self._has_bkgs = False
 
         if scatter_max is not None:
-            self._scatter_max = np.atleast_1d(scatter_max)
+            self._scatter_max = np.atleast_1d(scatter_max).astype(np.float64)
             if self._scatter_max.size != self._n_scatter_nodes:
                 raise ValueError("Number of scatter_max must be equal to scatter_nodes")
             self._has_scatter_max = True
@@ -470,14 +461,14 @@ class RedSequenceOffDiagonalFitter(object):
         min_eigenvalue: `float`, optional
            Minimum eigenvalue of covariance matrix.  Default is 0.0.
         """
-        self._nodes = np.atleast_1d(nodes)
-        self._redshifts = np.atleast_1d(redshifts)
-        self._d1 = np.atleast_1d(d1)
-        self._d2 = np.atleast_1d(d2)
-        self._s1 = np.atleast_1d(s1)
-        self._s2 = np.atleast_1d(s2)
-        self._probs = np.atleast_1d(probs)
-        self._bkgs = np.atleast_1d(bkgs)
+        self._nodes = np.atleast_1d(nodes).astype(np.float64)
+        self._redshifts = np.atleast_1d(redshifts).astype(np.float64)
+        self._d1 = np.atleast_1d(d1).astype(np.float64)
+        self._d2 = np.atleast_1d(d2).astype(np.float64)
+        self._s1 = np.atleast_1d(s1).astype(np.float64)
+        self._s2 = np.atleast_1d(s2).astype(np.float64)
+        self._probs = np.atleast_1d(probs).astype(np.float64)
+        self._bkgs = np.atleast_1d(bkgs).astype(np.float64)
 
         if self._redshifts.size != self._d1.size:
             raise ValueError("Number of redshifts must be equal to d1")
@@ -661,29 +652,29 @@ class CorrectionFitter(object):
            Float array of likelihood weighting factors.
            Default is None (no weighting factors).
         """
-        self._mean_nodes = np.atleast_1d(mean_nodes)
+        self._mean_nodes = np.atleast_1d(mean_nodes).astype(np.float64)
         # Note that the slope_nodes are the default for the r, bkg as well
         if slope_nodes is None:
             self._slope_nodes = self._mean_nodes
         else:
-            self._slope_nodes = np.atleast_1d(slope_nodes)
+            self._slope_nodes = np.atleast_1d(slope_nodes).astype(np.float64)
         if r_nodes is None:
             self._r_nodes = self._slope_nodes
         else:
-            self._r_nodes = np.atleast_1d(r_nodes)
+            self._r_nodes = np.atleast_1d(r_nodes).astype(np.float64)
         if bkg_nodes is None:
             self._bkg_nodes = self._slope_nodes
         else:
-            self._bkg_nodes = np.atleast_1d(bkg_nodes)
+            self._bkg_nodes = np.atleast_1d(bkg_nodes).astype(np.float64)
 
         self._n_mean_nodes = self._mean_nodes.size
         self._n_slope_nodes = self._slope_nodes.size
         self._n_r_nodes = self._r_nodes.size
         self._n_bkg_nodes = self._bkg_nodes.size
 
-        self._redshifts = np.atleast_1d(redshifts)
-        self._dzs = np.atleast_1d(dzs)
-        self._dz_errs = np.atleast_1d(dz_errs)
+        self._redshifts = np.atleast_1d(redshifts).astype(np.float64)
+        self._dzs = np.atleast_1d(dzs).astype(np.float64)
+        self._dz_errs = np.atleast_1d(dz_errs).astype(np.float64)
 
         if self._redshifts.size != self._dzs.size:
             raise ValueError("Number of redshifts must be equal to dzs")
@@ -691,21 +682,21 @@ class CorrectionFitter(object):
             raise ValueError("Number of redshifts must be equal to dz_errs")
 
         if probs is not None:
-            self._probs = np.atleast_1d(probs)
+            self._probs = np.atleast_1d(probs).astype(np.float64)
             if self._redshifts.size != self._probs.size:
                 raise ValueError("Number of redshifts must be equal to probs")
         else:
             self._probs = np.ones_like(self._redshifts)
 
         if dmags is not None:
-            self._dmags = np.atleast_1d(dmags)
+            self._dmags = np.atleast_1d(dmags).astype(np.float64)
             if self._redshifts.size != self._dmags.size:
                 raise ValueError("Number of redshifts must be equal to dmags")
         else:
             self._dmags = np.zeros_like(self._redshifts)
 
         if ws is not None:
-            self._ws = np.atleast_1d(ws)
+            self._ws = np.atleast_1d(ws).astype(np.float64)
             if self._redshifts.size != self._ws.size:
                 raise ValueError("Number of redshifts must be equal to ws")
         else:
@@ -774,7 +765,7 @@ class CorrectionFitter(object):
             ctr += self._n_r_nodes
             p0 = np.append(p0, p0_r)
             for i in range(self._n_r_nodes):
-                bounds.append([0.0, np.inf])
+                bounds.append([0.1, 2.0])
         if self._fit_bkg:
             self._bkg_index = ctr
             ctr += self._n_bkg_nodes
@@ -794,13 +785,24 @@ class CorrectionFitter(object):
             self._gslope = spl(self._redshifts)
         if not self._fit_r:
             spl = CubicSpline(self._r_nodes, p0_r)
-            self._gr = np.clip(spl(self._redshifts), 0.5, None)
+            self._gr = spl(self._redshifts)
         if not self._fit_bkg:
             spl = CubicSpline(self._bkg_nodes, p0_bkg)
             self._gbkg = np.clip(spl(self._redshifts), 1e-10, None)
             self._gci1 = (1. / np.sqrt(2. * np.pi * self._gbkg)) * np.exp(-self._dzs**2. / (2. * self._gbkg))
 
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
+        res = scipy.optimize.minimize(self,
+                                      p0,
+                                      method='L-BFGS-B',
+                                      bounds=bounds,
+                                      jac=False,
+                                      options={'maxfun': 5000,
+                                               'maxiter': 5000,
+                                               'maxcor': 20,
+                                               'eps': 1e-5,
+                                               'gtol': 1e-10},
+                                      callback=None)
+        pars = res.x
 
         retval = []
         if self._fit_mean:
@@ -843,13 +845,13 @@ class CorrectionFitter(object):
 
         if self._fit_r:
             spl = CubicSpline(self._r_nodes, pars[self._r_index: self._r_index + self._n_r_nodes])
-            gr = np.clip(spl(self._redshifts), 0.5, None)
+            gr = spl(self._redshifts)
         else:
             gr = self._gr
 
         if self._fit_bkg:
-            if pars[self._bkg_index: self._bkg_index + self._n_bkg_nodes].min() < 0.0:
-                return 1e11
+            #if pars[self._bkg_index: self._bkg_index + self._n_bkg_nodes].min() < 0.0:
+            #    return 1e11
             spl = CubicSpline(self._bkg_nodes, pars[self._bkg_index: self._bkg_index + self._n_bkg_nodes])
             gbkg = np.clip(spl(self._redshifts), 1e-10, None)
             gci1 = (1. / np.sqrt(2. * np.pi * gbkg)) * np.exp(-self._dzs**2. / (2. * gbkg))
@@ -861,22 +863,10 @@ class CorrectionFitter(object):
         gci0 = (1. / np.sqrt(2. * np.pi * var0)) * np.exp(-(self._dzs - (gmean + gslope * self._dmags))**2. / (2. * var0))
 
         vals = self._ws * (self._probs * gci0 + (1. - self._probs) * gci1)
-        test, = np.where(vals <= 0.0)
-        if test.size > 0:
-            # This is a bad bit of space
-            t = 1e11
-        else:
-            vals = np.log(vals)
 
-            t = -np.sum(vals)
+        vals = np.log(vals)
 
-            if (~np.isfinite(t)):
-                # It really should not get here.
-                t = 1e11
-            else:
-                # Make a little bit of a barrier here so the fitter goes to a happier place
-                if (gbkg.min() < 0.0) :
-                    t += 10000
+        t = -np.sum(vals)
 
         return t
 
@@ -899,8 +889,8 @@ class EcgmmFitter(object):
         y_err: `np.array`
            Float array of y error values to decompose.
         """
-        self._y = y
-        self._y_err2 = y_err**2.
+        self._y = y.astype(np.float64)
+        self._y_err2 = y_err.astype(np.float64)**2.
 
     def fit(self, wt0, mu, sigma, bounds=None, offset=0.0):
         """
@@ -943,16 +933,26 @@ class EcgmmFitter(object):
         self._y += offset
 
         if bounds is None:
-            self._bounds = [(0.0, 1.0), # wt0
-                            (-1.0 + offset, 1.0 + offset), # mu0
-                            (-1.0 + offset, 1.0 + offset), # mu1
-                            (0.0, 0.5), # sigma0
-                            (0.0, 0.5)] # sigma1
+            _bounds = [(1e-5, 1.0), # wt0
+                       (-1.0 + offset, 1.0 + offset), # mu0
+                       (-1.0 + offset, 1.0 + offset), # mu1
+                       (1e-2, 0.5), # sigma0
+                       (1e-2, 0.5)] # sigma1
         else:
-            self._bounds = bounds
+            _bounds = bounds
 
-        # FIXME
-        pars = scipy.optimize.fmin(self, p0, disp=False, xtol=1e-6, ftol=1e-6)
+        res = scipy.optimize.minimize(self,
+                                      p0,
+                                      method='L-BFGS-B',
+                                      bounds=_bounds,
+                                      jac=False,
+                                      options={'maxfun': 2000,
+                                               'maxiter': 2000,
+                                               'maxcor': 20,
+                                               'eps': 1e-5,
+                                               'gtol': 1e-8},
+                                      callback=None)
+        pars = res.x
 
         wt = np.array([pars[0], 1.0 - pars[0]])
         mu = pars[1:3] - offset
@@ -987,14 +987,14 @@ class EcgmmFitter(object):
         sigma1 = pars[4]
 
         wt1 = 1.0 - wt0
-
+        """
         if (wt0 < self._bounds[0][0] or wt0 > self._bounds[0][1] or
             mu0 < self._bounds[1][0] or mu0 > self._bounds[1][1] or
             mu1 < self._bounds[2][0] or mu1 > self._bounds[2][1] or
             sigma0 < self._bounds[3][0] or sigma0 > self._bounds[3][1] or
             sigma1 < self._bounds[4][0] or sigma1 > self._bounds[4][1]):
             return np.inf
-
+            """
         g = ((wt0 / np.sqrt(2. * np.pi * (sigma0**2. + self._y_err2)) * np.exp(-(self._y - mu0)**2. / (2. * (sigma0**2. + self._y_err2)))) +
              (wt1 / np.sqrt(2. * np.pi * (sigma1**2. + self._y_err2)) * np.exp(-(self._y - mu1)**2. / (2. * (sigma1**2. + self._y_err2)))))
 
