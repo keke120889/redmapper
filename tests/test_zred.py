@@ -55,8 +55,10 @@ class ZredTestCase(unittest.TestCase):
         mstar_input = zredstr.mstar(galaxies_input.zred_uncorr)
         mstar = zredstr.mstar(galaxies.zred_uncorr)
 
-        ok, = np.where((galaxies.refmag < (mstar_input - 2.5*np.log10(0.15))) |
-                       (galaxies.refmag < (mstar - 2.5*np.log10(0.15))))
+        # Don't compare to high redshift because the extrapolation has changed a lot
+        ok, = np.where(((galaxies.refmag < (mstar_input - 2.5*np.log10(0.15))) |
+                        (galaxies.refmag < (mstar - 2.5*np.log10(0.15)))) &
+                       (galaxies.zred_uncorr < 0.58))
 
         delta_zred_uncorr = galaxies.zred_uncorr[ok] - galaxies_input.zred_uncorr[ok]
 
@@ -130,8 +132,10 @@ class ZredTestCase(unittest.TestCase):
         mstar_input = zredstr.mstar(gals_compare.zred_uncorr)
         mstar = zredstr.mstar(gals_compare.zred_uncorr)
 
-        ok, = np.where((gals_compare.refmag < (mstar_input - 2.5*np.log10(0.15))) |
-                       (gals_compare.refmag < (mstar - 2.5*np.log10(0.15))))
+        # Don't compare to high redshift because the extrapolation has changed a lot
+        ok, = np.where(((gals_compare.refmag < (mstar_input - 2.5*np.log10(0.15))) |
+                       (gals_compare.refmag < (mstar - 2.5*np.log10(0.15)))) &
+                       (gals_compare.zred_uncorr < 0.58))
 
         delta_zred_uncorr = gals.zred_uncorr[ok] - gals_compare.zred_uncorr[ok]
 
@@ -187,8 +191,10 @@ class ZredTestCase(unittest.TestCase):
         mstar_input = zredstr.mstar(gals_compare.zred_uncorr)
         mstar = zredstr.mstar(gals_compare.zred_uncorr)
 
-        ok, = np.where((gals_compare.refmag < (mstar_input - 2.5*np.log10(0.15))) |
-                       (gals_compare.refmag < (mstar - 2.5*np.log10(0.15))))
+        # Don't compare to high redshift because the extrapolation has changed a lot
+        ok, = np.where(((gals_compare.refmag < (mstar_input - 2.5*np.log10(0.15))) |
+                        (gals_compare.refmag < (mstar - 2.5*np.log10(0.15)))) &
+                       (gals_compare.zred_uncorr < 0.58))
 
         delta_zred_uncorr = gals.zred_uncorr[ok] - gals_compare.zred_uncorr[ok]
 
