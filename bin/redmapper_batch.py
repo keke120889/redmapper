@@ -39,7 +39,7 @@ def load_batchconfig(filename):
        Dict of parameters from configuration file.
     """
     with open(filename) as f:
-        yaml_data = yaml.load(f)
+        yaml_data = yaml.load(f, Loader=yaml.SafeLoader)
 
     for key in yaml_data.keys():
         if 'batch' not in yaml_data[key]:
@@ -80,7 +80,7 @@ parser.add_argument('-n', '--nside', action='store', type=int, required=False,
 args = parser.parse_args()
 
 if not mode_required and args.batchmode is None:
-    batchmode = batchconfig.keys()[0]
+    batchmode = list(batchconfig.keys())[0]
 else:
     batchmode = args.batchmode
 

@@ -220,7 +220,10 @@ class DepthMap(object):
 
             bitShift = 2 * int(np.round(np.log(self.nside / self.subpix_nside) / np.log(2)))
             nFinePerSub = 2**bitShift
-            ipnest = np.left_shift(hp.ring2nest(self.subpix_nside, self.subpix_hpix), bitShift) + np.arange(nFinePerSub)
+            ipnest = np.zeros(0, dtype=np.int64)
+            for hpix in self.subpix_hpix:
+                ipnest_temp = np.left_shift(hp.ring2nest(self.subpix_nside, hpix), bitShift) + np.arange(nFinePerSub)
+                ipnest = np.append(ipnest, ipnest_temp)
         else:
             ipnest = self.sparse_depthmap.validPixels
 

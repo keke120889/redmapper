@@ -416,7 +416,11 @@ class RedmapperRun(object):
         else:
             self.config.logger.info("Firstpass file %s already present.  Skipping..." % (firstpass.filename))
 
-        config.catfile = firstpass.filename
+        firstpass_filename = firstpass.filename
+        config.catfile = firstpass_filename
+
+        # Clear out memory
+        del firstpass
 
         like = RunLikelihoods(config)
 
@@ -427,13 +431,17 @@ class RedmapperRun(object):
                 (like.cat is not None and like.cat.size == 0)):
                 # We did not get a likelihood catalog
                 self.config.logger.info("Did not produce a likelihood catalog for pixel %d" % (hpix))
-                return (hpix, firstpass.filename, None, None)
+                return (hpix, firstpass_filename, None, None)
 
             like.output(savemembers=False, withversion=False, clobber=True)
         else:
             self.config.logger.info("Likelihood file %s already present.  Skipping..." % (like.filename))
 
-        config.catfile = like.filename
+        like_filename = like.filename
+        config.catfile = like_filename
+
+        # Clear out memory
+        del like
 
         perc = RunPercolation(config)
 
@@ -444,13 +452,15 @@ class RedmapperRun(object):
                 (perc.cat is not None and perc.cat.size == 0)):
                 # We did not get a percolation catalog
                 self.config.logger.info("Did not produce a percolation catalog for pixel %d" % (hpix))
-                return (hpix, firstpass.filename, like.filename, None)
+                return (hpix, firstpass_filename, like_filename, None)
 
             perc.output(savemembers=True, withversion=False, clobber=True)
         else:
             self.config.logger.info("Percolation file %s already present.  Skipping..." % (perc.filename))
 
-        return (hpix, firstpass.filename, like.filename, perc.filename)
+        perc_filename = perc.filename
+
+        return (hpix, firstpass_filename, like_filename, perc_filename)
 
     def _percolation_only_worker(self, hpix):
         """
