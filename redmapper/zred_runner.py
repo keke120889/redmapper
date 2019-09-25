@@ -235,7 +235,10 @@ class ZredRunPixels(object):
             self.total_galaxies = np.sum(self.galtable.ngals[indices])
             if (self.verbose):
                 self.config.logger.info("Computing zred for %d galaxies in %d pixels." % (self.total_galaxies, len(indices)))
-            retvals = map(self._worker, indices)
+            pool = Pool(processes=1)
+            retvals = pool.map(self._worker, indices, chunksize=1)
+            pool.close()
+            pool.join()
 
         self.config.logger.info("Done computing zreds in %.2f seconds" % (time.time() - starttime))
 
@@ -260,7 +263,6 @@ class ZredRunPixels(object):
         outfile: `str`
            zredfile that was saved
         """
-
         # Read in just one single pixel
         galaxies = GalaxyCatalog.from_galfile(self.config.galfile,
                                               nside=self.galtable.nside,
