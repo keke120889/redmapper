@@ -136,11 +136,11 @@ class VolumeLimitMask(object):
         vlimmap = np.zeros(validPixels.size, dtype=dtype_vlimmap)
         vlimmap['fracgood'] = depthValues['fracgood']
 
-        lo, = np.where(depthValues['m50'] < limmags.min())
+        lo, = np.where(depthValues['m50'] <= limmags.min())
         vlimmap['zmax'][lo] = zbins.min()
-        hi, = np.where(depthValues['m50'] > limmags.max())
+        hi, = np.where(depthValues['m50'] >= limmags.max())
         vlimmap['zmax'][hi] = zbins.max()
-        mid, = np.where((depthValues['m50'] >= limmags.min()) & (depthValues['m50'] <= limmags.max()))
+        mid, = np.where((depthValues['m50'] > limmags.min()) & (depthValues['m50'] < limmags.max()))
         if mid.size > 0:
             l = np.searchsorted(limmags, depthValues['m50'][mid], side='right')
             vlimmap['zmax'][mid] = zbins[l]
@@ -189,11 +189,11 @@ class VolumeLimitMask(object):
             # adjust zmax with zmax_temp
             zmax_temp = np.zeros(vlimmap.size)
 
-            lo, = np.where(lim_mask < limmags_temp.min())
+            lo, = np.where(lim_mask <= limmags_temp.min())
             zmax_temp[lo] = zbins.min()
-            hi, = np.where(lim_mask > limmags_temp.max())
+            hi, = np.where(lim_mask >= limmags_temp.max())
             zmax_temp[hi] = zbins.max()
-            mid, = np.where((lim_mask >= limmags_temp.min()) & (lim_mask <= limmags_temp.max()))
+            mid, = np.where((lim_mask > limmags_temp.min()) & (lim_mask < limmags_temp.max()))
             if mid.size > 0:
                 l = np.searchsorted(limmags_temp, lim_mask[mid], side='right')
                 zmax_temp[mid] = zbins[l]

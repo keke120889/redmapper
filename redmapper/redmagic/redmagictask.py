@@ -120,8 +120,7 @@ l           Output path.  Default is None, use same absolute
                 nzplot.plot_redmagic_catalog(gals, mode, selector.calib_data[mode].etamin,
                                              selector.calib_data[mode].n0,
                                              selector.vlim_masks[mode].get_areas(),
-                                             zrange=selector.calib_data[mode].zrange,
-                                             sample=self.config.redmagic_calib_pz_integrate)
+                                             zrange=selector.calib_data[mode].zrange)
 
                 okspec, = np.where(gals.zspec > 0.0)
                 if okspec.size > 0:

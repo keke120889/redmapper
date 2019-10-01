@@ -270,6 +270,10 @@ class RedGalInitialColors(object):
             self._color_names.append(self._color_name(self._template_bands[i],
                                                       self._template_bands[i + 1]))
 
+    @property
+    def zmax(self):
+        return self._template.z.max()
+
     def __call__(self, band1, band2, z):
         """
         Return the initial color guess (band1 - band2) at redshift z.
@@ -326,7 +330,7 @@ class CubicSpline(object):
     """
     CubicSpline interpolation class.
     """
-    def __init__(self, x, y, yp=None):
+    def __init__(self, x, y, yp=None, fixextrap=False):
         """
         Instantiate a CubicSpline object.
 
@@ -338,6 +342,9 @@ class CubicSpline(object):
            Float array of node values
         yp: `str`
            Type of spline.  Default is None, which is "natural"
+        fixextrap: `bool`, optional
+           Fix the extrapolation at the end of the node positions.
+           Default is False.
         """
         npts = len(x)
         mat = np.zeros((3, npts))
@@ -369,6 +376,8 @@ class CubicSpline(object):
             bb[-1] = yp[1]-1.*(y[-1]-y[-2])/(x[-1]-x[-2])
         y2 = solve_banded((1,1), mat, bb)
         self.x, self.y, self.y2 = (x, y, y2)
+
+        self.fixextrap = fixextrap
 
     def splint(self,x):
         """
@@ -409,7 +418,19 @@ class CubicSpline(object):
         y: `np.array`
            Spline interpolated values at x
         """
-        return self.splint(x)
+
+        if not self.fixextrap:
+            return self.splint(x)
+        else:
+            vals = self.splint(x)
+
+            lo, = np.where(x < self.x[0])
+            vals[lo] = self.y[0]
+
+            hi, = np.where(x > self.x[-1])
+            vals[hi] = self.y[-1]
+
+            return vals
 
 def calc_theta_i(mag, mag_err, maxmag, limmag):
     """
