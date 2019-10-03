@@ -223,6 +223,7 @@ class RedmagicParameterFitter(object):
         delta_med_gd = spl(self._z[ab_gd])
 
         y = 1.4826 * np.abs(delta_gd - delta_med_gd) / self._z_err[ab_gd]
+
         efitter = MedZFitter(self._corrnodes, self._z[ab_gd], y)
         pars_eratio = efitter.fit(p0_eratio, min_val=0.5, max_val=1.5)
 
