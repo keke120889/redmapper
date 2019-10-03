@@ -127,7 +127,7 @@ class RedmagicParameterFitter(object):
         if len(self._zrange) != 2:
             raise ValueError("zrange must have 2 elements")
 
-    def fit(self, p0_cval, biaspars=None, eratiopars=None, afterburner=False):
+    def fit(self, p0_cval, biaspars=None, eratiopars=None, afterburner=False, saveit=False):
         """
         Fit the redMaGiC parameters.
 
@@ -172,12 +172,49 @@ class RedmagicParameterFitter(object):
         # Compute here...
         self._mstar = self._zredstr.mstar(self._zredmagic)
 
+        if saveit:
+            print('p0:')
+            print(p0_cval.dtype)
+            print(np.min(p0_cval), np.max(p0_cval), np.std(p0_cval))
+            print('nodes:')
+            print(self._nodes.dtype)
+            print(np.min(self._nodes), np.max(self._nodes), np.std(self._nodes))
+            print('z:')
+            print(self._z.dtype)
+            print(np.min(self._z), np.max(self._z), np.std(self._z))
+            print('maxchi:', self._maxchi)
+            print('chisq:')
+            print(self._chisq.dtype)
+            print(np.min(self._chisq), np.max(self._chisq), np.std(self._chisq))
+            print('refmag:')
+            print(self._refmag.dtype)
+            print(np.min(self._refmag), np.max(self._refmag), np.std(self._refmag))
+            print('mstar:')
+            print(self._mstar.dtype)
+            print(np.min(self._mstar), np.max(self._mstar), np.std(self._mstar))
+            print('etamin:', self._etamin)
+            print('zredmagic:')
+            print(self._zredmagic.dtype)
+            print(np.min(self._zredmagic), np.max(self._zredmagic), np.std(self._zredmagic))
+            print('zmax:')
+            print(self._zmax.dtype)
+            print(np.min(self._zmax), np.max(self._zmax), np.std(self._zmax))
+            print('zredmagic_samp:')
+            print(self._zredmagic_samp.dtype)
+            print(np.min(self._zredmagic_samp), np.max(self._zredmagic_samp), np.std(self._zredmagic_samp))
+            print('zrange:', self._zrange)
+            print('n0:', self._n0)
+            print('volume:')
+            print(self._volume.dtype)
+            print(np.min(self._volume), np.max(self._volume), np.std(self._volume))
+
+
         # For whatever reason, the nelder-meade minimizer works better here.
         pars = scipy.optimize.fmin(self, p0_cval, disp=False, xtol=1e-8, ftol=1e-8)
 
         return pars
 
-    def fit_bias_eratio(self, cval, p0_bias, p0_eratio):
+    def fit_bias_eratio(self, cval, p0_bias, p0_eratio, saveit=False):
         """
         Fit the bias and eratio afterburner parameters.
 
@@ -197,6 +234,41 @@ class RedmagicParameterFitter(object):
         pars_eratio: `np.array`
            Float array of best-fit eratio parameters
         """
+
+        if saveit:
+            print('nodes:')
+            print(self._nodes.dtype)
+            print(np.min(self._nodes), np.max(self._nodes), np.std(self._nodes))
+            print('corrnodes:')
+            print(self._corrnodes.dtype)
+            print(np.min(self._corrnodes), np.max(self._corrnodes), np.std(self._corrnodes))
+            print('z:')
+            print(self._z.dtype)
+            print(np.min(self._z), np.max(self._z), np.std(self._z))
+            print('chisq:')
+            print(self._chisq.dtype)
+            print(np.min(self._chisq), np.max(self._chisq), np.std(self._chisq))
+            print('refmag:')
+            print(self._refmag.dtype)
+            print(np.min(self._refmag), np.max(self._refmag), np.std(self._refmag))
+            print('mstar:')
+            print(self._mstar.dtype)
+            print(np.min(self._mstar), np.max(self._mstar), np.std(self._mstar))
+            print('zredmagic:')
+            print(self._zredmagic.dtype)
+            print(np.min(self._zredmagic), np.max(self._zredmagic), np.std(self._zredmagic))
+            print('zmax:')
+            print(self._zmax.dtype)
+            print(np.min(self._zmax), np.max(self._zmax), np.std(self._zmax))
+            print('z:')
+            print(self._z.dtype)
+            print(np.min(self._z), np.max(self._z), np.std(self._z))
+            print('zcal:')
+            print(self._zcal.dtype)
+            print(np.min(self._zcal), np.max(self._zcal), np.std(self._zcal))
+            print('zerr:')
+            print(self._z_err.dtype)
+            print(np.min(self._z_err), np.max(self._z_err), np.std(self._z_err))
 
         spl = CubicSpline(self._nodes, cval)
         chi2max = np.clip(spl(self._z), 0.1, self._maxchi)
@@ -617,7 +689,7 @@ class RedmagicCalibrator(object):
                 for k in xrange(5):
                     self.config.logger.info("Afterburner iteration %d" % (k))
                     # Fit the bias and eratio...
-                    biasvals, eratiovals = rmfitter.fit_bias_eratio(cmaxvals, biasvals, eratiovals)
+                    biasvals, eratiovals = rmfitter.fit_bias_eratio(cmaxvals, biasvals, eratiovals, saveit=True)
                     cmaxvals = rmfitter.fit(cmaxvals, biaspars=biasvals, eratiopars=eratiovals, afterburner=True)
 
                 # And a last fit of bias/eratio
