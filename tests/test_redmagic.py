@@ -78,8 +78,6 @@ class RedmagicCalTestCase(unittest.TestCase):
         testing.assert_almost_equal(rmfitter(p0_cval), 317.4524284321642)
 
         cvals = rmfitter.fit(p0_cval)
-        print("Done with cvals")
-        print(cvals)
 
         # This does not match the IDL output, because this is doing a lot
         # better job minimizing the function, at least in this test.
@@ -92,15 +90,8 @@ class RedmagicCalTestCase(unittest.TestCase):
         biasvals = np.zeros(rmfitter._corrnodes.size)
         eratiovals = np.ones(rmfitter._corrnodes.size)
         biasvals, eratiovals = rmfitter.fit_bias_eratio(cvals, biasvals, eratiovals)
-        print("Done with fit_bias_eratio")
-        print(biasvals[0], biasvals[1], biasvals[2])
-        print(eratiovals[0], eratiovals[1], eratiovals[2])
 
-        cvals = rmfitter.fit(cvals, biaspars=biasvals, eratiopars=eratiovals, afterburner=True, saveit=True)
-        print("Done with combo")
-        print(cvals)
-        print(biasvals)
-        print(eratiovals)
+        cvals = rmfitter.fit(cvals, biaspars=biasvals, eratiopars=eratiovals, afterburner=True)
 
         testing.assert_almost_equal(cvals, np.array([2.39569338, 3.07408774, 0.8872264]), 4)
         testing.assert_almost_equal(biasvals, np.array([0.04477243, 0.00182884, -0.03398897]), 4)
@@ -139,11 +130,6 @@ class RedmagicCalTestCase(unittest.TestCase):
 
         # Check that they are what we think they should be
         # (these checks are arbitrary, just to make sure nothing has changed)
-
-        print("HERE I AM")
-        print(cal['cmax'][0, :])
-        print(cal['bias'][0, :])
-        print(cal['eratio'][0, :])
 
         testing.assert_almost_equal(cal['cmax'][0, :], np.array([3.25383848, 2.62276221, 0.17340609]), 5)
         testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.00961071, -0.0281055, 0.04684099]), 5)
