@@ -140,13 +140,14 @@ class RedmagicCalTestCase(unittest.TestCase):
         # Check that they are what we think they should be
         # (these checks are arbitrary, just to make sure nothing has changed)
 
+        print("HERE I AM")
         print(cal['cmax'][0, :])
         print(cal['bias'][0, :])
         print(cal['eratio'][0, :])
 
-        testing.assert_almost_equal(cal['cmax'][0, :], np.array([3.82222811, 2.97074316, 0.10722936]), 5)
-        testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.03902618, -0.02921943, 0.0445708]), 5)
-        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.5, 0.64352554, 0.5]), 5)
+        testing.assert_almost_equal(cal['cmax'][0, :], np.array([3.25383848, 2.62276221, 0.17340609]), 5)
+        testing.assert_almost_equal(cal['bias'][0, :], np.array([-0.00961071, -0.0281055, 0.04684099]), 5)
+        testing.assert_almost_equal(cal['eratio'][0, :], np.array([1.5, 0.78679151, 0.5]), 5)
 
         pngs = glob.glob(os.path.join(self.test_dir, '*.png'))
         self.assertEqual(len(pngs), 3)
