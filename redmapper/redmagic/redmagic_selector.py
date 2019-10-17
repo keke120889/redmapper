@@ -157,7 +157,7 @@ class RedmagicSelector(object):
             zredmagic -= offset
 
             if calstr.apply_afterburner:
-                for i in range(self.config.zred_nsamp):
+                for i in range(zredmagic_samp.shape[1]):
                     zredmagic_samp[:, i] -= offset
 
             spl = CubicSpline(calstr.corrnodes, calstr.eratio, fixextrap=True)

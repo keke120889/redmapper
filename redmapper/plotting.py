@@ -233,8 +233,8 @@ class SpecPlot(object):
         if calib_zrange is not None:
             if len(calib_zrange) == 2:
                 ylim = ax.get_ylim()
-                ax2.plot([calib_zrange[0], calib_zrange[0]], ylim, 'k:')
-                ax2.plot([calib_zrange[1], calib_zrange[1]], ylim, 'k:')
+                ax2.plot([calib_zrange[0], calib_zrange[0]], [-0.03, 0.024], 'k:')
+                ax2.plot([calib_zrange[1], calib_zrange[1]], [-0.03, 0.024], 'k:')
 
         ax2.tick_params(axis='both', which='major', labelsize=14, length=5, left=True, right=True, top=True, bottom=True, direction='in')
         ax2.tick_params(axis='y', which='minor', left=True, right=True, direction='in')
@@ -467,12 +467,15 @@ class NzPlot(object):
         dens = h.astype(np.float32) / vol
         err = np.sqrt(dens * vol) / vol
 
+        u, = np.where((dens > 0.0) & (err > 0.0))
+        u2, = np.where((dens[u] / err[u]) > 5.0)
+
         fig = plt.figure(1, figsize=(8, 6))
         fig.clf()
 
         ax = fig.add_subplot(111)
 
-        ax.errorbar(zbins, dens*1e4, yerr=err*1e4, fmt='r.', markersize=8)
+        ax.errorbar(zbins[u[u2]], dens[u[u2]]*1e4, yerr=err[u[u2]]*1e4, fmt='r.', markersize=8)
         if xlabel is not None:
             ax.set_xlabel(xlabel, fontsize=16)
         if ylabel is not None:

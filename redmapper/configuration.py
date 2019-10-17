@@ -383,7 +383,7 @@ class Configuration(object):
     redmagic_maxlum = ConfigField(default=100.0, required=True)
     redmagic_mock_truthspec = ConfigField(default=False, required=True)
     redmagic_run_afterburner = ConfigField(default=True, required=True)
-    redmagic_apply_afterburner_zsamp = ConfigField(default=False, required=True)
+    redmagic_apply_afterburner_zsamp = ConfigField(default=True, required=True)
     redmagic_n0s = ConfigField(default=[], required=True, isArray=True)
     redmagic_etas = ConfigField(default=[], required=True, isArray=True)
     redmagic_names = ConfigField(default=[], required=True, isList=True)

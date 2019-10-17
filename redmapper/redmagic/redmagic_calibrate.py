@@ -513,7 +513,7 @@ class RedmagicCalibrator(object):
             calstr.buffer = self.config.redmagic_calib_redshift_buffer
 
             # Take the first sample of each galaxy
-            zsamp = gals.zred_samp[:, 0]
+            zsamp = gals.zred_samp[:, 0].copy()
 
             # Initial histogram, using sampled redshifts
             # This histogram isn't actually used for anything except to confirm the size
@@ -591,7 +591,7 @@ class RedmagicCalibrator(object):
                                                gals.zuse[red_poss], gals.zuse_e[red_poss],
                                                gals.chisq[red_poss], mstar_init[red_poss],
                                                gals.zcal[red_poss], gals.zcal_e[red_poss],
-                                               gals.refmag[red_poss], zsamp,
+                                               gals.refmag[red_poss], zsamp[red_poss],
                                                zmax,
                                                self.config.redmagic_etas[i],
                                                self.config.redmagic_n0s[i],

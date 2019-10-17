@@ -85,6 +85,8 @@ l           Output path.  Default is None, use same absolute
         started = [False] * n_modes
 
         self.config.logger.info("Making redMaGiC selection for %d modes and %d pixels" % (n_modes, tab.hpix.size))
+        if self.config.has_truth:
+            self.config.logger.info("Using truth information for zspec")
 
         for i, pix in enumerate(tab.hpix):
             gals = GalaxyCatalog.from_galfile(self.config.galfile,
@@ -92,7 +94,7 @@ l           Output path.  Default is None, use same absolute
                                               nside=tab.nside,
                                               hpix=pix,
                                               border=0.0,
-                                              truth=self.config.redmagic_mock_truthspec)
+                                              truth=self.config.has_truth)
 
             # Loop over all modes
             for j, mode in enumerate(modes):

@@ -220,28 +220,22 @@ class ZredColor(object):
             return
 
         # And sample the uncorrected p(z)
-        gdzbins, = np.where(dist > 1e-10)
-        pz = dist.copy()
-        n = scipy.integrate.simps(pz[gdzbins], self.zredstr.z[gdzbins])
-        pz /= n
+        gdzbins, = np.where((dist > 1e-10) & (np.isfinite(dist)))
 
         if gdzbins.size < 3:
             # We cannot do a proper p(z)
             zred_samp = np.zeros(galaxy.zred_samp.size) + zred
         else:
+            pz = dist.copy()
+            n = scipy.integrate.simps(pz[gdzbins], self.zredstr.z[gdzbins])
+            pz /= n
+
             pdf = scipy.interpolate.interp1d(self.zredstr.z[gdzbins], pz[gdzbins], kind='quadratic',
                                              bounds_error=False, fill_value=0.0)
             zred_samp = sample_from_pdf(pdf,
                                         [self.zredstr.z[gdzbins[0]], self.zredstr.z[gdzbins[-1]]],
                                         0.0001,
                                         galaxy.zred_samp.size)
-
-        """
-        zsamp = sample_from_pdf(pdf,
-                                [self.zredstr.z[gdzbins[0]], self.zredstr.z[gdzbins[-1]]],
-                                0.0001,
-                                1000)
-                                """
 
         # And apply the corrections
         zred2 = np.zeros(1) + zred
