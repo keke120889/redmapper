@@ -180,11 +180,11 @@ class VolumeLimitMask(object):
                 if map_ind < ref_ind:
                     # Need to go blueward
                     for jj in xrange(ref_ind - 1, map_ind - 1, -1):
-                        limmags_temp += (zredstr.c[zinds, jj] + zredstr.slope[zinds, jj]) * (refmag_lim - zredstr.pivotmag[zinds])
+                        limmags_temp += (zredstr.c[zinds, jj] + zredstr.slope[zinds, jj] * (refmag_lim - zredstr.pivotmag[zinds]))
                 else:
                     # Need to go redward
                     for jj in xrange(ref_ind, map_ind):
-                        limmags_temp -= (zredstr.c[zinds, jj] + zredstr.slope[zinds, jj]) * (refmag_lim - zredstr.pivotmag[zinds])
+                        limmags_temp -= (zredstr.c[zinds, jj] + zredstr.slope[zinds, jj] * (refmag_lim - zredstr.pivotmag[zinds]))
 
             # adjust zmax with zmax_temp
             zmax_temp = np.zeros(vlimmap.size)
