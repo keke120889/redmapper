@@ -36,6 +36,8 @@ class ZredTestCase(unittest.TestCase):
         galaxy_filename = 'test_dr8_gals_with_zred.fit'
         galaxies = GalaxyCatalog.from_fits_file(file_path + '/' + galaxy_filename)
 
+        galaxies.add_fields([('zred_samp', 'f4', 4)])
+
         galaxies_input = copy.deepcopy(galaxies)
 
         # start with the first one...

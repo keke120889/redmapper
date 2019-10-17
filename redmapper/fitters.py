@@ -864,6 +864,9 @@ class CorrectionFitter(object):
 
         vals = self._ws * (self._probs * gci0 + (1. - self._probs) * gci1)
 
+        bad, = np.where((~np.isfinite(vals)) | (vals <= 0.0))
+        vals[bad] = 4e-44
+
         vals = np.log(vals)
 
         t = -np.sum(vals)

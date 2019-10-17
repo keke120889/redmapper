@@ -171,7 +171,6 @@ class FitterTestCase(unittest.TestCase):
         p0_r = np.ones(fitdata['SNODES'][0].size)
         p0_bkg = np.zeros(fitdata['SNODES'][0].size) + 0.01
         pars_mean, = corrfitter.fit(p0_mean, p0_slope, p0_r, p0_bkg, fit_mean=True)
-        print("DONE WITH MEAN")
 
         #testing.assert_almost_equal(pars_mean, np.array([0.00484127, 0.00159642, -0.00019032]), 4)
         testing.assert_almost_equal(pars_mean, np.array([0.00483505, 0.00159392, -0.00018447]), 5)
@@ -187,10 +186,6 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(pars_bkg, np.array([0., 0.00043553]), 5)
         p0_bkg = pars_bkg
         pars_mean, pars_r, pars_bkg = corrfitter.fit(p0_mean, p0_slope, p0_r, p0_bkg, fit_mean=True, fit_r=True, fit_bkg=True)
-
-        print(pars_mean)
-        print(pars_r)
-        print(pars_bkg)
 
         testing.assert_almost_equal(pars_mean, np.array([0.00518834, 0.00178504, 0.00117311]), 5)
         testing.assert_almost_equal(pars_r, np.array([0.81519327, 0.33098604]), 5)

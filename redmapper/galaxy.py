@@ -18,15 +18,26 @@ from collections.abc import Iterable
 from .catalog import Catalog, Entry
 from .mask import get_mask
 
-zred_extra_dtype = [('ZRED', 'f4'),
-                    ('ZRED_E', 'f4'),
-                    ('ZRED2', 'f4'),
-                    ('ZRED2_E', 'f4'),
-                    ('ZRED_UNCORR', 'f4'),
-                    ('ZRED_UNCORR_E', 'f4'),
-                    ('LKHD', 'f4'),
-                    ('CHISQ', 'f4')]
 
+def zred_extra_dtype(nsamp):
+    """
+    Return the zred dtype to append.
+
+    Parameters
+    ----------
+    nsamp: `int`
+       Number of samples of zred to record
+    """
+
+    return [('ZRED', 'f4'),
+            ('ZRED_E', 'f4'),
+            ('ZRED2', 'f4'),
+            ('ZRED2_E', 'f4'),
+            ('ZRED_UNCORR', 'f4'),
+            ('ZRED_UNCORR_E', 'f4'),
+            ('ZRED_SAMP', 'f4', nsamp),
+            ('LKHD', 'f4'),
+            ('CHISQ', 'f4')]
 
 class Galaxy(Entry):
     """
@@ -302,15 +313,20 @@ class GalaxyCatalog(Catalog):
         galcol_err = np.sqrt(self.mag_err[:, :-1]**2. + self.mag_err[:, 1:]**2.)
         return galcol_err
 
-    def add_zred_fields(self):
+    def add_zred_fields(self, nsamp):
         """
         Add default columns for storing zreds.
 
         Note that this will do nothing if the columns are already there.
 
         Modifies GalaxyCatalog in place.
+
+        Parameters
+        ----------
+        nsamp: `int`
+           Number of samples of zred to record
         """
-        dtype_augment = [dt for dt in zred_extra_dtype if dt[0].lower() not in self.dtype.names]
+        dtype_augment = [dt for dt in zred_extra_dtype(nsamp) if dt[0].lower() not in self.dtype.names]
         if len(dtype_augment) > 0:
             self.add_fields(dtype_augment)
 
