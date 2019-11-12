@@ -2,6 +2,7 @@ FROM ubuntu:18.04
 
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 ENV PATH /opt/conda/bin:$PATH
+ARG TAG
 
 RUN apt-get update && \
     apt-get install -y autoconf gcc gfortran g++ make wget gsl-bin git libgsl-dev && apt-get clean all
@@ -30,8 +31,11 @@ RUN echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/startup.sh && \
 
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate redmapper-env && conda install --yes python=3.7 numpy scipy nose && \
        conda clean -af --yes
+
+LABEL redmapper-tag="${TAG}"
+
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate redmapper-env && cd ~/ && \
-       git clone https://github.com/erykoff/redmapper && cd ~/redmapper && pip install -r requirements.txt --no-cache-dir && \
+       git clone https://github.com/erykoff/redmapper --branch=${TAG} && cd ~/redmapper && pip install -r requirements.txt --no-cache-dir && \
        cd ~/ && git clone https://github.com/LSSTDESC/healsparse.git && cd ~/healsparse && python setup.py install && \
        cd ~/redmapper && python setup.py install
 
