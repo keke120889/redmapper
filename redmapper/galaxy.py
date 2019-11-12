@@ -13,10 +13,13 @@ import numpy as np
 import itertools
 import healpy as hp
 import os
+import glob
+import re
 from collections.abc import Iterable
 
 from .catalog import Catalog, Entry
 from .mask import get_mask
+from .utilities import make_lockfile
 
 
 def zred_extra_dtype(nsamp):
@@ -509,7 +512,7 @@ class GalaxyCatalogMaker(object):
     maker.finalize_catalog()
     """
 
-    def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0):
+    def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0, parallel=False):
         """
         Instantiate a GalaxyCatalogMaker
 
@@ -538,7 +541,11 @@ class GalaxyCatalogMaker(object):
            Geometric mask file.  Default is None (mask already applied).
         mask_mode: `int`, optional
            Geometric mask file mode.  Default is 0.
+        parallel: `bool`, optional
+           This is part of a parallel job of writing files.
         """
+
+        self.parallel = parallel
 
         # Record values
         self.outbase = outbase
@@ -591,7 +598,18 @@ class GalaxyCatalogMaker(object):
         self.outbase_nopath = os.path.basename(self.outbase)
 
         if not os.path.exists(self.outpath):
-            os.makedirs(self.outpath)
+            if not self.parallel:
+                os.makedirs(self.outpath)
+            else:
+                try:
+                    os.makedirs(self.outpath)
+                except FileExistsError:
+                    # This is okay in parallel mode
+                    pass
+
+        # Make sure final table isn't already there
+        if os.path.isfile(self.filename):
+            raise RuntimeError("Cannot split galaxies when final file %s already exists." % (self.filename))
 
         # create a table
         self.ngals = np.zeros(hp.nside2npix(self.nside), dtype=np.int32)
@@ -613,8 +631,11 @@ class GalaxyCatalogMaker(object):
         gals: `np.ndarray`
            Galaxy catalog structure.  See class docstring for what is in the catalog.
         """
+
         if self.is_finalized:
             raise RuntimeError("Cannot split galaxies for an already finalized catalog.")
+        if os.path.isfile(self.filename):
+            raise RuntimeError("Cannot split galaxies when final file %s already exists." % (self.filename))
 
         self.append_galaxies(gals)
         self.finalize_catalog()
@@ -630,6 +651,8 @@ class GalaxyCatalogMaker(object):
         """
         if self.is_finalized:
             raise RuntimeError("Cannot append galaxies for an already finalized catalog.")
+        if os.path.isfile(self.filename):
+            raise RuntimeError("Cannot append galaxies when final file %s already exists." % (self.filename))
 
         self._check_galaxies(gals)
 
@@ -650,16 +673,36 @@ class GalaxyCatalogMaker(object):
 
             fname = os.path.join(self.outpath, '%s_%07d.fit' % (self.outbase_nopath, pix))
 
-            if (self.ngals[pix] == 0) and (os.path.isfile(fname)):
-                raise RuntimeError("We think there are 0 galaxies in pixel %d, but the file exists." % (pix))
+            if self.parallel:
+                # Parallel writing mode
+                lockfile = fname + '.lock'
+                locktest = make_lockfile(lockfile, block=True, maxtry=300, waittime=2)
+                if not locktest:
+                    raise RuntimeError("Could not get a lock to write galaxies!")
 
-            if self.ngals[pix] == 0:
-                # Create a new file
-                fitsio.write(fname, gals[i1a])
+                if not os.path.isfile(fname):
+                    # Create a new file
+                    fitsio.write(fname, gals[i1a])
+                else:
+                    fits = fitsio.FITS(fname, mode='rw')
+                    fits[1].append(gals[i1a])
+                    fits.close()
+
+                # Clear the lockfile
+                os.remove(lockfile)
             else:
-                fits = fitsio.FITS(fname, mode='rw')
-                fits[1].append(gals[i1a])
-                fits.close()
+                # Regular serial writing
+
+                if (self.ngals[pix] == 0) and (os.path.isfile(fname)):
+                    raise RuntimeError("We think there are 0 galaxies in pixel %d, but the file exists." % (pix))
+
+                if self.ngals[pix] == 0:
+                    # Create a new file
+                    fitsio.write(fname, gals[i1a])
+                else:
+                    fits = fitsio.FITS(fname, mode='rw')
+                    fits[1].append(gals[i1a])
+                    fits.close()
 
             self.ngals[pix] += i1a.size
 
@@ -669,6 +712,39 @@ class GalaxyCatalogMaker(object):
 
         This should be the last step.
         """
+
+        if self.parallel:
+            # Only one can write the final catalog
+
+            # If the final file is there, we're already done.
+            if os.path.isfile(self.filename):
+                return
+
+            # Try to get a lock
+            lockfile = self.filename + '.lock'
+            locktest = make_lockfile(lockfile, block=False)
+            if not locktest:
+                # Somebody else has a lock and is responsible for the final
+                # output.
+                return
+
+            # We have a lock and the file isn't written, so we need to do the
+            # consolidation
+
+            self.ngals[:] = 0
+
+            # Figure out which hpixels are there
+            files = sorted(glob.glob('%s/%s_???????.fit' % (self.outpath, self.outbase_nopath)))
+            for f in files:
+                m = re.search('_(\d{7})', f)
+                if m is None:
+                    raise RuntimeError("Malformed filename for pixel file: %s" % (f))
+
+                pix = int(m.groups()[0])
+
+                # And how many galaxies are in each
+                with fitsio.FITS(f) as fits:
+                    self.ngals[pix] = fits[1].get_nrows()
 
         hpix, = np.where(self.ngals > 0)
 
@@ -740,6 +816,10 @@ class GalaxyCatalogMaker(object):
         tab.to_fits_file(self.filename, header=hdr, clobber=True)
 
         self.is_finalized = True
+
+        if self.parallel:
+            # Remove the lockfile
+            os.remove(lockfile)
 
     def _check_galaxies(self, gals):
         """
