@@ -48,6 +48,12 @@ def load_batchconfig(filename):
             yaml_data[key]['setup'] = ''
         if 'requirements' not in yaml_data[key]:
             yaml_data[key]['requirements'] = ''
+        #if 'image' not in yaml_data[key]:
+        #    yaml_data[key]['image'] = ''
+        #if 'constraint' not in yaml_data[key]:
+        #    yaml_data[key]['constraint'] = ''
+        #if 'qos' not in yaml_data[key]:
+        #    yaml_data[key]['qos'] = ''
 
     return yaml_data
 
@@ -164,6 +170,21 @@ with open(jobfile, 'w') as jf:
         jf.write("#PBS -l mem=%dmb\n" % (memory))
         jf.write("#PBS -j oe\n")
         jf.write('N_CPU=%d\n' % (n_nodes * batchconfig[batchmode]['ppn']))
+    elif (batchconfig[batchmode]['batch'] == 'slurm'):
+        # SLURM mode
+        ppn = batchconfig[batchmode]['ppn']
+        n_nodes = int(np.ceil(float(hpix_run.size) / float(ppn)))
+        jf.write("#!/bin/bash")
+        if 'image' in batchconfig[batchmode]:
+            jf.write("#SBATCH --image=%s" % (batchconfig[batchmode]['image']))
+        if 'qos' in batchconfig[batchmode]:
+            jf.write("#SBATCH --qos=%s" % (batchconfig[batchmode]['qos']))
+        if 'constraint' in batchconfig[batchmode]:
+            jf.write("#SBATCH --constraint=%s" % (batchconfig[batchmode]['constraint']))
+        jf.write("#SBATCH --time=00:%d:00" % (walltime))
+        jf.write("#SBATCH --nodes=%d" % (n_nodes))
+
+        # Need to have a special flag if it is a shifter image or whatnot
     else:
         # Nothing else supported
         raise RuntimeError("Only LSF and PBS supported at this time.")
