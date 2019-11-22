@@ -42,7 +42,7 @@ chisq_dist_sources=['redmapper/chisq_dist/chisq_dist.c',
 chisq_dist_module = Extension('redmapper.chisq_dist._chisq_dist_pywrap',
                               extra_compile_args=['-std=gnu99',os.path.expandvars('-I${GSLI}')],
                               extra_link_args=[os.path.expandvars('-L${GSLL}')],
-                              libraries=['gslcblas','gsl'],
+                              libraries=['gsl', 'gslcblas'],
                               sources=chisq_dist_sources,
                               include_dirs=include_dirs)
 ext_modules.append(chisq_dist_module)
