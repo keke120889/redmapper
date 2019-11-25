@@ -101,7 +101,12 @@ class DepthMap(object):
         if ras.size != decs.size:
             raise ValueError("ra, dec must be the same length")
 
-        values = self.sparse_depthmap.getValueRaDec(ras, decs)
+        values = self.sparse_depthmap.getValueRaDec(ras, np.clip(decs, -90.0, 90.0))
+
+        bad, = np.where(np.abs(decs) > 90.0)
+        values['limmag'][bad] = hp.UNSEEN
+        values['exptime'][bad] = hp.UNSEEN
+        values['m50'][bad] = hp.UNSEEN
 
         return (values['limmag'],
                 values['exptime'],
@@ -127,7 +132,10 @@ class DepthMap(object):
         if (ras.size != decs.size):
             raise ValueError("ra, dec must be the same length")
 
-        values = self.sparse_depthmap.getValueRaDec(ras, decs)
+        values = self.sparse_depthmap.getValueRaDec(ras, np.clip(decs, -90.0, 90.0))
+
+        bad, = np.where(np.abs(decs) > 90.0)
+        values['fracgood'][bad] = 0.0
 
         return values['fracgood']
 
@@ -161,8 +169,10 @@ class DepthMap(object):
         maskgals.zp[0] = self.zp
         maskgals.nsig[0] = self.nsig
 
-        maskgals.limmag, maskgals.exptime, maskgals.m50 = self.get_depth_values(ras, decs)
+        # Make sure the dec is within range, if we're going toward the pole (in sims)
+        gd, = np.where(np.abs(decs) < 90.0)
 
+        maskgals.limmag[gd], maskgals.exptime[gd], maskgals.m50[gd] = self.get_depth_values(ras[gd], decs[gd])
 
         bd = (maskgals.limmag < 0.0)
         ok = ~bd

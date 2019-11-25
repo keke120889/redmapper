@@ -389,7 +389,10 @@ class HPMask(Mask):
         if (ras.size != decs.size):
             raise ValueError("ra, dec must be same length")
 
-        fracgood = self.sparse_fracgood.getValueRaDec(ras, decs)
+        gd, = np.where(np.abs(decs) < 90.0)
+
+        fracgood = np.zeros(ras.size)
+        fracgood[gd] = self.sparse_fracgood.getValueRaDec(ras[gd], decs[gd])
 
         radmask = np.zeros(ras.size, dtype=np.bool)
         radmask[np.where(fracgood > np.random.rand(ras.size))] = True
