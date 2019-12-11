@@ -235,7 +235,7 @@ class RunLikelihoods(ClusterRunner):
             with np.warnings.catch_warnings():
                 np.warnings.simplefilter("error")
 
-                cluster.lnbcglike = np.log(phi_cen * g * fw)
+                cluster.lnbcglike = np.log(phi_cen * np.clip(g, 1e-10, None) * fw)
 
             cluster.lnlike = cluster.lnbcglike + cluster.lnlamlike
 

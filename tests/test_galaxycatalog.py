@@ -130,36 +130,47 @@ class GalaxyCatalogTestCase(unittest.TestCase):
                  ('ra', 'f8')]
         maker = GalaxyCatalogMaker(os.path.join(self.test_dir, 'test'), info_dict)
         testgals = np.zeros(10, dtype=dtype)
+        testgals['id'] = np.arange(10)
         self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
 
         # Test 3: make a catalog that has the wrong number of magnitudes
         dtype = GalaxyCatalogMaker.get_galaxy_dtype(3)
         testgals = np.zeros(10, dtype=dtype)
+        testgals['id'] = np.arange(10)
         self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
 
         # Test 4: make a catalog that has some NaNs
         dtype = GalaxyCatalogMaker.get_galaxy_dtype(info_dict['NMAG'])
         testgals = np.ones(10, dtype=dtype)
+        testgals['id'] = np.arange(10)
         testgals['mag'][0, 1] = np.nan
         self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
 
         # Test 5: make a catalog that has ra/dec out of range
         testgals = np.ones(10, dtype=dtype)
+        testgals['id'] = np.arange(10)
         testgals['ra'][1] = -1.0
         self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
 
         testgals = np.ones(10, dtype=dtype)
+        testgals['id'] = np.arange(10)
         testgals['dec'][1] = -100.0
         self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
 
         # Test 6: make a catalog that has mag > 90.0
         testgals = np.ones(10, dtype=dtype)
+        testgals['id'] = np.arange(10)
         testgals['mag'][0, 1] = 100.0
         self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
 
         # Test 7: make a catalog that has mag_err == 0.0
         testgals = np.ones(10, dtype=dtype)
+        testgals['id'] = np.arange(10)
         testgals['mag_err'][0, 1] = 0.0
+        self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
+
+        # Test 8: make a catalog that has duplicate ids
+        testgals = np.ones(10, dtype=dtype)
         self.assertRaises(RuntimeError, maker.append_galaxies, testgals)
 
     def test_galaxycatalog_create_parallel(self):
