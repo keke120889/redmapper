@@ -259,7 +259,6 @@ class GalaxyCatalog(Catalog):
                 zcat[ctr: ctr + tab.ngals[index]] = fitsio.read(fname, ext=1, upper=False)
             ctr += tab.ngals[index]
 
-        #if _hpix is not None and nside > 0 and border > 0.0:
         if len(_hpix) == 1 and nside > 0 and border > 0.0:
             # Trim to be closer to the border if necessary...
 
@@ -512,7 +511,8 @@ class GalaxyCatalogMaker(object):
     maker.finalize_catalog()
     """
 
-    def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0, parallel=False):
+    def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0,
+                 parallel=False, generate_unique_ids=False):
         """
         Instantiate a GalaxyCatalogMaker
 
@@ -543,9 +543,12 @@ class GalaxyCatalogMaker(object):
            Geometric mask file mode.  Default is 0.
         parallel: `bool`, optional
            This is part of a parallel job of writing files.
+        generate_unique_ids: `bool`, optional
+           Make new unique galaxy ids
         """
 
         self.parallel = parallel
+        self.generate_unique_ids = generate_unique_ids
 
         # Record values
         self.outbase = outbase
@@ -815,6 +818,40 @@ class GalaxyCatalogMaker(object):
 
         tab.to_fits_file(self.filename, header=hdr, clobber=True)
 
+        # Check for galaxy uniqueness or generate unique ids
+        if self.generate_unique_ids:
+            print("Generating unique IDs...")
+            ctr = 1
+
+            for f in tab.filenames:
+                try:
+                    fname = os.path.join(self.outpath, f.decode())
+                except AttributeError:
+                    fname = os.path.join(self.outpath, f)
+
+                with fitsio.FITS(fname, mode=fitsio.READWRITE) as fits:
+                    ids = fits[1].read_column('id')
+                    ids = np.arange(ctr, ctr + ids.size, dtype=np.int64)
+                    fits[1].write_column('id', ids)
+
+                    ctr += ids.size
+        else:
+            ids = np.zeros(tab.ngals.sum(), dtype=np.int64)
+
+            ctr = 0
+            for i, f in enumerate(tab.filenames):
+                try:
+                    fname = os.path.join(self.outpath, f.decode())
+                except AttributeError:
+                    fname = os.path.join(self.outpath, f)
+
+                with fitsio.FITS(fname) as fits:
+                    ids[ctr: ctr + tab.ngals[i]] = fits[1].read_column('id')
+                    ctr += tab.ngals[i]
+
+            if len(np.unique(ids)) < len(ids):
+                raise RuntimeError("Input galaxy IDs must be unique.  Fix input catalog or use generate_unique_ids")
+
         self.is_finalized = True
 
         if self.parallel:
@@ -886,6 +923,11 @@ class GalaxyCatalogMaker(object):
         bad, = np.where((gals['dec'] < -90.0) | (gals['dec'] > 90.0))
         if bad.size > 0:
             raise RuntimeError("Input dec has %d values that are out of range -90.0 <= dec <= 90.0" % (bad.size))
+
+        if not self.generate_unique_ids:
+            # Do a local check for uniqueness of ids
+            if len(np.unique(gals['id'])) < len(gals['id']):
+                raise RuntimeError("Input galaxy IDs must be unique.  Fix input catalog or use generate_unique_ids")
 
     @staticmethod
     def get_galaxy_dtype(nmag, truth=False):
