@@ -195,7 +195,7 @@ class VolumeLimitMask(object):
             zmax_temp[hi] = zbins.max()
             mid, = np.where((lim_mask > limmags_temp.min()) & (lim_mask < limmags_temp.max()))
             if mid.size > 0:
-                l = np.searchsorted(limmags_temp, lim_mask[mid], side='right')
+                l = np.clip(np.searchsorted(limmags_temp, lim_mask[mid], side='right'), 0, zbins.size - 1)
                 zmax_temp[mid] = zbins[l]
 
             limited, = np.where(zmax_temp < vlimmap['zmax'])
