@@ -583,7 +583,7 @@ class RedmagicCalibrator(object):
 
                 st = np.argsort(gals.chisq[red_poss[u]])
                 test_den = np.arange(u.size) / test_vol[j]
-                ind = np.searchsorted(test_den, self.config.redmagic_n0s[i] * 1e-4)
+                ind = np.clip(np.searchsorted(test_den, self.config.redmagic_n0s[i] * 1e-4), 0, test_den.size - 1)
                 cmaxvals[j] = gals.chisq[red_poss[u[st[ind]]]]
 
             # minimize chisquared parameters
