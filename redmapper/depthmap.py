@@ -69,7 +69,7 @@ class DepthMap(object):
 
         self.galfile_nside = config.galfile_nside
         self.config_logger = config.logger
-        self.nside = self.sparse_depthmap.nsideSparse
+        self.nside = self.sparse_depthmap.nside_sparse
         self.config_area = config.area
 
         # Record the coverage of the subregion that we read
@@ -101,7 +101,7 @@ class DepthMap(object):
         if ras.size != decs.size:
             raise ValueError("ra, dec must be the same length")
 
-        values = self.sparse_depthmap.getValueRaDec(ras, np.clip(decs, -90.0, 90.0))
+        values = self.sparse_depthmap.get_values_pos(ras, np.clip(decs, -90.0, 90.0), lonlat=True)
 
         bad, = np.where(np.abs(decs) > 90.0)
         values['limmag'][bad] = hp.UNSEEN
@@ -132,7 +132,7 @@ class DepthMap(object):
         if (ras.size != decs.size):
             raise ValueError("ra, dec must be the same length")
 
-        values = self.sparse_depthmap.getValueRaDec(ras, np.clip(decs, -90.0, 90.0))
+        values = self.sparse_depthmap.get_values_pos(ras, np.clip(decs, -90.0, 90.0), lonlat=True)
 
         bad, = np.where(np.abs(decs) > 90.0)
         values['fracgood'][bad] = 0.0
@@ -235,11 +235,11 @@ class DepthMap(object):
                 ipnest_temp = np.left_shift(hp.ring2nest(self.subpix_nside, hpix), bitShift) + np.arange(nFinePerSub)
                 ipnest = np.append(ipnest, ipnest_temp)
         else:
-            ipnest = self.sparse_depthmap.validPixels
+            ipnest = self.sparse_depthmap.valid_pixels
 
         areas = np.zeros(mags.size)
 
-        values = self.sparse_depthmap.getValuePixel(ipnest)
+        values = self.sparse_depthmap.get_values_pix(ipnest)
 
         gd, = np.where(values['m50'] > 0.0)
 
@@ -311,13 +311,13 @@ def convert_depthfile_to_healsparse(depthfile, healsparsefile, nsideCoverage, cl
             dtype_new.append(d)
             names.append(d[0])
 
-    sparseMap = healsparse.HealSparseMap.makeEmpty(nsideCoverage, nside, dtype_new, primary='fracgood')
+    sparseMap = healsparse.HealSparseMap.make_empty(nsideCoverage, nside, dtype_new, primary='fracgood')
 
     old_depth_sub = np.zeros(old_depth.size, dtype=dtype_new)
     for name in names:
         old_depth_sub[name] = old_depth[name]
 
-    sparseMap.updateValues(old_depth['hpix'], old_depth_sub, nest=old_hdr['nest'])
+    sparseMap.update_values_pix(old_depth['hpix'], old_depth_sub, nest=old_hdr['nest'])
 
     hdr = fitsio.FITSHDR()
     hdr['NSIG'] = old_hdr['NSIG']
