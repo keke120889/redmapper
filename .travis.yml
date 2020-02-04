@@ -28,6 +28,7 @@ install:
   - pip install -r requirements.txt
   - git clone https://github.com/LSSTDESC/healsparse.git
   - pushd healsparse
+  - git checkout tags/v0.0.7
   - python setup.py install
   - popd
   - python setup.py install
