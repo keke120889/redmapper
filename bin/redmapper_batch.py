@@ -48,6 +48,16 @@ def load_batchconfig(filename):
             yaml_data[key]['setup'] = ''
         if 'requirements' not in yaml_data[key]:
             yaml_data[key]['requirements'] = ''
+        if 'taskfarmer' not in yaml_data[key]:
+            yaml_data[key]['taskfarmer'] = False
+        if 'image' not in yaml_data[key]:
+            yaml_data[key]['image'] = ''
+        if 'constraint' not in yaml_data[key]:
+            yaml_data[key]['constraint'] = ''
+        if 'qos' not in yaml_data[key]:
+            yaml_data[key]['qos'] = ''
+        if 'ntasks' not in yaml_data[key]:
+            yaml_data[key]['ntasks'] = -1
 
     return yaml_data
 
@@ -76,6 +86,8 @@ parser.add_argument('-w', '--walltime', action='store', type=int, required=False
                     help='Wall time (override default)')
 parser.add_argument('-n', '--nside', action='store', type=int, required=False,
                     help='Parallelization nside (optional, can use default)')
+parser.add_argument('-N', '--nodes', action='store', type=int, required=False,
+                    default=2, help='Number of nodes to run (for nersc)')
 
 args = parser.parse_args()
 
@@ -140,9 +152,22 @@ if not os.path.isdir(jobpath):
 test = glob.glob(os.path.join(jobpath, '%s_?.job' % (jobname)))
 index = len(test)
 
+if args.runmode == 0:
+    # Run in the directory where the config file is, by default
+    run_command = 'redmapper_run_redmapper_pixel.py -c %s -p %%s -n %d -d %s' % (
+        (os.path.abspath(args.configfile),
+         nside,
+         os.path.dirname(os.path.abspath(args.configfile))))
+elif args.runmode == 1:
+    run_command = 'redmapper_run_zred_pixel.py -c %s -p %%s -n %d -d %s' % (
+        (os.path.abspath(args.configfile),
+         nside,
+         os.path.dirname(os.path.abspath(args.configfile))))
+
 jobfile = os.path.join(jobpath, '%s_%d.job' % (jobname, index + 1))
 
 with open(jobfile, 'w') as jf:
+    write_jobarray = True
     if (batchconfig[batchmode]['batch'] == 'lsf'):
         # LSF mode
         jf.write("#BSUB -R '%s'\n" % (batchconfig[batchmode]['requirements']))
@@ -164,32 +189,63 @@ with open(jobfile, 'w') as jf:
         jf.write("#PBS -l mem=%dmb\n" % (memory))
         jf.write("#PBS -j oe\n")
         jf.write('N_CPU=%d\n' % (n_nodes * batchconfig[batchmode]['ppn']))
+    elif ((batchconfig[batchmode]['batch'] == 'slurm') and
+          (batchconfig[batchmode]['taskfarmer'])):
+        if ((batchconfig[batchmode]['qos'] == '' or
+             batchconfig[batchmode]['constraint'] == '' or
+             batchconfig[batchmode]['ntasks'] < 1 or
+             batchconfig[batchmode]['image'] == '')):
+            raise RuntimeError("For taskfarmer, must set qos/constraint/nstasks/image")
+        if (args.nodes < 2):
+            raise RuntimeError("For taskfarmer, we require at least 2 nodes")
+        write_jobarray = False
+
+        # NERSC slurm + taskfarmer
+        wrapper_file = os.path.abspath(os.path.join(jobpath, '%s_%d.sh' % (jobname, index + 1)))
+        task_file = os.path.abspath(os.path.join(jobpath, '%s_%d.txt' % (jobname, index + 1)))
+
+        # First, we need to write a wrapper script
+        with open(wrapper_file, 'w') as wf:
+            cmd = run_command % ('$1')
+            wf.write("#!/bin/bash\n")
+            wf.write('shifter --image=%s /bin/bash -c ". /opt/redmapper/startup.sh && %s"' %
+                     (batchconfig[batchmode]['image'], cmd))
+
+        st = os.stat(wrapper_file)
+        os.chmod(wrapper_file, st.st_mode | 0o110)
+
+        # Second, we need to write a tasks file
+        # Need to make sure that wrapper_file is the full absolute path
+        with open(task_file, 'w') as tf:
+            for hpix in hpix_run:
+                tf.write("%s %d\n" % (wrapper_file, hpix))
+
+        # Third, we need to create the batch submission script
+        time = np.clip((len(hpix_run) * float(walltime)) / (batchconfig[batchmode]['ntasks'] * (args.nodes - 1)), walltime, None)
+
+        jf.write("#!/bin/bash\n")
+        jf.write("#SBATCH --qos=%s\n" % (batchconfig[batchmode]['qos']))
+        jf.write("#SBATCH --constraint=%s\n" % (batchconfig[batchmode]['constraint']))
+        jf.write("#SBATCH --tasks-per-node=%d\n" % (batchconfig[batchmode]['ntasks']))
+        jf.write("#SBATCH --nodes=%d\n" % (args.nodes))
+        jf.write("#SBATCH --time=%s\n" % (int(time)))
+        jf.write("export PATH=$PATH:/usr/common/tig/taskfarmer/1.5/bin\n")
+        jf.write("export THREADS=%d\n" % (batchconfig[batchmode]['ntasks']))
+        jf.write("runcommands.sh %s\n" % (task_file))
+    elif ((batchconfig[batchmode]['batch'] == 'slurm') and
+          (not batchconfig[batchmode]['taskfarmer'])):
+        raise NotImplementedError("Basic slurm submission not implemented yet.")
     else:
         # Nothing else supported
-        raise RuntimeError("Only LSF and PBS supported at this time.")
+        raise RuntimeError("Only LSF, PBS and slurm/taskfarmer supported at this time.")
 
-    jf.write("pixarr=(")
-    for hpix in hpix_run:
-        jf.write("%d " % (hpix))
-    jf.write(")\n\n")
+    if write_jobarray:
+        jf.write("pixarr=(")
+        for hpix in hpix_run:
+            jf.write("%d " % (hpix))
+        jf.write(")\n\n")
 
-    jf.write("%s\n\n" % (batchconfig[batchmode]['setup']))
+        jf.write("%s\n\n" % (batchconfig[batchmode]['setup']))
 
-    if args.runmode == 0:
-        # Run in the directory where the config file is...
-        # I think this is okay, but can be revisited
-        cmd = 'redmapper_run_redmapper_pixel.py -c %s -p ${pixarr[%s]} -n %d -d %s' % (
-            (os.path.abspath(args.configfile),
-             index_string,
-             nside,
-             os.path.dirname(os.path.abspath(args.configfile))))
-
-    elif args.runmode == 1:
-        cmd = 'redmapper_run_zred_pixel.py -c %s -p ${pixarr[%s]} -n %d -d %s' % (
-            (os.path.abspath(args.configfile),
-             index_string,
-             nside,
-             os.path.dirname(os.path.abspath(args.configfile))))
-
-    jf.write('%s\n' % (cmd))
-
+        cmd = run_command % (index_string)
+        jf.write("%s\n" % (cmd))

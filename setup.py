@@ -20,7 +20,8 @@ scripts = ['bin/redmapper_run_zred_pixel.py',
            'bin/redmagic_calibrate.py',
            'bin/redmagic_run.py',
            'bin/redmapper_convert_mask_to_healsparse.py',
-           'bin/redmapper_convert_depthfile_to_healsparse.py']
+           'bin/redmapper_convert_depthfile_to_healsparse.py',
+           'bin/redmapper_run_many_pixels_same_node.py']
 
 include_dirs = [numpy.get_include()]
 
