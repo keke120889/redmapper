@@ -211,6 +211,9 @@ with open(jobfile, 'w') as jf:
             wf.write('shifter --image=%s /bin/bash -c ". /opt/redmapper/startup.sh && %s"' %
                      (batchconfig[batchmode]['image'], cmd))
 
+        st = os.stat(wrapper_file)
+        os.chmod(wrapper_file, st.st_mode | 0o110)
+
         # Second, we need to write a tasks file
         # Need to make sure that wrapper_file is the full absolute path
         with open(task_file, 'w') as tf:
