@@ -180,18 +180,11 @@ class ClusterRunner(object):
         if self.zreds_required and zredfile is None:
             raise RuntimeError("zreds are required, but zredfile is None")
 
-        try:
-            self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
-                                                   nside=self.config.d.nside,
-                                                   hpix=self.config.d.hpix,
-                                                   border=self.config.border,
-                                                   zredfile=zredfile)
-        except ValueError:
-            print(self.config.galfile)
-            print(self.config.d.nside)
-            print(self.config.d.hpix)
-            print(self.config.border)
-            print(zredfile)
+        self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
+                                               nside=self.config.d.nside,
+                                               hpix=self.config.d.hpix,
+                                               border=self.config.border,
+                                               zredfile=zredfile)
 
         # If the zredfile is not None and we didn't raise an exception,
         # then we successfully read in the zreds
