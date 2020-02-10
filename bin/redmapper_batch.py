@@ -201,8 +201,8 @@ with open(jobfile, 'w') as jf:
         write_jobarray = False
 
         # NERSC slurm + taskfarmer
-        wrapper_file = os.path.abspath(os.path.join(jobpath, '%s.sh' % (jobname)))
-        task_file = os.path.abspath(os.path.join(jobpath, '%s.txt' % (jobname)))
+        wrapper_file = os.path.abspath(os.path.join(jobpath, '%s_%d.sh' % (jobname, index + 1)))
+        task_file = os.path.abspath(os.path.join(jobpath, '%s_%d.txt' % (jobname, index + 1)))
 
         # First, we need to write a wrapper script
         with open(wrapper_file, 'w') as wf:
