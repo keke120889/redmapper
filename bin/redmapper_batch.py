@@ -56,8 +56,10 @@ def load_batchconfig(filename):
             yaml_data[key]['constraint'] = ''
         if 'qos' not in yaml_data[key]:
             yaml_data[key]['qos'] = ''
-        if 'ntasks' not in yaml_data[key]:
-            yaml_data[key]['ntasks'] = -1
+        if 'cpus_per_node' not in yaml_data[key]:
+            yaml_data[key]['cpus_per_node'] = -1
+        if 'mem_per_node' not in yaml_data[key]:
+            yaml_data[key]['mem_per_node'] = 0.0
 
     return yaml_data
 
@@ -193,9 +195,10 @@ with open(jobfile, 'w') as jf:
           (batchconfig[batchmode]['taskfarmer'])):
         if ((batchconfig[batchmode]['qos'] == '' or
              batchconfig[batchmode]['constraint'] == '' or
-             batchconfig[batchmode]['ntasks'] < 1 or
+             batchconfig[batchmode]['cpus_per_node'] < 1 or
+             batchconfig[batchmode]['mem_per_node'] < 1 or
              batchconfig[batchmode]['image'] == '')):
-            raise RuntimeError("For taskfarmer, must set qos/constraint/nstasks/image")
+            raise RuntimeError("For taskfarmer, must set qos/constraint/cpus_per_node/mem_per_node/image")
         if (args.nodes < 2):
             raise RuntimeError("For taskfarmer, we require at least 2 nodes")
         write_jobarray = False
@@ -221,16 +224,21 @@ with open(jobfile, 'w') as jf:
                 tf.write("%s %d\n" % (wrapper_file, hpix))
 
         # Third, we need to create the batch submission script
-        time = np.clip((len(hpix_run) * float(walltime)) / (batchconfig[batchmode]['ntasks'] * (args.nodes - 1)), walltime, None)
+        nrun_per_node = int(np.clip(batchconfig[batchmode]['mem_per_node'] / memory,
+                                    None,
+                                    batchconfig[batchmode]['cpus_per_node']))
+        nthreads = (args.nodes - 1) * nrun_per_node
+
+        time = np.clip((len(hpix_run) * float(walltime)) / nthreads, walltime, None)
 
         jf.write("#!/bin/bash\n")
         jf.write("#SBATCH --qos=%s\n" % (batchconfig[batchmode]['qos']))
         jf.write("#SBATCH --constraint=%s\n" % (batchconfig[batchmode]['constraint']))
-        jf.write("#SBATCH --tasks-per-node=%d\n" % (batchconfig[batchmode]['ntasks']))
+        jf.write("#SBATCH --cpus-per-task=%d\n" % (batchconfig[batchmode]['cpus_per_node']))
         jf.write("#SBATCH --nodes=%d\n" % (args.nodes))
         jf.write("#SBATCH --time=%s\n" % (int(time)))
         jf.write("export PATH=$PATH:/usr/common/tig/taskfarmer/1.5/bin\n")
-        jf.write("export THREADS=%d\n" % (batchconfig[batchmode]['ntasks']))
+        jf.write("export THREADS=%d\n" % (nthreads))
         jf.write("runcommands.sh %s\n" % (task_file))
     elif ((batchconfig[batchmode]['batch'] == 'slurm') and
           (not batchconfig[batchmode]['taskfarmer'])):
