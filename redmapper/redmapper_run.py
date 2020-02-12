@@ -109,6 +109,7 @@ class RedmapperRun(object):
         self.config.logger.info("Running on %d pixels" % (len(pixels_split)))
 
         # run each individual one
+        nside_orig = self.config.d.nside
         self.config.d.nside = nside_split
 
         orig_seedfile = self.config.seedfile
@@ -142,6 +143,9 @@ class RedmapperRun(object):
 
         if consolidate_like:
             likefile = self._consolidate(hpixels_like, likefiles, 'like', members=False, check=check)
+
+        # Reset the nside in the config file
+        self.config.d.nside = nside_orig
 
         # And done
         if consolidate_like:
