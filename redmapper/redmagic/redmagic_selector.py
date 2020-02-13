@@ -41,6 +41,8 @@ class RedmagicSelector(object):
         else:
             self.config = conf
 
+        redmagicfilepath = os.path.dirname(self.config.redmagicfile)
+
         self.calib_data = OrderedDict()
         with fitsio.FITS(self.config.redmagicfile) as fits:
             # Number of modes is number of binary extentions
@@ -68,16 +70,22 @@ class RedmagicSelector(object):
                     vmaskfile = self.calib_data[mode].vmaskfile.decode().rstrip()
                 except AttributeError:
                     vmaskfile = self.calib_data[mode].vmaskfile.rstrip()
+
                 if vmaskfile == '':
                     # There is no vmaskfile, we need to do a fixed area one
                     self.vlim_masks[mode] = VolumeLimitMaskFixed(self.config)
                 else:
-                    if os.path.isfile(vmaskfile):
-                        vmaskfile = vmaskfile
-                    elif os.path.isfile(os.path.join(self.config.configpath, vmaskfile)):
-                        vmaskfile = os.path.join(self.config.configpath, vmaskfile)
-                    else:
-                        raise RuntimeError("Could not find vmaskfile %s" % (vmaskfile))
+                    vmaskfile = os.path.join(redmagicfilepath,
+                                             os.path.basename(vmaskfile))
+                    if not os.path.isfile(vmaskfile):
+                        raise RuntimeError("Could not find vmaskfile %s.  Must be in same path as redmagic calibration file %s." % (vmaskfile, os.path.abspath(self.config.redmagicfile)))
+
+                    #if os.path.isfile(vmaskfile):
+                    #    vmaskfile = vmaskfile
+                    #elif os.path.isfile(os.path.join(self.config.configpath, vmaskfile)):
+                    #    vmaskfile = os.path.join(self.config.configpath, vmaskfile)
+                    #else:
+                    #    raise RuntimeError("Could not find vmaskfile %s" % (vmaskfile))
                     self.vlim_masks[mode] = VolumeLimitMask(self.config,
                                                             self.calib_data[mode].etamin,
                                                             vlimfile=vmaskfile)

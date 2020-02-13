@@ -147,13 +147,15 @@ class RedmagicCalTestCase(unittest.TestCase):
 
         config = Configuration(redmagic_cal.runfile)
 
+        # This little dance removes the vmaskfile and creates a new one with
+        # the same name in the same location
         cal, hdr = fitsio.read(config.redmagicfile, ext=1, header=True)
         config.maskfile = maskfile
         try:
-            fname = cal['vmaskfile'][0].decode().rstrip()
+            vmaskfile = cal['vmaskfile'][0].decode().rstrip()
         except AttributeError:
-            fname = cal['vmaskfile'][0].rstrip()
-        os.remove(fname)
+            vmaskfile = cal['vmaskfile'][0].rstrip()
+        os.remove(vmaskfile)
         mask = VolumeLimitMask(config, cal['etamin'], use_geometry=True)
 
         # Now test the running, using the output file which has valid galaxies/zreds
@@ -182,6 +184,22 @@ class RedmagicCalTestCase(unittest.TestCase):
         # And confirm that all the randoms are in the footprint
         zmax = mask.calc_zmax(rand_cat.ra, rand_cat.dec)
         self.assertTrue(np.all(rand_cat.z < zmax))
+
+        # Now run in a different directory
+        relocpath = os.path.join(self.test_dir, 'redmagic_relocation')
+        os.makedirs(relocpath)
+        reloc_file = os.path.join(relocpath,
+                                  os.path.basename(config.redmagicfile))
+        os.rename(config.redmagicfile, reloc_file)
+        os.rename(vmaskfile, os.path.join(relocpath,
+                                          os.path.basename(vmaskfile)))
+
+        rerun_config = Configuration(redmagic_cal.runfile)
+        rerun_config.redmagicfile = reloc_file
+        rerun_configfile = os.path.join(self.test_dir, 'testconfig_redmagic_rerun.yml')
+        rerun_config.output_yaml(rerun_configfile)
+        rerun_redmagic = RunRedmagicTask(rerun_configfile)
+        rerun_redmagic.run(clobber=True)
 
     def setUp(self):
         self.test_dir = None
