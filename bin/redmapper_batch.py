@@ -179,7 +179,7 @@ with open(jobfile, 'w') as jf:
         jf.write("#BSUB -n 1\n")
         jf.write("#BSUB -W %d\n\n" % (walltime))
 
-        index_string = '$LSB_JOBINDEX-1'
+        index_string = '${pixarr[LSB_JOBINDEX-1]}'
 
     elif (batchconfig[batchmode]['batch'] == 'pbs'):
         # PBS mode
