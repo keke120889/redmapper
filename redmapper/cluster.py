@@ -58,6 +58,7 @@ cluster_dtype_base = [('MEM_MATCH_ID', 'i4'),
                       ('DLAMBDAVAR_DZ2', 'f4'),
                       ('Z_LAMBDA_RAW', 'f4'),
                       ('Z_LAMBDA_E_RAW', 'f4'),
+                      ('BKG_LOCAL', 'f4'),
                       ('LIM_EXPTIME', 'f4'),
                       ('LIM_LIMMAG', 'f4'),
                       ('LIM_LIMMAG_HARD', 'f4'),
@@ -386,6 +387,52 @@ class Cluster(Entry):
 
         sigma_g = self.zredbkg.sigma_g_lookup(zred, refmag)
         return 2. * np.pi * r * (sigma_g / self.mpc_scale**2.)
+
+    def compute_bkg_local(self, mask):
+        """
+        Compute the local background relative to the global.
+
+        Parameters
+        ----------
+        mask: `redmapper.Mask`
+           Footprint mask for survey
+
+        Returns
+        -------
+        bkg_local: `float`
+           Local background relative to global average for redshift
+        """
+        ras = self.ra + (mask.maskgals.x_uniform/self.mpc_scale)/np.cos(np.deg2rad(self.dec))
+        decs = self.dec + mask.maskgals.y_uniform/self.mpc_scale
+
+        maxmag = self.mstar - 2.5*np.log10(self.config.lval_reference)
+        maskgals_mark = mask.compute_radmask(ras, decs)
+        maskgals_refmag = self.mstar + mask.maskgals.m
+
+        sigma_g_maskgals = self.bkg.sigma_g_lookup(self._redshift, mask.maskgals.chisq, mask.maskgals.refmag)
+
+        bright_enough, = np.where(mask.gamskgals.refmag < maxmag)
+
+        # Predicted number density according to global bkg
+        prediction = np.sum(sigma_g_maskgals[bright_enough] / (mask.maskgals.chisq_pdf[bright_enough] * mask.maskgals.lum_pdf[bright_enough])) / bright_enough.size
+
+        # What is the annulus area?
+        in_annulus, = np.where((maskgals.r_uniform > self.config.bkg_local_annuli[0]) &
+                               (maskgals.r_uniform < self.config.bkg_local_annuli[1]))
+        in_annulus_gd, = np.where(maskgals_mark[in_annulus])
+        annulus_area = (np.pi*((self.config.bkg_local_annuli[1]/self.mpc_scale)**2. -
+                              (self.config.bkg_local_annuli[0]/self.mpc_scale)**2.) *
+                        (float(in_annulus_gd.size) / float(in_annulus.size)))
+
+        neighbors_in_annulus, = np.where((self.neighbors.r > self.config.bkg_local_annuli[0]) &
+                                         (self.neighbors.r < self.config.bkg_local_annuli[1]) &
+                                         (self.neighbors.refmag < maxmag) &
+                                         (self.neighbors.chisq < mask.maskgals.chisq.max()))
+        bkg_density_in_annulus = float(neighbors_in_annulus.size) / annulus_area
+
+        bkg_local = bkg_density_in_annulus / prediction
+
+        return bkg_local
 
     def calc_richness(self, mask, calc_err=True, index=None):
         """

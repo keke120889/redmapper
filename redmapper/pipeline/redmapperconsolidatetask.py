@@ -41,6 +41,8 @@ class RedmapperConsolidateTask(object):
         vlim_lstars: `list`, optional
            Volume-limit luminosity cuts to apply.  Default is [].
            If [] then use the values in self.config.consolidate_vlim_lstars.
+        path: `str`, optional
+           Path to look for files.  Default is config file path.
         """
         if path is None:
             outpath = os.path.dirname(os.path.abspath(configfile))
@@ -282,3 +284,141 @@ class RedmapperConsolidateTask(object):
 
                     nzplot = NzPlot(self.config)
                     nzplot.plot_cluster_catalog(cat, vlim_areas[j])
+
+
+class RuncatConsolidateTask(object):
+    """
+    Class to consolidate a distributed runcat run.
+
+    This class looks for files of the specific format in the specified
+    directory and consoldates.  No richness or volume-limited cuts are applied.
+    """
+
+    def __init__(self, configfile, path=None):
+        """
+        Instantiate a RuncatConsolidateTask.
+
+        Parameters
+        ----------
+        configfile: `str`
+           Configuration yaml file.
+        path: `str`, optional
+           Path to look for files.  Default is config file path.
+        """
+        if path is None:
+            outpath = os.path.dirname(os.path.abspath(configfile))
+        else:
+            outpath = path
+
+        self.config = Configuration(configfile, outpath=path)
+
+    def run(self, do_plots=True, match_spec=True):
+        """
+        Run the runcat consolidation task.
+
+        Parameters
+        ----------
+        do_plots: `bool`, optional
+           Make diagnostic plots.  Default is True.
+        match_spec: `bool`, optional
+           Match cluster centrals and members to spectra.
+           Default is True.
+        """
+        # find the files
+        catfiles = sorted(glob.glob(os.path.join(self.config.outpath, '%s_*_?????_runcat.fit' % (self.config.outbase))))
+
+        self.config.logger.info("Found %d catalog files in %s" % (len(catfiles), self.config.outpath))
+
+        # Extract the nside that was run
+        m = re.search('_(\d+)_(\d\d\d\d\d)_', catfiles[0])
+        if m is None:
+            raise RuntimeError("Could not understand filename for %s" % (catfiles[0]))
+
+        nside = int(m.groups()[0])
+
+        if match_spec and not self.config.has_truth:
+            spec = GalaxyCatalog.from_fits_file(self.config.specfile)
+            use, = np.where(spec.z_err < 0.001)
+            spec = spec[use]
+
+        started = False
+        for catfile in catfiles:
+            # Read in catalog
+            self.config.logger.info("Reading %s" % (os.path.basename(catfile)))
+            cat = Catalog.from_fits_file(catfile, ext=1)
+
+            # and read in members
+            mem = read_members(catfile)
+
+            # Extract pixnum from name
+
+            m = re.search('_(\d+)_(\d\d\d\d\d)_', catfile)
+            if m is None:
+                raise RuntimeError("Could not understand filename for %s" % (catfile))
+
+            if match_spec and not self.config.has_truth:
+                # match spec to cat and mem
+                cat.cg_spec_z[:] = -1.0
+
+                i0, i1, dists = spec.match_many(cat.ra, cat.dec, 3./3600., maxmatch=1)
+                cat.cg_spec_z[i0] = spec.z[i1]
+
+                mem.zspec[:] = -1.0
+                i0, i1, dists = spec.match_many(mem.ra, mem.dec, 3./3600., maxmatch=1)
+                mem.zspec[i0] = spec.z[i1]
+
+            if self.config.has_truth:
+                # Need to match to the truth catalog
+                truthcat = GalaxyCatalog.from_galfile(self.config.galfile, hpix=hpix, nside=nside, border=0.0, truth=True)
+
+                cat.cg_spec_z[:] = -1.0
+
+                i0, i1, dists = truthcat.match_many(cat.ra, cat.dec, 1./3600., maxmatch=1)
+                cat.cg_spec_z[i0] = truthcat.ztrue[i1]
+
+                mem.zspec[:] = -1.0
+                i0, i1, dists = truthcat.match_many(mem.ra, mem.dec, 1./3600., maxmatch=1)
+                mem.zspec[i0] = truthcat.ztrue[i1]
+
+            # Figure out which clusters are in the pixel
+
+            theta, phi = astro_to_sphere(cat.ra, cat.dec)
+            ipring = hp.ang2pix(nside, theta, phi)
+
+            use, = np.where(ipring == hpix)
+            if use.size == 0:
+                self.config.logger.info('Warning: no good clusters in pixel %d' % (hpix))
+                continue
+
+            cat = cat[use]
+
+            # match catalog with members via mem_match_id
+            # a, b = esutil.numpy_util.match(cat.mem_match_id, mem.mem_match_id)
+
+            if not started:
+                # Figure out filename
+                self.config.d.outbase = '%s_runcat' % (self.config.outbase)
+
+                cat_fname = self.config.redmapper_filename('catalog')
+                mem_fname = self.config.redmapper_filename('catalog_members')
+
+                cat.to_fits_file(cat_fname, clobber=True)
+                mem.to_fits_file(mem_fname, clobber=True)
+
+                started = True
+            else:
+                with fitsio.FITS(cat_fname, mode='rw') as fits:
+                    fits[1].append(cat._ndarray)
+                with fitsio.FITS(mem_fname, mode='rw') as fits:
+                    fits[1].append(mem._ndarray)
+
+        if do_plots:
+            cat = Catalog.from_fits_file(cat_fname)
+            self.config.d.outbase = cat_name
+            specplot = SpecPlot(self.config)
+
+            if self.config.has_truth:
+                mem = Catalog.from_fits_file(mem_fname)
+                specplot.plot_cluster_catalog_from_members(cat, mem, title=self.config.d.outbase)
+            else:
+                specplot.plot_cluster_catalog(cat, title=self.config.d.outbase)
