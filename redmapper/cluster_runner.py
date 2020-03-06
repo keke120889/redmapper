@@ -128,6 +128,9 @@ class ClusterRunner(object):
         if self.maxrad2 > self.maxrad:
             self.maxrad = self.maxrad2
 
+        if self.config.bkg_local_compute or self.config.bkg_local_use:
+            if self.config.bkg_local_annuli[1] > self.maxrad:
+                self.maxrad = self.config.bkg_local_annuli[1]
 
         # read in background
         if self.use_colorbkg:
@@ -404,6 +407,9 @@ class ClusterRunner(object):
                     # This is a bad cluster and we can't continue
                     self._reset_bad_values(cluster)
                     continue
+
+                if self.config.bkg_local_compute and not self.config.bkg_local_use:
+                    cluster.bkg_local = cluster.compute_bkg_local(self.mask)
 
                 if self.do_correct_zlambda and self.zlambda_corr is not None:
                     if self.do_pz:

@@ -124,6 +124,13 @@ elif args.runmode == 1:
     jobtype = 'zred'
     default_walltime = 5*60
     memory = 2000
+elif args.runmode == 2:
+    # This is a runcat run
+    if nside is None:
+        nside = 8
+    jobtype = 'runcat'
+    default_walltime = 10*60
+    memory = 4000
 else:
     raise RuntimeError("Unsupported runmode: %d" % (args.runmode))
 
@@ -162,6 +169,11 @@ if args.runmode == 0:
          os.path.dirname(os.path.abspath(args.configfile))))
 elif args.runmode == 1:
     run_command = 'redmapper_run_zred_pixel.py -c %s -p %%s -n %d -d %s' % (
+        (os.path.abspath(args.configfile),
+         nside,
+         os.path.dirname(os.path.abspath(args.configfile))))
+elif args.runmode == 2:
+    run_command = 'redmapper_runcat_pixel.py -c %s -p %%s -n %d -d %d' % (
         (os.path.abspath(args.configfile),
          nside,
          os.path.dirname(os.path.abspath(args.configfile))))

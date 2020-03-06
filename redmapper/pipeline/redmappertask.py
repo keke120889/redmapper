@@ -113,3 +113,66 @@ class RunRedmapperPixelTask(object):
         else:
             self.config.logger.info("Percolation file %s already present.  Skipping..." % (perc.filename))
 
+
+class RuncatPixelTask(object):
+    """
+    Class to run richness computation (runcat) on a single healpix pixel, for
+    distributed runs.
+    """
+    def __init__(self, configfile, pixel, nside, path=None):
+        """
+        Instantiate a RuncatPixelTask.
+
+        Parameters
+        ----------
+        configfile: `str`
+           Configuration yaml filename.
+        pixel: `int`
+           Healpix pixel to run on.
+        nside: `int`
+           Healpix nside associated with pixel.
+        path: `str`, optional
+           Output path.  Default is None, use same absolute
+           path as configfile.
+        percolation_masking: `bool`, optional
+           Do percolation masking when computing richnesses
+        """
+        if path is None:
+            outpath = os.path.dirname(os.path.abspath(configfile))
+        else:
+            outpath = path
+
+        self.config = Configuration(configfile, outpath=path)
+        self.pixel = pixel
+        self.nside = nside
+
+    def run(self):
+        """
+        Run runcat on a single healpix pixel.
+
+        All files will be placed in self.config.outpath (see
+        self.__init__)
+        """
+        if not self.config.galfile_pixelized:
+            raise ValueError("Code only runs with pixelized galfile.")
+
+        self.config.check_files(check_zredfile=False, check_bkgfile=True, check_bkgfile_components=False, check_parfile=True, check_zlambdafile=True)
+
+        # Compute the border size
+
+        self.config.border = self.config.compute_border()
+
+        self.config.d.hpix = [self.pixel]
+        self.config.d.nside = self.nside
+        self.config.d.outbase = '%s_%d_%05d' % (self.config.outbase, self.nside, self.pixel)
+
+        # Do the run
+
+        self.config.logger.info("Running runcat on pixel %d" % (self.pixel))
+
+        runcat = RunCatalog(self.config)
+        if not os.path.isfile(runcat.filename):
+            runcat.run(do_percolation_masking=self.config.runcat_percolation_masking)
+            runcat.output(savemembers=True, withversion=True)
+
+

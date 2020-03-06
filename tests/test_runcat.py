@@ -36,24 +36,27 @@ class RuncatTestCase(unittest.TestCase):
 
         config = Configuration(file_path + '/' + conffile)
         config.catfile = file_path + '/' + catfile
+        config.bkg_local_compute = True
 
         runcat = RunCatalog(config)
 
         runcat.run(do_percolation_masking=False)
 
         testing.assert_equal(runcat.cat.mem_match_id, [1, 2, 3])
-        testing.assert_almost_equal(runcat.cat.Lambda, [24.16809273, 26.85296822, 13.36757088])
-        testing.assert_almost_equal(runcat.cat.lambda_e, [2.50003219, 4.83695221, 2.4651196])
-        testing.assert_almost_equal(runcat.cat.z_lambda, [0.22785459, 0.32256541, 0.2176394])
-        testing.assert_almost_equal(runcat.cat.z_lambda_e, [0.00631017, 0.01353367, 0.00984607])
+        testing.assert_almost_equal(runcat.cat.Lambda, [24.168093, 26.929243, 13.367571], 5)
+        testing.assert_almost_equal(runcat.cat.lambda_e, [2.5000322, 4.8504086, 2.4651196], 5)
+        testing.assert_almost_equal(runcat.cat.z_lambda, [0.2278546, 0.3225739, 0.2176394], 5)
+        testing.assert_almost_equal(runcat.cat.z_lambda_e, [0.0063102, 0.0135351, 0.0098461], 5)
+        testing.assert_almost_equal(runcat.cat.bkg_local, [1.191333, 2.0318482, 1.644264])
 
         runcat.run(do_percolation_masking=True)
 
         testing.assert_equal(runcat.cat.mem_match_id, [1, 2, 3])
-        testing.assert_almost_equal(runcat.cat.Lambda, [24.22911263, 26.85296822, -1.])
-        testing.assert_almost_equal(runcat.cat.lambda_e, [2.50442076, 4.83695221, -1.])
-        testing.assert_almost_equal(runcat.cat.z_lambda, [0.22785437, 0.32256407, -1.])
-        testing.assert_almost_equal(runcat.cat.z_lambda_e, [0.00630675, 0.0135363, -1.])
+        testing.assert_almost_equal(runcat.cat.Lambda, [24.122328, 26.913988, -1.], 5)
+        testing.assert_almost_equal(runcat.cat.lambda_e, [2.4962583, 4.8480325, -1.], 5)
+        testing.assert_almost_equal(runcat.cat.z_lambda, [0.2278544,  0.3225641, -1.], 5)
+        testing.assert_almost_equal(runcat.cat.z_lambda_e, [0.0063079,  0.0135317, -1.], 5)
+        testing.assert_almost_equal(runcat.cat.bkg_local, [1.1857252, 1.9827659, 0.], 5)
 
 if __name__=='__main__':
     unittest.main()

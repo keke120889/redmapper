@@ -207,6 +207,8 @@ class Configuration(object):
     calib_run_nproc = ConfigField(default=1, required=True)
     calib_run_min_nside = ConfigField(default=1, required=True)
 
+    runcat_percolation_masking = ConfigField(default=True, required=False)
+
     outpath = ConfigField(default='./', required=True)
     plotpath = ConfigField(default='', required=True)
 
@@ -307,6 +309,10 @@ class Configuration(object):
     bkg_zredbinsize = ConfigField(default=0.01)
     bkg_deepmode = ConfigField(default=False)
     calib_make_full_bkg = ConfigField(default=True)
+    bkg_local_annuli = ConfigField(isArray=True, array_length=2,
+                                   default=np.array([2.0, 3.0]))
+    bkg_local_compute = ConfigField(default=False)
+    bkg_local_use = ConfigField(default=False)
 
     zlambda_pivot = ConfigField(default=30.0, required=True)
     zlambda_binsize = ConfigField(default=0.002, required=True)
@@ -506,6 +512,9 @@ class Configuration(object):
         for vlim_band in self.vlim_bands:
             if vlim_band not in self.bands:
                 raise ValueError("vlim_band %s not in list of bands!" % (vlim_band))
+
+        if self.bkg_local_annuli[1] <= self.bkg_local_annuli[0]:
+            raise ValueError("bkg_local_annuli[1] must be > bkg_local_annuli[0]")
 
         # Now set the duplicatable config parameters...
         self.d = DuplicatableConfig(self)

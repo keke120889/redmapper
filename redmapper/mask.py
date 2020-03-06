@@ -20,6 +20,8 @@ from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, 
 from .utilities import make_lockfile, sample_from_pdf, chisq_pdf, schechter_pdf, nfw_pdf
 from .utilities import get_healsparse_subpix_indices
 
+CURRENT_MASKGAL_VERSION = 7
+
 class Mask(object):
     """
     A super-class to describe geometry footpint masks.
@@ -94,6 +96,13 @@ class Mask(object):
             # We don't have the maskgals...generate them
             self._gen_maskgals(maskgalfile)
 
+        # Check version
+        hdr = fitsio.read_header(maskgalfile, ext=1)
+        if (hdr['version'] != CURRENT_MASKGAL_VERSION):
+            # Generate new maskgals
+            self.config.logger.info("Found old maskgals file (version %d).  Generating version %d" % (hdr['version'], CURRENT_MASKGAL_VERSION))
+            self._gen_maskgals(maskgalfile)
+
         # Read the maskgals
         # These are going to be *all* the maskgals, but we only operate on a subset
         # at a time
@@ -148,16 +157,21 @@ class Mask(object):
                                                ('phi', 'f4'),
                                                ('x', 'f4'),
                                                ('y', 'f4'),
+                                               ('r_uniform', 'f4'),
+                                               ('x_uniform', 'f4'),
+                                               ('y_uniform', 'f4'),
                                                ('m', 'f4'),
                                                ('refmag', 'f4'),
                                                ('refmag_obs', 'f4'),
                                                ('refmag_obs_err', 'f4'),
                                                ('chisq', 'f4'),
                                                ('cwt', 'f4'),
+                                               ('chisq_pdf', 'f4'),
                                                ('nfw', 'f4'),
                                                ('dzred', 'f4'),
                                                ('zwt', 'f4'),
                                                ('lumwt', 'f4'),
+                                               ('lum_pdf', 'f4'),
                                                ('limmag', 'f4'),
                                                ('limmag_dered', 'f4'),
                                                ('exptime', 'f4'),
@@ -198,10 +212,17 @@ class Mask(object):
         maskgals.x = maskgals.r * np.cos(maskgals.phi)
         maskgals.y = maskgals.r * np.sin(maskgals.phi)
 
+        # And uniform x/y
+        maskgals.r_uniform = self.config.bkg_local_annuli[1] * np.sqrt(np.random.uniform(size=maskgals.size))
+        theta_new = np.random.uniform(size=maskgals.size)*2*np.pi
+        maskgals.x_uniform = maskgals.r_uniform*np.cos(theta_new)
+        maskgals.y_uniform = maskgals.r_uniform*np.sin(theta_new)
+
         # Compute weights to go with these values
 
         # Chisq weight
         maskgals.cwt = chisq_pdf(maskgals.chisq, ncol)
+        maskgals.chisq_pdf = maskgals.cwt
 
         # Nfw weight
         maskgals.nfw = nfw_pdf(maskgals.r, radfactor=True)
@@ -214,7 +235,8 @@ class Mask(object):
         steps = np.arange(10.0, normmag, 0.01)
         f = schechter_pdf(steps, alpha=self.config.calib_lumfunc_alpha, mstar=mstar)
         n = scipy.integrate.simps(f, steps)
-        maskgals.lumwt = schechter_pdf(maskgals.m + mstar, mstar=mstar, alpha=self.config.calib_lumfunc_alpha) / n
+        maskgals.lum_pdf = schechter_pdf(maskgals.m + mstar, mstar=mstar, alpha=self.config.calib_lumfunc_alpha)
+        maskgals.lumwt = maskgals.lum_pdf / n
 
         # zred weight
         maskgals.dzred = np.random.normal(loc=0.0, scale=self.config.maskgal_zred_err, size=maskgals.size)
@@ -243,7 +265,7 @@ class Mask(object):
         # And save it
 
         hdr = fitsio.FITSHDR()
-        hdr['version'] = 6
+        hdr['version'] = CURRENT_MASKGAL_VERSION
         hdr['r0'] = self.config.percolation_r0
         hdr['beta'] = self.config.percolation_beta
         hdr['stepsize'] = self.config.maskgal_rad_stepsize
