@@ -13,7 +13,7 @@ has_truth: False
 
 # Healpixel over which to run calibration
 # Set "hpix" and "nside" to 0 to run the full footprint
-hpix: 16
+hpix: [16]
 # Nside of this healpix
 nside: 2
 # Should be set to 0 for calibration
@@ -121,20 +121,10 @@ calib_color_maxnodes: [0.4, -1, -1, -1]
 calib_covmat_maxnodes: [0.5, -1, -1, -1]
 # Redshift spline node spacing for covariance matrix.  Default is 0.15
 calib_covmat_nodesize: 0.15
-# Minimum eigenvalue of intrinsic covariance matrix for regularization.  Default is 0.0001
-calib_covmat_min_eigenvalue: 0.0001
-# Prior on off-diagonal elements of covariance matrix.  Default is 0.45
-calib_covmat_prior: 0.45
 # Redshift spline node spacing for zred corrections.  Default is 0.05
 calib_corr_nodesize: 0.05
 # Redshift spline node spacing for zred slope corrections.  Default is 0.1
 calib_corr_slope_nodesize: 0.1
-# Color index order to compute off-diagonal elements.
-# Important to have bad colors (e.g. u-g) last.
-# Otherwise, it's useful to do good blue colors to good red colors,
-# e.g. g-r, r-i, i-z ... So if you don't have griz bands, this should
-# be [0, 1, 2].
-calib_color_order: [1, 2, 3, 0]
 
 # Use "pcol" (which excludes radial weight) in selecting galaxies to calibrate the
 #  red sequence.  Default is True, which is strongly recommended.
