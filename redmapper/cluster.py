@@ -411,17 +411,17 @@ class Cluster(Entry):
 
         sigma_g_maskgals = self.bkg.sigma_g_lookup(self._redshift, mask.maskgals.chisq, mask.maskgals.refmag)
 
-        bright_enough, = np.where(mask.gamskgals.refmag < maxmag)
+        bright_enough, = np.where((mask.maskgals.refmag < maxmag) & (np.isfinite(sigma_g_maskgals)))
 
         # Predicted number density according to global bkg
-        prediction = np.sum(sigma_g_maskgals[bright_enough] / (mask.maskgals.chisq_pdf[bright_enough] * mask.maskgals.lum_pdf[bright_enough])) / bright_enough.size
+        prediction = np.sum(sigma_g_maskgals[bright_enough].astype(np.float64) / (mask.maskgals.chisq_pdf[bright_enough].astype(np.float64) * mask.maskgals.lum_pdf[bright_enough].astype(np.float64))) / float(bright_enough.size)
 
         # What is the annulus area?
-        in_annulus, = np.where((maskgals.r_uniform > self.config.bkg_local_annuli[0]) &
-                               (maskgals.r_uniform < self.config.bkg_local_annuli[1]))
+        in_annulus, = np.where((mask.maskgals.r_uniform > self.config.bkg_local_annuli[0]) &
+                               (mask.maskgals.r_uniform < self.config.bkg_local_annuli[1]))
         in_annulus_gd, = np.where(maskgals_mark[in_annulus])
         annulus_area = (np.pi*((self.config.bkg_local_annuli[1]/self.mpc_scale)**2. -
-                              (self.config.bkg_local_annuli[0]/self.mpc_scale)**2.) *
+                               (self.config.bkg_local_annuli[0]/self.mpc_scale)**2.) *
                         (float(in_annulus_gd.size) / float(in_annulus.size)))
 
         neighbors_in_annulus, = np.where((self.neighbors.r > self.config.bkg_local_annuli[0]) &

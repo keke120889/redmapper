@@ -129,8 +129,8 @@ class ClusterRunner(object):
             self.maxrad = self.maxrad2
 
         if self.config.bkg_local_compute or self.config.bkg_local_use:
-            if self.config.bkg_local_annuli > self.maxrad:
-                self.maxrad = self.config.bkg_local_annuli
+            if self.config.bkg_local_annuli[1] > self.maxrad:
+                self.maxrad = self.config.bkg_local_annuli[1]
 
         # read in background
         if self.use_colorbkg:

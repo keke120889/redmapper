@@ -157,6 +157,7 @@ class Mask(object):
                                                ('phi', 'f4'),
                                                ('x', 'f4'),
                                                ('y', 'f4'),
+                                               ('r_uniform', 'f4'),
                                                ('x_uniform', 'f4'),
                                                ('y_uniform', 'f4'),
                                                ('m', 'f4'),
@@ -212,10 +213,10 @@ class Mask(object):
         maskgals.y = maskgals.r * np.sin(maskgals.phi)
 
         # And uniform x/y
-        r_new = self.config.bkg_local_annuli[1] * np.sqrt(np.random.uniform(size=maskgals.size))
+        maskgals.r_uniform = self.config.bkg_local_annuli[1] * np.sqrt(np.random.uniform(size=maskgals.size))
         theta_new = np.random.uniform(size=maskgals.size)*2*np.pi
-        maskgals.x_uniform = r_new*np.cos(theta_new)
-        maskgals.y_uniform = r_new*np.sin(theta_new)
+        maskgals.x_uniform = maskgals.r_uniform*np.cos(theta_new)
+        maskgals.y_uniform = maskgals.r_uniform*np.sin(theta_new)
 
         # Compute weights to go with these values
 

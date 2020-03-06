@@ -54,8 +54,6 @@ class RedmapperRunTestCase(unittest.TestCase):
         config.calib_run_nproc = 2
         # Note you need these to be set to get same answer with nproc = 1 because
         # of mask rounding
-        # config.d.hpix = 570
-        # config.d.nside = 32
         config.seedfile = os.path.join(file_path, 'test_dr8_specseeds.fit')
         config.zredfile = os.path.join(file_path, 'zreds_test', 'dr8_test_zreds_master_table.fit')
 
