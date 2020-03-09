@@ -239,7 +239,7 @@ class ClusterRunner(object):
         self.do_pz = False
 
         if len(self.config.d.hpix) == 0:
-            self.hpix_logstr = "-1"
+            self.hpix_logstr = "All"
         else:
             self.hpix_logstr = ", ".join(str(x) for x in self.config.d.hpix)
 
@@ -409,7 +409,11 @@ class ClusterRunner(object):
                     continue
 
                 if self.config.bkg_local_compute and not self.config.bkg_local_use:
-                    cluster.bkg_local = cluster.compute_bkg_local(self.mask)
+                    if self.depthstr is None:
+                        depth = self.depthlim
+                    else:
+                        depth = self.depthstr
+                    cluster.bkg_local = cluster.compute_bkg_local(self.mask, depth)
 
                 if self.do_correct_zlambda and self.zlambda_corr is not None:
                     if self.do_pz:
