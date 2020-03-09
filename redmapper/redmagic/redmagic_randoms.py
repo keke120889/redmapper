@@ -119,10 +119,14 @@ class RedmagicGenerateRandoms(object):
                     zctr += 1
 
             gd, = np.where(tempcat.z > 0.0)
+
+            tempcat = tempcat[gd]
             n_good = gd.size
 
             if n_good == 0:
                 continue
+
+            tempcat = tempcat[gd]
 
             if n_good > n_left:
                 n_good = n_left

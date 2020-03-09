@@ -263,6 +263,10 @@ class VolumeLimitMask(object):
 
         values = self.sparse_vlimmap.get_values_pos(ras, decs, lonlat=True)
 
+        bad, = np.where(np.abs(decs) > 90.0)
+        values['zmax'][bad] = hp.UNSEEN
+        values['fracgood'][bad] = 0.0
+
         if not get_fracgood:
             return np.clip(values['zmax'], 0.0, None)
         else:

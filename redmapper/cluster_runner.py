@@ -68,14 +68,13 @@ class ClusterRunner(object):
             self.config = conf
 
         # Generic defaults
+        self.read_gals = True
         self.read_zreds = False
         self.zreds_required = False
         self.did_read_zreds = False
         self.zredbkg_required = False
         self.use_colorbkg = False
         self.use_parfile = True
-        self.cutgals_bkgrange = False
-        self.cutgals_chisqmax = False
         self._filename = None
 
         # Will want to add stuff to check that everything needed is present?
@@ -169,6 +168,9 @@ class ClusterRunner(object):
         except:
             self.depthstr = None
 
+        if self.depthstr is None and not self.read_gals:
+            raise RuntimeError("Must have a valid depthstr if read_gals is False")
+
         self.cosmo = self.config.cosmo
 
         # read in the galaxies
@@ -183,37 +185,38 @@ class ClusterRunner(object):
         if self.zreds_required and zredfile is None:
             raise RuntimeError("zreds are required, but zredfile is None")
 
-        self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
-                                               nside=self.config.d.nside,
-                                               hpix=self.config.d.hpix,
-                                               border=self.config.border,
-                                               zredfile=zredfile)
+        if self.read_gals:
+            self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
+                                                   nside=self.config.d.nside,
+                                                   hpix=self.config.d.hpix,
+                                                   border=self.config.border,
+                                                   zredfile=zredfile)
 
-        # If the zredfile is not None and we didn't raise an exception,
-        # then we successfully read in the zreds
-        if zredfile is not None:
-            self.did_read_zreds = True
+            # If the zredfile is not None and we didn't raise an exception,
+            # then we successfully read in the zreds
+            if zredfile is not None:
+                self.did_read_zreds = True
 
-        # Cut galaxies if desired
-        if self.cutgals_bkgrange:
-            refmag_low = self.bkg.refmagbins[0]
-            refmag_high = self.bkg.refmagbins[-1] + (self.bkg.refmagbins[1] - self.bkg.refmagbins[0])
-        else:
-            refmag_low = -1000.0
-            refmag_high = 1000.0
+            # Cut galaxies if desired
+            if self.cutgals_bkgrange:
+                refmag_low = self.bkg.refmagbins[0]
+                refmag_high = self.bkg.refmagbins[-1] + (self.bkg.refmagbins[1] - self.bkg.refmagbins[0])
+            else:
+                refmag_low = -1000.0
+                refmag_high = 1000.0
 
-        guse = ((self.gals.refmag > refmag_low) & (self.gals.refmag < refmag_high))
+            guse = ((self.gals.refmag > refmag_low) & (self.gals.refmag < refmag_high))
 
-        if self.did_read_zreds and self.cutgals_chisqmax:
-            guse &= (self.gals.chisq < self.config.chisq_max)
+            if self.did_read_zreds and self.cutgals_chisqmax:
+                guse &= (self.gals.chisq < self.config.chisq_max)
 
-        # Cut the input galaxy file
-        self.gals = self.gals[guse]
+            # Cut the input galaxy file
+            self.gals = self.gals[guse]
 
-        if len(self.gals) == 0:
-            self.config.logger.info("No good galaxies for %s in pixel %s" %
-                                    (self.runmode, self.hpix_logstr))
-            return False
+            if len(self.gals) == 0:
+                self.config.logger.info("No good galaxies for %s in pixel %s" %
+                                        (self.runmode, self.hpix_logstr))
+                return False
 
         # If we don't have a depth map, get ready to compute local depth
         if self.depthstr is None:
@@ -361,16 +364,18 @@ class ClusterRunner(object):
 
                 # Note that the cluster is set with .z if available! (which becomes .redshift)
                 maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
-                cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True, maxmag=maxmag)
 
-                if cluster.neighbors.size == 0:
-                    self._reset_bad_values(cluster)
-                    continue
+                if self.read_gals:
+                    cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True, maxmag=maxmag)
 
-                if self.do_percolation_masking:
-                    cluster.neighbors.pfree[:] = 1.0 - self.pgal[cluster.neighbors.index]
-                else:
-                    cluster.neighbors.pfree[:] = 1.0
+                    if cluster.neighbors.size == 0:
+                        self._reset_bad_values(cluster)
+                        continue
+
+                    if self.do_percolation_masking:
+                        cluster.neighbors.pfree[:] = 1.0 - self.pgal[cluster.neighbors.index]
+                    else:
+                        cluster.neighbors.pfree[:] = 1.0
 
                 # FIXME: add mean ebv computation here.
 
@@ -415,7 +420,7 @@ class ClusterRunner(object):
                         depth = self.depthstr
                     cluster.bkg_local = cluster.compute_bkg_local(self.mask, depth)
 
-                if self.do_correct_zlambda and self.zlambda_corr is not None:
+                if self.do_correct_zlambda and self.zlambda_corr is not None and self.read_gals:
                     if self.do_pz:
                         zlam, zlam_e, pzbins, pzvals = self.zlambda_corr.apply_correction(cluster.Lambda,
                                                                                           cluster.z_lambda,
@@ -440,7 +445,7 @@ class ClusterRunner(object):
                     cluster.maskfrac = float(bad.size) / float(inside.size)
 
                 # compute additional dlambda bits (if desired)
-                if self.do_lam_plusminus:
+                if self.do_lam_plusminus and self.read_gals:
                     cluster_temp = cluster.copy()
 
                     cluster_temp.redshift = cluster.z_lambda - self.config.zlambda_epsilon
@@ -461,7 +466,7 @@ class ClusterRunner(object):
                         cluster.dlambdavar_dz2 = (elambda_zpeps**2. + elambda_zmeps**2. - 2.*cluster.Lambda_e**2.) / (self.config.zlambda_epsilon**2.)
 
                 # and record pfree if desired
-                if self.do_percolation_masking:
+                if self.do_percolation_masking and self.read_gals:
                     # FIXME
                     r_mask = (self.rmask_0 * (cluster.Lambda/100.)**self.rmask_beta *
                               ((1. + cluster.redshift)/(1. + self.rmask_zpivot))**self.rmask_gamma)
@@ -500,6 +505,23 @@ class ClusterRunner(object):
                     pfree_temp[~ok] = 0.0
 
                 if self.record_members:
+                    pfree_temp = cluster.neighbors.pfree[:]
+
+                    if self.use_memradius or self.use_memlum:
+                        ok = (cluster.neighbors.p > 0.01)
+
+                        if self.use_memradius:
+                            ok &= (cluster.neighbors.r < self.config.percolation_memradius * cluster.r_lambda)
+                        if self.use_memlum:
+                            ok &= (cluster.neighbors.refmag < (cluster.mstar - 2.5*np.log10(self.config.percolation_memlum)))
+
+                        # And set pfree_temp to zero when it is not okay
+                        pfree_temp[~ok] = 0.0
+                    else:
+                        # Only save members where pmem > 0.01 (for space)
+                        ok = (cluster.neighbors.pmem > 0.01)
+                        pfree_temp[~ok] = 0.0
+
                     memuse, = np.where(pfree_temp > 0.01)
                     mem_temp = Catalog.zeros(memuse.size, dtype=self.config.member_dtype)
 
