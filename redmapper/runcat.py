@@ -99,22 +99,20 @@ class RunCatalog(ClusterRunner):
         self.do_correct_zlambda = True
         self.do_pz = True
 
-        # this is the minimum luminosity to consider
-        # this is here to speed up computations.
-        #self.limlum = np.clip(self.config.lval_reference - 0.1, 0.01, None)
-
         # additional bits to do with percolation limlum here
         # if we want to save p's for very faint objects we need to compute
         # values for them even if they don't contribute to the richness
 
-        if (self.config.percolation_memlum > 0.0 and
-            self.config.percolation_memlum < self.config.lval_reference):
-            if self.config.percolation_memlum < self.limlum:
-                self.limlum = self.config.percolation_memlum
+        if self.config.percolation_memlum is not None:
+            if (self.config.percolation_memlum > 0.0 and
+                self.config.percolation_memlum < self.config.lval_reference):
+                if self.config.percolation_memlum < self.limlum:
+                    self.limlum = self.config.percolation_memlum
 
-        if self.config.percolation_lmask > 0.0:
-            if self.config.percolation_lmask < self.limlum:
-                self.limlum = self.config.percolation_lmask
+        if self.config.percolation_lmask is not None:
+            if self.config.percolation_lmask > 0.0:
+                if self.config.percolation_lmask < self.limlum:
+                    self.limlum = self.config.percolation_lmask
 
         return True
 

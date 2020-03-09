@@ -22,6 +22,7 @@ from .mask import HPMask
 from .redsequence import RedSequenceColorPar
 from esutil.cosmology import Cosmo
 from .galaxy import GalaxyCatalog
+from .depth_fitting import calcErrorModel
 
 cluster_dtype_base = [('MEM_MATCH_ID', 'i4'),
                       ('RA', 'f8'),
@@ -388,7 +389,7 @@ class Cluster(Entry):
         sigma_g = self.zredbkg.sigma_g_lookup(zred, refmag)
         return 2. * np.pi * r * (sigma_g / self.mpc_scale**2.)
 
-    def compute_bkg_local(self, mask):
+    def compute_bkg_local(self, mask, depth):
         """
         Compute the local background relative to the global.
 
@@ -396,6 +397,8 @@ class Cluster(Entry):
         ----------
         mask: `redmapper.Mask`
            Footprint mask for survey
+        depth: `redmapper.Depthmap` or `redmapper.Depthlim`
+           Depth map for survey or depth fitting class
 
         Returns
         -------
@@ -408,10 +411,22 @@ class Cluster(Entry):
         maxmag = self.mstar - 2.5*np.log10(self.config.lval_reference)
         maskgals_mark = mask.compute_radmask(ras, decs)
         maskgals_refmag = self.mstar + mask.maskgals.m
+        try:
+            maskgals_depth = depth.get_depth_values(ras, decs)[0]
+        except AttributeError:
+            # We have a "Depthlim" limit.
+            limpars, fail = calcErrorModel(self.neighbors.refmag, self.neighbors.refmag_err, calcErr=False)
+            if fail:
+                maskgals_depth = depth.initpars['LIMMAG']
+            else:
+                maskgals_depth = limpars['LIMMAG']
 
         sigma_g_maskgals = self.bkg.sigma_g_lookup(self._redshift, mask.maskgals.chisq, mask.maskgals.refmag)
 
-        bright_enough, = np.where((mask.maskgals.refmag < maxmag) & (np.isfinite(sigma_g_maskgals)))
+        bright_enough, = np.where((mask.maskgals.refmag < maxmag) & (np.isfinite(sigma_g_maskgals))
+&
+                                  (mask.maskgals.chisq_pdf > 0.0) & (mask.maskgals.lum_pdf > 0.0) &
+                                  (mask.maskgals.refmag < maskgals_depth))
 
         # Predicted number density according to global bkg
         prediction = np.sum(sigma_g_maskgals[bright_enough].astype(np.float64) / (mask.maskgals.chisq_pdf[bright_enough].astype(np.float64) * mask.maskgals.lum_pdf[bright_enough].astype(np.float64))) / float(bright_enough.size)
@@ -424,10 +439,16 @@ class Cluster(Entry):
                                (self.config.bkg_local_annuli[0]/self.mpc_scale)**2.) *
                         (float(in_annulus_gd.size) / float(in_annulus.size)))
 
+        try:
+            neighbors_depth = depth.get_depth_values(self.neighbors.ra, self.neighbors.dec)[0]
+        except AttributeError:
+            neighbors_depth = maskgals_depth
+
         neighbors_in_annulus, = np.where((self.neighbors.r > self.config.bkg_local_annuli[0]) &
                                          (self.neighbors.r < self.config.bkg_local_annuli[1]) &
                                          (self.neighbors.refmag < maxmag) &
-                                         (self.neighbors.chisq < mask.maskgals.chisq.max()))
+                                         (self.neighbors.chisq < mask.maskgals.chisq.max()) &
+                                         (self.neighbors.refmag < neighbors_depth))
         bkg_density_in_annulus = float(neighbors_in_annulus.size) / annulus_area
 
         bkg_local = bkg_density_in_annulus / prediction
