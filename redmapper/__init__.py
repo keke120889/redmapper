@@ -41,3 +41,5 @@ from .depth_fitting import DepthLim, applyErrorModel
 from .plotting import SpecPlot, NzPlot
 from .volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 from .utilities import read_members
+from .randoms import GenerateRandoms, RandomCatalog, RandomCatalogMaker, RandomWeigher
+from .run_randoms_zmask import RunRandomsZmask

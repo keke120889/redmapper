@@ -96,7 +96,7 @@ class Cluster(Entry):
     This class includes methods to perform richness computations on individual clusters using the associated neighbor galaxy catalog.
     """
 
-    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, cbkg=None, neighbors=None, zredbkg=None):
+    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, cbkg=None, neighbors=None, zredbkg=None, dtype=None):
         """
         Instantiate a Cluster object.
 
@@ -129,11 +129,14 @@ class Cluster(Entry):
         """
 
         if cat_vals is None:
-            if config is not None:
-                cat_vals = np.zeros(1, dtype=config.cluster_dtype)
+            if dtype is not None:
+                cat_vals = np.zeros(1, dtype=dtype)
             else:
-                # This might lead to bugs down the line, but let's try
-                cat_vals = np.zeros(1, dtype=cluster_dtype_base)
+                if config is not None:
+                    cat_vals = np.zeros(1, dtype=config.cluster_dtype)
+                else:
+                    # This might lead to bugs down the line, but let's try
+                    cat_vals = np.zeros(1, dtype=cluster_dtype_base)
 
         # Start by taking catalog values and stuffing them into a nice Entry format
         # we need to extend if necessary?  Or just the catalog?
@@ -901,11 +904,15 @@ class ClusterCatalog(Catalog):
         self.bkg = kwargs.pop('bkg', None)
         self.cbkg = kwargs.pop('cbkg', None)
         self.zredbkg = kwargs.pop('zredbkg', None)
+        dtype = kwargs.pop('dtype', None)
 
-        if self.config is not None:
-            cluster_dtype = self.config.cluster_dtype
+        if dtype is not None:
+            cluster_dtype = dtype
         else:
-            cluster_dtype = cluster_dtype_base
+            if self.config is not None:
+                cluster_dtype = self.config.cluster_dtype
+            else:
+                cluster_dtype = cluster_dtype_base
 
         # and if config is set then use that cluster_dtype because that
         #  will have all the other stuff filled as well.
@@ -965,7 +972,13 @@ class ClusterCatalog(Catalog):
         zredbkg: `redmapper.ZredBackground`, optional
            Zred background.  Default is None.
         """
-        return cls(np.zeros(size, dtype=cluster_dtype_base), **kwargs)
+        dtype = kwargs.get('dtype', None)
+        if dtype is not None:
+            cluster_dtype = dtype
+        else:
+            cluster_dtype = cluster_dtype_base
+
+        return cls(np.zeros(size, dtype=cluster_dtype), **kwargs)
 
     def __getitem__(self, key):
         if isinstance(key, int):

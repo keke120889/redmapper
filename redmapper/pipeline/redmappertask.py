@@ -12,6 +12,7 @@ from ..utilities import make_lockfile
 from ..run_firstpass import RunFirstPass
 from ..run_likelihoods import RunLikelihoods
 from ..run_percolation import RunPercolation
+from ..run_randoms_zmask import RunRandomsZmask
 
 from ..utilities import getMemoryString
 
@@ -176,3 +177,68 @@ class RuncatPixelTask(object):
             runcat.output(savemembers=True, withversion=True)
 
 
+class RunZmaskPixelTask(object):
+    """
+    Class to run redmapper zmask randoms on a single healpix pixel, for
+    distributed runs.
+    """
+    def __init__(self, configfile, pixel, nside, path=None):
+        """
+        Instantiate a RunZmaskPixelTask.
+
+        Parameters
+        ----------
+        configfile: `str`
+           Configuration yaml filename.
+        pixel: `int`
+           Healpix pixel to run on.
+        nside: `int`
+           Healpix nside associated with pixel.
+        path: `str`, optional
+           Output path.  Default is None, use same absolute
+           path as configfile.
+        """
+        if path is None:
+            outpath = os.path.dirname(os.path.abspath(configfile))
+        else:
+            outpath = path
+
+        self.config = Configuration(configfile, outpath=path)
+        self.pixel = pixel
+        self.nside = nside
+
+    def run(self):
+        """
+        Run zmask on a single healpix pixel.
+
+        This method will check if files already exist, and will
+        skip any steps that already exist.  The border radius
+        will automatically be calculated based on the richest
+        possible cluster at the lowest possible redshift.
+
+        All files will be placed in self.config.outpath (see
+        self.__init__)
+        """
+        if not self.config.galfile_pixelized:
+            raise ValueError("Code only runs with pixelized galfile.")
+
+        self.config.check_files(check_zredfile=False, check_bkgfile=True,
+                                check_parfile=True, check_randfile=True)
+
+        # Compute the border size
+
+        self.config.border = self.config.compute_border()
+
+        self.config.d.hpix = [self.pixel]
+        self.config.d.nside = self.nside
+        self.config.d.outbase = '%s_%d_%05d' % (self.config.outbase, self.nside, self.pixel)
+
+        self.config.logger.info("Running zmask on pixel %d" % (self.pixel))
+
+        rand_zmask = RunRandomsZmask(self.config)
+
+        if not os.path.isfile(rand_zmask.filename):
+            rand_zmask.run()
+            rand_zmask.output(savemembers=False, withversion=False)
+
+        # All done

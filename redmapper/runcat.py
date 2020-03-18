@@ -34,6 +34,7 @@ class RunCatalog(ClusterRunner):
         self.runmode = 'percolation'
         self.read_zreds = False
         self.zreds_required = False
+        self.cutgals_bkgrange = True
         self.filetype = 'lambda_chisq'
 
     def run(self, *args, **kwargs):

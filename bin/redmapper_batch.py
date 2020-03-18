@@ -131,6 +131,13 @@ elif args.runmode == 2:
     jobtype = 'runcat'
     default_walltime = 10*60
     memory = 4000
+elif args.runmode == 3:
+    # This is a random/zmask run
+    if nside is None:
+        nside = 8
+    jobtype = 'zmask'
+    default_walltime = 10*60
+    memory = 4000
 else:
     raise RuntimeError("Unsupported runmode: %d" % (args.runmode))
 
@@ -173,7 +180,12 @@ elif args.runmode == 1:
          nside,
          os.path.dirname(os.path.abspath(args.configfile))))
 elif args.runmode == 2:
-    run_command = 'redmapper_runcat_pixel.py -c %s -p %%s -n %d -d %d' % (
+    run_command = 'redmapper_runcat_pixel.py -c %s -p %%s -n %d -d %s' % (
+        (os.path.abspath(args.configfile),
+         nside,
+         os.path.dirname(os.path.abspath(args.configfile))))
+elif args.runmode == 3:
+    run_command = 'redmapper_run_zmask_pixel.py -c %s -p %%s -n %d -d %s' % (
         (os.path.abspath(args.configfile),
          nside,
          os.path.dirname(os.path.abspath(args.configfile))))

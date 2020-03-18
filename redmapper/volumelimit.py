@@ -27,7 +27,7 @@ class VolumeLimitMask(object):
 
     """
 
-    def __init__(self, config, vlim_lstar, vlimfile=None, use_geometry=False):
+    def __init__(self, config, vlim_lstar, vlimfile=None, use_geometry=False, withversion=True):
         """
         Instantiate a VolumeLimitMask
 
@@ -48,13 +48,16 @@ class VolumeLimitMask(object):
         use_geometry: `bool`, optional
            Use the geometric mask info only.  Only use if necessary.
            Default is False.
+        withversion: `bool`, optional
+           Output filename with redmapper version string.
         """
         self.config = config
         self.vlim_lstar = vlim_lstar
 
         if vlimfile is None:
             self.vlimfile = self.config.redmapper_filename('vl%02d_vlim_zmask' %
-                                                            (int(self.vlim_lstar*10)))
+                                                            (int(self.vlim_lstar*10)),
+                                                           withversion=withversion)
         else:
             self.vlimfile = vlimfile
 

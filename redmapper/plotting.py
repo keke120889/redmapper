@@ -44,8 +44,9 @@ class SpecPlot(object):
 
         self.binsize = binsize
         self.nsig = nsig
+        self._withversion = False
 
-    def plot_cluster_catalog(self, cat, title=None, figure_return=False):
+    def plot_cluster_catalog(self, cat, title=None, figure_return=False, withversion=False):
         """
         Plot the spectroscopic comparison for a cluster catalog, using the
         default catalog values.
@@ -61,6 +62,8 @@ class SpecPlot(object):
            Title string for plot.  Default is None.
         figure_return: `bool`, optional
            Return the figure instead of saving a png.  Default is False.
+        withversion: `bool`, optional
+           Plots should be saved with the version string.
 
         Returns
         -------
@@ -69,9 +72,10 @@ class SpecPlot(object):
         """
 
         return self.plot_values(cat.cg_spec_z, cat.z_lambda, cat.z_lambda_e, title=title,
-                                figure_return=figure_return)
+                                figure_return=figure_return, withversion=withversion)
 
-    def plot_cluster_catalog_from_members(self, cat, mem, title=None, figure_return=False):
+    def plot_cluster_catalog_from_members(self, cat, mem, title=None, figure_return=False,
+                                          withversion=False):
         """
         Plot the spectroscopic comparison for a cluster catalog, using the
         average member redshift.
@@ -90,6 +94,8 @@ class SpecPlot(object):
            Title string for plot.  Default is None.
         figure_return: `bool`, optional
            Return the figure instead of saving a png.  Default is False.
+        withversion: `bool`, optional
+           Plots should be saved with the version string.
 
         Returns
         -------
@@ -112,10 +118,10 @@ class SpecPlot(object):
             mem_zmed[i] = np.median(mem.zspec[i1a])
 
         return self.plot_values(mem_zmed, cat.z_lambda, cat.z_lambda_e, title=title,
-                                figure_return=figure_return)
+                                figure_return=figure_return, withversion=withversion)
 
     def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', specname='z_{\mathrm{spec}}',
-                    title=None, figure_return=False, calib_zrange=None):
+                    title=None, figure_return=False, calib_zrange=None, withversion=False):
         """
         Make a pretty spectrscopic plot from an arbitrary list of values.
 
@@ -135,6 +141,8 @@ class SpecPlot(object):
            Return the figure instead of saving a png.  Default is False.
         calib_zrange: `np.array` or `list`
            2-element array with calibration redshift range to mark.  Default is None.
+        withversion: `bool`, optional
+           Plots should be saved with the version string.
 
         Returns
         -------
@@ -251,6 +259,7 @@ class SpecPlot(object):
         fig.tight_layout()
 
         if not figure_return:
+            self._withversion = withversion
             fig.savefig(self.filename)
             plt.close(fig)
         else:
@@ -266,7 +275,8 @@ class SpecPlot(object):
         filename: `str`
            Formatted filename to save figure.
         """
-        return self.config.redmapper_filename('zspec', paths=(self.config.plotpath,), filetype='png')
+        return self.config.redmapper_filename('zspec', paths=(self.config.plotpath,),
+                                              withversion=self._withversion, filetype='png')
 
     def _make_photoz_map(self, z_spec, z_photo,
                          dzmax=0.1, nbins_coarse=20, nbins_fine=200, zrange=[0.0, 1.2]):
@@ -384,8 +394,9 @@ class NzPlot(object):
 
         self.binsize = binsize
         self._redmapper_name = 'nz'
+        self._withversion = False
 
-    def plot_cluster_catalog(self, cat, areastr, nosamp=False):
+    def plot_cluster_catalog(self, cat, areastr, nosamp=False, withversion=False):
         """
         Plot the n(z) for a cluster catalog, using the default catalog values.
 
@@ -399,6 +410,8 @@ class NzPlot(object):
            Area structure, with .z and .area
         nosamp: `bool`, optional
            Do not sample from z_lambda.  Default is False.
+        withversion: `bool`, optional
+           Plots should be saved with the version string.
         """
 
         if nosamp:
@@ -423,10 +436,11 @@ class NzPlot(object):
         self.plot_nz(zsamp, areastr, self.config.zrange,
                      xlabel=r'$z_{\lambda}$',
                      ylabel=r'$n\,(1e4\,\mathrm{clusters} / \mathrm{Mpc}^{3})$',
-                     redmapper_name='nz')
+                     redmapper_name='nz', withversion=withversion)
 
     def plot_nz(self, z, areastr, zrange, xlabel=None, ylabel=None,
-                title=None, redmapper_name='nz', calib_zrange=None):
+                title=None, redmapper_name='nz', calib_zrange=None,
+                withversion=False):
         """
         Plot the n(z) for an arbitrary list of objects
 
@@ -448,6 +462,8 @@ class NzPlot(object):
            Name to put into filename.  Default is 'nz'
         calib_zrange: `np.array` or `list`
            Calibration redshift range to overplot
+        withversion: `bool`, optional
+           Plots should be saved with the version string.
         """
 
         import matplotlib.pyplot as plt
@@ -493,11 +509,13 @@ class NzPlot(object):
         fig.tight_layout()
 
         self._redmapper_name = redmapper_name
+        self._withversion = withversion
         fig.savefig(self.filename)
         plt.close(fig)
 
     def plot_redmagic_catalog(self, cat, name, eta, n0, areastr, sample=True,
-                              zrange=None, calib_zrange=None, extraname=None):
+                              zrange=None, calib_zrange=None, extraname=None,
+                              withversion=False):
         """
         Plot the n(z) for a redmagic catalog.
 
@@ -521,6 +539,8 @@ class NzPlot(object):
            Redshift range used for calibration to overplot.  Default is None.
         extraname: `str`, optional
            Extra name to insert (E.g. 'calib').  Default is None
+        withversion: `bool`, optional
+           Plots should be saved with the version string.
         """
 
         # Take the first sample
@@ -539,7 +559,7 @@ class NzPlot(object):
                      ylabel=r'$n\,(1e4\,\mathrm{galaxies} / \mathrm{Mpc}^{3})$',
                      title='%s: %3.1f-%02d' % (name, eta, int(n0)),
                      redmapper_name=redmapper_name,
-                     calib_zrange=calib_zrange)
+                     calib_zrange=calib_zrange, withversion=withversion)
 
     @property
     def filename(self):
@@ -551,4 +571,5 @@ class NzPlot(object):
         filename: `str`
            Formatted filename to save figure.
         """
-        return self.config.redmapper_filename(self._redmapper_name, paths=(self.config.plotpath,), filetype='png')
+        return self.config.redmapper_filename(self._redmapper_name, paths=(self.config.plotpath,),
+                                              withversion=self._withversion, filetype='png')

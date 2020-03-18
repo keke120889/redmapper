@@ -39,7 +39,7 @@ l           Output path.  Default is None, use same absolute
 
         self.config = Configuration(configfile, outpath=path)
 
-    def run(self, modes=None, clobber=False, do_plots=True, n_randoms=None):
+    def run(self, modes=None, clobber=False, do_plots=True, n_randoms=None, rng=None):
         """
         Run redMaGiC selection over a full catalog.
 
@@ -58,7 +58,11 @@ l           Output path.  Default is None, use same absolute
            If None, then 10x the number of redmagic galaxies are generated.
            If 0, then no randoms are generated.
            If >0, then that many randoms are generated.
+        rng : `np.random.RandomState`, optional
+           Pre-set random number generator.  Default is None.
         """
+        if rng is None:
+            rng = np.random.RandomState()
 
         if not self.config.galfile_pixelized:
             raise ValueError("Code only runs with pixelized galfile.")
@@ -74,7 +78,7 @@ l           Output path.  Default is None, use same absolute
         # Check if files exist, clobber is False
         filenames = [''] * n_modes
         for i, mode in enumerate(modes):
-            filenames[i] = self.config.redmapper_filename('redmagic_%s' % (mode))
+            filenames[i] = self.config.redmapper_filename('redmagic_%s' % (mode), withversion=True)
 
             if os.path.isfile(filenames[i]) and not clobber:
                 raise RuntimeError("redMaGiC file %s already exists, and clobber is False" % (filenames[i]))
@@ -122,7 +126,8 @@ l           Output path.  Default is None, use same absolute
                 nzplot.plot_redmagic_catalog(gals, mode, selector.calib_data[mode].etamin,
                                              selector.calib_data[mode].n0,
                                              selector.vlim_masks[mode].get_areas(),
-                                             zrange=selector.calib_data[mode].zrange)
+                                             zrange=selector.calib_data[mode].zrange,
+                                             withversion=True)
 
                 okspec, = np.where(gals.zspec > 0.0)
                 if okspec.size > 0:
@@ -138,6 +143,7 @@ l           Output path.  Default is None, use same absolute
                                                                (mode, selector.calib_data[mode].etamin,
                                                                 int(selector.calib_data[mode].n0)),
                                                                paths=(self.config.plotpath,),
+                                                               withversion=True,
                                                                filetype='png'))
                     plt.close(fig)
 
@@ -160,6 +166,6 @@ l           Output path.  Default is None, use same absolute
             else:
                 _n_randoms = n_randoms
 
-            randfile = self.config.redmapper_filename('redmagic_%s_randoms' % (mode))
+            randfile = self.config.redmapper_filename('redmagic_%s_randoms' % (mode), withversion=True)
 
-            rand_generator.generate_randoms(_n_randoms, randfile, clobber=clobber)
+            rand_generator.generate_randoms(_n_randoms, randfile, clobber=clobber, rng=rng)

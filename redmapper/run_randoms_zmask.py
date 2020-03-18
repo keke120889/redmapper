@@ -1,7 +1,6 @@
 """Class to run the redmapper randoms using zmask randoms.
 """
 
-
 from __future__ import division, absolute_import, print_function
 from past.builtins import xrange
 
@@ -80,24 +79,47 @@ class RunRandomsZmask(ClusterRunner):
                                             hpix=self.config.d.hpix,
                                             border=self.config.border)
 
+        dtype = [('MEM_MATCH_ID', 'i4'),
+                 ('RA', 'f8'),
+                 ('DEC', 'f8'),
+                 ('Z', 'f4'),
+                 ('LAMBDA', 'f4'),
+                 ('LAMBDA_E', 'f4'),
+                 ('Z_LAMBDA', 'f4'),
+                 ('Z_LAMBDA_E', 'f4'),
+                 ('R_LAMBDA', 'f4'),
+                 ('R_MASK', 'f4'),
+                 ('SCALEVAL', 'f4'),
+                 ('MASKFRAC', 'f4'),
+                 ('EBV_MEAN', 'f4'),
+                 ('ID_INPUT', 'i4'),
+                 ('LAMBDA_IN', 'f4'),
+                 ('Z_IN', 'f4')]
+
         self.cat = ClusterCatalog.zeros(incat.size,
                                         zredstr=self.zredstr,
                                         config=self.config,
                                         bkg=self.bkg,
                                         cosmo=self.cosmo,
                                         r0=self.r0,
-                                        beta=self.beta)
+                                        beta=self.beta,
+                                        dtype=dtype)
 
         self.cat.ra = incat.ra
         self.cat.dec = incat.dec
-        self.cat.mem_match_id = incat.mem_match_id
+        self.cat.mem_match_id = incat.id
         self.cat.z = incat.z
         self.cat.Lambda = incat.Lambda
         self.cat.id_input = incat.id_input
+        self.cat.lambda_in = incat.Lambda
+        self.cat.z_in = incat.z
 
         self.do_lam_plusminus = False
         self.match_centers_to_galaxies = False
         self.do_percolation_masking = False
+        self.record_members = False
+
+        return True
 
     def _process_cluster(self, cluster):
         """
@@ -113,7 +135,15 @@ class RunRandomsZmask(ClusterRunner):
         fail: `bool`
         """
 
-        # This is a no-op because the generic runner does the work!
+        # This only needs to compute scaleval, and set r_lambda
+        cluster.Lambda = cluster.lambda_in
+        cluster.r_lambda = cluster.r0*(cluster.Lambda/100.)**cluster.beta
+        cluster.r_mask = cluster.r_lambda
+
+        maxmag = cluster.mstar - 2.5*np.log10(self.config.lval_reference)
+        cpars = self.mask.calc_maskcorr(cluster.mstar, maxmag, cluster.zredstr.limmag)
+        cval = np.sum(cpars*cluster.r_lambda**(np.arange(cpars.size)[::-1]))
+        cluster.scaleval = 1./(1. - cval)
 
         # False means we did not fail.
         return False

@@ -185,6 +185,8 @@ class ClusterRunner(object):
         if self.zreds_required and zredfile is None:
             raise RuntimeError("zreds are required, but zredfile is None")
 
+        self.gals = None
+
         if self.read_gals:
             self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
                                                    nside=self.config.d.nside,
@@ -413,12 +415,13 @@ class ClusterRunner(object):
                     self._reset_bad_values(cluster)
                     continue
 
-                if self.config.bkg_local_compute and not self.config.bkg_local_use:
-                    if self.depthstr is None:
-                        depth = self.depthlim
-                    else:
-                        depth = self.depthstr
-                    cluster.bkg_local = cluster.compute_bkg_local(self.mask, depth)
+                if self.read_gals:
+                    if self.config.bkg_local_compute and not self.config.bkg_local_use:
+                        if self.depthstr is None:
+                            depth = self.depthlim
+                        else:
+                            depth = self.depthstr
+                        cluster.bkg_local = cluster.compute_bkg_local(self.mask, depth)
 
                 if self.do_correct_zlambda and self.zlambda_corr is not None and self.read_gals:
                     if self.do_pz:
@@ -487,9 +490,10 @@ class ClusterRunner(object):
                 #  usage right now, but will start here and fix later if it
                 #  is a problem.
 
-                pfree_temp = cluster.neighbors.pfree[:]
+                if self.read_gals:
+                    pfree_temp = cluster.neighbors.pfree[:]
 
-                if self.use_memradius or self.use_memlum:
+                if (self.use_memradius or self.use_memlum) and self.read_gals:
                     ok = (cluster.neighbors.p > 0.01)
 
                     if self.use_memradius:
@@ -499,12 +503,12 @@ class ClusterRunner(object):
 
                     # And set pfree_temp to zero when it is not okay
                     pfree_temp[~ok] = 0.0
-                else:
+                elif self.read_gals:
                     # Only save members where pmem > 0.01 (for space)
                     ok = (cluster.neighbors.pmem > 0.01)
                     pfree_temp[~ok] = 0.0
 
-                if self.record_members:
+                if self.record_members and self.read_gals:
                     pfree_temp = cluster.neighbors.pfree[:]
 
                     if self.use_memradius or self.use_memlum:
@@ -613,17 +617,8 @@ class ClusterRunner(object):
         # It will save the underlying _ndarrays of the Cluster and
         # (optionally) Member catalogs.
 
-        if outbase is None:
-            outbase = self.config.d.outbase
+        self._filename = self.config.redmapper_filename(self.filetype + '_catalog', withversion=withversion, outbase=outbase)
 
-        fname_base = os.path.join(self.config.outpath, outbase)
-
-        if withversion:
-            fname_base += '_redmapper_' + self.config.version
-
-        fname_base += '_' + self.filetype
-
-        self._filename = fname_base + '.fit'
         if self.cat is None:
             self.config.logger.info("Warning: no catalog generated for %s" % (self._filename))
             return
@@ -635,7 +630,8 @@ class ClusterRunner(object):
             if self.members is None:
                 self.config.logger.info("Warning: no members generated for %s" % (self._filename))
                 return
-            self.members.to_fits_file(fname_base + '_members.fit', clobber=clobber)
+            memfilename = self.config.redmapper_filename(self.filetype + '_catalog_members', withversion=withversion, outbase=outbase)
+            self.members.to_fits_file(memfilename, clobber=clobber)
 
     @property
     def filename(self):

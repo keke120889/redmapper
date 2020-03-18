@@ -50,7 +50,7 @@ class RedmagicGenerateRandoms(object):
         else:
             raise RuntimeError("redmagic_cat_or_file must be a redmapper.GalaxyCatalog")
 
-    def generate_randoms(self, nrandoms, filename, clobber=False):
+    def generate_randoms(self, nrandoms, filename, clobber=False, rng=None):
         """
         Generate random points, and save to filename
 
@@ -62,7 +62,11 @@ class RedmagicGenerateRandoms(object):
            Output filename
         clobber: `bool`
            Clobber output file?  Default is False.
+        rng : `np.random.RandomState`, optional
+           Pre-set random number generator.  Default is None.
         """
+        if rng is None:
+            rng = np.random.RandomState()
 
         if not clobber and os.path.isfile(filename):
             raise RuntimeError("Random file %s already exists and clobber is False." % (filename))
@@ -86,13 +90,13 @@ class RedmagicGenerateRandoms(object):
         while (n_left > 0):
             n_gen = np.clip(n_left * 3, min_gen, max_gen)
             ra_rand, dec_rand = healsparse.make_uniform_randoms(self.vlim_mask.sparse_vlimmap,
-                                                                n_gen)
+                                                                n_gen, rng=rng)
 
             # What are the associated z_max and fracgood?
             zmax, fracgood = self.vlim_mask.calc_zmax(ra_rand, dec_rand, get_fracgood=True)
 
             # Down-select from fracgood
-            r = np.random.uniform(size=n_gen)
+            r = rng.uniform(size=n_gen)
             gd, = np.where(r < fracgood)
 
             # Go back and generate more if all bad
@@ -104,7 +108,7 @@ class RedmagicGenerateRandoms(object):
             tempcat.dec = dec_rand[gd]
             tempcat.z[:] = -1.0
 
-            zz = np.random.choice(self.redmagic_cat.zredmagic, size=gd.size)
+            zz = rng.choice(self.redmagic_cat.zredmagic, size=gd.size)
             zmax = zmax[gd]
 
             # This essentially takes each redshift and then finds a random
