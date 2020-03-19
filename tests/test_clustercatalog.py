@@ -10,7 +10,7 @@ import healpy as hp
 from esutil.cosmology import Cosmo
 
 from redmapper import Cluster
-from redmapper import ClusterCatalog
+from redmapper import ClusterCatalog, Catalog
 from redmapper import Configuration
 from redmapper import GalaxyCatalog
 from redmapper import DataObject
@@ -18,6 +18,7 @@ from redmapper import RedSequenceColorPar
 from redmapper import Background
 from redmapper import HPMask
 from redmapper import DepthMap
+from redmapper.cluster import cluster_dtype_base
 
 
 class ClusterCatalogTestCase(unittest.TestCase):
@@ -90,7 +91,29 @@ class ClusterCatalogTestCase(unittest.TestCase):
         # And make sure the numbers are correct
         testing.assert_almost_equal(richness, 24.4121723)
 
-        # and we're done
+        # Test creating a cluster catalog with default dtype
+        testcat = ClusterCatalog.zeros(10)
+        compcat = Catalog(np.zeros(10, dtype=cluster_dtype_base))
+
+        self.assertEqual(testcat.dtype, compcat.dtype)
+
+        # And test that each cluster has that dtype
+        cluster = testcat[0]
+        self.assertEqual(cluster.dtype, testcat.dtype)
+
+        # Test creating a cluster catalog with a different dtype
+        dtype = [('MEM_MATCH_ID', 'i4'),
+                 ('RA', 'f8'),
+                 ('DEC', 'f8'),
+                 ('Z', 'f4')]
+        testcat = ClusterCatalog.zeros(10, dtype=dtype)
+        compcat = Catalog(np.zeros(10, dtype=dtype))
+
+        self.assertEqual(testcat.dtype, compcat.dtype)
+
+        # And test that each cluster has that dtype
+        cluster = testcat[0]
+        self.assertEqual(cluster.dtype, testcat.dtype)
 
 if __name__=='__main__':
     unittest.main()

@@ -232,6 +232,7 @@ class Configuration(object):
 
     area_finebin = ConfigField(default=0.001, required=True)
     area_coarsebin = ConfigField(default=0.005, required=True)
+    area_nodesize = ConfigField(default=0.05, required=True)
 
     zrange = ConfigField(isArray=True, array_length=2, required=True)
     lval_reference = ConfigField(default=0.2, required=True)
@@ -756,7 +757,8 @@ class Configuration(object):
         zrange_cushioned[1] += self.calib_zrange_cushion
         return zrange_cushioned
 
-    def redmapper_filename(self, redmapper_name, paths=None, filetype='fit'):
+    def redmapper_filename(self, redmapper_name, paths=None, filetype='fit',
+                           withversion=False, outbase=None):
         """
         Generate a redmapper filename with all the appropriate infixes.
 
@@ -769,25 +771,35 @@ class Configuration(object):
            Default is None, just use self.outpath
         filetype: `str`, optional
            File extension.  Default is 'fit`
+        withversion : `bool`, optional
+           Add in the redmapper version string
+        outbase : `str`, optional
+           Override self.d.outbase
 
         Returns
         -------
         filename: `str`
            Properly formatted full-path redmapper filename
         """
+        if outbase is None:
+            outbase = self.d.outbase
+
+        if withversion:
+            outbase += '_redmapper_v%s' % (self.version)
+
         if paths is None:
             return os.path.join(self.outpath,
-                                '%s_%s.%s' % (self.d.outbase, redmapper_name, filetype))
+                                '%s_%s.%s' % (outbase, redmapper_name, filetype))
         else:
             if type(paths) is not list and type(paths) is not tuple:
                 raise ValueError("paths must be a list or tuple")
             pars = [self.outpath]
             pars.extend(paths)
-            pars.append('%s_%s.%s' % (self.d.outbase, redmapper_name, filetype))
+            pars.append('%s_%s.%s' % (outbase, redmapper_name, filetype))
             return os.path.join(*pars)
 
     def check_files(self, check_zredfile=False, check_bkgfile=False, check_bkgfile_components=False,
-                    check_parfile=False, check_zlambdafile=False):
+                    check_parfile=False, check_zlambdafile=False, check_randfile=False):
         """
         Check that all calibration files are available for a cluster finder run.
 
@@ -804,6 +816,8 @@ class Configuration(object):
            Check that the red sequence parameter file is available.  Default is False.
         check_zlambdafile: `bool`, optional
            Check that the zlambda calibration file is available.  Default is False.
+        check_randfile: `bool`, optional
+           Check that the random file is available.  Default is False.
 
         Raises
         ------
@@ -832,6 +846,10 @@ class Configuration(object):
         if check_zlambdafile:
             if not os.path.isfile(self.zlambdafile):
                 raise ValueError("zlambdafile %s not found." % (self.zlambdafile))
+
+        if check_randfile:
+            if not os.path.isfile(self.randfile):
+                raise ValueError("randfile %s not found." % (self.randfile))
 
     def output_yaml(self, filename):
         """

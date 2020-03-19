@@ -15,7 +15,6 @@ from .background import Background
 from .mask import HPMask
 from .galaxy import GalaxyCatalog
 from .cluster import Cluster
-from .cluster import ClusterCatalog
 from .depthmap import DepthMap
 from .zlambda import Zlambda
 from .zlambda import ZlambdaCorrectionPar

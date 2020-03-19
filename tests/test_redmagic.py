@@ -158,17 +158,19 @@ class RedmagicCalTestCase(unittest.TestCase):
         os.remove(vmaskfile)
         mask = VolumeLimitMask(config, cal['etamin'], use_geometry=True)
 
+        rng = random.RandomState(12345)
+
         # Now test the running, using the output file which has valid galaxies/zreds
         run_redmagic = RunRedmagicTask(redmagic_cal.runfile)
-        run_redmagic.run()
+        run_redmagic.run(rng=rng)
 
         # check that we have a redmagic catalog
-        rmcatfile = config.redmapper_filename('redmagic_%s' % ('highdens'))
+        rmcatfile = config.redmapper_filename('redmagic_%s' % ('highdens'), withversion=True)
         self.assertTrue(os.path.isfile(rmcatfile))
 
         # And a random catalog
-        rmrandfile = config.redmapper_filename('redmagic_%s_randoms' % ('highdens'))
-        self.assertTrue(os.path.isfile(config.redmapper_filename('redmagic_%s_randoms' % ('highdens'))))
+        rmrandfile = config.redmapper_filename('redmagic_%s_randoms' % ('highdens'), withversion=True)
+        self.assertTrue(os.path.isfile(rmrandfile))
 
         # And check that the plot is there
 

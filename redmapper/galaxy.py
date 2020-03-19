@@ -754,17 +754,17 @@ class GalaxyCatalogMaker(object):
         filename_dtype = 'a%d' % (len(self.outbase_nopath) + 15)
 
         dtype = [('nside', 'i2'),
-                 ('hpix', 'i4', hpix.size),
-                 ('ra_pix', 'f8', hpix.size),
-                 ('dec_pix', 'f8', hpix.size),
-                 ('ngals', 'i4', hpix.size),
-                 ('filenames', filename_dtype, hpix.size),
+                 ('hpix', 'i4', (hpix.size, )),
+                 ('ra_pix', 'f8', (hpix.size, )),
+                 ('dec_pix', 'f8', (hpix.size, )),
+                 ('ngals', 'i4', (hpix.size, )),
+                 ('filenames', filename_dtype, (hpix.size, )),
                  ('lim_ref', 'f4'),
                  ('ref_ind', 'i2'),
                  ('area', 'f8'),
                  ('nmag', 'i4'),
                  ('mode', 'a10'),
-                 ('b', 'f8', self.nmag),
+                 ('b', 'f8', (np.clip(self.nmag, 2, None), )),
                  ('zeropoint', 'f4')]
         if self.u_ind is not None:
             dtype.append(('u_ind', 'i2'))
@@ -796,7 +796,7 @@ class GalaxyCatalogMaker(object):
         tab.area = self.area
         tab.nmag = self.nmag
         tab.mode = self.mode
-        tab.b = self.b
+        tab.b[: self.b.size] = self.b
         tab.zeropoint = self.zeropoint
 
         if self.u_ind is not None:

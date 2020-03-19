@@ -213,14 +213,16 @@ class RedmapperConsolidateTask(object):
 
                     if not started[i, j]:
                         # Figure out filename
-                        self.config.d.outbase = '%s_redmapper_v%s_lgt%02d' % (self.config.outbase, self.config.version, minlambda)
                         if len(self.vlim_lstars) > 0:
-                            self.config.d.outbase += '_vl%02d' % (int(self.vlim_lstars[j] * 10))
+                            extraname = 'lgt%02d_vl%02d' % (minlambda, int(self.vlim_lstars[j]*10))
+                        else:
+                            extraname = 'lgt%02d' % (minlambda)
 
-                        cat_fname = self.config.redmapper_filename('catalog')
-                        mem_fname = self.config.redmapper_filename('catalog_members')
+                        cat_fname = self.config.redmapper_filename(extraname + '_catalog', withversion=True)
+                        mem_fname = self.config.redmapper_filename(extraname + '_catalog_members', withversion=True)
 
-                        cat_filename_dict[(i, j)] = (self.config.d.outbase, cat_fname, mem_fname)
+                        parts = os.path.basename(cat_fname).split('_catalog')
+                        cat_filename_dict[(i, j)] = (parts[0], cat_fname, mem_fname)
 
                         # Write out new fits files...
                         cat.to_fits_file(cat_fname, clobber=True, indices=cat_use)
@@ -230,13 +232,10 @@ class RedmapperConsolidateTask(object):
                     else:
                         # Append to existing fits files
                         with fitsio.FITS(cat_filename_dict[(i, j)][1], mode='rw') as fits:
-                            #fits = fitsio.FITS(cat_filename_dict[(i, j)][1], mode='rw')
                             fits[1].append(cat._ndarray[cat_use])
-                            #fits.close()
 
                         with fitsio.FITS(cat_filename_dict[(i, j)][2], mode='rw') as fits:
                             fits[1].append(mem._ndarray[mem_use])
-                            #fits.close()
 
         # Sort and renumber ...
         st = np.argsort(all_likelihoods)[::-1]
@@ -277,9 +276,9 @@ class RedmapperConsolidateTask(object):
 
                     if self.config.has_truth:
                         mem = Catalog.from_fits_file(cat_filename_dict[(i, j)][2])
-                        specplot.plot_cluster_catalog_from_members(cat, mem, title=self.config.d.outbase)
+                        specplot.plot_cluster_catalog_from_members(cat, mem, title=self.config.d.outbase, withversion=False)
                     else:
-                        specplot.plot_cluster_catalog(cat, title=self.config.d.outbase)
+                        specplot.plot_cluster_catalog(cat, title=self.config.d.outbase, withversion=False)
 
 
                     nzplot = NzPlot(self.config)
@@ -312,7 +311,7 @@ class RuncatConsolidateTask(object):
 
         self.config = Configuration(configfile, outpath=path)
 
-    def run(self, do_plots=True, match_spec=True):
+    def run(self, do_plots=True, match_spec=True, consolidate_members=True, cattype='runcat'):
         """
         Run the runcat consolidation task.
 
@@ -323,9 +322,11 @@ class RuncatConsolidateTask(object):
         match_spec: `bool`, optional
            Match cluster centrals and members to spectra.
            Default is True.
+        consolidate_members: `bool`, optional
+           Consolidate members as well as catalog?
         """
         # find the files
-        catfiles = sorted(glob.glob(os.path.join(self.config.outpath, '%s_*_?????_runcat.fit' % (self.config.outbase))))
+        catfiles = sorted(glob.glob(os.path.join(self.config.outpath, '%s_*_?????_%s_catalog.fit' % (self.config.outbase, cattype))))
 
         self.config.logger.info("Found %d catalog files in %s" % (len(catfiles), self.config.outpath))
 
@@ -348,13 +349,16 @@ class RuncatConsolidateTask(object):
             cat = Catalog.from_fits_file(catfile, ext=1)
 
             # and read in members
-            mem = read_members(catfile)
+            if consolidate_members:
+                mem = read_members(catfile)
 
             # Extract pixnum from name
 
             m = re.search('_(\d+)_(\d\d\d\d\d)_', catfile)
             if m is None:
                 raise RuntimeError("Could not understand filename for %s" % (catfile))
+
+            hpix = int(m.groups()[1])
 
             if match_spec and not self.config.has_truth:
                 # match spec to cat and mem
@@ -363,11 +367,12 @@ class RuncatConsolidateTask(object):
                 i0, i1, dists = spec.match_many(cat.ra, cat.dec, 3./3600., maxmatch=1)
                 cat.cg_spec_z[i0] = spec.z[i1]
 
-                mem.zspec[:] = -1.0
-                i0, i1, dists = spec.match_many(mem.ra, mem.dec, 3./3600., maxmatch=1)
-                mem.zspec[i0] = spec.z[i1]
+                if consolidate_members:
+                    mem.zspec[:] = -1.0
+                    i0, i1, dists = spec.match_many(mem.ra, mem.dec, 3./3600., maxmatch=1)
+                    mem.zspec[i0] = spec.z[i1]
 
-            if self.config.has_truth:
+            if match_spec and self.config.has_truth:
                 # Need to match to the truth catalog
                 truthcat = GalaxyCatalog.from_galfile(self.config.galfile, hpix=hpix, nside=nside, border=0.0, truth=True)
 
@@ -376,9 +381,10 @@ class RuncatConsolidateTask(object):
                 i0, i1, dists = truthcat.match_many(cat.ra, cat.dec, 1./3600., maxmatch=1)
                 cat.cg_spec_z[i0] = truthcat.ztrue[i1]
 
-                mem.zspec[:] = -1.0
-                i0, i1, dists = truthcat.match_many(mem.ra, mem.dec, 1./3600., maxmatch=1)
-                mem.zspec[i0] = truthcat.ztrue[i1]
+                if consolidate_members:
+                    mem.zspec[:] = -1.0
+                    i0, i1, dists = truthcat.match_many(mem.ra, mem.dec, 1./3600., maxmatch=1)
+                    mem.zspec[i0] = truthcat.ztrue[i1]
 
             # Figure out which clusters are in the pixel
 
@@ -392,25 +398,22 @@ class RuncatConsolidateTask(object):
 
             cat = cat[use]
 
-            # match catalog with members via mem_match_id
-            # a, b = esutil.numpy_util.match(cat.mem_match_id, mem.mem_match_id)
-
             if not started:
                 # Figure out filename
-                self.config.d.outbase = '%s_runcat' % (self.config.outbase)
-
-                cat_fname = self.config.redmapper_filename('catalog')
-                mem_fname = self.config.redmapper_filename('catalog_members')
-
+                cat_fname = self.config.redmapper_filename('%s_catalog' % (cattype), withversion=True)
                 cat.to_fits_file(cat_fname, clobber=True)
-                mem.to_fits_file(mem_fname, clobber=True)
+
+                if consolidate_members:
+                    mem_fname = self.config.redmapper_filename('%s_catalog_members' % (cattype), withversion=True)
+                    mem.to_fits_file(mem_fname, clobber=True)
 
                 started = True
             else:
                 with fitsio.FITS(cat_fname, mode='rw') as fits:
                     fits[1].append(cat._ndarray)
-                with fitsio.FITS(mem_fname, mode='rw') as fits:
-                    fits[1].append(mem._ndarray)
+                if consolidate_members:
+                    with fitsio.FITS(mem_fname, mode='rw') as fits:
+                        fits[1].append(mem._ndarray)
 
         if do_plots:
             cat = Catalog.from_fits_file(cat_fname)
@@ -422,3 +425,5 @@ class RuncatConsolidateTask(object):
                 specplot.plot_cluster_catalog_from_members(cat, mem, title=self.config.d.outbase)
             else:
                 specplot.plot_cluster_catalog(cat, title=self.config.d.outbase)
+
+

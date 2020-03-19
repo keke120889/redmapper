@@ -53,6 +53,8 @@ class RunColormem(ClusterRunner):
         self.filetype = "colormem"
         self.use_colorbkg = True
         self.use_parfile = False
+        self.cutgals_bkgrange = False
+        self.cutgals_chisqmax = False
 
     def run(self, *args, **kwargs):
         """

@@ -27,7 +27,7 @@ class VolumeLimitMask(object):
 
     """
 
-    def __init__(self, config, vlim_lstar, vlimfile=None, use_geometry=False):
+    def __init__(self, config, vlim_lstar, vlimfile=None, use_geometry=False, withversion=True):
         """
         Instantiate a VolumeLimitMask
 
@@ -48,13 +48,16 @@ class VolumeLimitMask(object):
         use_geometry: `bool`, optional
            Use the geometric mask info only.  Only use if necessary.
            Default is False.
+        withversion: `bool`, optional
+           Output filename with redmapper version string.
         """
         self.config = config
         self.vlim_lstar = vlim_lstar
 
         if vlimfile is None:
             self.vlimfile = self.config.redmapper_filename('vl%02d_vlim_zmask' %
-                                                            (int(self.vlim_lstar*10)))
+                                                            (int(self.vlim_lstar*10)),
+                                                           withversion=withversion)
         else:
             self.vlimfile = vlimfile
 
@@ -195,7 +198,7 @@ class VolumeLimitMask(object):
             zmax_temp[hi] = zbins.max()
             mid, = np.where((lim_mask > limmags_temp.min()) & (lim_mask < limmags_temp.max()))
             if mid.size > 0:
-                l = np.searchsorted(limmags_temp, lim_mask[mid], side='right')
+                l = np.clip(np.searchsorted(limmags_temp, lim_mask[mid], side='right'), 0, zbins.size - 1)
                 zmax_temp[mid] = zbins[l]
 
             limited, = np.where(zmax_temp < vlimmap['zmax'])
@@ -262,6 +265,10 @@ class VolumeLimitMask(object):
             raise ValueError("ras, decs must be same length")
 
         values = self.sparse_vlimmap.get_values_pos(ras, decs, lonlat=True)
+
+        bad, = np.where(np.abs(decs) > 90.0)
+        values['zmax'][bad] = hp.UNSEEN
+        values['fracgood'][bad] = 0.0
 
         if not get_fracgood:
             return np.clip(values['zmax'], 0.0, None)

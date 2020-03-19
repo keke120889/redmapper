@@ -440,7 +440,166 @@ catalog that covers as much redshift as possible, but is not volume-limited.
 
 Some diagnostic plots will be placed in the `plots/` subdirectory of the run.
 
-And that's it!
+And that's it, for creating a cluster catalog!
 
+But wait, there's more...
+
+### Step 6: Generating redMaPPer Random Points
+
+If you want to generate redMaPPer random points (see Section 3.6 of [Rykoff et
+al. (2016)](https://ui.adsabs.harvard.edu/abs/2016ApJS..224....1R)), it is a bit
+clunky at the moment, but it does work.  There are four stages to generating
+the redMaPPer randoms, and these need to be performed separately for each
+volume-limited catalog that you have.  The three stages are:
+
+1. Generate raw uniform random points with appropriate redshift/richness
+distribution (`redmapper_generate_randoms.py`).
+2. Run random points to estimate local geometric/depth corrections
+(`redmapper_run_zmask_pixel.py`/`redmapper_batch.py`).
+3. Compute random weights on sub-selections (`redmapper_weight_randoms.py`).
+
+#### Step 6.1: Generate Raw Uniform Randoms
+
+The first step is to use an input redMaPPer cluster catalog to generate a set
+of spatially uniform randoms with the same redshift/richness distribution as
+the the cluster catalog, while taking into account the "zmax" maximum redshift
+mask.  This step needs to be done once for each volume limit selected in Step
+5, and preferentially in a separate directory for each run.
+
+You first need to create a new directory called, for example "zmask02" for a
+0.2L* volume limited catalog.  Copy the `run.yml` file from the run and call it
+`run_zmask02.yml`, and edit the `catfile` to be the full path to the
+appropriate catalog file that you want randoms for.  Typically, if you have
+output catalogs with multiple richness cuts (defaults being lambda>5 and
+lambda>20), then you want to use the catalog with the lowest richness cut
+(which includes all the clusters with the higher richness cut), and down-select
+the randoms at the end, as described in Section 6.3.
+
+Additionally, edit the `randfile` to be a full path to a new raw random catalog
+that will be generated.  Typically, this would be something like
+`/path/to/files/zmask02/rands/name_of_cat_randoms_master_table.fit`.
+Additionally, you must symlink into this directory the appropriate zmask file
+(in this case, called `outbase_redmapper_version_vl02_vlim_zmask.fit`).  This
+dance will be simplified in the future.
+
+Then, call `redmapper_generate_randoms.py`.  The following will generate 50
+million random points.
+
+```bash
+
+redmapper_generate_randoms.py -c run_zmask02.yml -n 50000000
+```
+
+#### Step 6.2: Run random points through redMaPPer code
+
+The easiest way to do this is via the batch system:
+
+```bash
+
+redmapper_batch.py -c run_zmask02.yml -r 3 -b BATCHMODE [-w WALLTIME] [-n
+NSIDE]
+```
+
+After it is done, to consolidate you do:
+
+```bash
+
+redmapper_consolidate_runcat.py -c run_zmask02.yml -r
+```
+
+Alternatively, you can run locally (not distributed) with:
+
+```python
+
+import redmapper
+
+config = redmapper.Configuration('run_zmask02.yml')
+rand_zmask = redmapper.RunRandomsZmask(config)
+rand_zmask.run()
+rand_zmask.output(savemembers=False)
+```
+
+#### Step 6.3: Compute random weights on sub-selections
+
+The randoms must now be weighted according to their detection rate.  These
+weights must be computed separately for each richness cut/bin chosen.  Right
+now, the command-line code only easily computes weights for a full catalog with
+a set of richness cuts (e.g., 5 and 20).  This is done with:
+
+```bash
+
+redmapper_weight_randoms.py -c run_zmask02.yml -r name_of_full_randfile.fit -l 5 20
+```
+
+This will output files of the form
+`outbase_weighted_randoms_zMIN-MAX_lgt005_vl02.fit` (the randoms with
+appropriate weights), and
+`outbase_weighted_randoms_zMIN-MAX_lgt005_vl02_area.fit` (the area as a
+function of redshift, with geometric corrections computed from the randoms).
+
+If you want to weight specific redshift or richness bins, you can do:
+
+```python
+
+import redmapper
+
+config = redmapper.Configuration('run_zmask02.yml')
+weigher = redmapper.RandomWeigher(config, 'randfile.fit')
+wt_randfile, wt_areafile = weighter.weight_randoms(lambda_cut, zrange=[minz,
+maxz], lambdabin=[lambda_min, lambda_max])
+```
+
+Note that `lambda_cut` should be the minimum richness of the parent catalog (5
+or 20) to ensure that scatter around the lambda_min cut for the richness bin is
+accounted for properly.
+
+
+### Step 7: Calibrating and Generating redMaGiC Catalogs
+
+After a redMaPPer catalog is computed, you can calibrate and generate redMaGiC
+catalogs (see [Rozo et
+al. (2016)](https://ui.adsabs.harvard.edu/abs/2016MNRAS.461.1431R)).
+
+First, make a new directory called (for example) `redmagic`.  Copy in the
+`run.yml` from the run directory into the redmagic directory, and rename it
+`redmagic_cal.yml`.  You'll need to set the following fields:
+
+* `catfile`: The full path of the redMaPPer catalog with the "best" redshifts
+  for calibration, usually the lambda>20 catalog.
+* `hpix`, `nside`: Set these if you want to calibrate over a sub-area of the
+  survey (for speed and to reserve regions for testing).
+* `redmagic_etas`: The luminosity cuts in units of L*, typically `[0.5, 1.0]`
+* `redmagic_n0s`: The comoving density target in 10^-4 gal/Mpc^3, typcially
+  `[10.0, 4.0]`
+* `redmagic_names`: The names of the redMaGiC selections, typically
+  `['highdens', 'highlum']`
+* `redmagic_zmaxes`: The maximum redshifts for the two selections.  For DES
+  this is `[0.75, 0.95]`
+* `redmagicfile`: The calibration file to output, typically
+  `outbase_redmagic_calib.fit`
+
+Then you can run the redMaGiC calibration and selection step:
+
+```bash
+
+redmagic_calibrate.py -c redmagic_cal.yml
+```
+
+And voila!  After some time you will get the redMaGiC catalogs output with
+calibration and run QA plots in the `plots/` directory.  Associated randoms
+will also be generated, with 10x the number density as the redMaGiC galaxies.
+
+If you already have a redMaGiC calibration and want to make a selection on a
+new catalog (e.g., for multiple sim runs with the same red-sequence model), you
+can use:
+
+```bash
+
+redmagic_run.py -c redmagic_run.yml [-C CLOBBER] [-n NRANDOMS]
+```
+
+If you don't specify `-n` then you'll get 10x the number of randoms as the
+number of galaxies selected.  Note that you have to have the `zreds` already
+available to make the redMaGiC selection.
 
 
