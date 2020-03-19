@@ -88,7 +88,7 @@ class RedmapperRandomsTestCase(unittest.TestCase):
 
         astr = Catalog.from_fits_file(wt_areafile)
         testing.assert_array_less(-0.0001, astr.area)
-        testing.assert_array_almost_equal(astr.area[100: 103], [0.89969015, 0.9031234, 0.90639186])
+        testing.assert_array_almost_equal(astr.area[100: 103], [0.89969015, 0.9031234, 0.90639186], 3)
 
     def setUp(self):
         self.test_dir = None
