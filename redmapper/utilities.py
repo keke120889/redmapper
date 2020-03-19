@@ -263,7 +263,11 @@ class RedGalInitialColors(object):
 
         self._template = Catalog.from_fits_file(self._template_file, ext=1)
         template_hdr = fitsio.read_header(self._template_file, ext=1)
-        self._template_bands = list(template_hdr['BANDS'].rstrip())
+
+        if ',' in template_hdr['BANDS']:
+            self._template_bands = template_hdr['BANDS'].rstrip().split(',')
+        else:
+            self._template_bands = list(template_hdr['BANDS'].rstrip())
 
         self._color_names = []
         for i in range(len(self._template_bands) - 1):

@@ -99,7 +99,10 @@ class RedSequenceColorPar(object):
                 ncol = hdr['NCOL']
                 if 'TEMPLATE' in hdr:
                     templatefile = hdr['TEMPLATE']
-                    bands = list(hdr['BANDS'].rstrip())
+                    if ',' in hdr['BANDS']:
+                        bands = hdr['BANDS'].rstrip().split(',')
+                    else:
+                        bands = list(hdr['BANDS'].rstrip())
                 else:
                     templatefile = None
             except:
