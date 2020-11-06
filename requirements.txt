@@ -8,3 +8,4 @@ numpy
 healpy
 scipy
 future
+healsparse
