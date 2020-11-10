@@ -16,6 +16,7 @@ from . import redmagic
 
 from .configuration import Configuration
 from .runcat import RunCatalog
+from .run_zscan import RunZScan
 from .solver_nfw import Solver
 from .catalog import DataObject, Entry, Catalog
 from .redsequence import RedSequenceColorPar
