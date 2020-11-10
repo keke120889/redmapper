@@ -370,6 +370,11 @@ class Configuration(object):
     percolation_memradius = ConfigField()
     percolation_memlum = ConfigField()
 
+    zscan_r0 = ConfigField(default=0.5, required=True)
+    zscan_beta = ConfigField(default=0.0, required=True)
+    zscan_zstep = ConfigField(default=0.005, required=True)
+    zscan_minlambda = ConfigField(default=3.0, required=True)
+
     vlim_lstar = ConfigField(default=0.2, required=False)
     vlim_depthfiles = ConfigField(default=[], required=False, isList=True)
     vlim_bands = ConfigField(default=[], required=False, isList=True)

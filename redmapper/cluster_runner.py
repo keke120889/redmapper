@@ -75,6 +75,8 @@ class ClusterRunner(object):
         self.zredbkg_required = False
         self.use_colorbkg = False
         self.use_parfile = True
+        self.use_maxmag_in_matching = True
+        self.use_rmask_settings = True
         self._filename = None
 
         # Will want to add stuff to check that everything needed is present?
@@ -103,10 +105,16 @@ class ClusterRunner(object):
         self.beta = self.config.__getattribute__(self.runmode + '_beta')
 
         # This always uses the "percolation" settings, maybe?
-        self.rmask_0 = self.config.percolation_rmask_0
-        self.rmask_beta = self.config.percolation_rmask_beta
-        self.rmask_gamma = self.config.percolation_rmask_gamma
-        self.rmask_zpivot = self.config.percolation_rmask_zpivot
+        if self.use_rmask_settings:
+            self.rmask_0 = self.config.percolation_rmask_0
+            self.rmask_beta = self.config.percolation_rmask_beta
+            self.rmask_gamma = self.config.percolation_rmask_gamma
+            self.rmask_zpivot = self.config.percolation_rmask_zpivot
+        else:
+            self.rmask_0 = self.r0
+            self.rmask_beta = self.beta
+            self.rmask_gamma = self.config.percolation_rmask_gamma
+            self.rmask_zpivot = self.config.percolation_rmask_zpivot
 
         if self.config.percolation_lmask < 0.0:
             self.percolation_lmask = self.config.lval_reference
@@ -365,7 +373,10 @@ class ClusterRunner(object):
                 cctr += 1
 
                 # Note that the cluster is set with .z if available! (which becomes .redshift)
-                maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
+                if self.use_maxmag_in_matching:
+                    maxmag = cluster.mstar - 2.5*np.log10(self.limlum)
+                else:
+                    maxmag = None
 
                 if self.read_gals:
                     cluster.find_neighbors(self.maxrad, self.gals, megaparsec=True, maxmag=maxmag)
