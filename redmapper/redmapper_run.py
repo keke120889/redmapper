@@ -12,7 +12,6 @@ import healpy as hp
 from esutil.cosmology import Cosmo
 
 import multiprocessing
-from multiprocessing import Pool
 
 import types
 try:
@@ -113,7 +112,8 @@ class RedmapperRun(object):
         if seedfile is not None:
             # Use the specified seedfile if desired
             self.config.seedfile = seedfile
-        pool = Pool(processes=self.config.calib_run_nproc)
+        mp_ctx = multiprocessing.get_context("fork")
+        pool = mp_ctx.Pool(processes=self.config.calib_run_nproc)
         if self.percolation_only:
             retvals = pool.map(self._percolation_only_worker, pixels_split, chunksize=1)
             #retvals = list(map(self._percolation_only_worker, pixels_split))

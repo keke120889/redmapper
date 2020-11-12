@@ -12,7 +12,6 @@ import os
 import esutil
 
 import multiprocessing
-from multiprocessing import Pool
 
 import types
 try:
@@ -365,7 +364,8 @@ class BackgroundGenerator(object):
 
             worker_list.append(zbinmark)
 
-        pool = Pool(processes=self.config.calib_nproc)
+        mp_ctx = multiprocessing.get_context("fork")
+        pool = mp_ctx.Pool(processes=self.config.calib_nproc)
         retvals = pool.map(self._worker, worker_list, chunksize=1)
         pool.close()
         pool.join()
