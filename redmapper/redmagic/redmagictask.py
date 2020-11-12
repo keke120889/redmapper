@@ -1,7 +1,4 @@
 """Class to run redmagic, scanning over all pixels"""
-
-from __future__ import division, absolute_import, print_function
-
 import os
 import numpy as np
 import glob

@@ -1,8 +1,5 @@
 """Class to compute zreds on a single pixel, for distributed runs.
 """
-
-from __future__ import division, absolute_import, print_function
-
 import os
 import numpy as np
 import glob

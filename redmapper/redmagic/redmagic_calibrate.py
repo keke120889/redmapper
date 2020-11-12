@@ -1,8 +1,4 @@
 """Classes for calibrating a redMaGiC parameter file."""
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 from collections import OrderedDict
 import os
 import numpy as np
@@ -542,7 +538,7 @@ class RedmagicCalibrator(object):
             z_areas = astr.area[aind]
 
             volume = np.zeros(zbins.size)
-            for j in xrange(zbins.size):
+            for j in range(zbins.size):
                 volume[j] = (self.config.cosmo.V(zbins[j] - self.config.redmagic_calib_zbinsize/2.,
                                                  zbins[j] + self.config.redmagic_calib_zbinsize/2.) *
                                   (z_areas[j] / 41252.961))
@@ -563,12 +559,12 @@ class RedmagicCalibrator(object):
             test_areas = astr.area[aind]
 
             test_vol = np.zeros(nodes.size)
-            for j in xrange(nodes.size):
+            for j in range(nodes.size):
                 test_vol[j] = (self.config.cosmo.V(nodes[j] - self.config.redmagic_calib_zbinsize/2.,
                                                    nodes[j] + self.config.redmagic_calib_zbinsize/2.) *
                                (test_areas[j] / 41252.961))
 
-            for j in xrange(nodes.size):
+            for j in range(nodes.size):
                 zrange = [nodes[j] - self.config.redmagic_calib_zbinsize/2.,
                           nodes[j] + self.config.redmagic_calib_zbinsize/2.]
                 if j == 0:
@@ -614,7 +610,7 @@ class RedmagicCalibrator(object):
                 self.config.logger.info("Fitting with afterburner...")
 
                 # Let's look at 5 iterations here...
-                for k in xrange(5):
+                for k in range(5):
                     self.config.logger.info("Afterburner iteration %d" % (k))
                     # Fit the bias and eratio...
                     biasvals, eratiovals = rmfitter.fit_bias_eratio(cmaxvals, biasvals, eratiovals)

@@ -3,10 +3,6 @@ model, for use in the first part of training before a red-sequence model has
 been found.
 
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import numpy as np
 import esutil
@@ -90,7 +86,7 @@ class RunColormem(ClusterRunner):
         self.cat.add_fields([('redcolor', 'f4', self.config.nmag - 1)])
 
         redmodel = Entry.from_fits_file(self.config.redgalmodelfile)
-        for j in xrange(self.config.nmag - 1):
+        for j in range(self.config.nmag - 1):
             spl = CubicSpline(redmodel.nodes, redmodel.meancol[:, j])
             self.cat.redcolor[:, j] = spl(self.cat.z)
 

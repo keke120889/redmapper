@@ -2,10 +2,6 @@
 
 This file contains classes for reading and using geometry masks.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import esutil
 import fitsio
 import healpy as hp
@@ -243,7 +239,7 @@ class Mask(object):
         maskgals.zwt = (1. / (np.sqrt(2.*np.pi) * self.config.maskgal_zred_err)) * np.exp(-(maskgals.dzred**2.) / (2.*self.config.maskgal_zred_err**2.))
 
         # And we need the radial function for each set of samples
-        for j in xrange(self.config.maskgal_nsamples):
+        for j in range(self.config.maskgal_nsamples):
             indices = np.arange(j * self.config.maskgal_ngals,
                                 (j + 1) * self.config.maskgal_ngals)
 

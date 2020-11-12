@@ -2,10 +2,6 @@
 
 This file contains the classes for reading, using, and making galaxy tables.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import esutil
 from esutil.htm import Matcher
@@ -268,7 +264,7 @@ class GalaxyCatalog(Catalog):
             ipring_coarse = hp.ang2pix(nside, theta, phi)
             inhpix, = np.where(ipring_coarse == _hpix[0])
 
-            for i in xrange(boundaries.shape[1]):
+            for i in range(boundaries.shape[1]):
                 pixint = hp.query_disc(nside_cutref, boundaries[:, i], np.radians(border), inclusive=True, fact=8)
                 inhpix = np.append(inhpix, pixint)
             inhpix = np.unique(inhpix)
@@ -435,26 +431,13 @@ def get_subpixel_indices(galtable, hpix=[], border=0.0, nside=0):
         # now we need to find the extra boundary...
         boundaries = hp.boundaries(nside, hpix[0], step=galtable.nside/nside)
         inhpix = galtable.hpix[indices]
-        for i in xrange(boundaries.shape[1]):
+        for i in range(boundaries.shape[1]):
             pixint = hp.query_disc(galtable.nside, boundaries[:, i],
                                    border*np.pi/180., inclusive=True, fact=8)
             inhpix = np.append(inhpix, pixint)
         inhpix = np.unique(inhpix)
         _, indices = esutil.numpy_util.match(inhpix, galtable.hpix)
 
-    """
-    indices, = np.where(ipring_big == hpix)
-    if border > 0.0:
-        # now we need to find the extra boundary...
-        boundaries = hp.boundaries(nside, hpix, step=galtable.nside/nside)
-        inhpix = galtable.hpix[indices]
-        for i in xrange(boundaries.shape[1]):
-            pixint = hp.query_disc(galtable.nside, boundaries[:, i],
-                                   border*np.pi/180., inclusive=True, fact=8)
-            inhpix = np.append(inhpix, pixint)
-        inhpix = np.unique(inhpix)
-        _, indices = esutil.numpy_util.match(inhpix, galtable.hpix)
-        """
     return indices
 
 class FakeMaskConfig(object):

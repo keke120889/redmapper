@@ -1,9 +1,5 @@
 """Class to implement the zero-finding algorithm with nfw weights.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import numpy as np
 from . import _solver_nfw_pywrap
 

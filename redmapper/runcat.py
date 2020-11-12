@@ -1,9 +1,5 @@
 """Class to compute richness/redshifts for a set of ra/dec/z positions.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import numpy as np
 import esutil

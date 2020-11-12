@@ -1,8 +1,4 @@
 """Class to generate redmagic randoms"""
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import os
 import copy
 import numpy as np
@@ -116,7 +112,7 @@ class RedmagicGenerateRandoms(object):
             # inefficient, but it preserves the redshift distribution.
 
             zctr = 0
-            for i in xrange(tempcat.size):
+            for i in range(tempcat.size):
                 if zz[zctr] < zmax[i]:
                     # This redshift is okay!
                     tempcat.z[i] = zz[zctr]

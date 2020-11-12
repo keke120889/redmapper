@@ -1,9 +1,6 @@
 """Miscellaneous methods and classes for redmapper.
 """
 
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 # miscellaneous utilities and functions
 
 import numpy as np
@@ -914,7 +911,7 @@ def sample_from_pdf(f, ran, step, nsamp, **kwargs):
     rand = (np.random.uniform(size=nsamp) * x.size).astype(np.int32)
 
     samples = np.zeros(nsamp)
-    for i in xrange(nsamp):
+    for i in range(nsamp):
         test, = np.where(cdfi >= rand[i])
         samples[i] = x[test[0]]
 
@@ -1186,7 +1183,7 @@ def get_hpmask_subpix_indices(submask_nside, submask_hpix, submask_border, nside
     if submask_border > 0.0:
         boundaries = hp.boundaries(submask_nside, submask_hpix, step=nside_cutref/submask_nside)
         # These are all the pixels that touch the boundary
-        for i in xrange(boundaries.shape[1]):
+        for i in range(boundaries.shape[1]):
             pixint = hp.query_disc(nside_cutref, boundaries[:, i],
                                    np.radians(submask_border), inclusive=True, fact=8)
             inhpix = np.append(inhpix, pixint)
@@ -1249,7 +1246,7 @@ def get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, cove
         extrapix = np.zeros(0, dtype=np.int64)
 
         # These are pixels that touch the boundary
-        for i in xrange(boundaries.shape[1]):
+        for i in range(boundaries.shape[1]):
             pixint = hp.query_disc(nside_testing, boundaries[:, i],
                                    np.radians(subpix_border), inclusive=True, fact=8)
             extrapix = np.append(extrapix, pixint)

@@ -2,10 +2,6 @@
 
 This file contains classes to describe the b(x) background terms using colors only.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import numpy as np
 import esutil
@@ -83,7 +79,7 @@ class ColorBackground(object):
                 # First do the refmag
                 ncolbins = obkg.colbins.size
                 bc_new = np.zeros((nrefmagbins, ncolbins))
-                for i in xrange(ncolbins):
+                for i in range(ncolbins):
                     bc_new[:, i] = np.clip(interpol(obkg.bc[:, i], obkg.refmagbins, refmagbins), 0.0, None)
 
                 bc = bc_new.copy()
@@ -93,13 +89,13 @@ class ColorBackground(object):
                 ncolbins = colbins.size
 
                 bc_new = np.zeros((nrefmagbins, ncolbins))
-                for j in xrange(nrefmagbins):
+                for j in range(nrefmagbins):
                     bc_new[j, :] = np.clip(interpol(bc[j, :], obkg.colbins, colbins), 0.0, None)
 
                 n = np.sum(bc, axis=1) * (colbinsize / obkg.colbinsize)
 
                 sigma_g = bc_new.copy()
-                for j in xrange(ncolbins):
+                for j in range(ncolbins):
                     sigma_g[:, j] = bc_new[:, j] / areas
 
                 self.bkgs[key] = {'col1': iind,
@@ -121,8 +117,8 @@ class ColorBackground(object):
                 ncol1bins = obkg.col1bins.size
                 ncol2bins = obkg.col2bins.size
                 bc_new = np.zeros((nrefmagbins, ncol2bins, ncol1bins))
-                for i in xrange(ncol1bins):
-                    for j in xrange(ncol2bins):
+                for i in range(ncol1bins):
+                    for j in range(ncol2bins):
                         bc_new[:, j, i] = np.clip(interpol(obkg.bc[:, j, i], obkg.refmagbins, refmagbins), 0.0, None)
 
                 bc = bc_new.copy()
@@ -132,8 +128,8 @@ class ColorBackground(object):
                 ncol1bins = col1bins.size
 
                 bc_new = np.zeros((nrefmagbins, ncol2bins, ncol1bins))
-                for j in xrange(ncol2bins):
-                    for k in xrange(nrefmagbins):
+                for j in range(ncol2bins):
+                    for k in range(nrefmagbins):
                         bc_new[k, j, :] = np.clip(interpol(bc[k, j, :], obkg.col1bins, col1bins), 0.0, None)
 
                 bc = bc_new.copy()
@@ -142,8 +138,8 @@ class ColorBackground(object):
                 ncol2bins = col2bins.size
 
                 bc_new = np.zeros((nrefmagbins, ncol2bins, ncol1bins))
-                for i in xrange(ncol1bins):
-                    for k in xrange(nrefmagbins):
+                for i in range(ncol1bins):
+                    for k in range(nrefmagbins):
                         bc_new[k, :, i] = np.clip(interpol(bc[k, :, i], obkg.col2bins, col2bins), 0.0, None)
 
                 temp = np.sum(bc_new, axis=1) * colbinsize
@@ -151,8 +147,8 @@ class ColorBackground(object):
 
                 sigma_g = bc_new.copy()
 
-                for j in xrange(ncol1bins):
-                    for k in xrange(ncol2bins):
+                for j in range(ncol1bins):
+                    for k in range(ncol2bins):
                         sigma_g[:, k, j] = bc_new[:, k, j] / areas
 
                 self.bkgs[key] = {'col1': iind,
@@ -352,7 +348,7 @@ class ColorBackgroundGenerator(object):
 
         colranges = np.zeros((2, ncol))
         colbinsize = 0.1
-        for i in xrange(ncol):
+        for i in range(ncol):
             use, = np.where((col[:, i] > colrange_default[0]) &
                             (col[:, i] < colrange_default[1]) &
                             (gals.refmag < (self.config.limmag_ref - 0.5)))
@@ -375,8 +371,8 @@ class ColorBackgroundGenerator(object):
         else:
             areas = np.zeros(refmagbins.size) + self.config.area
 
-        for i in xrange(ncol):
-            for j in xrange(i, ncol):
+        for i in range(ncol):
+            for j in range(i, ncol):
                 if (i == j):
                     # diagonal
                     ncoldiag = np.ceil((colranges[1, i] - colranges[0, i]) / colbinsize).astype(np.int32)

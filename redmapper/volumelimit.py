@@ -1,9 +1,5 @@
 """Classes to describe the volume limit mask.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import healpy as hp
 import numpy as np
@@ -182,11 +178,11 @@ class VolumeLimitMask(object):
             else:
                 if map_ind < ref_ind:
                     # Need to go blueward
-                    for jj in xrange(ref_ind - 1, map_ind - 1, -1):
+                    for jj in range(ref_ind - 1, map_ind - 1, -1):
                         limmags_temp += (zredstr.c[zinds, jj] + zredstr.slope[zinds, jj] * (refmag_lim - zredstr.pivotmag[zinds]))
                 else:
                     # Need to go redward
-                    for jj in xrange(ref_ind, map_ind):
+                    for jj in range(ref_ind, map_ind):
                         limmags_temp -= (zredstr.c[zinds, jj] + zredstr.slope[zinds, jj] * (refmag_lim - zredstr.pivotmag[zinds]))
 
             # adjust zmax with zmax_temp

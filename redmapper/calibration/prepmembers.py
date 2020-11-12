@@ -1,8 +1,5 @@
 """Classes related to preparing members for the next calibration iteration
 """
-
-from __future__ import division, absolute_import, print_function
-
 import os
 import numpy as np
 import esutil

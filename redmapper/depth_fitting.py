@@ -1,10 +1,6 @@
 """Classes and routines for simple fits to galaxy catalog depth.
 
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import numpy as np
 import esutil
@@ -261,7 +257,7 @@ def calcErrorModel(_mag, _magErr, nSig=10.0, doPlot=False, nTrial=100, calcErr=F
 
         p0=p.copy()
 
-        for i in xrange(nTrial):
+        for i in range(nTrial):
             r=np.int32(np.random.random(gd.size)*gd.size)
             dFunc.mag = mag[gd[r]]
             dFunc.magErr = magErr[gd[r]]
@@ -297,7 +293,7 @@ def calcErrorModel(_mag, _magErr, nSig=10.0, doPlot=False, nTrial=100, calcErr=F
             alphaColor = np.zeros(4)
             alphaColor[0:3] = 0.5
             alphaColor[3] = 0.5
-            for i in xrange(nTrial):
+            for i in range(nTrial):
                 testPars['LIMMAG'] = limMags[i]
                 testPars['EXPTIME'] = expTimes[i]
                 testPars['FLUX1_LIM'] = 10.**((limMags[i] - dFunc.zp)/(-2.5))

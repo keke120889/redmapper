@@ -3,11 +3,6 @@
 This class describes the red-sequence parameterization, and contains various
 methods for using the model.
 """
-
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import esutil
 import numpy as np
@@ -132,7 +127,7 @@ class RedSequenceColorPar(object):
         if has_file:
             bvalues=np.zeros(nmag)
             try:
-                for i in xrange(nmag):
+                for i in range(nmag):
                     bvalues[i] = hdr['BVALUE%1d' % (i+1)]
             except:
                 bvalues[:] = 0.0
@@ -217,7 +212,7 @@ class RedSequenceColorPar(object):
             # c/slope
             self.c = np.zeros((nz,ncol),dtype=np.float64)
             self.slope = np.zeros((nz,ncol),dtype=np.float64)
-            for j in xrange(ncol):
+            for j in range(ncol):
                 jstring='%02d' % (j)
                 spl=CubicSpline(pars[0]['Z'+jstring],pars[0]['C'+jstring])
                 self.c[:,j] = spl(self.z)
@@ -229,15 +224,15 @@ class RedSequenceColorPar(object):
             self.covmat = np.zeros((ncol,ncol,nz),dtype=np.float64)
 
             # diagonals
-            for j in xrange(ncol):
+            for j in range(ncol):
                 spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,j,:])
                 self.sigma[j,j,:] = np.clip(spl(self.z), minsig, None)
 
                 self.covmat[j,j,:] = self.sigma[j,j,:]*self.sigma[j,j,:]
 
             # off-diagonals
-            for j in xrange(ncol):
-                for k in xrange(j+1,ncol):
+            for j in range(ncol):
+                for k in range(j+1,ncol):
                     spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,k,:])
                     self.sigma[j,k,:] = spl(self.z)
 
@@ -331,7 +326,7 @@ class RedSequenceColorPar(object):
         # luminosity function integrations
         self.lumnorm = np.zeros((self.lumrefmagbins.size,nz))
         self.alpha = alpha
-        for i in xrange(nz):
+        for i in range(nz):
             f = schechter_pdf(self.lumrefmagbins, alpha=self.alpha, mstar=self._mstar[i])
             self.lumnorm[:,i] = refmagbinsize*np.cumsum(f)
 
@@ -341,21 +336,21 @@ class RedSequenceColorPar(object):
             if (do_lupcorr):
                 bnmgy = bvalues*1e9
 
-                for i in xrange(nz):
+                for i in range(nz):
                     mags = np.zeros((self.refmagbins.size,nmag))
                     lups = np.zeros((self.refmagbins.size,nmag))
 
                     mags[:,ref_ind] = self.refmagbins
 
                     # go redward
-                    for j in xrange(ref_ind+1,nmag):
+                    for j in range(ref_ind+1,nmag):
                         mags[:,j] = mags[:,j-1] - (self.c[i,j-1]+self.slope[i,j-1]*(mags[:,ref_ind]-self.pivotmag[i]))
                     # blueward
-                    for j in xrange(ref_ind-1,-1,-1):
+                    for j in range(ref_ind-1,-1,-1):
                         mags[:,j] = mags[:,j+1] + (self.c[i,j]+self.slope[i,j]*(mags[:,ref_ind]-self.pivotmag[i]))
 
                     # and the luptitude conversion
-                    for j in xrange(nmag):
+                    for j in range(nmag):
                         flux = 10.**((mags[:,j]-22.5)/(-2.5))
                         lups[:,j] = 2.5*np.log10(1.0/bvalues[j]) - np.arcsinh(0.5*flux/bnmgy[j])/(0.4*np.log(10.0))
 
@@ -604,8 +599,8 @@ class RedSequenceColorPar(object):
         not_extrap, = np.where(~self.extrapolated)
 
         ctr = 1
-        for j in xrange(self.ncol):
-            for k in xrange(j + 1, self.ncol):
+        for j in range(self.ncol):
+            for k in range(j + 1, self.ncol):
                 ax = fig.add_subplot(nrow, 2, ctr)
                 ax.plot(self.z[: -1], self.sigma[j, k, : -1], 'r--')
                 ax.plot(self.z[not_extrap], self.sigma[j, k, not_extrap], 'r-')

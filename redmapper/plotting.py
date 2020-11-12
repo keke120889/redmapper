@@ -1,9 +1,5 @@
 """Classes for making pretty diagnostic plots for redmapper catalogs
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import os
 import numpy as np
 import fitsio
@@ -111,7 +107,7 @@ class SpecPlot(object):
 
         h, rev = esutil.stat.histogram(a, rev=True)
         mem_zmed = np.zeros(cat.size)
-        for i in xrange(h.size):
+        for i in range(h.size):
             if h[i] == 0:
                 continue
             i1a = rev[rev[i]: rev[i + 1]]
@@ -475,7 +471,7 @@ class NzPlot(object):
         indices = np.clip(np.searchsorted(areastr.z, zbins), 0, areastr.size - 1)
 
         vol = np.zeros(zbins.size)
-        for i in xrange(zbins.size):
+        for i in range(zbins.size):
             vol[i] = (self.config.cosmo.V(np.clip(zbins[i] - self.binsize/2., zrange[0], None),
                                           np.clip(zbins[i] + self.binsize/2., None, zrange[1])) *
                       (areastr.area[indices[i]] / 41252.961))

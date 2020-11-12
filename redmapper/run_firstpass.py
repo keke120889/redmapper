@@ -1,9 +1,5 @@
 """Class to run the first pass through a catalog for cluster finding.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import numpy as np
 import esutil
@@ -262,7 +258,7 @@ class RunFirstPass(ClusterRunner):
 
         zuse = cluster.z_init.copy()
 
-        for i in xrange(self.maxiter):
+        for i in range(self.maxiter):
             if bad:
                 done = True
                 continue

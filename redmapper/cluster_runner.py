@@ -6,10 +6,6 @@ passes, percolation, richness computation at existing positions/redshifts, etc.
 
 This class has numerous methods that are overridden by the derived classes.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import numpy as np
 import esutil
@@ -350,7 +346,7 @@ class ClusterRunner(object):
         else:
             nruniter = 1
 
-        for it in xrange(nruniter):
+        for it in range(nruniter):
 
             if self.doublerun:
                 # This mode allows two passes, with a sort in between.

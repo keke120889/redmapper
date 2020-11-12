@@ -1,10 +1,6 @@
 """Classes to describe a redmapper depth map.
 
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import healpy as hp
 import numpy as np

@@ -1,9 +1,5 @@
 """Class for calibrating the color-based red-sequence model.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import os
 import numpy as np
 import fitsio
@@ -125,7 +121,7 @@ class RedSequenceCalibrator(object):
         self.ctag = [None] * ncol
         self.zstag = [None] * ncol
         self.stag = [None] * ncol
-        for j in xrange(ncol):
+        for j in range(ncol):
             self.ztag[j] = 'z%02d' % (j)
             self.ctag[j] = 'c%02d' % (j)
             self.zstag[j] = 'zs%02d' % (j)
@@ -150,7 +146,7 @@ class RedSequenceCalibrator(object):
         self.pars.corr_slope_z = corrslopenodes
         self.pars.volume_factor_z = volnodes
 
-        for j in xrange(ncol):
+        for j in range(ncol):
             self.pars._ndarray[self.ztag[j]] = node_dict[self.ztag[j]]
             self.pars._ndarray[self.zstag[j]] = node_dict[self.zstag[j]]
 
@@ -268,7 +264,7 @@ class RedSequenceCalibrator(object):
         else:
             evals = None
 
-        for i in xrange(nodes.size):
+        for i in range(nodes.size):
             if i == 0:
                 zlo = nodes[0]
             else:
@@ -374,7 +370,7 @@ class RedSequenceCalibrator(object):
         # With binning, approximate the positions for starting the fit
         pivmags = np.zeros_like(self.pars.pivotmag_z)
 
-        for i in xrange(pivmags.size):
+        for i in range(pivmags.size):
             pivmags, _ = self._compute_startvals(self.pars.pivotmag_z, gals.z, gals.refmag, median=True)
 
         medfitter = MedZFitter(self.pars.pivotmag_z, gals.z, gals.refmag)
@@ -405,7 +401,7 @@ class RedSequenceCalibrator(object):
 
         galcolor = gals.galcol
 
-        for j in xrange(ncol):
+        for j in range(ncol):
             col = galcolor[:, j]
 
             # get the start values
@@ -465,12 +461,12 @@ class RedSequenceCalibrator(object):
             mind_indices = np.zeros(ncol, dtype=np.int32)
 
             c=0
-            for j in xrange(self.config.ref_ind, self.config.nmag):
+            for j in range(self.config.ref_ind, self.config.nmag):
                 col_indices[c] = j - 1
                 sign_indices[c] = -1
                 mind_indices[c] = j
                 c += 1
-            for j in xrange(self.config.ref_ind - 2, -1, -1):
+            for j in range(self.config.ref_ind - 2, -1, -1):
                 col_indices[c] = j
                 sign_indices[c] = 1
                 mind_indices[c] = j
@@ -487,7 +483,7 @@ class RedSequenceCalibrator(object):
             mind_indices = col_indices
 
         # One color at a time along the diagonal
-        for c in xrange(ncol):
+        for c in range(ncol):
             starttime = time.time()
 
             # The order is given by col_indices, which ensures that we work from the
@@ -597,8 +593,8 @@ class RedSequenceCalibrator(object):
 
         ncol = self.config.nmag - 1
 
-        for j in xrange(ncol):
-            for k in xrange(j + 1, ncol):
+        for j in range(ncol):
+            for k in range(j + 1, ncol):
                 self.pars.sigma[j, k, :] = self.config.calib_covmat_constant
                 self.pars.sigma[k, j, :] = self.pars.sigma[j, k, :]
 
@@ -645,7 +641,7 @@ class RedSequenceCalibrator(object):
         medwidthi = np.zeros_like(ci)
         gsig = np.zeros_like(ci)
 
-        for j in xrange(ncol):
+        for j in range(ncol):
             spl = CubicSpline(self.pars._ndarray[self.ztag[j]],
                               self.pars._ndarray[self.ctag[j]])
             ci[:, j] = spl(gals.z)
@@ -665,12 +661,12 @@ class RedSequenceCalibrator(object):
 
             mags[:, self.config.ref_ind] = gals.refmag
 
-            for j in xrange(self.config.ref_ind + 1, self.config.nmag):
+            for j in range(self.config.ref_ind + 1, self.config.nmag):
                 mags[:, j] = mags[:, j - 1] - (ci[:, j - 1] + si[:, j - 1] * (gals.refmag - pivotmags))
-            for j in xrange(self.config.ref_ind - 1, -1, -1):
+            for j in range(self.config.ref_ind - 1, -1, -1):
                 mags[:, j] = mags[:, j + 1] + (ci[:, j] + si[:, j] * (gals.refmag - pivotmags))
 
-            for j in xrange(self.config.nmag):
+            for j in range(self.config.nmag):
                 flux = 10.**((mags[:, j] - self.lupzp) / (-2.5))
                 lups[:, j] = 2.5 * np.log10(1.0 / self.config.b[j]) - np.arcsinh(0.5 * flux / self.bnmgy[j]) / (0.5 * np.log(10.0))
 
@@ -682,7 +678,7 @@ class RedSequenceCalibrator(object):
             lupcorr = np.zeros((gals.size, ncol))
 
         template_col = np.zeros((gals.size, ncol))
-        for j in xrange(ncol):
+        for j in range(ncol):
             template_col[:, j] = ci[:, j] + si[:, j] * (gals.refmag - pivotmags) + lupcorr[:, j]
 
         res = galcolor - template_col
@@ -692,8 +688,8 @@ class RedSequenceCalibrator(object):
         covmat_rank = np.zeros((ncol * ncol - ncol) // 2, dtype=np.int32)
         covmat_order = self.config.calib_color_order
         ctr = 0
-        for j in xrange(ncol):
-            for k in xrange(j + 1, ncol):
+        for j in range(ncol):
+            for k in range(j + 1, ncol):
                 covmat_rank[ctr] = bits[covmat_order[j]] + bits[covmat_order[k]]
                 ctr += 1
 
@@ -701,12 +697,12 @@ class RedSequenceCalibrator(object):
 
         full_covmats = self.pars.covmat_amp.copy()
 
-        for ctr in xrange(covmat_rank.size):
+        for ctr in range(covmat_rank.size):
             starttime = time.time()
 
             j = -1
             k = -1
-            for tctr in xrange(ncol):
+            for tctr in range(ncol):
                 if ((covmat_rank[ctr] & bits[tctr]) > 0):
                     if j < 0:
                         j = covmat_order[tctr]
@@ -887,7 +883,7 @@ class RedSequenceCalibrator(object):
         cvals[:], _ = self._compute_startvals(self.pars.corr_z, gals.z, gals.z - gals.zred, median=True)
 
         # Initial guess for bkg_cvals is trickier and not generalizable (sadly)
-        for i in xrange(self.pars.corr_slope_z.size):
+        for i in range(self.pars.corr_slope_z.size):
             if i == 0:
                 zlo = self.pars.corr_slope_z[0]
             else:
@@ -977,7 +973,7 @@ class RedSequenceCalibrator(object):
 
         zredstr = RedSequenceColorPar(self.config.parfile, zbinsize=0.005)
 
-        for j in xrange(self.config.nmag - 1):
+        for j in range(self.config.nmag - 1):
             fig = plt.figure(figsize=(10, 6))
             fig.clf()
 
@@ -1022,7 +1018,7 @@ class RedSequenceCalibrator(object):
 
 
         # There are two modes to plot
-        for mode in xrange(2):
+        for mode in range(2):
             if mode == 0:
                 zuse = ugals.z
                 dzuse = ugals.zred - ugals.z
@@ -1066,7 +1062,7 @@ class RedSequenceCalibrator(object):
                 zstr['delta'][i] = np.median(dzuse[use])
 
                 barr = np.zeros(ntrial)
-                for t in xrange(ntrial):
+                for t in range(ntrial):
                     r = np.random.choice(dzuse[use], size=use.size, replace=True)
                     barr[t] = np.median(r)
 

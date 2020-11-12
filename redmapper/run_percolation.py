@@ -1,8 +1,5 @@
 """Class to run the final (percolation) pass through a catalog for cluster finding.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
 from functools import reduce
 
 import fitsio
@@ -326,7 +323,7 @@ class RunPercolation(ClusterRunner):
 
         # now we iterate over the new center to get the redshift
 
-        for i in xrange(self.maxiter):
+        for i in range(self.maxiter):
             if cluster.redshift < 0.0:
                 bad = True
             if bad:
@@ -412,7 +409,7 @@ class RunPercolation(ClusterRunner):
         cluster.lambda_cent[0] = cluster.Lambda
         cluster.zlambda_cent[0] = cluster.z_lambda
         if cluster.ncent_good > 1:
-            for ce in xrange(1,cluster.ncent_good):
+            for ce in range(1,cluster.ncent_good):
                 cluster_temp = cluster.copy()
                 cluster_temp.ra = cluster.ra_cent[ce]
                 cluster_temp.dec = cluster.dec_cent[ce]
