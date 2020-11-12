@@ -1,9 +1,5 @@
 """Classes to compute cluster photometric redshifts (z_lambda) and perform corrections.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import numpy as np
 import scipy.optimize
 import scipy.integrate
@@ -102,7 +98,7 @@ class Zlambda(object):
         # When running in p(z) mode, we might need a second iteration to zero-in on
         # the peak redshift (because this has slightly greater sensitivity while
         # being a bit slower, which we don't always need).
-        for pz_iter in xrange(2):
+        for pz_iter in range(2):
             # skip second iteration if p(z) is converged
             if pzdone: break
 
@@ -284,7 +280,7 @@ class Zlambda(object):
         nsteps = 10
         steps = self.config.zlambda_parab_step * np.arange(nsteps) + z_lambda - self.config.zlambda_parab_step * (nsteps - 1) / 2
         likes = np.zeros(nsteps)
-        for i in xrange(nsteps):
+        for i in range(nsteps):
              likes[i] = self._bracket_fn(steps[i])
         fit = np.polyfit(steps, likes, 2)
 
@@ -539,7 +535,7 @@ class Zlambda(object):
         # Now compute for each of the bins
 
         ln_lkhd = np.zeros(self.config.npzbins)
-        for i in xrange(self.config.npzbins):
+        for i in range(self.config.npzbins):
             ln_lkhd[i] = -self._bracket_fn(pzbins[i])
 
         ln_lkhd = ln_lkhd - np.max(ln_lkhd)
@@ -653,7 +649,7 @@ class ZlambdaCorrectionPar(object):
             spl = CubicSpline(pars.slope_z, pars.scatter_true)
             self.scatter[0, :] = np.clip(spl(self.z), 0.001, None)
         else:
-            for i in xrange(self.niter):
+            for i in range(self.niter):
                 spl = CubicSpline(pars.offset_z, pars.offset_true[:, i])
                 self.offset[i, :] = spl(self.z)
 
@@ -702,7 +698,7 @@ class ZlambdaCorrectionPar(object):
         else:
             npzbins = pzbins.size
 
-        for i in xrange(self.niter):
+        for i in range(self.niter):
             correction = self.offset[i, :] + self.slope[i, :] * np.log(lam / self.zlambda_pivot)
             extra_err = np.interp(zlam, self.z, self.scatter[i, :])
 

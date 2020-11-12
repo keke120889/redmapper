@@ -1,8 +1,5 @@
 """Classes to calibrate the z_lambda afterburner
 """
-
-from __future__ import division, absolute_import, print_function
-
 import os
 import numpy as np
 import fitsio

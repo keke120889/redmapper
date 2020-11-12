@@ -3,10 +3,6 @@
 This file contains the main cluster and cluster catalog classes, including
 richness computation, etc.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import esutil
 import numpy as np

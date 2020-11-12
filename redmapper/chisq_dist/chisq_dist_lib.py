@@ -1,9 +1,5 @@
 """Routines for computing the chi-squared for the color-based red-sequence model.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import numpy as np
 from . import _chisq_dist_pywrap
 

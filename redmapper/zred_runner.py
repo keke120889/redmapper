@@ -1,10 +1,6 @@
 """Classes to run a galaxy catalog through zred galaxy redshift computation,
 using multiprocessing.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import numpy as np
 import copy
 import fitsio
@@ -13,7 +9,6 @@ import os
 import time
 
 import multiprocessing
-from multiprocessing import Pool
 
 import types
 try:
@@ -85,7 +80,8 @@ class ZredRunCatalog(object):
         inds = np.arange(0, ngal, nperproc)
         worker_list = [(ind, np.clip(ind + nperproc, None, ngal)) for ind in inds]
 
-        pool = Pool(processes=self.config.calib_nproc)
+        mp_ctx = multiprocessing.get_context("fork")
+        pool = mp_ctx.Pool(processes=self.config.calib_nproc)
         retvals = pool.map(self._worker, worker_list, chunksize=1)
         pool.close()
         pool.join()
@@ -223,7 +219,8 @@ class ZredRunPixels(object):
         starttime = time.time()
 
         if not self.single_process:
-            pool = Pool(processes=self.config.calib_nproc)
+            mp_ctx = multiprocessing.get_context("fork")
+            pool = mp_ctx.Pool(processes=self.config.calib_nproc)
             retvals = pool.map(self._worker, indices, chunksize=1)
             pool.close()
             pool.join()
@@ -232,7 +229,8 @@ class ZredRunPixels(object):
             self.total_galaxies = np.sum(self.galtable.ngals[indices])
             if (self.verbose):
                 self.config.logger.info("Computing zred for %d galaxies in %d pixels." % (self.total_galaxies, len(indices)))
-            pool = Pool(processes=1)
+            mp_ctx = multiprocessing.get_context("fork")
+            pool = mp_ctx.Pool(processes=1)
             retvals = pool.map(self._worker, indices, chunksize=1)
             pool.close()
             pool.join()

@@ -1,8 +1,4 @@
 """Class for making a redMaGiC galaxy selection."""
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 from collections import OrderedDict
 import os
 import numpy as np
@@ -48,7 +44,7 @@ class RedmagicSelector(object):
             # Number of modes is number of binary extentions
             self.n_modes = len(fits) - 1
 
-            for ext in xrange(self.n_modes):
+            for ext in range(self.n_modes):
                 data = Entry(fits[ext + 1].read())
 
                 try:

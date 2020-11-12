@@ -1,9 +1,5 @@
 """Classes related to calibrating the centering model
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import os
 import numpy as np
 import fitsio
@@ -494,11 +490,11 @@ class WcenCalibrator(object):
         m2 = np.zeros_like(m1)
         m3 = np.zeros_like(m1)
 
-        for i in xrange(ntrial):
+        for i in range(ntrial):
             r = np.random.rand(nmag)
             st = np.argsort(r)
 
-            for j in xrange(nlambdas):
+            for j in range(nlambdas):
                 u = st[0:lambdas[j] - 1]
                 st2 = np.argsort(mag[u])
 
@@ -513,7 +509,7 @@ class WcenCalibrator(object):
         mmstar3_mean = np.zeros(nlambdas)
         mmstar3_sigma = np.zeros(nlambdas)
 
-        for i in xrange(nlambdas):
+        for i in range(nlambdas):
             coeff = histoGauss(None, m1[i, :])
             mmstar1_mean[i] = coeff[1]
             mmstar1_sigma[i] = coeff[2]

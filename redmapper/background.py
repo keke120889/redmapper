@@ -3,10 +3,6 @@
 This file contains classes to describe the b(x) background terms for computing
 richness and other redmapper likelihoods.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import numpy as np
 import healpy as hp
@@ -16,7 +12,6 @@ import os
 import esutil
 
 import multiprocessing
-from multiprocessing import Pool
 
 import types
 try:
@@ -213,7 +208,7 @@ class ZredBackground(object):
 
         floor = np.min(obkg.sigma_g)
 
-        for i in xrange(nzredbins):
+        for i in range(nzredbins):
             sigma_g_new[:, i] = np.clip(interpol(obkg.sigma_g[:, i], obkg.refmagbins, refmagbins), floor, None)
 
         sigma_g = sigma_g_new.copy()
@@ -224,7 +219,7 @@ class ZredBackground(object):
 
         sigma_g_new = np.zeros((nrefmagbins, nzredbins))
 
-        for i in xrange(nrefmagbins):
+        for i in range(nrefmagbins):
             sigma_g_new[i, :] = np.clip(interpol(sigma_g[i, :], obkg.zredbins, zredbins), floor, None)
 
         self.zredbins = zredbins
@@ -353,7 +348,7 @@ class BackgroundGenerator(object):
         zedges = (np.exp(logrange[0]) + np.exp(logrange[1])) - np.exp(logrange[0] + np.arange(self.config.calib_nproc + 1) * logbinsize)
 
         worker_list = []
-        for i in xrange(self.config.calib_nproc):
+        for i in range(self.config.calib_nproc):
             ubins, = np.where((self.zbins < zedges[i]) & (self.zbins > zedges[i + 1]))
             gd, = np.where(ubins < self.zbins.size)
 
@@ -369,7 +364,8 @@ class BackgroundGenerator(object):
 
             worker_list.append(zbinmark)
 
-        pool = Pool(processes=self.config.calib_nproc)
+        mp_ctx = multiprocessing.get_context("fork")
+        pool = mp_ctx.Pool(processes=self.config.calib_nproc)
         retvals = pool.map(self._worker, worker_list, chunksize=1)
         pool.close()
         pool.join()
@@ -547,7 +543,7 @@ class BackgroundGenerator(object):
             value = np.ones(use.size)
 
             field = cic(value, chisqpos, self.nchisqbins, refmagpos, self.nrefmagbins, isolated=True)
-            for j in xrange(self.nchisqbins):
+            for j in range(self.nchisqbins):
                 sigma_g_sub[:, j, i] = field[:, j] / (self.areas * binsizes)
 
             lnchisqs = np.log(chisqs[:, i])
@@ -563,7 +559,7 @@ class BackgroundGenerator(object):
 
             field2 = cic(value, lnchisqpos, self.nlnchisqbins, refmagpos, self.nrefmagbins, isolated=True)
 
-            for j in xrange(self.nlnchisqbins):
+            for j in range(self.nlnchisqbins):
                 sigma_lng_sub[:, j, i] = field2[:, j] / (self.areas * lnbinsizes)
 
         self.config.logger.info("Finished %.2f < z < %.2f in %.1f seconds" % (zbins_use[0], zbins_use[-1],

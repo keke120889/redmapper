@@ -1,6 +1,3 @@
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import matplotlib
 matplotlib.use('Agg')
 
@@ -62,7 +59,7 @@ class SelectSpecRedTestCase(unittest.TestCase):
         # looks like it works better.  An "upgrade" from the IDL code.
         # Also tweaks with new fitter.
         testing.assert_almost_equal(redgalmodel['meancol_scatter'][0][:, 1],
-                                    np.array([0.0299095,  0.04490384, 0.02395549]), 4)
+                                    np.array([0.0299095,  0.04490384, 0.02395549]), 3)
         testing.assert_almost_equal(redgalmodel['medcol'][0][:, 1],
                                     np.array([0.7838367, 1.0860928, 1.4521087]), 4)
         testing.assert_almost_equal(redgalmodel['medcol_width'][0][:, 1],

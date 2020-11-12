@@ -1,9 +1,5 @@
 """Select red galaxies from the spectroscopic catalog
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import os
 import numpy as np
 import fitsio
@@ -107,7 +103,7 @@ class SelectSpecRedGalaxies(object):
         # Loop over modes
         nmodes = self.config.calib_colormem_colormodes.size
 
-        for m in xrange(nmodes):
+        for m in range(nmodes):
             j = self.config.calib_colormem_colormodes[m]
 
             self.config.logger.info("Working on color %d" % (j))
@@ -198,7 +194,7 @@ class SelectSpecRedGalaxies(object):
 
         mark = np.zeros(gals.size, dtype=np.bool)
 
-        for m in xrange(nmodes):
+        for m in range(nmodes):
             u, = np.where((gals.z > zbounds[m]) &
                           (gals.z < zbounds[m + 1]))
             j = self.config.calib_colormem_colormodes[m]
@@ -235,7 +231,7 @@ class SelectSpecRedGalaxies(object):
         # And make some plots!
         import matplotlib.pyplot as plt
 
-        for m in xrange(nmodes):
+        for m in range(nmodes):
             j = self.config.calib_colormem_colormodes[m]
 
             fig = plt.figure(1, figsize=(8, 6))

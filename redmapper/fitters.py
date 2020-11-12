@@ -3,11 +3,6 @@
 This file contains the classes used to fit the red sequence model, including
 the median relations, mean relations, scatter, covariance, etc.
 """
-
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import numpy as np
 from scipy import special
 import scipy.optimize
@@ -599,7 +594,7 @@ class RedSequenceOffDiagonalFitter(object):
 
             # Check for negative eigenvalues
             if self._full_covmats is not None:
-                for i in xrange(self._nodes.size):
+                for i in range(self._nodes.size):
                     a = self._full_covmats[:, :, i]
                     d = np.linalg.eigvalsh(a)
                     if (np.min(d) < self._min_eigenvalue):

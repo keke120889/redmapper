@@ -5,10 +5,6 @@ implementations of different centering algorithms.  The main algorithm is
 CenteringWcenZred, but others are included as part of the centering training
 procedure.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import esutil
 import numpy as np
@@ -191,7 +187,7 @@ class CenteringWcenZred(Centering):
         # Put a floor on w when we have a strange candidate at the edge that doesn't
         # match any good galaxies
         w = np.zeros(use.size) + 1e-3
-        for i in xrange(use.size):
+        for i in range(use.size):
             # need to filter on r_lambda...
             subgal, = np.where(i1 == i)
             if subgal.size > 0:
@@ -291,7 +287,7 @@ class CenteringWcenZred(Centering):
 
             self.ngood = good.size
 
-            for i in xrange(self.ngood):
+            for i in range(self.ngood):
                 Pcen0 = Pcen_basic[good[i]]
                 Pcen_basic[good[i]] = 0.0
                 Pcen_unnorm[good[i]] = Pcen0 * np.prod(1.0 - Pcen_basic[good])

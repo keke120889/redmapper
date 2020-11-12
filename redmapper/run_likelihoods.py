@@ -1,9 +1,5 @@
 """Class to run the second (likelihood) pass through a catalog for cluster finding.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import fitsio
 import numpy as np
 import esutil

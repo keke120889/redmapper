@@ -1,6 +1,3 @@
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import matplotlib
 matplotlib.use('Agg')
 
@@ -45,7 +42,7 @@ class RedSequenceCalTestCase(unittest.TestCase):
 
         # make sure that the pars and the plots were made
         self.assertTrue(os.path.isfile(config.parfile))
-        for i in xrange(config.nmag - 1):
+        for i in range(config.nmag - 1):
             plotfile = os.path.join(config.outpath, config.plotpath, '%s_%s-%s.png' % (config.d.outbase, config.bands[i], config.bands[i + 1]))
             self.assertTrue(plotfile)
         plotfile = os.path.join(config.outpath, config.plotpath, '%s_zred_plots.png' % (config.d.outbase))

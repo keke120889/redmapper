@@ -395,7 +395,9 @@ class RandomWeigher(object):
 
         fitter = MedZFitter(nodes, xvals, yvals)
         p0 = np.ones(nodes.size)
-        pars = fitter.fit(p0)
+        # Do an extra fit here for stability
+        pars0 = fitter.fit(p0)
+        pars = fitter.fit(pars0)
 
         spl = CubicSpline(nodes, pars)
         corrs = np.clip(spl(astr.z), 0.0, 1.0)

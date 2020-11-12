@@ -2,10 +2,6 @@
 
 This file contains the generic redmapper configuration class and associated classes.
 """
-
-from __future__ import division, absolute_import, print_function
-from past.builtins import xrange
-
 import yaml
 import fitsio
 import copy
