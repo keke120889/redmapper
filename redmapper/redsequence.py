@@ -192,7 +192,7 @@ class RedSequenceColorPar(object):
                 pivotmag_name = 'REFMAG'
 
             # mark the extrapolated values
-            self.extrapolated = np.zeros(nz,dtype=np.bool_)
+            self.extrapolated = np.zeros(nz,dtype=bool)
             loz,=np.where(self.z < np.min(pars[pivotmag_name+'_Z']))
             hiz,=np.where(self.z > np.max(pars[pivotmag_name+'_Z']))
             if (loz.size > 0) : self.extrapolated[loz] = True

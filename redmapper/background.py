@@ -360,7 +360,7 @@ class BackgroundGenerator(object):
 
             ubins = ubins[gd]
 
-            zbinmark = np.zeros(self.zbins.size, dtype=np.bool)
+            zbinmark = np.zeros(self.zbins.size, dtype=bool)
             zbinmark[ubins] = True
 
             worker_list.append(zbinmark)
