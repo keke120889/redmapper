@@ -9,9 +9,9 @@ from esutil.cosmology import Cosmo
 import numpy as np
 import re
 import os
+import logging
 
 from .cluster import cluster_dtype_base, member_dtype_base
-from .utilities import Logger
 from ._version import __version__
 
 class ConfigField(object):
@@ -207,11 +207,14 @@ class Configuration(object):
 
     outpath = ConfigField(default='./', required=True)
     plotpath = ConfigField(default='', required=True)
+    logpath = ConfigField(default='logs', required=True)
 
     border = ConfigField(default=0.0, required=True)
     hpix = ConfigField(default=[], required=True, isArray=True)
     nside = ConfigField(default=0, required=True)
     galfile_pixelized = ConfigField(required=True)
+
+    printlogging = ConfigField(default=True, required=True)
 
     nmag = ConfigField(required=True)
     area = ConfigField(required=True)
@@ -413,6 +416,8 @@ class Configuration(object):
         RuntimeError:
            When invalid configs are used
         """
+        self._file_logging_started = False
+
         self._reset_vars()
 
         # First, read in the yaml file
@@ -424,11 +429,16 @@ class Configuration(object):
         # And now set the config variables
         self._set_vars_from_dict(confdict)
 
-        # Get the logger
-        self.logger = Logger()
-
         if outpath is not None:
             self.outpath = outpath
+
+        # Get the logger
+        if len(self.hpix) == 1:
+            logname = f'redmapper-{self.hpix[0]}'
+        else:
+            logname = 'redmapper'
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(logname)
 
         # validate the galfile and refmag
         type(self).__dict__['galfile'].validate('galfile')
@@ -523,9 +533,9 @@ class Configuration(object):
 
         # Finally, once everything is here, we can make paths
         if not os.path.exists(self.outpath):
-            os.makedirs(self.outpath)
+            os.makedirs(self.outpath, exist_ok=True)
         if not os.path.exists(os.path.join(self.outpath, self.plotpath)):
-            os.makedirs(os.path.join(self.outpath, self.plotpath))
+            os.makedirs(os.path.join(self.outpath, self.plotpath), exist_ok=True)
 
     def validate(self):
         """
@@ -548,6 +558,44 @@ class Configuration(object):
         Return a copy of the configuration struct
         """
         return copy.copy(self)
+
+    def start_file_logging(self, filename=None):
+        """
+        Start logging to a file.
+
+        Parameters
+        ----------
+        filename : `str`, optional
+            Optional filename, else will be determined from outbase and hpix.
+        """
+        if self._file_logging_started:
+            return
+
+        if self.printlogging:
+            self.logger.info("Logging is set to be to console only.")
+            return
+
+        if not os.path.exists(os.path.join(self.outpath, self.logpath)):
+            os.makedirs(os.path.join(self.outpath, self.logpath), exist_ok=True)
+
+        if filename is None:
+            logfilename = os.path.join(self.outpath, self.logpath,
+                                       f'redmapper_{self.d.outbase}_{self.d.hpix[0]:04}.log')
+        else:
+            logfilename = os.path.join(self.outpath, self.logpath, os.path.basename(filename))
+
+        handler = logging.FileHandler(filename=logfilename)
+        self.logger.addHandler(handler)
+
+        self._file_logging_started = True
+
+    def stop_file_logging(self):
+        """Stop logging to the file.
+        """
+        handlers = self.logger.handlers[:]
+        for handler in handlers:
+            handler.close()
+            self.logger.removeHandler(handler)
 
     def _reset_vars(self):
         """

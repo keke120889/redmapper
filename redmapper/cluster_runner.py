@@ -306,6 +306,7 @@ class ClusterRunner(object):
         Loop over all clusters and perform computations as described in
         self._process_cluster(cluster) on each cluster.
         """
+        self.config.start_file_logging()
 
         # General setup
         if not self._setup():

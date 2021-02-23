@@ -58,6 +58,8 @@ l           Output path.  Default is None, use same absolute
         rng : `np.random.RandomState`, optional
            Pre-set random number generator.  Default is None.
         """
+        self.config.start_file_logging()
+
         if rng is None:
             rng = np.random.RandomState()
 
@@ -166,3 +168,5 @@ l           Output path.  Default is None, use same absolute
             randfile = self.config.redmapper_filename('redmagic_%s_randoms' % (mode), withversion=True)
 
             rand_generator.generate_randoms(_n_randoms, randfile, clobber=clobber, rng=rng)
+
+        self.config.stop_file_logging()

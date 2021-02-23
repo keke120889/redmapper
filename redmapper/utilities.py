@@ -1097,39 +1097,6 @@ def read_members(catfile):
 
     return GalaxyCatalog.from_fits_file(memfile)
 
-######################
-## A simple logger
-######################
-
-# At the moment, this doesn't take a filename, it just prints with a flush.
-
-class Logger(object):
-    """
-    A class for a simple logger with flushed output.
-    """
-    def __init__(self):
-        """
-        Instantiate a Logger
-        """
-        if sys.version_info[: 2] < (3, 3):
-            self.py33 = False
-        else:
-            self.py33 = True
-
-    def info(self, message):
-        """
-        Log an informational message.
-
-        Parameters
-        ----------
-        message: `str`
-           Message to output
-        """
-        if self.py33:
-            print(message, flush=True)
-        else:
-            print(message)
-            sys.stdout.flush()
 
 def getMemoryString(location):
     """

@@ -87,6 +87,7 @@ class RedmapperRun(object):
            Filename for the final consolidated likelihood file
            (if consolidate_like == True)
         """
+        self.config.start_file_logging()
 
         self.specmode = specmode
         self.seedfile = seedfile
