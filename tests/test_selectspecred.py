@@ -53,7 +53,7 @@ class SelectSpecRedTestCase(unittest.TestCase):
         self.assertEqual(redgals.size, 1200)
 
         testing.assert_almost_equal(redgalmodel['meancol'][0][:, 1],
-                                    np.array([0.78079545, 1.0870565,  1.4724078]), 4)
+                                    np.array([0.78079545, 1.0870565,  1.4724078]), 3)
 
         # These numbers have been updated for the symmetric truncation cut, which
         # looks like it works better.  An "upgrade" from the IDL code.
