@@ -269,7 +269,7 @@ class GalaxyCatalog(Catalog):
             # Trim to be closer to the border if necessary...
 
             nside_cutref = 512
-            boundaries = hp.boundaries(nside, _hpix[0], step=nside_cutref/nside)
+            boundaries = hp.boundaries(nside, _hpix[0], step=nside_cutref // nside)
             theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
             ipring_coarse = hp.ang2pix(nside, theta, phi)
             inhpix, = np.where(ipring_coarse == _hpix[0])
@@ -433,7 +433,7 @@ def get_subpixel_indices(galtable, hpix=[], border=0.0, nside=0):
             raise NotImplementedError("Cannot do boundary around a pixel list.")
 
         # now we need to find the extra boundary...
-        boundaries = hp.boundaries(nside, hpix[0], step=galtable.nside/nside)
+        boundaries = hp.boundaries(nside, hpix[0], step=galtable.nside // nside)
         inhpix = galtable.hpix[indices]
         for i in range(boundaries.shape[1]):
             pixint = hp.query_disc(galtable.nside, boundaries[:, i],
