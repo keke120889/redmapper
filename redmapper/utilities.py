@@ -1189,7 +1189,10 @@ def get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, cove
     # First, we need to know which pixel(s) from nside_coverage are covered by
     # subpix_hpix
 
-    if subpix_nside == coverage_nside:
+    if subpix_nside == 0:
+        # Special case for the full sky
+        return None
+    elif subpix_nside == coverage_nside:
         covpix = hp.ring2nest(subpix_nside, subpix_hpix)
     elif subpix_nside > coverage_nside:
         # what pixels are these contained in?
