@@ -781,7 +781,7 @@ class GalaxyCatalogMaker(object):
             # Figure out which hpixels are there
             files = sorted(glob.glob('%s/%s_???????.fit' % (self.outpath, self.outbase_nopath)))
             for f in files:
-                m = re.search('_(\d{7})', f)
+                m = re.search(r'_(\d{7})', f)
                 if m is None:
                     raise RuntimeError("Malformed filename for pixel file: %s" % (f))
 

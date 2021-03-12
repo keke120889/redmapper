@@ -83,7 +83,7 @@ class GenerateRandoms(object):
 
         info_dict = {}
         # Get outbase from self.config.randfile
-        m = re.search('(.*)\_master\_table.fit$', self.config.randfile)
+        m = re.search(r'(.*)\_master\_table.fit$', self.config.randfile)
         if m is None:
             raise RuntimeError("Config has randfile of incorrect format.  Must end in _master_table.fit")
         outbase = m.groups()[0]

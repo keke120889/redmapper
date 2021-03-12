@@ -80,7 +80,7 @@ class RedmapperConsolidateTask(object):
         self.config.logger.info("Found %d catalog files in %s" % (len(catfiles), self.config.outpath))
 
         # Extract the nside that was run
-        m = re.search('_(\d+)_(\d\d\d\d\d)_', catfiles[0])
+        m = re.search(r'_(\d+)_(\d\d\d\d\d)_', catfiles[0])
         if m is None:
             raise RuntimeError("Could not understand filename for %s" % (catfiles[0]))
 
@@ -128,7 +128,7 @@ class RedmapperConsolidateTask(object):
 
             # Extract pixnum from name
 
-            m = re.search('_(\d+)_(\d\d\d\d\d)_', catfile)
+            m = re.search(r'_(\d+)_(\d\d\d\d\d)_', catfile)
             if m is None:
                 raise RuntimeError("Could not understand filename for %s" % (catfile))
 
@@ -328,7 +328,7 @@ class RuncatConsolidateTask(object):
         self.config.logger.info("Found %d catalog files in %s" % (len(catfiles), self.config.outpath))
 
         # Extract the nside that was run
-        m = re.search('_(\d+)_(\d\d\d\d\d)_', catfiles[0])
+        m = re.search(r'_(\d+)_(\d\d\d\d\d)_', catfiles[0])
         if m is None:
             raise RuntimeError("Could not understand filename for %s" % (catfiles[0]))
 
@@ -351,7 +351,7 @@ class RuncatConsolidateTask(object):
 
             # Extract pixnum from name
 
-            m = re.search('_(\d+)_(\d\d\d\d\d)_', catfile)
+            m = re.search(r'_(\d+)_(\d\d\d\d\d)_', catfile)
             if m is None:
                 raise RuntimeError("Could not understand filename for %s" % (catfile))
 

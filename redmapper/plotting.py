@@ -116,7 +116,7 @@ class SpecPlot(object):
         return self.plot_values(mem_zmed, cat.z_lambda, cat.z_lambda_e, title=title,
                                 figure_return=figure_return, withversion=withversion)
 
-    def plot_values(self, z_spec, z_phot, z_phot_e, name='z_\lambda', specname='z_{\mathrm{spec}}',
+    def plot_values(self, z_spec, z_phot, z_phot_e, name=r'z_\lambda', specname=r'z_{\mathrm{spec}}',
                     title=None, figure_return=False, calib_zrange=None, withversion=False):
         """
         Make a pretty spectrscopic plot from an arbitrary list of values.
@@ -130,7 +130,7 @@ class SpecPlot(object):
         z_phot_e: `np.array`
            Float array of photometric redshift errors
         name: `str`, optional
-           Name of photo-z field for label.  Default is 'z_\lambda'.
+           Name of photo-z field for label.  Default is 'z_lambda'.
         title: `str`, optional
            Title string.  Default is None
         figure_return: `bool`, optional

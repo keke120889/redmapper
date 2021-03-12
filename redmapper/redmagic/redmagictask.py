@@ -133,7 +133,7 @@ l           Output path.  Default is None, use same absolute
                     specplot = SpecPlot(self.config)
                     fig = specplot.plot_values(gals.zspec[okspec], gals.zredmagic[okspec],
                                                gals.zredmagic_e[okspec],
-                                               name='z_{\mathrm{redmagic}}',
+                                               name=r'z_{\mathrm{redmagic}}',
                                                title='%s: %3.1f-%02d' %
                                                (mode, selector.calib_data[mode].etamin,
                                                 int(selector.calib_data[mode].n0)),
