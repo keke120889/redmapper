@@ -11,6 +11,7 @@ import healpy as hp
 import os
 import glob
 import re
+import tempfile
 from collections.abc import Iterable
 
 from .catalog import Catalog, Entry
@@ -85,7 +86,8 @@ class GalaxyCatalog(Catalog):
         self.depth = 10 if 'depth' not in kwargs else kwargs['depth']
 
     @classmethod
-    def from_galfile(cls, filename, zredfile=None, nside=0, hpix=[], border=0.0, truth=False):
+    def from_galfile(cls, filename, zredfile=None, nside=0, hpix=[], border=0.0, truth=False,
+                     use_tempfile=False, refmag_range=[-1000.0, 1000.0], chisq_max=1e100):
         """
         Generate a GalaxyCatalog from a redmapper "galfile."
 
@@ -106,6 +108,12 @@ class GalaxyCatalog(Catalog):
            Border around hpix (in degrees) to read in.  Default is 0.0.
         truth: `bool`, optional
            Read in truth information if available (e.g. mocks)?  Default is False.
+        use_tempfile : `bool`, optional
+            Use a tempfile to store galaxies to conserve memory.
+        refmag_range : `list`, optional
+            Refmag min, max to cut if using tempfile.
+        chisq_max : `float`, optional
+            Maximum chisq to cut if reading zreds and if using tempfile.
         """
         if zredfile is not None:
             use_zred = True
@@ -202,9 +210,24 @@ class GalaxyCatalog(Catalog):
 
             indices = np.delete(indices, bad)
 
+        # Prepare border cuts if necessary
+        trim_border = False
+        if len(_hpix) == 1 and nside > 0 and border > 0.0:
+            trim_border = True
+            nside_cutref = 512
+            boundaries = hp.boundaries(nside, _hpix[0], step=nside_cutref//nside)
+
+            # Need to get the sub-pixels, use nest and bit-shifting.
+            bit_shift = 2*int(np.round(np.log2(nside_cutref/nside)))
+            inhpix_nest = np.arange(2**bit_shift, dtype=np.int32) + np.left_shift(hp.ring2nest(nside, _hpix[0]), bit_shift)
+            inhpix = hp.nest2ring(nside_cutref, inhpix_nest)
+
+            for i in range(boundaries.shape[1]):
+                pixint = hp.query_disc(nside_cutref, boundaries[:, i], np.radians(border), inclusive=True, fact=8)
+                inhpix = np.append(inhpix, pixint)
+            inhpix = np.unique(inhpix)
+
         # create the catalog array to read into
-        # FIXME: filter out any TRUTH information if necessary
-        # will need to also get the list of columns from the thingamajig.
 
         # and need to be able to cut?
         try:
@@ -239,12 +262,21 @@ class GalaxyCatalog(Catalog):
             except AttributeError:
                 fname = os.path.join(zpath, ztab.filenames[indices[0]])
 
-            zelt = fitsio.read(fname, ext=1, rows=0, upper=False)
+            zelt = fitsio.read(fname, ext=1, rows=0, lower=True)
             zcat_fields = [dt[0] for dt in zelt.dtype.descr]
 
             dtype.extend(zelt.dtype.descr)
 
-        cat = np.zeros(np.sum(tab.ngals[indices]), dtype=dtype)
+        if use_tempfile:
+            # Start the temporary file
+            fd, tempFile = tempfile.mkstemp(suffix='.fits')
+            os.close(fd)
+
+            tempfits = fitsio.FITS(tempFile, mode='rw', clobber=True)
+            tempfits.create_table_hdu(dtype=dtype)
+        else:
+            # Make the regular catalog
+            cat = np.zeros(np.sum(tab.ngals[indices]), dtype=dtype)
 
         # read the files
         ctr = 0
@@ -254,7 +286,12 @@ class GalaxyCatalog(Catalog):
             except AttributeError:
                 fname = os.path.join(path, tab.filenames[index])
 
-            cat[cat_fields][ctr: ctr + tab.ngals[index]] = fitsio.read(fname, ext=1, lower=True, columns=columns)
+            if use_tempfile:
+                # Read into temporary buffer
+                tempcat = np.zeros(tab.ngals[index], dtype=dtype)
+                tempcat[cat_fields][:] = fitsio.read(fname, ext=1, lower=True, columns=columns)
+            else:
+                cat[cat_fields][ctr: ctr + tab.ngals[index]] = fitsio.read(fname, ext=1, lower=True, columns=columns)
 
             if use_zred:
                 # Note that this effectively checks that the numbers of rows in each file match properly (though the exception will be cryptic...)
@@ -262,32 +299,50 @@ class GalaxyCatalog(Catalog):
                     fname = os.path.join(zpath, ztab.filenames[index].decode())
                 except AttributeError:
                     fname = os.path.join(zpath, ztab.filenames[index])
-                cat[zcat_fields][ctr: ctr + tab.ngals[index]] = fitsio.read(fname, ext=1, upper=False)
+
+                if use_tempfile:
+                    # Read into temporary buffer
+                    tempcat[zcat_fields][:] = fitsio.read(fname, ext=1, lower=True)
+                else:
+                    cat[zcat_fields][ctr: ctr + tab.ngals[index]] = fitsio.read(fname, ext=1, lower=True)
+
+            if use_tempfile:
+                # Cut down the tempcat based on refmag low/high and chisq_max
+                guse = ((tempcat['refmag'] > refmag_range[0]) & (tempcat['refmag'] < refmag_range[1]))
+                if use_zred:
+                    guse &= (tempcat['chisq'] < chisq_max)
+
+                # cut down the tempcat if necessary and spool to tempfile
+                if trim_border:
+                    ipring = hp.ang2pix(nside_cutref, tempcat['ra'], tempcat['dec'], lonlat=True)
+                    _, indices = esutil.numpy_util.match(inhpix, ipring[guse])
+
+                    tempfits[1].append(tempcat[guse][indices])
+                else:
+                    tempfits[1].append(tempcat[guse])
+
             ctr += tab.ngals[index]
 
-        if len(_hpix) == 1 and nside > 0 and border > 0.0:
-            # Trim to be closer to the border if necessary...
+        if use_tempfile:
+            # close out the tempfile
+            tempfits.close()
 
-            nside_cutref = 512
-            boundaries = hp.boundaries(nside, _hpix[0], step=nside_cutref // nside)
-            theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
-            ipring_coarse = hp.ang2pix(nside, theta, phi)
-            inhpix, = np.where(ipring_coarse == _hpix[0])
+            # read in the tempfile
+            cat = fitsio.read(tempFile, ext=1)
 
-            for i in range(boundaries.shape[1]):
-                pixint = hp.query_disc(nside_cutref, boundaries[:, i], np.radians(border), inclusive=True, fact=8)
-                inhpix = np.append(inhpix, pixint)
-            inhpix = np.unique(inhpix)
+            # delete the tempfile
+            os.remove(tempFile)
 
-            theta = np.radians(90.0 - cat['dec'])
-            phi = np.radians(cat['ra'])
-            ipring = hp.ang2pix(nside_cutref, theta, phi)
-            _, indices = esutil.numpy_util.match(inhpix, ipring)
-
-            return cls(cat[indices])
+            return(cls(cat))
         else:
-            # No cuts
-            return cls(cat)
+            if trim_border:
+                ipring = hp.ang2pix(nside_cutref, cat['ra'], cat['dec'], lonlat=True)
+                _, indices = esutil.numpy_util.match(inhpix, ipring)
+
+                return cls(cat[indices])
+            else:
+                # No cuts
+                return cls(cat)
 
     @property
     def galcol(self):
@@ -807,7 +862,6 @@ class GalaxyCatalogMaker(object):
 
         # Check for galaxy uniqueness or generate unique ids
         if self.generate_unique_ids:
-            print("Generating unique IDs...")
             ctr = 1
 
             for f in tab.filenames:

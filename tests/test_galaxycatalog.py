@@ -36,26 +36,33 @@ class GalaxyCatalogTestCase(unittest.TestCase):
 
         # read in a subregion, no border
         hpix = 2163
-        gals_sub = GalaxyCatalog.from_galfile(file_path + '/' + galfile,
+        gals_sub = GalaxyCatalog.from_galfile(os.path.join(file_path, galfile),
                                               hpix=hpix, nside=64)
 
-        theta = (90.0 - gals_all.dec) * np.pi/180.
-        phi = gals_all.ra * np.pi/180.
-        ipring_all = hp.ang2pix(64, theta, phi)
+        ipring_all = hp.ang2pix(64, gals_all.ra, gals_all.dec, lonlat=True)
         use, = np.where(ipring_all == hpix)
+        testing.assert_equal(gals_sub.size, use.size)
 
+        # read in a subregion, no border, with tempfile
+        gals_sub = GalaxyCatalog.from_galfile(os.path.join(file_path, galfile),
+                                              hpix=hpix, nside=64, use_tempfile=True)
         testing.assert_equal(gals_sub.size, use.size)
 
         # Read in a subregion that's made of two pixels, no border
         hpix = [2163, 2296]
-        gals_sub = GalaxyCatalog.from_galfile(file_path + '/' + galfile,
+        gals_sub = GalaxyCatalog.from_galfile(os.path.join(file_path, galfile),
                                               hpix=hpix, nside=64)
         a, b = esutil.numpy_util.match(hpix, ipring_all)
 
         testing.assert_equal(gals_sub.size, a.size)
 
+        # Read in the same subregion with tempfile
+        gals_sub = GalaxyCatalog.from_galfile(os.path.join(file_path, galfile),
+                                              hpix=hpix, nside=64, use_tempfile=True)
+        testing.assert_equal(gals_sub.size, a.size)
+
         # read in a subregion, with border
-        gals_sub = GalaxyCatalog.from_galfile(file_path + '/' + galfile,
+        gals_sub = GalaxyCatalog.from_galfile(os.path.join(file_path, galfile),
                                               hpix=9218, nside=128, border=0.1)
 
         # this isn't really a big enough sample catalog to fully test...
@@ -76,6 +83,12 @@ class GalaxyCatalogTestCase(unittest.TestCase):
         test, = np.where(i0 == 1)
         testing.assert_equal(test.size, 666 - 521)
         testing.assert_array_less(dists[test], 0.1)
+
+        # read in a subregion, with border, with tempfile
+        gals_sub2 = GalaxyCatalog.from_galfile(os.path.join(file_path, galfile),
+                                               hpix=9218, nside=128, border=0.1, use_tempfile=True)
+        aa, bb = esutil.numpy_util.match(gals_sub.id, gals_sub2.id)
+        testing.assert_equal(aa.size, gals_sub.size)
 
     def test_galaxycatalog_create(self):
         """

@@ -213,6 +213,7 @@ class Configuration(object):
     hpix = ConfigField(default=[], required=True, isArray=True)
     nside = ConfigField(default=0, required=True)
     galfile_pixelized = ConfigField(required=True)
+    use_tempfiles_to_conserve_memory = ConfigField(default=True, required=True)
 
     printlogging = ConfigField(default=True, required=True)
 

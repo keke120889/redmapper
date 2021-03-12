@@ -31,6 +31,7 @@ class RunCatalog(ClusterRunner):
         self.read_zreds = False
         self.zreds_required = False
         self.cutgals_bkgrange = True
+        self.cutgals_chisqmax = True
         self.filetype = 'lambda_chisq'
 
     def run(self, *args, **kwargs):
