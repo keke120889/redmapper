@@ -1097,39 +1097,6 @@ def read_members(catfile):
 
     return GalaxyCatalog.from_fits_file(memfile)
 
-######################
-## A simple logger
-######################
-
-# At the moment, this doesn't take a filename, it just prints with a flush.
-
-class Logger(object):
-    """
-    A class for a simple logger with flushed output.
-    """
-    def __init__(self):
-        """
-        Instantiate a Logger
-        """
-        if sys.version_info[: 2] < (3, 3):
-            self.py33 = False
-        else:
-            self.py33 = True
-
-    def info(self, message):
-        """
-        Log an informational message.
-
-        Parameters
-        ----------
-        message: `str`
-           Message to output
-        """
-        if self.py33:
-            print(message, flush=True)
-        else:
-            print(message)
-            sys.stdout.flush()
 
 def getMemoryString(location):
     """
@@ -1222,7 +1189,10 @@ def get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, cove
     # First, we need to know which pixel(s) from nside_coverage are covered by
     # subpix_hpix
 
-    if subpix_nside == coverage_nside:
+    if subpix_nside == 0:
+        # Special case for the full sky
+        return None
+    elif subpix_nside == coverage_nside:
         covpix = hp.ring2nest(subpix_nside, subpix_hpix)
     elif subpix_nside > coverage_nside:
         # what pixels are these contained in?

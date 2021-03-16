@@ -67,7 +67,7 @@ class Mask(object):
         if (_ra.size != _dec.size):
             raise ValueError("ra, dec must be same length")
 
-        maskvals = np.ones(_ra.size, dtype=np.bool_)
+        maskvals = np.ones(_ra.size, dtype=bool)
         return maskvals
 
     def read_maskgals(self, maskgalfile):

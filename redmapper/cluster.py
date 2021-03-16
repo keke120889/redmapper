@@ -198,7 +198,8 @@ class Cluster(Entry):
                                     ('P', 'f8'),
                                     ('PCOL', 'f8'),
                                     ('PMEM', 'f8'),
-                                    ('INDEX', 'i8')]
+                                    ('INDEX', 'i8'),
+                                    ('CENTERING_CAND', 'i2')]
 
             dtype_augment = [dt for dt in neighbor_extra_dtype if dt[0].lower() not in self.neighbors.dtype.names]
             if len(dtype_augment) > 0:

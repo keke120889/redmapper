@@ -309,6 +309,7 @@ class RunPercolation(ClusterRunner):
                 cluster.zred_chisq = cluster.neighbors.zred_chisq[cent.index[0]]
 
             cluster.id_cent[:] = cluster.neighbors.id[cent.index]
+            cluster.neighbors.centering_cand[cent.index] = 1
 
         # And update the center info...
         cluster.ncent_good = cent.ngood

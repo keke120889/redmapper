@@ -75,7 +75,7 @@ class RunRedmapperPixelTask(object):
         self.config.d.outbase = '%s_%d_%05d' % (self.config.outbase, self.nside, self.pixel)
 
         # Do the run
-
+        self.config.start_file_logging()
         self.config.logger.info("Running redMaPPer on pixel %d" % (self.pixel))
 
         firstpass = RunFirstPass(self.config)
@@ -111,6 +111,8 @@ class RunRedmapperPixelTask(object):
             perc.output(savemembers=True, withversion=False)
         else:
             self.config.logger.info("Percolation file %s already present.  Skipping..." % (perc.filename))
+
+        self.config.stop_file_logging()
 
 
 class RuncatPixelTask(object):
@@ -166,6 +168,7 @@ class RuncatPixelTask(object):
         self.config.d.outbase = '%s_%d_%05d' % (self.config.outbase, self.nside, self.pixel)
 
         # Do the run
+        self.config.start_file_logging()
 
         self.config.logger.info("Running runcat on pixel %d" % (self.pixel))
 
@@ -173,6 +176,8 @@ class RuncatPixelTask(object):
         if not os.path.isfile(runcat.filename):
             runcat.run(do_percolation_masking=self.config.runcat_percolation_masking)
             runcat.output(savemembers=True, withversion=True)
+
+        self.config.stop_file_logging()
 
 
 class RunZmaskPixelTask(object):
@@ -231,6 +236,7 @@ class RunZmaskPixelTask(object):
         self.config.d.nside = self.nside
         self.config.d.outbase = '%s_%d_%05d' % (self.config.outbase, self.nside, self.pixel)
 
+        self.config.start_file_logging()
         self.config.logger.info("Running zmask on pixel %d" % (self.pixel))
 
         rand_zmask = RunRandomsZmask(self.config)
@@ -240,6 +246,7 @@ class RunZmaskPixelTask(object):
             rand_zmask.output(savemembers=False, withversion=False)
 
         # All done
+        self.config.stop_file_logging()
 
 
 class RunZScanPixelTask(object):
@@ -291,6 +298,7 @@ class RunZScanPixelTask(object):
         self.config.d.outbase = '%s_%d_%05d' % (self.config.outbase, self.nside, self.pixel)
 
         # Do the run
+        self.config.start_file_logging()
 
         self.config.logger.info("Running zscan on pixel %d" % (self.pixel))
 
@@ -299,4 +307,5 @@ class RunZScanPixelTask(object):
             runzscan.run()
             runzscan.output(savemembers=True, withversion=True)
 
+        self.config.stop_file_logging()
 

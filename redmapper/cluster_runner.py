@@ -192,18 +192,6 @@ class ClusterRunner(object):
         self.gals = None
 
         if self.read_gals:
-            self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
-                                                   nside=self.config.d.nside,
-                                                   hpix=self.config.d.hpix,
-                                                   border=self.config.border,
-                                                   zredfile=zredfile)
-
-            # If the zredfile is not None and we didn't raise an exception,
-            # then we successfully read in the zreds
-            if zredfile is not None:
-                self.did_read_zreds = True
-
-            # Cut galaxies if desired
             if self.cutgals_bkgrange:
                 refmag_low = self.bkg.refmagbins[0]
                 refmag_high = self.bkg.refmagbins[-1] + (self.bkg.refmagbins[1] - self.bkg.refmagbins[0])
@@ -211,13 +199,42 @@ class ClusterRunner(object):
                 refmag_low = -1000.0
                 refmag_high = 1000.0
 
-            guse = ((self.gals.refmag > refmag_low) & (self.gals.refmag < refmag_high))
+            if self.config.use_tempfiles_to_conserve_memory:
+                if self.cutgals_chisqmax:
+                    chisq_max = self.config.chisq_max
+                else:
+                    chisq_max = 1e100
+                self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
+                                                       nside=self.config.d.nside,
+                                                       hpix=self.config.d.hpix,
+                                                       border=self.config.border,
+                                                       zredfile=zredfile,
+                                                       use_tempfile=True,
+                                                       refmag_range=[refmag_low, refmag_high],
+                                                       chisq_max=chisq_max)
 
-            if self.did_read_zreds and self.cutgals_chisqmax:
-                guse &= (self.gals.chisq < self.config.chisq_max)
+                if zredfile is not None:
+                    self.did_read_zreds = True
+            else:
+                self.gals = GalaxyCatalog.from_galfile(self.config.galfile,
+                                                       nside=self.config.d.nside,
+                                                       hpix=self.config.d.hpix,
+                                                       border=self.config.border,
+                                                       zredfile=zredfile)
 
-            # Cut the input galaxy file
-            self.gals = self.gals[guse]
+                # If the zredfile is not None and we didn't raise an exception,
+                # then we successfully read in the zreds
+                if zredfile is not None:
+                    self.did_read_zreds = True
+
+                guse = ((self.gals.refmag > refmag_low) & (self.gals.refmag < refmag_high))
+
+                if self.did_read_zreds and self.cutgals_chisqmax:
+                    guse &= (self.gals.chisq < self.config.chisq_max)
+                self.config.logger.info("Cutting %d of %d galaxies." % (guse.sum(), self.gals.size))
+
+                # Cut the input galaxy file
+                self.gals = self.gals[guse]
 
             if len(self.gals) == 0:
                 self.config.logger.info("No good galaxies for %s in pixel %s" %
@@ -306,6 +323,7 @@ class ClusterRunner(object):
         Loop over all clusters and perform computations as described in
         self._process_cluster(cluster) on each cluster.
         """
+        self.config.start_file_logging()
 
         # General setup
         if not self._setup():
@@ -533,7 +551,7 @@ class ClusterRunner(object):
                         ok = (cluster.neighbors.pmem > 0.01)
                         pfree_temp[~ok] = 0.0
 
-                    memuse, = np.where(pfree_temp > 0.01)
+                    memuse, = np.where((pfree_temp > 0.01) | (cluster.neighbors.centering_cand == 1))
                     mem_temp = Catalog.zeros(memuse.size, dtype=self.config.member_dtype)
 
                     mem_temp.mem_match_id[:] = cluster.mem_match_id

@@ -58,6 +58,8 @@ l           Output path.  Default is None, use same absolute
         rng : `np.random.RandomState`, optional
            Pre-set random number generator.  Default is None.
         """
+        self.config.start_file_logging()
+
         if rng is None:
             rng = np.random.RandomState()
 
@@ -131,7 +133,7 @@ l           Output path.  Default is None, use same absolute
                     specplot = SpecPlot(self.config)
                     fig = specplot.plot_values(gals.zspec[okspec], gals.zredmagic[okspec],
                                                gals.zredmagic_e[okspec],
-                                               name='z_{\mathrm{redmagic}}',
+                                               name=r'z_{\mathrm{redmagic}}',
                                                title='%s: %3.1f-%02d' %
                                                (mode, selector.calib_data[mode].etamin,
                                                 int(selector.calib_data[mode].n0)),
@@ -166,3 +168,5 @@ l           Output path.  Default is None, use same absolute
             randfile = self.config.redmapper_filename('redmagic_%s_randoms' % (mode), withversion=True)
 
             rand_generator.generate_randoms(_n_randoms, randfile, clobber=clobber, rng=rng)
+
+        self.config.stop_file_logging()
