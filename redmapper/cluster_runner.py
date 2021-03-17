@@ -97,6 +97,11 @@ class ClusterRunner(object):
         General setup for ClusterRunner, configuring quantities that are common
         across all derived classes.
         """
+        if len(self.config.d.hpix) == 0:
+            self.hpix_logstr = "All"
+        else:
+            self.hpix_logstr = ", ".join(str(x) for x in self.config.d.hpix)
+
         self.r0 = self.config.__getattribute__(self.runmode + '_r0')
         self.beta = self.config.__getattribute__(self.runmode + '_beta')
 
@@ -263,11 +268,6 @@ class ClusterRunner(object):
         self.doublerun = False
         self.do_correct_zlambda = False
         self.do_pz = False
-
-        if len(self.config.d.hpix) == 0:
-            self.hpix_logstr = "All"
-        else:
-            self.hpix_logstr = ", ".join(str(x) for x in self.config.d.hpix)
 
         return True
 
