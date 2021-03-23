@@ -312,14 +312,15 @@ class GalaxyCatalog(Catalog):
                 if use_zred:
                     guse &= (tempcat['chisq'] < chisq_max)
 
-                # cut down the tempcat if necessary and spool to tempfile
-                if trim_border:
-                    ipring = hp.ang2pix(nside_cutref, tempcat['ra'], tempcat['dec'], lonlat=True)
-                    _, indices = esutil.numpy_util.match(inhpix, ipring[guse])
+                if guse.sum() > 0:
+                    # cut down the tempcat if necessary and spool to tempfile
+                    if trim_border:
+                        ipring = hp.ang2pix(nside_cutref, tempcat['ra'], tempcat['dec'], lonlat=True)
+                        _, indices = esutil.numpy_util.match(inhpix, ipring[guse])
 
-                    tempfits[1].append(tempcat[guse][indices])
-                else:
-                    tempfits[1].append(tempcat[guse])
+                        tempfits[1].append(tempcat[guse][indices])
+                    else:
+                        tempfits[1].append(tempcat[guse])
 
             ctr += tab.ngals[index]
 
