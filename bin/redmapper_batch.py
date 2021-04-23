@@ -13,6 +13,7 @@ import numpy as np
 import glob
 
 import redmapper
+import redmapper.parsl_templates as parsl_templates
 
 def create_batchconfig(filename):
     with open(filename, 'w') as f:
@@ -47,18 +48,14 @@ def load_batchconfig(filename):
             yaml_data[key]['setup'] = ''
         if 'requirements' not in yaml_data[key]:
             yaml_data[key]['requirements'] = ''
-        if 'taskfarmer' not in yaml_data[key]:
-            yaml_data[key]['taskfarmer'] = False
+        if 'parsl_provider' not in yaml_data[key]:
+            yaml_data[key]['parsl_provider'] = 'local'
         if 'image' not in yaml_data[key]:
             yaml_data[key]['image'] = ''
         if 'constraint' not in yaml_data[key]:
             yaml_data[key]['constraint'] = ''
         if 'qos' not in yaml_data[key]:
             yaml_data[key]['qos'] = ''
-        if 'cpus_per_node' not in yaml_data[key]:
-            yaml_data[key]['cpus_per_node'] = -1
-        if 'mem_per_node' not in yaml_data[key]:
-            yaml_data[key]['mem_per_node'] = 0.0
 
     return yaml_data
 
@@ -111,11 +108,10 @@ nside = args.nside
 if args.runmode == 0:
     # This is a full run
     if nside is None:
-        nside = 4
-    # nside = config.nside_batch_run
+        nside = 8
     jobtype = 'run'
     default_walltime = 72*60
-    memory = 4000
+    memory = 6000
 elif args.runmode == 1:
     # This is a zred run
     if nside is None:
@@ -170,8 +166,10 @@ if not os.path.isdir(jobpath):
     os.makedirs(jobpath)
 
 # Will want to check for previous (failed) jobs
-
-test = glob.glob(os.path.join(jobpath, '%s_?.job' % (jobname)))
+if batchconfig[batchmode]['batch'] == 'parsl':
+    test = glob.glob(os.path.join(jobpath, '%s_?.py' % (jobname)))
+else:
+    test = glob.glob(os.path.join(jobpath, '%s_?.job' % (jobname)))
 index = len(test)
 
 need_maskgals = False
@@ -214,7 +212,10 @@ if need_maskgals:
         mask = redmapper.mask.get_mask(config, include_maskgals=False)
         mask.gen_maskgals(config.maskgalfile)
 
-jobfile = os.path.join(jobpath, '%s_%d.job' % (jobname, index + 1))
+if batchconfig[batchmode]['batch'] == 'parsl':
+    jobfile = os.path.join(jobpath, '%s_%d.py' % (jobname, index + 1))
+else:
+    jobfile = os.path.join(jobpath, '%s_%d.job' % (jobname, index + 1))
 
 with open(jobfile, 'w') as jf:
     write_jobarray = True
@@ -239,61 +240,48 @@ with open(jobfile, 'w') as jf:
         jf.write("#PBS -l mem=%dmb\n" % (memory))
         jf.write("#PBS -j oe\n")
         jf.write('N_CPU=%d\n' % (n_nodes * batchconfig[batchmode]['ppn']))
-    elif ((batchconfig[batchmode]['batch'] == 'slurm') and
-          (batchconfig[batchmode]['taskfarmer'])):
-        if ((batchconfig[batchmode]['qos'] == '' or
-             batchconfig[batchmode]['constraint'] == '' or
-             batchconfig[batchmode]['cpus_per_node'] < 1 or
-             batchconfig[batchmode]['mem_per_node'] < 1 or
-             batchconfig[batchmode]['image'] == '')):
-            raise RuntimeError("For taskfarmer, must set qos/constraint/cpus_per_node/mem_per_node/image")
-        if (args.nodes < 2):
-            raise RuntimeError("For taskfarmer, we require at least 2 nodes")
+    elif (batchconfig[batchmode]['batch'] == 'parsl'):
         write_jobarray = False
 
-        # NERSC slurm + taskfarmer
-        wrapper_file = os.path.abspath(os.path.join(jobpath, '%s_%d.sh' % (jobname, index + 1)))
-        task_file = os.path.abspath(os.path.join(jobpath, '%s_%d.txt' % (jobname, index + 1)))
+        if batchconfig[batchmode]['parsl_provider'] == 'local':
+            parsl_config = parsl_templates.PARSL_LOCAL_CONFIG_TEMPLATE
+        elif batchconfig[batchmode]['parsl_provider'] == 'slurm':
+            parsl_config = parsl_templates.PARSL_SLURM_CONFIG_TEMPLATE.format(
+                nodes=args.nodes,
+                constraint=batchconfig[batchmode]['constraint'],
+                qos=batchconfig[batchmode]['qos'],
+                walltime=walltime
+            )
+        else:
+            raise RuntimeError("Invalid parsl_provider (requires either local or slurm).")
 
-        # First, we need to write a wrapper script
-        with open(wrapper_file, 'w') as wf:
-            cmd = run_command % ('$1')
-            wf.write("#!/bin/bash\n")
-            wf.write('shifter --image=%s /bin/bash -c ". /opt/redmapper/startup.sh && %s"' %
-                     (batchconfig[batchmode]['image'], cmd))
+        cmd = run_command % ('{pixel}')
+        if batchconfig[batchmode]['image'] != '':
+            # We are using a shifter image
+            image = batchconfig[batchmode]['image']
+            parsl_command = f'shifter --image={image} /bin/bash -c ". /opt/redmapper/startup.sh && {cmd}"'
+        else:
+            # No shifter image
+            parsl_command = cmd
 
-        st = os.stat(wrapper_file)
-        os.chmod(wrapper_file, st.st_mode | 0o110)
+        hpix_run_str = [str(hpix) for hpix in hpix_run]
+        hpix_list_str = "[" + ', '.join(hpix_run_str) + "]"
 
-        # Second, we need to write a tasks file
-        # Need to make sure that wrapper_file is the full absolute path
-        with open(task_file, 'w') as tf:
-            for hpix in hpix_run:
-                tf.write("%s %d\n" % (wrapper_file, hpix))
+        parsl_script = parsl_templates.PARSL_RUN_TEMPLATE.format(
+            parsl_config=parsl_config,
+            parsl_command=parsl_command,
+            memory=memory,
+            hpix_list_str=hpix_list_str,
+            jobname=jobname
+        )
 
-        # Third, we need to create the batch submission script
-        nrun_per_node = int(np.clip(batchconfig[batchmode]['mem_per_node'] / memory,
-                                    None,
-                                    batchconfig[batchmode]['cpus_per_node']))
-        nthreads = (args.nodes - 1) * nrun_per_node
+        jf.write(parsl_script)
 
-        time = np.clip((len(hpix_run) * float(walltime)) / nthreads, walltime, None)
-
-        jf.write("#!/bin/bash\n")
-        jf.write("#SBATCH --qos=%s\n" % (batchconfig[batchmode]['qos']))
-        jf.write("#SBATCH --constraint=%s\n" % (batchconfig[batchmode]['constraint']))
-        jf.write("#SBATCH --cpus-per-task=%d\n" % (batchconfig[batchmode]['cpus_per_node']))
-        jf.write("#SBATCH --nodes=%d\n" % (args.nodes))
-        jf.write("#SBATCH --time=%s\n" % (int(time)))
-        jf.write("export PATH=$PATH:/usr/common/tig/taskfarmer/1.5/bin\n")
-        jf.write("export THREADS=%d\n" % (nthreads))
-        jf.write("runcommands.sh %s\n" % (task_file))
-    elif ((batchconfig[batchmode]['batch'] == 'slurm') and
-          (not batchconfig[batchmode]['taskfarmer'])):
-        raise NotImplementedError("Basic slurm submission not implemented yet.")
+    elif (batchconfig[batchmode]['batch'] == 'slurm'):
+        raise NotImplementedError("Basic slurm submission not implemented yet.  Use parsl")
     else:
         # Nothing else supported
-        raise RuntimeError("Only LSF, PBS and slurm/taskfarmer supported at this time.")
+        raise RuntimeError("Only LSF, PBS, parsl/slurm, and parsl/local supported at this time.")
 
     if write_jobarray:
         jf.write("pixarr=(")
