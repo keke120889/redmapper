@@ -1,7 +1,6 @@
 PARSL_LOCAL_CONFIG_TEMPLATE = """
 from parsl.executors import WorkQueueExecutor, ThreadPoolExecutor
 from parsl.providers import LocalProvider
-from parsl.monitoring.monitoring import MonitoringHub
 from parsl.addresses import address_by_hostname
 from parsl.utils import get_all_checkpoints
 
@@ -11,11 +10,6 @@ executors = [WorkQueueExecutor(label="work_queue", port=9000, shared_fs=True,
                                provider=provider, autolabel=False,
                                address=address_by_hostname()),
              ThreadPoolExecutor(max_threads=1, label="submit-node")]
-
-monitoring = MonitoringHub(hub_address=address_by_hostname(),
-                           hub_port=55055,
-                           monitoring_debug=False,
-                           resource_monitoring_interval=60)
 
 config = parsl.config.Config(strategy="simple",
                              garbage_collect=False,
@@ -42,8 +36,8 @@ PROVIDER_OPTIONS = dict(nodes_per_block={nodes},
                             overrides='-K0 -k --slurmd-debug=verbose'),
                         cmd_timeout=300)
 
-SCHEDULER_OPTIONS = ("#SBATCH --constraint={constraint}\n"
-                     "#SBATCH --qos={qos}\n")
+SCHEDULER_OPTIONS = ("#SBATCH --constraint={constraint}\\n"
+                     "#SBATCH --qos={qos}\\n")
 
 provider = SlurmProvider('None', walltime='00:{walltime}:00',
                          scheduler_options=SCHEDULER_OPTIONS,
@@ -71,7 +65,7 @@ import parsl
 
 @parsl.bash_app(executors=['work_queue'], cache=True,
                 ignore_for_cache=['stdout', 'stderr'])
-def run_command(command, inputs=(), stdout=None, stderr=None,
+def run_command(command, inputs=(), stdout=None, stderr=None, parsl_resource_specification=None):
     return command
 
 command = '{parsl_command}'
@@ -82,7 +76,7 @@ for pixel in {hpix_list_str}:
     comm = command.format(pixel=pixel)
     logfile = f'{jobname}-{{pixel}}.log'
     futures.append(run_command(comm, stdout=logfile, stderr=logfile,
-                               parsl_resource_specifications=resource_spec))
+                               parsl_resource_specification=resource_spec))
 
 [_.result() for _ in futures]
 """
