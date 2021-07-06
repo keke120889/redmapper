@@ -115,7 +115,7 @@ class Background(object):
 
         n_new = np.zeros((nrefmagbins, nzbins))
         for i in range(nzbins):
-            n_new[:,i] = np.sum(sigma_g_new[:,:,i], axis=1) * self.chisqbinsize
+            n_new[:,i] = np.sum(sigma_g_new[:,:,i], axis=1, dtype=np.float64) * self.chisqbinsize
 
         # Save all meaningful fields
         # to be attributes of the background object.

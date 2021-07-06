@@ -411,7 +411,7 @@ class CenteringRandomSatellite(Centering):
 
         pdf = self.cluster.neighbors.pmem[st]
         pdf /= np.sum(pdf)
-        cdf = np.cumsum(pdf)
+        cdf = np.cumsum(pdf, dtype=np.float64)
         cdfi = (cdf * st.size).astype(np.int32)
 
         rand = (np.random.uniform(size=1) * st.size).astype(np.int32)

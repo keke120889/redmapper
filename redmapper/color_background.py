@@ -36,7 +36,7 @@ class ColorBackground(object):
         """
 
         refmagbinsize = 0.01
-        colbinsize = 0.05
+        colbinsize = 0.01
         area = 1.0
 
         fits = fitsio.FITS(filename)
@@ -92,7 +92,7 @@ class ColorBackground(object):
                 for j in range(nrefmagbins):
                     bc_new[j, :] = np.clip(interpol(bc[j, :], obkg.colbins, colbins), 0.0, None)
 
-                n = np.sum(bc, axis=1) * (colbinsize / obkg.colbinsize)
+                n = np.sum(bc, axis=1, dtype=np.float64) * (colbinsize / obkg.colbinsize)
 
                 sigma_g = bc_new.copy()
                 for j in range(ncolbins):
@@ -142,8 +142,8 @@ class ColorBackground(object):
                     for k in range(nrefmagbins):
                         bc_new[k, :, i] = np.clip(interpol(bc[k, :, i], obkg.col2bins, col2bins), 0.0, None)
 
-                temp = np.sum(bc_new, axis=1) * colbinsize
-                n = np.sum(temp, axis=1) * colbinsize
+                temp = np.sum(bc_new, axis=1, dtype=np.float64) * colbinsize
+                n = np.sum(temp, axis=1, dtype=np.float64) * colbinsize
 
                 sigma_g = bc_new.copy()
 
@@ -335,7 +335,7 @@ class ColorBackgroundGenerator(object):
                                           border=self.config.border)
 
         # Generate ranges based on the data
-        refmagbinsize = 0.1
+        refmagbinsize = 0.05
 
         refmagrange = np.array([12.0, self.config.limmag_ref])
 
@@ -347,7 +347,7 @@ class ColorBackgroundGenerator(object):
         colrange_default = np.array([-2.0, 5.0])
 
         colranges = np.zeros((2, ncol))
-        colbinsize = 0.1
+        colbinsize = 0.02
         for i in range(ncol):
             use, = np.where((col[:, i] > colrange_default[0]) &
                             (col[:, i] < colrange_default[1]) &
@@ -395,7 +395,7 @@ class ColorBackgroundGenerator(object):
                     field[bad] = 0.0
 
                     bc = field.astype(np.float32) / binsizes
-                    n = np.sum(bc, axis=1) * colbinsize
+                    n = np.sum(bc, axis=1, dtype=np.float64) * colbinsize
 
                     outstr = np.zeros(1, dtype=[('COL1', 'i2'),
                                                 ('COL2', 'i2'),
@@ -453,8 +453,8 @@ class ColorBackgroundGenerator(object):
                     field[bad] = 0.0
 
                     bc = field.astype(np.float32) / binsizes
-                    temp = np.sum(bc, axis=2) * colbinsize
-                    n = np.sum(temp, axis=1) * colbinsize
+                    temp = np.sum(bc, axis=2, dtype=np.float64) * colbinsize
+                    n = np.sum(temp, axis=1, dtype=np.float64) * colbinsize
 
                     outstr = np.zeros(1, dtype=[('COL1', 'i2'),
                                                 ('COL2', 'i2'),

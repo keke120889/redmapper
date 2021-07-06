@@ -905,7 +905,7 @@ def sample_from_pdf(f, ran, step, nsamp, **kwargs):
     x = np.arange(ran[0], ran[1], step)
     pdf = f(x, **kwargs)
     pdf /= np.sum(pdf)
-    cdf = np.cumsum(pdf)
+    cdf = np.cumsum(pdf, dtype=np.float64)
     cdfi = (cdf * x.size).astype(np.int32)
 
     rand = (np.random.uniform(size=nsamp) * x.size).astype(np.int32)
