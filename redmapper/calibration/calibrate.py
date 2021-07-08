@@ -171,7 +171,7 @@ class RedmapperCalibrator(object):
             # Erase any configured area which is only used to override the
             # galfile area in the case when we are calibrating a subregion
             # without a depthmap
-            self.config.area = None
+            self.config.area = self.config.galfile_area
 
             bkg_gen = BackgroundGenerator(self.config)
             bkg_gen.run(deepmode=True)
