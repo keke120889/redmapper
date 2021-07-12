@@ -447,6 +447,7 @@ class Configuration(object):
 
         # get galaxy file stats
         gal_stats = self._galfile_stats()
+        self.galfile_area = gal_stats['area']
         if (self.area is not None):
             if self.depthfile is not None:
                 self.logger.info("WARNING: You should not need to set area in the config file when you have a depth map.")

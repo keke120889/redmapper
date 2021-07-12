@@ -244,7 +244,7 @@ class Mask(object):
                 maskgals.theta_r[indices, i] = theta_r
 
                 inside2, = np.where(maskgals.m[indices] < -2.5*np.log10(self.config.lval_reference))
-                maskgals.nin[indices, i] = np.sum(theta_r[inside2])
+                maskgals.nin[indices, i] = np.sum(theta_r[inside2], dtype=np.float64)
 
         # And save it
 
@@ -397,7 +397,7 @@ class HPMask(Mask):
 
         gd, = np.where(np.abs(decs) < 90.0)
 
-        fracgood = np.zeros(ras.size)
+        fracgood = np.zeros(ras.size, dtype=np.float64)
         fracgood[gd] = self.sparse_fracgood.get_values_pos(ras[gd], decs[gd], lonlat=True)
 
         radmask = np.zeros(ras.size, dtype=bool)

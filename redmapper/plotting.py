@@ -423,7 +423,7 @@ class NzPlot(object):
                          (cluster.pzbins[-1] - cluster.pzbins[0]) + cluster.pzbins[0])
                 yvals = interpol(cluster.pz, cluster.pzbins, xvals)
                 pdf = yvals / np.sum(yvals)
-                cdf = np.cumsum(pdf)
+                cdf = np.cumsum(pdf, dtype=np.float64)
                 cdfi = (cdf * xvals.size).astype(np.int32)
                 rand = (np.random.uniform(size=1)*nsampbin).astype(np.int32)
                 test, = np.where(cdfi >= rand)

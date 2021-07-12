@@ -63,7 +63,7 @@ class RunColormemTestCase(unittest.TestCase):
 
         mem = fitsio.read(config.zmemfile, ext=1)
         testing.assert_equal(mem.size, 16)
-        testing.assert_array_almost_equal(mem['pcol'][0:3], np.array([0.94829756, 0.83803916, 0.88315928]))
+        testing.assert_array_almost_equal(mem['pcol'][0:3], np.array([0.954449, 0.8386, 0.88328]))
         testing.assert_array_almost_equal(mem['z'][0:3], np.array([0.191887, 0.18744484, 0.19445464]))
 
     def setUp(self):

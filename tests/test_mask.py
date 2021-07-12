@@ -131,7 +131,7 @@ class MaskTestCase(unittest.TestCase):
         testing.assert_almost_equal(maskgals['theta_r'][0: 3, 3], [0.73237121, 1., 0.3299689])
         testing.assert_almost_equal(maskgals['radbins'][0, 0: 3], [0.40000001, 0.5, 0.60000002])
         testing.assert_almost_equal(maskgals['nin_orig'][0, 0: 3], [2213., 2663., 3066.])
-        testing.assert_almost_equal(maskgals['nin'][0, 0: 3], [2203.3347168, 2651.54467773, 3062.44628906])
+        testing.assert_almost_equal(maskgals['nin'][0, 0: 3], [2203.3347168, 2651.54467773, 3062.44628906], 3)
 
     def setUp(self):
         self.test_dir = None

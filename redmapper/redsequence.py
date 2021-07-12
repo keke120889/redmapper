@@ -328,7 +328,7 @@ class RedSequenceColorPar(object):
         self.alpha = alpha
         for i in range(nz):
             f = schechter_pdf(self.lumrefmagbins, alpha=self.alpha, mstar=self._mstar[i])
-            self.lumnorm[:,i] = refmagbinsize*np.cumsum(f)
+            self.lumnorm[:, i] = refmagbinsize*np.cumsum(f, dtype=np.float64)
 
         if has_file:
             # lupcorr (annoying!)

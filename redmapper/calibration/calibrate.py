@@ -168,6 +168,11 @@ class RedmapperCalibrator(object):
             self.config.d.hpix = []
             self.config.d.nside = 0
 
+            # Erase any configured area which is only used to override the
+            # galfile area in the case when we are calibrating a subregion
+            # without a depthmap
+            self.config.area = self.config.galfile_area
+
             bkg_gen = BackgroundGenerator(self.config)
             bkg_gen.run(deepmode=True)
             self.config.logger.info("Remember to run zreds and zred background before running the full cluster finder.")
@@ -265,9 +270,10 @@ class RedmapperCalibrator(object):
         self.config.hpix = []
         self.config.border = 0.0
 
-        # And finally, if we have a depth map we don't need the area...
-        if self.config.depthfile is not None and os.path.isfile(self.config.depthfile):
-            self.config.area = None
+        # Erase any configured area which is only used to override the
+        # galfile area in the case when we are calibrating a subregion
+        # without a depthmap
+        self.config.area = None
 
         self.config.output_yaml(os.path.join(runpath, 'run_default.yml'))
 

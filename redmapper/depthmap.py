@@ -248,8 +248,8 @@ class DepthMap(object):
         inds = np.clip(np.searchsorted(depths, mags) - 1, 1, depths.size - 1)
 
         lo = (inds < 0)
-        areas[lo] = np.sum(fracgoods) * pixsize
-        carea = pixsize * np.cumsum(fracgoods)
+        areas[lo] = np.sum(fracgoods, dtype=np.float64) * pixsize
+        carea = pixsize * np.cumsum(fracgoods, dtype=np.float64)
         areas[~lo] = carea[carea.size - inds[~lo]]
 
         return areas
