@@ -18,6 +18,7 @@ struct chisq_dist {
     double *refmagerr;
     double *magerr;
     double *color;
+    double *col_err_ratio;
     double *lupcorr;
     int ncalc;
     int ngal;
@@ -30,7 +31,7 @@ struct chisq_dist {
 };
 
 
-int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol, double *covmat, double *c, double *slope, double *pivotmag, double *refmag, double *refmagerr, double *magerr, double *color, double *lupcorr, double *dist, double sigint);
+int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol, double *covmat, double *c, double *slope, double *pivotmag, double *refmag, double *refmagerr, double *magerr, double *color, double *col_err_ratio, double *lupcorr, double *dist, double sigint);
 
 
 int check_and_fix_covmat(gsl_matrix *covmat);

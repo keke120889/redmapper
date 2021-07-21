@@ -226,7 +226,7 @@ class RedSequenceFitter(object):
 
     def fit(self, p0_mean, p0_slope, p0_scatter,
             fit_mean=False, fit_slope=False, fit_scatter=False,
-            min_scatter=0.001):
+            min_scatter=0.001, err_ratio=None):
         """
         Fit the red sequence mean, slope, and intrinsic scatter.
 
@@ -249,6 +249,9 @@ class RedSequenceFitter(object):
            Fit the scatter? (else fix to p0_scatter).  Default is False.
         min_scatter: `float`, optional
            Minimum intrinsic scatter.  Default is 0.001.
+        err_ratio : `float`, optional
+            Error ratio parameter.  Will be fit if fit_scatter=True and is
+            not None.
 
         Returns
         -------
@@ -263,6 +266,13 @@ class RedSequenceFitter(object):
         self._fit_slope = fit_slope
         self._fit_scatter = fit_scatter
         self._min_scatter = min_scatter
+        if err_ratio is not None:
+            self._has_err_ratio = True
+            self._err_ratio = err_ratio
+        else:
+            # Do not fit, use 1.0
+            self._has_err_ratio = False
+            self._err_ratio = 1.0
 
         if not self._has_dmags and self._fit_slope:
             raise ValueError("Can only do fit_slope if dmags were supplied")
@@ -291,6 +301,9 @@ class RedSequenceFitter(object):
                     bounds.append([self._min_scatter, self._scatter_max[i]])
                 else:
                     bounds.append([self._min_scatter, np.inf])
+            if self._has_err_ratio:
+                p0 = np.append(p0, self._err_ratio)
+                bounds.append([0.5, 10.0])
 
         if ctr == 0:
             raise ValueError("Must select at least one of fit_mean, fit_slope, fit_scatter")
@@ -304,7 +317,7 @@ class RedSequenceFitter(object):
             self._gslope = spl(self._redshifts)
         if not self._fit_scatter:
             spl = CubicSpline(self._scatter_nodes, p0_scatter)
-            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + self._err2s)
+            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + self._err_ratio**2.*self._err2s)
 
         if not self._fit_scatter and self._trunc is not None:
             self._phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
@@ -328,7 +341,10 @@ class RedSequenceFitter(object):
         if self._fit_slope:
             retval.append(pars[self._slope_index: self._slope_index + self._n_slope_nodes])
         if self._fit_scatter:
-            retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
+            if self._has_err_ratio:
+                retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes + 1])
+            else:
+                retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
 
         return retval
 
@@ -363,7 +379,12 @@ class RedSequenceFitter(object):
         if self._fit_scatter:
             # We are fitting the scatter
             spl = CubicSpline(self._scatter_nodes, pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
-            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + self._err2s)
+            if self._has_err_ratio:
+                # Always the last one
+                err_ratio = pars[-1]
+            else:
+                err_ratio = 1.0
+            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + err_ratio**2.*self._err2s)
 
         if self._fit_scatter and self._trunc is not None:
             phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))

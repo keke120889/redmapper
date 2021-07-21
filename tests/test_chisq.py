@@ -36,7 +36,7 @@ class ChisqColorTestCase(unittest.TestCase):
 
         galcolor = mode0data['MODEL_MAG'][:,0:4] - mode0data['MODEL_MAG'][:,1:5]
 
-        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode0data['REFMAG'],mode0data['MODEL_MAGERR'],galcolor,refmagerr=mode0data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
+        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode0data['REFMAG'],mode0data['MODEL_MAGERR'],galcolor,np.ones(zredstr.ncol),refmagerr=mode0data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
         testing.assert_almost_equal(chisq, mode0data['CHISQ'],decimal=3)
         testing.assert_almost_equal(lkhd, mode0data['LKHD'],decimal=3)
 
@@ -50,7 +50,7 @@ class ChisqColorTestCase(unittest.TestCase):
 
         galcolor = mode1data[0]['MODEL_MAG'][0:4] - mode1data[0]['MODEL_MAG'][1:5]
 
-        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode1data['REFMAG'],mode1data[0]['MODEL_MAGERR'],galcolor,refmagerr=mode1data[0]['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
+        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode1data['REFMAG'],mode1data[0]['MODEL_MAGERR'],galcolor,np.ones(zredstr.ncol),refmagerr=mode1data[0]['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
 
         testing.assert_almost_equal(chisq, mode1data[0]['CHISQ'],decimal=3)
         testing.assert_almost_equal(lkhd, mode1data[0]['LKHD'],decimal=3)
@@ -69,7 +69,7 @@ class ChisqColorTestCase(unittest.TestCase):
         # version.  So this is a really loose check.
 
         # will want to write python double-precision regression check as well.
-        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode2data['REFMAG'],mode2data['MODEL_MAGERR'],galcolor,refmagerr=mode2data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
+        chisq, lkhd = redmapper.compute_chisq(zredstr.covmat[:,:,zind],zredstr.c[zind,:],zredstr.slope[zind,:],zredstr.pivotmag[zind],mode2data['REFMAG'],mode2data['MODEL_MAGERR'],galcolor,np.ones(zredstr.ncol),refmagerr=mode2data['REFMAG_ERR'],lupcorr=zredstr.lupcorr[magind,zind,:], calc_chisq=True, calc_lkhd=True)
 
         testing.assert_almost_equal(chisq, mode2data['CHISQ'],decimal=1)
         testing.assert_almost_equal(lkhd, mode2data['LKHD'],decimal=2)

@@ -223,6 +223,10 @@ class RedSequenceColorPar(object):
             self.sigma = np.zeros((ncol,ncol,nz),dtype=np.float64)
             self.covmat = np.zeros((ncol,ncol,nz),dtype=np.float64)
 
+            self.col_err_ratio = np.ones(ncol, dtype=np.float64)
+            if 'COL_ERR_RATIO' in pars.dtype.names:
+                self.col_err_ratio[:] = pars[0]['COL_ERR_RATIO'][:]
+
             # diagonals
             for j in range(ncol):
                 spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,j,:])
@@ -491,7 +495,8 @@ class RedSequenceColorPar(object):
         return compute_chisq(self.covmat[:,:,zinds], self.c[zinds,:],
                              self.slope[zinds,:], self.pivotmag[zinds],
                              np.array(galaxy.refmag), galaxy.mag_err,
-                             galcolor, refmagerr=np.array(galaxy.refmag_err),
+                             galcolor, self.col_err_ratio,
+                             refmagerr=np.array(galaxy.refmag_err),
                              lupcorr=self.lupcorr[magind,zinds,:],
                              calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)
 
@@ -538,7 +543,8 @@ class RedSequenceColorPar(object):
         return compute_chisq(self.covmat[:,:,zind], self.c[zind,:],
                              self.slope[zind,:], self.pivotmag[zind],
                              galaxies.refmag, galaxies.mag_err,
-                             galcolor, refmagerr=galaxies.refmag_err,
+                             galcolor, self.col_err_ratio,
+                             refmagerr=galaxies.refmag_err,
                              lupcorr=self.lupcorr[magind,zind,:],
                              calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)
 
