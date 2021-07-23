@@ -50,7 +50,7 @@ class SelectSpecRedTestCase(unittest.TestCase):
         redgals = fitsio.read(config.redgalfile, ext=1)
         redgalmodel = fitsio.read(config.redgalmodelfile, ext=1)
 
-        self.assertEqual(redgals.size, 1200)
+        self.assertEqual(redgals.size, 1198)
 
         testing.assert_almost_equal(redgalmodel['meancol'][0][:, 1],
                                     np.array([0.78079545, 1.0870565,  1.4724078]), 3)

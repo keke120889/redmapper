@@ -100,9 +100,10 @@ class RedSequenceFitter(object):
     intrinsic scatter.
     """
     def __init__(self, mean_nodes,
-                 redshifts, colors, errs, dmags=None, trunc=None,
+                 redshifts, colors, mag_errs, dmags=None, trunc=None,
                  slope_nodes=None, scatter_nodes=None, lupcorrs=None,
-                 probs=None, bkgs=None, scatter_max=None, use_scatter_prior=False):
+                 probs=None, bkgs=None, scatter_max=None, use_scatter_prior=False,
+                 dmags_err_ratio=None):
         """
         Instantiate a RedSequenceFitter
 
@@ -114,8 +115,8 @@ class RedSequenceFitter(object):
            Float array of input redshifts for fit
         colors: `np.array`
            Float array of input colors to fit
-        errs: `np.array`
-           Float array of input color errors to fit
+        mag_errs: `np.array`
+           Float array of input mag errors to fit [size, 2]
         dmags: `np.array`, optional
            Float array of delta-mag (refmag - pivot) (location on x axis for slope).
            Must have same length as colors if used.  Default is None (don't fit slope).
@@ -145,6 +146,8 @@ class RedSequenceFitter(object):
            Maximum intrinsic scatter allowed for any node.  Default is None (no max).
         use_scatter_prior: `bool`, optional
            Use Jeffry's prior on intrinsic scatter.  Default is False.
+        dmags_err_ratio : `np.ndarray`, optional
+            Delta-mag for error ratio computation.
         """
 
         self._use_scatter_prior = use_scatter_prior
@@ -161,7 +164,7 @@ class RedSequenceFitter(object):
 
         self._redshifts = np.atleast_1d(redshifts).astype(np.float64)
         self._colors = np.atleast_1d(colors).astype(np.float64)
-        self._err2s = np.atleast_1d(errs).astype(np.float64)**2.
+        self._mag_err2s = np.atleast_2d(mag_errs).astype(np.float64)**2.
 
         self._n_mean_nodes = self._mean_nodes.size
         self._n_slope_nodes = self._slope_nodes.size
@@ -169,8 +172,10 @@ class RedSequenceFitter(object):
 
         if self._redshifts.size != self._colors.size:
             raise ValueError("Number of redshifts must be equal to colors")
-        if self._redshifts.size != self._err2s.size:
-            raise ValueError("Number of redshifts must be equal to errs")
+        if self._redshifts.size != self._mag_err2s.shape[0]:
+            raise ValueError("Number of redshifts must be equal to mag_errs.shape[1]")
+        if self._mag_err2s.shape[1] != 2:
+            raise ValueError("Mag_errs must by 2xNgals")
 
         if trunc is not None:
             self._trunc = np.atleast_1d(trunc).astype(np.float64)
@@ -187,6 +192,13 @@ class RedSequenceFitter(object):
         else:
             self._dmags = np.zeros(self._redshifts.size).astype(np.float64)
             self._has_dmags = False
+
+        if dmags_err_ratio is not None:
+            self._dmags_err_ratio = np.atleast_1d(dmags_err_ratio).astype(np.float64)
+            if self._redshifts.size != self._dmags_err_ratio.size:
+                raise ValueError("Number of redshifts must be equal to dmags_err_ratio")
+        else:
+            self._dmags_err_ratio = np.zeros(self._redshifts.size)
 
         if lupcorrs is not None:
             self._lupcorrs = np.atleast_1d(lupcorrs).astype(np.float64)
@@ -226,7 +238,7 @@ class RedSequenceFitter(object):
 
     def fit(self, p0_mean, p0_slope, p0_scatter,
             fit_mean=False, fit_slope=False, fit_scatter=False,
-            min_scatter=0.001, err_ratio=None):
+            min_scatter=0.001, err_ratio_pars=None, fit_err_ratio_ind=[0, 1]):
         """
         Fit the red sequence mean, slope, and intrinsic scatter.
 
@@ -249,9 +261,11 @@ class RedSequenceFitter(object):
            Fit the scatter? (else fix to p0_scatter).  Default is False.
         min_scatter: `float`, optional
            Minimum intrinsic scatter.  Default is 0.001.
-        err_ratio : `float`, optional
-            Error ratio parameter.  Will be fit if fit_scatter=True and is
+        err_ratio_pars : `float`, optional
+            Error ratio parameters.  Will be fit if fit_scatter=True and is
             not None.
+        fit_err_ratio_ind : array-like, optional
+            Magnitude indices to apply error ratio to fit.
 
         Returns
         -------
@@ -266,13 +280,15 @@ class RedSequenceFitter(object):
         self._fit_slope = fit_slope
         self._fit_scatter = fit_scatter
         self._min_scatter = min_scatter
-        if err_ratio is not None:
-            self._has_err_ratio = True
-            self._err_ratio = err_ratio
+        if err_ratio_pars is not None:
+            self._has_err_ratios = True
+            self._err_ratio_pars = err_ratio_pars
+            self._fit_err_ratio_ind = fit_err_ratio_ind
         else:
             # Do not fit, use 1.0
-            self._has_err_ratio = False
-            self._err_ratio = 1.0
+            self._has_err_ratios = False
+            self._err_ratio_pars = [1.0, 0.0]
+            self._fit_err_ratio_ind = []
 
         if not self._has_dmags and self._fit_slope:
             raise ValueError("Can only do fit_slope if dmags were supplied")
@@ -301,9 +317,11 @@ class RedSequenceFitter(object):
                     bounds.append([self._min_scatter, self._scatter_max[i]])
                 else:
                     bounds.append([self._min_scatter, np.inf])
-            if self._has_err_ratio:
-                p0 = np.append(p0, self._err_ratio)
+            if self._has_err_ratios:
+                p0 = np.append(p0, self._err_ratio_pars[0])
                 bounds.append([0.5, 10.0])
+                p0 = np.append(p0, self._err_ratio_pars[1])
+                bounds.append([-5.0, 5.0])
 
         if ctr == 0:
             raise ValueError("Must select at least one of fit_mean, fit_slope, fit_scatter")
@@ -317,7 +335,16 @@ class RedSequenceFitter(object):
             self._gslope = spl(self._redshifts)
         if not self._fit_scatter:
             spl = CubicSpline(self._scatter_nodes, p0_scatter)
-            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + self._err_ratio**2.*self._err2s)
+            err_ratios = self._err_ratio_pars[0] + self._err_ratio_pars[1]*self._dmags_err_ratio
+            if 0 in self._fit_err_ratio_ind:
+                e2 = (err_ratios**2.)*self._mag_err2s[:, 0]
+            else:
+                e2 = self._mag_err2s[:, 0]
+            if 1 in self._fit_err_ratio_ind:
+                e2 += (err_ratios**2.)*self._mag_err2s[:, 1]
+            else:
+                e2 += self._mag_err2s[:, 1]
+            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + e2)
 
         if not self._fit_scatter and self._trunc is not None:
             self._phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
@@ -341,8 +368,8 @@ class RedSequenceFitter(object):
         if self._fit_slope:
             retval.append(pars[self._slope_index: self._slope_index + self._n_slope_nodes])
         if self._fit_scatter:
-            if self._has_err_ratio:
-                retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes + 1])
+            if self._has_err_ratios:
+                retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes + 2])
             else:
                 retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
 
@@ -379,12 +406,21 @@ class RedSequenceFitter(object):
         if self._fit_scatter:
             # We are fitting the scatter
             spl = CubicSpline(self._scatter_nodes, pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
-            if self._has_err_ratio:
+            if self._has_err_ratios:
                 # Always the last one
-                err_ratio = pars[-1]
+                err_ratio_pars = pars[-2: ]
             else:
-                err_ratio = 1.0
-            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + err_ratio**2.*self._err2s)
+                err_ratio_pars = [1.0, 0.0]
+            err_ratios = err_ratio_pars[0] + err_ratio_pars[1]*self._dmags_err_ratio
+            if 0 in self._fit_err_ratio_ind:
+                e2 = (err_ratios**2.)*self._mag_err2s[:, 0]
+            else:
+                e2 = self._mag_err2s[:, 0]
+            if 1 in self._fit_err_ratio_ind:
+                e2 += (err_ratios**2.)*self._mag_err2s[:, 1]
+            else:
+                e2 += self._mag_err2s[:, 1]
+            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + e2)
 
         if self._fit_scatter and self._trunc is not None:
             phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))

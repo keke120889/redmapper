@@ -78,7 +78,9 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(medscatpars, [0.02407928, 0.02745547, 0.03131481], 4)
 
         # And the red sequence fitter part
-        rsfitter = RedSequenceFitter(nodes, fitdata['Z'], fitdata['GALCOLOR'], fitdata['GALCOLOR_ERR'], use_scatter_prior=False)
+        mag_err = np.zeros((fitdata.size, 2))
+        mag_err[:, 0] = fitdata['GALCOLOR_ERR']
+        rsfitter = RedSequenceFitter(nodes, fitdata['Z'], fitdata['GALCOLOR'], mag_err, use_scatter_prior=False)
         p0_mean = medpars
         p0_slope = np.zeros(nodes.size)
         p0_scatter = medscatpars * 1.4826
@@ -97,7 +99,7 @@ class FitterTestCase(unittest.TestCase):
         # If we don't have the dmags then this will raise a ValueError
         self.assertRaises(ValueError, rsfitter.fit, p0_mean, p0_slope, p0_scatter, fit_slope=True)
 
-        rsfitter = RedSequenceFitter(nodes, fitdata['Z'], fitdata['GALCOLOR'], fitdata['GALCOLOR_ERR'], dmags=fitdata['REFMAG'] - np.median(fitdata['REFMAG']))
+        rsfitter = RedSequenceFitter(nodes, fitdata['Z'], fitdata['GALCOLOR'], mag_err, dmags=fitdata['REFMAG'] - np.median(fitdata['REFMAG']))
         slopepars, = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_slope=True)
 
         # These values seem reasonable, but this is just a toy test
@@ -126,7 +128,7 @@ class FitterTestCase(unittest.TestCase):
         ok, = np.where(np.abs(fitdata['GALCOLOR'] - m) < (nsig * mscat))
         trunc = nsig * mscat[ok]
         rsfitter = RedSequenceFitter(nodes, fitdata['Z'][ok],
-                                     fitdata['GALCOLOR'][ok], fitdata['GALCOLOR_ERR'][ok],
+                                     fitdata['GALCOLOR'][ok], mag_err[ok, :],
                                      dmags=fitdata['REFMAG'][ok] - np.median(fitdata['REFMAG'][ok]),
                                      trunc=trunc)
         meanpars3, = rsfitter.fit(p0_mean, p0_slope, p0_scatter, fit_mean=True)
