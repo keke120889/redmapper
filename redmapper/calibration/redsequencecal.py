@@ -653,11 +653,11 @@ class RedSequenceCalibrator(object):
                 if 0 not in fit_err_ratio_ind:
                     # We are not fitting 0, so we already have the parameters.
                     err_0 *= (self.pars.mag_err_ratio_int[j] +
-                              self.pars.mag_err_ratio_int[j]*dmags_err_ratio)
+                              self.pars.mag_err_ratio_slope[j]*dmags_err_ratio)
                 if 1 not in fit_err_ratio_ind:
                     # We are not fitting 1, so we already have the parameters.
                     err_1 *= (self.pars.mag_err_ratio_int[j + 1] +
-                              self.pars.mag_err_ratio_int[j + 1]*dmags_err_ratio)
+                              self.pars.mag_err_ratio_slope[j + 1]*dmags_err_ratio)
 
                 ebinfitter = ErrorBinFitter(delta_col,
                                             dmags_err_ratio,
