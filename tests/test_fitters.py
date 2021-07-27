@@ -8,6 +8,7 @@ from redmapper.fitters import EcgmmFitter
 from redmapper.fitters import MedZFitter
 from redmapper.fitters import RedSequenceFitter
 from redmapper.fitters import CorrectionFitter
+from redmapper.fitters import ErrorBinFitter
 from redmapper.utilities import make_nodes, CubicSpline
 
 class FitterTestCase(unittest.TestCase):
@@ -171,7 +172,6 @@ class FitterTestCase(unittest.TestCase):
         p0_bkg = np.zeros(fitdata['SNODES'][0].size) + 0.01
         pars_mean, = corrfitter.fit(p0_mean, p0_slope, p0_r, p0_bkg, fit_mean=True)
 
-        #testing.assert_almost_equal(pars_mean, np.array([0.00484127, 0.00159642, -0.00019032]), 4)
         testing.assert_almost_equal(pars_mean, np.array([0.00483505, 0.00159392, -0.00018447]), 5)
 
         p0_mean = pars_mean
@@ -189,6 +189,33 @@ class FitterTestCase(unittest.TestCase):
         testing.assert_almost_equal(pars_mean, np.array([0.00518834, 0.00178504, 0.00117311]), 5)
         testing.assert_almost_equal(pars_r, np.array([0.81519327, 0.33098604]), 5)
         testing.assert_almost_equal(pars_bkg, np.array([0., 0.00043576]), 5)
+
+    def test_error_bin_fitter(self):
+        """Test the error ratio fitter."""
+        # Create a fake set of data with a ~2x error ratio, and 0.05 mag sig_int.
+        np.random.seed(12345)
+
+        ngal = 10000
+
+        dmag = np.random.uniform(low=-6.0, high=2.0, size=ngal)
+        sigint = np.zeros(ngal) + 0.05
+        delta_col_true = np.random.normal(0.0, scale=sigint, size=ngal)
+        err_0_true = np.zeros(ngal) + 0.02
+        err_1_true = np.zeros(ngal) + 0.03
+
+        delta_col = delta_col_true + np.random.normal(0.0, scale=err_0_true, size=ngal) + np.random.normal(0.0, scale=err_1_true, size=ngal)
+
+        err_0_scale = 2.0 - 0.5*dmag
+        err_1_scale = 2.0 - 0.5*dmag
+        err_0_obs = err_0_true/err_0_scale
+        err_1_obs = err_1_true/err_1_scale
+
+        fitter = ErrorBinFitter(delta_col, dmag, err_0_obs, err_1_obs, sigint**2.)
+        pars = fitter.fit([1.0, 0.0], scale_indices=[0, 1])
+
+        # These are approximately the input 2.0/-0.5 values.
+        self.assertTrue(np.abs(pars[0] - 2.0) < 0.05)
+        self.assertTrue(np.abs(pars[1] - (-0.5)) < 0.05)
 
 
 if __name__=='__main__':
