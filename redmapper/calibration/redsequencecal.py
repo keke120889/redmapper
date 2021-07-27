@@ -8,7 +8,7 @@ import esutil
 from scipy.optimize import least_squares
 
 from ..configuration import Configuration
-from ..fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter
+from ..fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, ErrorBinFitter
 from ..redsequence import RedSequenceColorPar
 from ..color_background import ColorBackground
 from ..galaxy import GalaxyCatalog
@@ -632,9 +632,42 @@ class RedSequenceCalibrator(object):
                                                 fit_mean=True, fit_slope=True, fit_scatter=True, err_ratio_pars=err_ratio_pars, fit_err_ratio_ind=fit_err_ratio_ind)
 
             if self.config.calib_fit_err_ratio:
-                err_ratio_int = scvals[-2]
-                err_ratio_slope = scvals[-1]
+                err_ratio_int_fit = scvals[-2]
+                err_ratio_slope_fit = scvals[-1]
                 scvals = scvals[: -2]
+
+                spl = CubicSpline(self.pars._ndarray[self.ztag[j]],
+                                  cvals)
+                gmean = spl(gals.z)
+                spl = CubicSpline(self.pars._ndarray[self.zstag[j]],
+                                  svals)
+                gslope = spl(gals.z)
+                spl = CubicSpline(self.pars.covmat_z,
+                                  scvals)
+                gsig = np.clip(spl(gals.z), 0.001, None)
+
+                delta_col = gals.galcol[:, j] - (gmean + gslope*dmags)
+
+                err_0 = gals.mag_err[:, j].copy()
+                err_1 = gals.mag_err[:, j + 1].copy()
+                if 0 not in fit_err_ratio_ind:
+                    # We are not fitting 0, so we already have the parameters.
+                    err_0 *= (self.pars.mag_err_ratio_int[j] +
+                              self.pars.mag_err_ratio_int[j]*dmags_err_ratio)
+                if 1 not in fit_err_ratio_ind:
+                    # We are not fitting 1, so we already have the parameters.
+                    err_1 *= (self.pars.mag_err_ratio_int[j + 1] +
+                              self.pars.mag_err_ratio_int[j + 1]*dmags_err_ratio)
+
+                ebinfitter = ErrorBinFitter(delta_col,
+                                            dmags_err_ratio,
+                                            err_0,
+                                            err_1,
+                                            gsig**2.)
+                ebinpars = ebinfitter.fit([1.0, 0.0], scale_indices=fit_err_ratio_ind)
+
+                err_ratio_int = ebinpars[0]
+                err_ratio_slope = ebinpars[1]
 
                 if c == 0:
                     self.pars.mag_err_ratio_int[j] = err_ratio_int

@@ -6,6 +6,7 @@ the median relations, mean relations, scatter, covariance, etc.
 import numpy as np
 from scipy import special
 import scipy.optimize
+import esutil
 import warnings
 
 from .utilities import CubicSpline, interpol
@@ -1056,3 +1057,126 @@ class EcgmmFitter(object):
         t = np.sum(np.log(g))
 
         return -t
+
+
+class ErrorBinFitter(object):
+    """Class for fitting error ratios in bins, using median statistics.
+
+    Parameters
+    ----------
+    delta_col : `np.ndarray`
+        Array of delta colors
+    delta_mag : `np.ndarray`
+        Array of delta mag (mag - pivot)
+    err_0 : `np.ndarray`
+        Raw or scaled error for first magnitude in color
+    err_1 : np.ndarray`
+        Raw or scaled error for second magnitude in color
+    sigint2 : `np.ndarray`
+        Intrinsic scatter squared.
+    binsize : `float`
+        Bin size.
+    ntrial : `int`
+        Number of trials for bootstrap errors.
+    """
+    def __init__(self, delta_col, delta_mag, err_0, err_1, sigint2, binsize=0.5, ntrial=100):
+        self.delta_col = delta_col
+        self.delta_mag = delta_mag
+        self.err_0 = err_0
+        self.err_1 = err_1
+        self.sigint2 = sigint2
+
+        h_full = esutil.stat.histogram(delta_mag, binsize=binsize, more=True)
+
+        self.nbin = h_full['nbin']
+        self.binmag = h_full['center']
+        self.rev = h_full['rev']
+
+        delta_err = np.sqrt(self.sigint2 +
+                            self.err_0**2. +
+                            self.err_1**2.)
+        pulls = self.delta_col/delta_err
+
+        self.mad_err = np.zeros(self.nbin)
+        for i in range(self.nbin):
+            bin_mads = np.zeros(ntrial)
+            i1a = self.rev[self.rev[i]: self.rev[i + 1]]
+            for j in range(ntrial):
+                r = np.random.choice(i1a, size=i1a.size, replace=True)
+
+                med = np.median(pulls[r])
+                bin_mads[j] = 1.4826*np.median(np.abs(pulls[r] - med))
+
+            mad = np.median(bin_mads)
+            self.mad_err[i] = 1.4826*np.median(np.abs(bin_mads - mad))
+
+    def fit(self, p0, scale_indices=[0]):
+        """Perform a fit to the error scaling as a function of magnitude.
+
+        Parameters
+        ----------
+        p0 : array-like
+            Initial fit parameters, intercept and slope.
+        scale_indices : `list`
+            List of mag indices to scale.  Can be [0], [1], or [0, 1]
+
+        Returns
+        -------
+        pars : `np.ndarray`
+            Fit parameters, intercept and slope.
+        """
+        self._scale_indices = scale_indices
+
+        bounds = [[0.5, 10.0],
+                  [-5.0, 5.0]]
+
+        res = scipy.optimize.minimize(self,
+                                      p0,
+                                      method='L-BFGS-B',
+                                      bounds=bounds,
+                                      jac=False,
+                                      options={'maxfun': 2000,
+                                               'maxiter': 2000,
+                                               'maxcor': 20,
+                                               'eps': 1e-5,
+                                               'gtol': 1e-8},
+                                      callback=None)
+        return res.x
+
+    def __call__(self, pars):
+        """Compute the chi2 for the pars.
+
+        Parameters
+        ----------
+        pars : `list`
+            Parameters, intercept and slope.
+
+        Returns
+        -------
+        chi2 : `float`
+        """
+        mad = np.zeros(self.nbin)
+
+        err_ratio = pars[0] + pars[1]*self.delta_mag
+
+        if 0 in self._scale_indices:
+            scaled_err_0 = err_ratio*self.err_0
+        else:
+            scaled_err_0 = self.err_0
+        if 1 in self._scale_indices:
+            scaled_err_1 = err_ratio*self.err_1
+        else:
+            scaled_err_1 = self.err_1
+
+        delta_err = np.sqrt(self.sigint2 +
+                            scaled_err_0**2. +
+                            scaled_err_1**2.)
+        pulls = self.delta_col/delta_err
+
+        for i in range(self.nbin):
+            i1a = self.rev[self.rev[i]: self.rev[i + 1]]
+            med = np.median(pulls[i1a])
+            mad[i] = 1.4826*np.median(np.abs(pulls[i1a] - med))
+
+        chi2 = np.sum((mad - 1.0)**2./self.mad_err**2., dtype=np.float64)
+        return chi2
