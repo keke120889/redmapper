@@ -7,7 +7,7 @@ from . import _chisq_dist_pywrap
 #    pass
 
 
-def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, col_err_ratio, refmagerr=None, lupcorr=None, calc_chisq=True, calc_lkhd=False, nophotoerr=False):
+def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, refmagerr=None, lupcorr=None, calc_chisq=True, calc_lkhd=False, nophotoerr=False):
     """
     Compute the chi-squared for an galaxy or set of galaxies at a redshift or
     set of redshifts.
@@ -55,8 +55,6 @@ def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, col_err_rat
        mode 0:
        mode 1:
        mode 2:
-    col_err_ratio : `np.ndarray`
-       Float array of color error ratio factors (one per color)
     refmagerr: `np.array`, optional
        Float array of reference magnitude errors.  Default is None, don't
        use reference magnitude error in computing chi-squared.
@@ -92,7 +90,6 @@ def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, col_err_rat
     _refmag = np.atleast_1d(refmag.astype('f8'))
     _magerr = magerr.astype('f8')
     _color = color.astype('f8')
-    _col_err_ratio = col_err_ratio.astype('f8')
 
     if (refmagerr is None):
         _refmagerr = np.zeros(refmag.size,dtype='f8')
@@ -119,9 +116,6 @@ def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, col_err_rat
 
     #self.ncol = self.c.shape[0]
     nmag = ncol + 1
-
-    if col_err_ratio.size != ncol:
-        raise ValueError("col_err_ratio must have same length as ncol (%d)" % (ncol))
 
     # common
     if (slope.ndim != c.ndim) :
@@ -254,7 +248,6 @@ def compute_chisq(covmat, c, slope, pivotmag, refmag, magerr, color, col_err_rat
                                                _refmagerr,
                                                _magerr,
                                                _color,
-                                               _col_err_ratio,
                                                _lupcorr)
 
     if calc_chisq:

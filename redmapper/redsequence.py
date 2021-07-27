@@ -503,7 +503,7 @@ class RedSequenceColorPar(object):
         return compute_chisq(self.covmat[:,:,zinds], self.c[zinds,:],
                              self.slope[zinds,:], self.pivotmag[zinds],
                              np.array(galaxy.refmag), mag_err,
-                             galcolor, np.ones(self.ncol),
+                             galcolor,
                              refmagerr=np.array(galaxy.refmag_err),
                              lupcorr=self.lupcorr[magind,zinds,:],
                              calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)
@@ -556,7 +556,7 @@ class RedSequenceColorPar(object):
         return compute_chisq(self.covmat[:,:,zind], self.c[zind,:],
                              self.slope[zind,:], self.pivotmag[zind],
                              galaxies.refmag, mag_err,
-                             galcolor, np.ones(self.ncol),
+                             galcolor,
                              refmagerr=galaxies.refmag_err,
                              lupcorr=self.lupcorr[magind,zind,:],
                              calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)

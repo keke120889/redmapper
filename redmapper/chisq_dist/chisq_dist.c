@@ -13,7 +13,7 @@
 int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol, 
 	       double *covmat, double *c, double *slope,
 	       double *pivotmag, double *refmag, double *refmagerr, double *magerr, 
-	       double *color, double *col_err_ratio,
+	       double *color,
                double *lupcorr, double *dist, double sigint) {
 
   //int i,j,k;
@@ -26,7 +26,6 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
   gsl_matrix *cimat;
   gsl_matrix *cobsmat;
   gsl_matrix *cobstemp;
-  gsl_matrix *cratiomat;
   gsl_matrix *mmetric;
   gsl_matrix *mrotmat;
   gsl_vector *vdcm;
@@ -60,19 +59,6 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
   mmetric=gsl_matrix_alloc(ncol,ncol);
   vdc = gsl_vector_alloc(ncol);
   vdcm=gsl_vector_alloc(ncol);
-
-  // The error ratio scaling matrix, col_err_ratio along
-  // the diagonal, and 1.0s otherwise.
-  cratiomat = gsl_matrix_alloc(ncol, ncol);
-  for (i=0; i<ncol; i++) {
-    for (j=0; j<ncol; j++) {
-      if (i == j) {
-        gsl_matrix_set(cratiomat, i, i, col_err_ratio[i]);
-      } else {
-        gsl_matrix_set(cratiomat, i, j, 1.0);
-      }
-    }
-  }
 
   cimat = NULL;
   if (refmagerr != NULL) {
@@ -126,7 +112,6 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
       gsl_blas_dgemm(CblasNoTrans, CblasTrans,
 		     1.0, mrotmat, cobstemp,
 		     0.0, cobsmat);
-      gsl_matrix_mul_elements(cobsmat, cratiomat);
 
       mvcovmat = gsl_matrix_view_array(covmat_temp, ncol, ncol);
 
@@ -242,7 +227,6 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
     gsl_blas_dgemm(CblasNoTrans, CblasTrans,
 		   1.0, mrotmat, cobstemp,
 		   0.0, cobsmat);
-    gsl_matrix_mul_elements(cobsmat, cratiomat);
 
     for (i=0;i<ncalc;i++) {
       mvcovmat = gsl_matrix_view_array(&covmat_temp[covmat_stride*i], ncol, ncol);
@@ -356,7 +340,6 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 	  gsl_blas_dgemm(CblasNoTrans, CblasTrans,
 			 1.0, mrotmat, cobstemp,
 			 0.0, cobsmat);
-          gsl_matrix_mul_elements(cobsmat, cratiomat);
 
 	  mvcovmat = gsl_matrix_view_array(&covmat_temp[covmat_stride*i], ncol, ncol);
 

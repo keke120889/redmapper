@@ -40,7 +40,6 @@ ChisqDistObject_init(struct ChisqDistObject* self, PyObject* args)
     PyArrayObject *refmagerr_obj = NULL;
     PyArrayObject *magerr_obj = NULL;
     PyArrayObject *color_obj = NULL;
-    PyArrayObject *col_err_ratio_obj = NULL;
     PyArrayObject *lupcorr_obj = NULL;
 
     // debug
@@ -49,7 +48,7 @@ ChisqDistObject_init(struct ChisqDistObject* self, PyObject* args)
     self->allocated = 0;
 
     if (!PyArg_ParseTuple(args,
-			  (char*)"iiiiOOOOOOOOOO",
+			  (char*)"iiiiOOOOOOOOO",
 			  &mode,
 			  &ngal,
 			  &nz,
@@ -62,7 +61,6 @@ ChisqDistObject_init(struct ChisqDistObject* self, PyObject* args)
 			  &refmagerr_obj,
 			  &magerr_obj,
 			  &color_obj,
-                          &col_err_ratio_obj,
 			  &lupcorr_obj)){
 	PyErr_SetString(PyExc_RuntimeError,"Failed to parse init");
 	return -1;
@@ -118,11 +116,6 @@ ChisqDistObject_init(struct ChisqDistObject* self, PyObject* args)
         return -1;
     }
     self->chisq_dist->color = (double *) PyArray_DATA(color_obj);
-    if (PyArray_TYPE(col_err_ratio_obj) != NPY_FLOAT64) {
-        PyErr_SetString(PyExc_ValueError, "col_err_ratio must be of type float64");
-        return -1;
-    }
-    self->chisq_dist->col_err_ratio = (double *) PyArray_DATA(col_err_ratio_obj);
     if (PyArray_TYPE(lupcorr_obj) != NPY_FLOAT64) {
         PyErr_SetString(PyExc_ValueError, "lupcorr must be of type float64");
         return -1;
@@ -177,7 +170,6 @@ PyObject* ChisqDistObject_compute(const struct ChisqDistObject* self, PyObject *
 	       self->chisq_dist->ncol, self->chisq_dist->covmat, self->chisq_dist->c,
 	       self->chisq_dist->slope, self->chisq_dist->pivotmag, self->chisq_dist->refmag,
 	       self->chisq_dist->refmagerr, self->chisq_dist->magerr, self->chisq_dist->color,
-               self->chisq_dist->col_err_ratio,
 	       self->chisq_dist->lupcorr, chisq, self->chisq_dist->sigint);
 
     return chisq_obj;
