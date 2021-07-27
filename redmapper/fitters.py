@@ -1110,6 +1110,9 @@ class ErrorBinFitter(object):
             mad = np.median(bin_mads)
             self.mad_err[i] = 1.4826*np.median(np.abs(bin_mads - mad))
 
+        # We require a positive error estimate (if too few in a bin)
+        self.use_bins = np.where(self.mad_err > 0.0)
+
     def fit(self, p0, scale_indices=[0]):
         """Perform a fit to the error scaling as a function of magnitude.
 
@@ -1178,5 +1181,5 @@ class ErrorBinFitter(object):
             med = np.median(pulls[i1a])
             mad[i] = 1.4826*np.median(np.abs(pulls[i1a] - med))
 
-        chi2 = np.sum((mad - 1.0)**2./self.mad_err**2., dtype=np.float64)
+        chi2 = np.sum((mad[self.use_bins] - 1.0)**2./self.mad_err[self.use_bins]**2., dtype=np.float64)
         return chi2
