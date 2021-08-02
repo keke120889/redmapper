@@ -569,3 +569,190 @@ class NzPlot(object):
         """
         return self.config.redmapper_filename(self._redmapper_name, paths=(self.config.plotpath,),
                                               withversion=self._withversion, filetype='png')
+
+
+class NLambdaPlot(object):
+    """
+    Class to make a plot with cluster catalog n(lambda).
+
+    Parameters
+    ----------
+    conf : `redmapper.Configuration` or `str`
+        Configuration object or filename.
+    binsize : `float`, optional
+        Richness bin size.  Default is 1.0.
+    """
+    def __init__(self, conf, binsize=1.0):
+        if not isinstance(conf, Configuration):
+            self.config = Configuration(conf)
+        else:
+            self.config = conf
+
+        self.binsize = binsize
+        self._redmapper_name = 'nlambda'
+
+    def plot_cluster_catalog(self, cat, withversion=False):
+        """
+        Plot the n(lambda) for a cluster catalog.
+
+        Parameters
+        ----------
+        cat : `redmapper.ClusterCatalog`
+            Cluster catalog to plot.
+        withversion : `bool`, optional
+            Plots should be saved with the version string.
+        """
+        self.plot_nlambda(cat.Lambda,
+                          xlabel=r'$\lambda$',
+                          ylabel=r'$N$',
+                          redmapper_name=self._redmapper_name, withversion=withversion)
+
+    def plot_nlambda(self, lam, xlabel=None, ylabel=None,
+                     title=None, redmapper_name='nlambda', withversion=False):
+        """
+        Plot the n(lambda) for an arbitrary list of objects
+
+        Parameters
+        ----------
+        lam : `np.ndarray`
+            Array of richnesses
+        xlabel : `str`, optional
+            Plot xlabel.
+        ylabel : `str`, optional
+            Plot ylabel.
+        title : `str`, optional
+            Plot title.
+        redmapper_name : `str`, optional
+            Name to put into filename.
+        withversion : `bool`, optional
+            Plots should be saved with the version string.
+        """
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure(1, figsize=(8, 6))
+        fig.clf()
+
+        ax = fig.add_subplot(111)
+
+        ax.hist(lam, bins=np.arange(0, 200, self.binsize))
+        ax.set_yscale('log')
+        if xlabel is not None:
+            ax.set_xlabel(xlabel, fontsize=16)
+        if ylabel is not None:
+            ax.set_ylabel(ylabel, fontsize=16)
+        if title is not None:
+            ax.set_title(title, fontsize=16)
+
+        fig.tight_layout()
+
+        self._redmapper_name = redmapper_name
+        self._withversion = withversion
+        fig.savefig(self.filename)
+        plt.close(fig)
+
+    @property
+    def filename(self):
+        """
+        Get the filename that should be used to save the figure.
+
+        Returns
+        -------
+        filename: `str`
+           Formatted filename to save figure.
+        """
+        return self.config.redmapper_filename(self._redmapper_name, paths=(self.config.plotpath,),
+                                              withversion=self._withversion, filetype='png')
+
+
+class PositionPlot(object):
+    """
+    Class to make a simple location scatter plot.
+
+    Parameters
+    ----------
+    conf : `redmapper.Configuration` or `str`
+        Configuration object or filename.
+    """
+    def __init__(self, conf):
+        if not isinstance(conf, Configuration):
+            self.config = Configuration(conf)
+        else:
+            self.config = conf
+
+        self._redmapper_name = 'positions'
+
+    def plot_cluster_catalog(self, cat, withversion=False):
+        """
+        Plot the positions of a cluster catalog.
+
+        Parameters
+        ----------
+        cat : `redmapper.ClusterCatalog`
+            Cluster catalog to plot.
+        withversion : `bool`, optional
+            Plots should be saved with the version string.
+        """
+        self.plot_positions(cat.ra, cat.dec,
+                            redmapper_name=self._redmapper_name, withversion=withversion)
+
+    def plot_positions(self, ra, dec, title=None,
+                       redmapper_name='positions', withversion=False):
+        """
+        Plot the ra/dec positions.
+
+        Parameters
+        ----------
+        ra : `np.ndarray`
+           RA positions.
+        dec : `np.ndarray`
+           Dec positions.
+        title : `str`, optional
+            Plot title.
+        redmapper_name : `str`, optional
+            Name to put into filename.
+        withversion : `bool`, optional
+            Plots should be saved with the version string.
+        """
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure(1, figsize=(8, 6))
+        fig.clf()
+
+        ax = fig.add_subplot(111)
+
+        # Find plotting range for ra, dec...
+        delta_ra_range = ra.max() - ra.min()
+        ra_rot = (ra + 180) % 360.0
+        delta_ra_rot_range = ra_rot.max() - ra_rot.min()
+        if delta_ra_rot_range < delta_ra_range:
+            # Better to plot rotated
+            ra_to_plot = ra_rot
+        else:
+            ra_to_plot = ra
+
+        ax.plot(ra_to_plot, dec, 'r.')
+        ax.invert_xaxis()
+        ax.set_xlabel('RA', fontsize=16)
+        ax.set_ylabel('Dec', fontsize=16)
+        if title is not None:
+            ax.set_title(title, fontsize=16)
+
+        fig.tight_layout()
+
+        self._redmapper_name = redmapper_name
+        self._withversion = withversion
+        fig.savefig(self.filename)
+        plt.close(fig)
+
+    @property
+    def filename(self):
+        """
+        Get the filename that should be used to save the figure.
+
+        Returns
+        -------
+        filename: `str`
+           Formatted filename to save figure.
+        """
+        return self.config.redmapper_filename(self._redmapper_name, paths=(self.config.plotpath,),
+                                              withversion=self._withversion, filetype='png')
