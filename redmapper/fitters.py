@@ -6,6 +6,7 @@ the median relations, mean relations, scatter, covariance, etc.
 import numpy as np
 from scipy import special
 import scipy.optimize
+import esutil
 import warnings
 
 from .utilities import CubicSpline, interpol
@@ -100,9 +101,10 @@ class RedSequenceFitter(object):
     intrinsic scatter.
     """
     def __init__(self, mean_nodes,
-                 redshifts, colors, errs, dmags=None, trunc=None,
+                 redshifts, colors, mag_errs, dmags=None, trunc=None,
                  slope_nodes=None, scatter_nodes=None, lupcorrs=None,
-                 probs=None, bkgs=None, scatter_max=None, use_scatter_prior=False):
+                 probs=None, bkgs=None, scatter_max=None, use_scatter_prior=False,
+                 dmags_err_ratio=None):
         """
         Instantiate a RedSequenceFitter
 
@@ -114,8 +116,8 @@ class RedSequenceFitter(object):
            Float array of input redshifts for fit
         colors: `np.array`
            Float array of input colors to fit
-        errs: `np.array`
-           Float array of input color errors to fit
+        mag_errs: `np.array`
+           Float array of input mag errors to fit [size, 2]
         dmags: `np.array`, optional
            Float array of delta-mag (refmag - pivot) (location on x axis for slope).
            Must have same length as colors if used.  Default is None (don't fit slope).
@@ -145,6 +147,8 @@ class RedSequenceFitter(object):
            Maximum intrinsic scatter allowed for any node.  Default is None (no max).
         use_scatter_prior: `bool`, optional
            Use Jeffry's prior on intrinsic scatter.  Default is False.
+        dmags_err_ratio : `np.ndarray`, optional
+            Delta-mag for error ratio computation.
         """
 
         self._use_scatter_prior = use_scatter_prior
@@ -161,7 +165,7 @@ class RedSequenceFitter(object):
 
         self._redshifts = np.atleast_1d(redshifts).astype(np.float64)
         self._colors = np.atleast_1d(colors).astype(np.float64)
-        self._err2s = np.atleast_1d(errs).astype(np.float64)**2.
+        self._mag_err2s = np.atleast_2d(mag_errs).astype(np.float64)**2.
 
         self._n_mean_nodes = self._mean_nodes.size
         self._n_slope_nodes = self._slope_nodes.size
@@ -169,8 +173,10 @@ class RedSequenceFitter(object):
 
         if self._redshifts.size != self._colors.size:
             raise ValueError("Number of redshifts must be equal to colors")
-        if self._redshifts.size != self._err2s.size:
-            raise ValueError("Number of redshifts must be equal to errs")
+        if self._redshifts.size != self._mag_err2s.shape[0]:
+            raise ValueError("Number of redshifts must be equal to mag_errs.shape[1]")
+        if self._mag_err2s.shape[1] != 2:
+            raise ValueError("Mag_errs must by 2xNgals")
 
         if trunc is not None:
             self._trunc = np.atleast_1d(trunc).astype(np.float64)
@@ -187,6 +193,13 @@ class RedSequenceFitter(object):
         else:
             self._dmags = np.zeros(self._redshifts.size).astype(np.float64)
             self._has_dmags = False
+
+        if dmags_err_ratio is not None:
+            self._dmags_err_ratio = np.atleast_1d(dmags_err_ratio).astype(np.float64)
+            if self._redshifts.size != self._dmags_err_ratio.size:
+                raise ValueError("Number of redshifts must be equal to dmags_err_ratio")
+        else:
+            self._dmags_err_ratio = np.zeros(self._redshifts.size)
 
         if lupcorrs is not None:
             self._lupcorrs = np.atleast_1d(lupcorrs).astype(np.float64)
@@ -226,7 +239,7 @@ class RedSequenceFitter(object):
 
     def fit(self, p0_mean, p0_slope, p0_scatter,
             fit_mean=False, fit_slope=False, fit_scatter=False,
-            min_scatter=0.001):
+            min_scatter=0.001, err_ratio_pars=None, fit_err_ratio_ind=[0, 1]):
         """
         Fit the red sequence mean, slope, and intrinsic scatter.
 
@@ -249,6 +262,11 @@ class RedSequenceFitter(object):
            Fit the scatter? (else fix to p0_scatter).  Default is False.
         min_scatter: `float`, optional
            Minimum intrinsic scatter.  Default is 0.001.
+        err_ratio_pars : `float`, optional
+            Error ratio parameters.  Will be fit if fit_scatter=True and is
+            not None.
+        fit_err_ratio_ind : array-like, optional
+            Magnitude indices to apply error ratio to fit.
 
         Returns
         -------
@@ -263,6 +281,15 @@ class RedSequenceFitter(object):
         self._fit_slope = fit_slope
         self._fit_scatter = fit_scatter
         self._min_scatter = min_scatter
+        if err_ratio_pars is not None:
+            self._has_err_ratios = True
+            self._err_ratio_pars = err_ratio_pars
+            self._fit_err_ratio_ind = fit_err_ratio_ind
+        else:
+            # Do not fit, use 1.0
+            self._has_err_ratios = False
+            self._err_ratio_pars = [1.0, 0.0]
+            self._fit_err_ratio_ind = []
 
         if not self._has_dmags and self._fit_slope:
             raise ValueError("Can only do fit_slope if dmags were supplied")
@@ -291,6 +318,11 @@ class RedSequenceFitter(object):
                     bounds.append([self._min_scatter, self._scatter_max[i]])
                 else:
                     bounds.append([self._min_scatter, np.inf])
+            if self._has_err_ratios:
+                p0 = np.append(p0, self._err_ratio_pars[0])
+                bounds.append([0.5, 10.0])
+                p0 = np.append(p0, self._err_ratio_pars[1])
+                bounds.append([-5.0, 5.0])
 
         if ctr == 0:
             raise ValueError("Must select at least one of fit_mean, fit_slope, fit_scatter")
@@ -304,7 +336,16 @@ class RedSequenceFitter(object):
             self._gslope = spl(self._redshifts)
         if not self._fit_scatter:
             spl = CubicSpline(self._scatter_nodes, p0_scatter)
-            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + self._err2s)
+            err_ratios = self._err_ratio_pars[0] + self._err_ratio_pars[1]*self._dmags_err_ratio
+            if 0 in self._fit_err_ratio_ind:
+                e2 = (err_ratios**2.)*self._mag_err2s[:, 0]
+            else:
+                e2 = self._mag_err2s[:, 0]
+            if 1 in self._fit_err_ratio_ind:
+                e2 += (err_ratios**2.)*self._mag_err2s[:, 1]
+            else:
+                e2 += self._mag_err2s[:, 1]
+            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + e2)
 
         if not self._fit_scatter and self._trunc is not None:
             self._phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
@@ -328,7 +369,10 @@ class RedSequenceFitter(object):
         if self._fit_slope:
             retval.append(pars[self._slope_index: self._slope_index + self._n_slope_nodes])
         if self._fit_scatter:
-            retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
+            if self._has_err_ratios:
+                retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes + 2])
+            else:
+                retval.append(pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
 
         return retval
 
@@ -363,7 +407,21 @@ class RedSequenceFitter(object):
         if self._fit_scatter:
             # We are fitting the scatter
             spl = CubicSpline(self._scatter_nodes, pars[self._scatter_index: self._scatter_index + self._n_scatter_nodes])
-            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + self._err2s)
+            if self._has_err_ratios:
+                # Always the last one
+                err_ratio_pars = pars[-2: ]
+            else:
+                err_ratio_pars = [1.0, 0.0]
+            err_ratios = err_ratio_pars[0] + err_ratio_pars[1]*self._dmags_err_ratio
+            if 0 in self._fit_err_ratio_ind:
+                e2 = (err_ratios**2.)*self._mag_err2s[:, 0]
+            else:
+                e2 = self._mag_err2s[:, 0]
+            if 1 in self._fit_err_ratio_ind:
+                e2 += (err_ratios**2.)*self._mag_err2s[:, 1]
+            else:
+                e2 += self._mag_err2s[:, 1]
+            self._gsig = np.sqrt(np.clip(spl(self._redshifts), self._min_scatter, None)**2. + e2)
 
         if self._fit_scatter and self._trunc is not None:
             phi_bma = special.erf((self._trunc / self._gsig) / np.sqrt(2.))
@@ -999,3 +1057,129 @@ class EcgmmFitter(object):
         t = np.sum(np.log(g))
 
         return -t
+
+
+class ErrorBinFitter(object):
+    """Class for fitting error ratios in bins, using median statistics.
+
+    Parameters
+    ----------
+    delta_col : `np.ndarray`
+        Array of delta colors
+    delta_mag : `np.ndarray`
+        Array of delta mag (mag - pivot)
+    err_0 : `np.ndarray`
+        Raw or scaled error for first magnitude in color
+    err_1 : np.ndarray`
+        Raw or scaled error for second magnitude in color
+    sigint2 : `np.ndarray`
+        Intrinsic scatter squared.
+    binsize : `float`
+        Bin size.
+    ntrial : `int`
+        Number of trials for bootstrap errors.
+    """
+    def __init__(self, delta_col, delta_mag, err_0, err_1, sigint2, binsize=0.5, ntrial=100):
+        self.delta_col = delta_col
+        self.delta_mag = delta_mag
+        self.err_0 = err_0
+        self.err_1 = err_1
+        self.sigint2 = sigint2
+
+        h_full = esutil.stat.histogram(delta_mag, binsize=binsize, more=True)
+
+        self.nbin = h_full['nbin']
+        self.binmag = h_full['center']
+        self.rev = h_full['rev']
+
+        delta_err = np.sqrt(self.sigint2 +
+                            self.err_0**2. +
+                            self.err_1**2.)
+        pulls = self.delta_col/delta_err
+
+        self.mad_err = np.zeros(self.nbin)
+        for i in range(self.nbin):
+            bin_mads = np.zeros(ntrial)
+            i1a = self.rev[self.rev[i]: self.rev[i + 1]]
+            for j in range(ntrial):
+                r = np.random.choice(i1a, size=i1a.size, replace=True)
+
+                med = np.median(pulls[r])
+                bin_mads[j] = 1.4826*np.median(np.abs(pulls[r] - med))
+
+            mad = np.median(bin_mads)
+            self.mad_err[i] = 1.4826*np.median(np.abs(bin_mads - mad))
+
+        # We require a positive error estimate (if too few in a bin)
+        self.use_bins = np.where(self.mad_err > 0.0)
+
+    def fit(self, p0, scale_indices=[0]):
+        """Perform a fit to the error scaling as a function of magnitude.
+
+        Parameters
+        ----------
+        p0 : array-like
+            Initial fit parameters, intercept and slope.
+        scale_indices : `list`
+            List of mag indices to scale.  Can be [0], [1], or [0, 1]
+
+        Returns
+        -------
+        pars : `np.ndarray`
+            Fit parameters, intercept and slope.
+        """
+        self._scale_indices = scale_indices
+
+        bounds = [[0.5, 10.0],
+                  [-5.0, 5.0]]
+
+        res = scipy.optimize.minimize(self,
+                                      p0,
+                                      method='L-BFGS-B',
+                                      bounds=bounds,
+                                      jac=False,
+                                      options={'maxfun': 2000,
+                                               'maxiter': 2000,
+                                               'maxcor': 20,
+                                               'eps': 1e-5,
+                                               'gtol': 1e-8},
+                                      callback=None)
+        return res.x
+
+    def __call__(self, pars):
+        """Compute the chi2 for the pars.
+
+        Parameters
+        ----------
+        pars : `list`
+            Parameters, intercept and slope.
+
+        Returns
+        -------
+        chi2 : `float`
+        """
+        mad = np.zeros(self.nbin)
+
+        err_ratio = pars[0] + pars[1]*self.delta_mag
+
+        if 0 in self._scale_indices:
+            scaled_err_0 = err_ratio*self.err_0
+        else:
+            scaled_err_0 = self.err_0
+        if 1 in self._scale_indices:
+            scaled_err_1 = err_ratio*self.err_1
+        else:
+            scaled_err_1 = self.err_1
+
+        delta_err = np.sqrt(self.sigint2 +
+                            scaled_err_0**2. +
+                            scaled_err_1**2.)
+        pulls = self.delta_col/delta_err
+
+        for i in range(self.nbin):
+            i1a = self.rev[self.rev[i]: self.rev[i + 1]]
+            med = np.median(pulls[i1a])
+            mad[i] = 1.4826*np.median(np.abs(pulls[i1a] - med))
+
+        chi2 = np.sum((mad[self.use_bins] - 1.0)**2./self.mad_err[self.use_bins]**2., dtype=np.float64)
+        return chi2

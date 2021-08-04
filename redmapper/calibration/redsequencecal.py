@@ -4,16 +4,18 @@ import os
 import numpy as np
 import fitsio
 import time
+import esutil
 from scipy.optimize import least_squares
 
 from ..configuration import Configuration
-from ..fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter
+from ..fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, ErrorBinFitter
 from ..redsequence import RedSequenceColorPar
 from ..color_background import ColorBackground
 from ..galaxy import GalaxyCatalog
 from ..catalog import Catalog, Entry
 from ..zred_color import ZredColor
 from ..utilities import make_nodes, CubicSpline, interpol, RedGalInitialColors
+
 
 class RedSequenceCalibrator(object):
     """
@@ -100,10 +102,14 @@ class RedSequenceCalibrator(object):
                  ('maxrefmag', 'f4', pivotnodes.size),
                  ('medcol', 'f4', (pivotnodes.size, ncol)),
                  ('medcol_width', 'f4', (pivotnodes.size, ncol)),
+                 ('medcol_err_ratio', 'f4', (ncol, )),
                  ('covmat_z', 'f4', covmatnodes.size),
                  ('sigma', 'f4', (ncol, ncol, covmatnodes.size)),
                  ('covmat_amp', 'f4', (ncol, ncol, covmatnodes.size)),
                  ('covmat_slope', 'f4', (ncol, ncol, covmatnodes.size)),
+                 ('mag_err_ratio_int', 'f4', (nmag, )),
+                 ('mag_err_ratio_slope', 'f4', (nmag, )),
+                 ('mag_err_ratio_pivot', 'f4'),
                  ('corr_z', 'f4', corrnodes.size),
                  ('corr', 'f4', corrnodes.size),
                  ('corr_slope_z', 'f4', corrslopenodes.size),
@@ -145,6 +151,7 @@ class RedSequenceCalibrator(object):
         self.pars.corr_z = corrnodes
         self.pars.corr_slope_z = corrslopenodes
         self.pars.volume_factor_z = volnodes
+        self.pars.mag_err_ratio_pivot = self.config.calib_err_ratio_pivot
 
         for j in range(ncol):
             self.pars._ndarray[self.ztag[j]] = node_dict[self.ztag[j]]
@@ -420,6 +427,32 @@ class RedSequenceCalibrator(object):
             self.pars.medcol[:, j] = mvals
             self.pars.medcol_width[:, j] = 1.4826 * scvals
 
+            if (self.config.calib_fit_err_ratio):
+                # Compute overall pulls...
+                spl = CubicSpline(self.pars.pivotmag_z, self.pars.medcol[:, j])
+                model = spl(gals.z)
+                delta = gals.galcol[:, j] - model
+                col_err = gals.galcol_err[:, j]
+
+                # Step over values of r, look for closest to pulls of 1.0
+                err_ratios = np.arange(0.5, 10.0, 0.1)
+                sigma_pulls = np.zeros_like(err_ratios)
+                # Assume first bin median width is close to sig_int
+                sig_int = self.pars.medcol_width[0, j]
+
+                # Only use galaxies from the first 3 redshift bins 
+
+                for i in range(err_ratios.size):
+                    err = np.sqrt((err_ratios[i]*col_err)**2. + sig_int**2.)
+                    pulls = delta/err
+
+                    sigma_pulls[i] = 1.4826*np.median(np.abs(pulls - np.median(pulls)))
+
+                argmin = np.argmin(np.abs(sigma_pulls - 1.0))
+                self.pars.medcol_err_ratio[j] = err_ratios[argmin]
+            else:
+                self.pars.medcol_err_ratio[j] = 1.0
+
     def _calc_diagonal_pars(self, gals, doRaise=True):
         """
         Calculate the model parameters and diagonal elements of the covariance
@@ -455,32 +488,28 @@ class RedSequenceCalibrator(object):
         # Figure out the order of the colors for luptitude corrections
         mags = np.zeros((gals.size, self.config.nmag))
 
+        col_indices = np.zeros(ncol, dtype=np.int32)
+        sign_indices = np.zeros(ncol, dtype=np.int32)
+        mind_indices = np.zeros(ncol, dtype=np.int32)
+
+        c = 0
+        for j in range(self.config.ref_ind + 1, self.config.nmag):
+            col_indices[c] = j - 1
+            sign_indices[c] = -1
+            mind_indices[c] = j
+            c += 1
+        for j in range(self.config.ref_ind, 0, -1):
+            col_indices[c] = j - 1
+            sign_indices[c] = 1
+            mind_indices[c] = j - 1
+            c += 1
+
         if self.do_lupcorr:
-            col_indices = np.zeros(ncol, dtype=np.int32)
-            sign_indices = np.zeros(ncol, dtype=np.int32)
-            mind_indices = np.zeros(ncol, dtype=np.int32)
-
-            c=0
-            for j in range(self.config.ref_ind, self.config.nmag):
-                col_indices[c] = j - 1
-                sign_indices[c] = -1
-                mind_indices[c] = j
-                c += 1
-            for j in range(self.config.ref_ind - 2, -1, -1):
-                col_indices[c] = j
-                sign_indices[c] = 1
-                mind_indices[c] = j
-                c += 1
-
             lups = np.zeros_like(mags)
 
             mags[:, self.config.ref_ind] = gals.mag[:, self.config.ref_ind]
             flux = 10.**((mags[:, self.config.ref_ind] - self.lupzp) / (-2.5))
             lups[:, self.config.ref_ind] = 2.5 * np.log10(1.0 / self.config.b[self.config.ref_ind]) - np.arcsinh(0.5 * flux / self.bnmgy[self.config.ref_ind]) / (0.4 * np.log(10.0))
-        else:
-            col_indices = np.arange(ncol)
-            sign_indices = np.ones(ncol, dtype=np.int32)
-            mind_indices = col_indices
 
         # One color at a time along the diagonal
         for c in range(ncol):
@@ -496,6 +525,7 @@ class RedSequenceCalibrator(object):
 
             col = galcolor[:, j]
             col_err = galcolor_err[:, j]
+            mag_err = gals.mag_err[:, j: j + 2].copy()
 
             # Need to go through the _ndarray because ztag and zstag are strings
             cvals = np.zeros(self.pars._ndarray[self.ztag[j]].size)
@@ -535,17 +565,44 @@ class RedSequenceCalibrator(object):
                                    self.pars._ndarray[self.zstag[j]])
             svals[:] = svals_temp[inds]
 
-
             # And do the luptitude correction if necessary.
             if self.do_lupcorr:
                 lupcorr = self._compute_single_lupcorr(j, cvals, svals, gals, dmags, mags, lups, mind, sign)
             else:
                 lupcorr = np.zeros(gals.size)
 
+            dmags_err_ratio = gals.refmag - self.config.calib_err_ratio_pivot
+            if self.config.calib_fit_err_ratio:
+                # When we are not doing the first color, we have a mag error modification
+                # for one magnitude
+                if c > 0:
+                    err_ratios = self.pars.mag_err_ratio_int[mind + sign] + self.pars.mag_err_ratio_slope[mind + sign]*dmags_err_ratio
+                    if sign == 1:
+                        # Apply to the redward mag_err
+                        mag_err[:, 1] *= err_ratios
+                        # This is the index of color to fit the error ratio
+                        fit_err_ratio_ind = [0]
+                    else:
+                        # Apply to the blueward mag_err
+                        mag_err[:, 0] *= err_ratios
+                        fit_err_ratio_ind = [1]
+
+                    # The fit start values from the neighboring color
+                    err_ratio_pars = [self.pars.mag_err_ratio_int[mind + sign],
+                                      self.pars.mag_err_ratio_slope[mind + sign]]
+                else:
+                    fit_err_ratio_ind = [0, 1]
+
+                    # The fit start values from the median fit
+                    err_ratio_pars = [self.pars.medcol_err_ratio[j], 0.0]
+            else:
+                err_ratio_pars = None
+                fit_err_ratio_ind = []
+
             # We fit in stages: first the mean, then the slope, then the scatter,
             # and finally all three
             rsfitter = RedSequenceFitter(self.pars._ndarray[self.ztag[j]],
-                                         gals.z[u], col[u], col_err[u],
+                                         gals.z[u], col[u], mag_err[u, :],
                                          dmags=dmags[u],
                                          trunc=trunc,
                                          slope_nodes=self.pars._ndarray[self.zstag[j]],
@@ -553,26 +610,88 @@ class RedSequenceCalibrator(object):
                                          lupcorrs=lupcorr[u],
                                          probs=probs[u],
                                          bkgs=self.bkg.lookup_diagonal(j, col[u], gals.refmag[u], doRaise=doRaise),
-                                         scatter_max=scatter_max, use_scatter_prior=True)
+                                         scatter_max=scatter_max, use_scatter_prior=True,
+                                         dmags_err_ratio=dmags_err_ratio[u])
 
             # fit the mean
-            cvals, = rsfitter.fit(cvals, svals, scvals, fit_mean=True)
+            cvals, = rsfitter.fit(cvals, svals, scvals, fit_mean=True, err_ratio_pars=err_ratio_pars, fit_err_ratio_ind=fit_err_ratio_ind)
             # Update the lupcorr...
             if self.do_lupcorr:
                 rsfitter._lupcorrs[:] = self._compute_single_lupcorr(j, cvals, svals, gals, dmags, mags, lups, mind, sign)[u]
             # fit the slope
-            svals, = rsfitter.fit(cvals, svals, scvals, fit_slope=True)
+            svals, = rsfitter.fit(cvals, svals, scvals, fit_slope=True, err_ratio_pars=err_ratio_pars, fit_err_ratio_ind=fit_err_ratio_ind)
             # fit the scatter
-            scvals, = rsfitter.fit(cvals, svals, scvals, fit_scatter=True)
+            scvals, = rsfitter.fit(cvals, svals, scvals, fit_scatter=True, err_ratio_pars=err_ratio_pars, fit_err_ratio_ind=fit_err_ratio_ind)
+
+            if self.config.calib_fit_err_ratio:
+                err_ratios = scvals[-2: ]
+                scvals = scvals[: -2]
+
             # fit combined
             cvals, svals, scvals = rsfitter.fit(cvals, svals, scvals,
-                                                fit_mean=True, fit_slope=True, fit_scatter=True)
+                                                fit_mean=True, fit_slope=True, fit_scatter=True, err_ratio_pars=err_ratio_pars, fit_err_ratio_ind=fit_err_ratio_ind)
+
+            if self.config.calib_fit_err_ratio:
+                err_ratio_int_fit = scvals[-2]
+                err_ratio_slope_fit = scvals[-1]
+                scvals = scvals[: -2]
+
+                spl = CubicSpline(self.pars._ndarray[self.ztag[j]],
+                                  cvals)
+                gmean = spl(gals.z)
+                spl = CubicSpline(self.pars._ndarray[self.zstag[j]],
+                                  svals)
+                gslope = spl(gals.z)
+                spl = CubicSpline(self.pars.covmat_z,
+                                  scvals)
+                gsig = np.clip(spl(gals.z), 0.001, None)
+
+                delta_col = gals.galcol[:, j] - (gmean + gslope*dmags)
+
+                err_0 = gals.mag_err[:, j].copy()
+                err_1 = gals.mag_err[:, j + 1].copy()
+                if 0 not in fit_err_ratio_ind:
+                    # We are not fitting 0, so we already have the parameters.
+                    err_0 *= (self.pars.mag_err_ratio_int[j] +
+                              self.pars.mag_err_ratio_slope[j]*dmags_err_ratio)
+                if 1 not in fit_err_ratio_ind:
+                    # We are not fitting 1, so we already have the parameters.
+                    err_1 *= (self.pars.mag_err_ratio_int[j + 1] +
+                              self.pars.mag_err_ratio_slope[j + 1]*dmags_err_ratio)
+
+                ebinfitter = ErrorBinFitter(delta_col,
+                                            dmags_err_ratio,
+                                            err_0,
+                                            err_1,
+                                            gsig**2.)
+                ebinpars = ebinfitter.fit([1.0, 0.0], scale_indices=fit_err_ratio_ind)
+
+                err_ratio_int = ebinpars[0]
+                err_ratio_slope = ebinpars[1]
+
+                if c == 0:
+                    self.pars.mag_err_ratio_int[j] = err_ratio_int
+                    self.pars.mag_err_ratio_slope[j] = err_ratio_slope
+                    self.pars.mag_err_ratio_int[j + 1] = err_ratio_int
+                    self.pars.mag_err_ratio_slope[j + 1] = err_ratio_slope
+                    self.config.logger.info('Mag %d/%d error ratio = %.3f + %.3f*(refmag - %.2f)' %
+                                            (j, j + 1, err_ratio_int, err_ratio_slope, self.pars.mag_err_ratio_pivot))
+                else:
+                    self.pars.mag_err_ratio_int[mind] = err_ratio_int
+                    self.pars.mag_err_ratio_slope[mind] = err_ratio_slope
+                    self.config.logger.info('Mag %d error ratio = %.3f + %.3f*(refmag - %.2f)' %
+                                            (j, err_ratio_int, err_ratio_slope, self.pars.mag_err_ratio_pivot))
+            else:
+                self.pars.mag_err_ratio_int[j] = 1.0
+                self.pars.mag_err_ratio_slope[j] = 0.0
+                self.pars.mag_err_ratio_int[j + 1] = 1.0
+                self.pars.mag_err_ratio_slope[j + 1] = 0.0
 
             # And record in the parameters
             self.pars._ndarray[self.ctag[j]] = cvals
             self.pars._ndarray[self.stag[j]] = svals
             self.pars.sigma[j, j, :] = scvals
-            self.pars.covmat_amp[j, j, :] = scvals ** 2.
+            self.pars.covmat_amp[j, j, :] = scvals**2.
 
             # And print the time taken
             self.config.logger.info('Done in %.2f seconds.' % (time.time() - starttime))
@@ -1115,3 +1234,121 @@ class RedSequenceCalibrator(object):
 
             plt.close(fig)
 
+        if self.config.calib_fit_err_ratio:
+            # We want to plot the error ratio values
+
+            fig = plt.figure(figsize=(8, 6))
+            fig.clf()
+
+            ax = fig.add_subplot(111)
+            ax.plot(np.arange(self.config.nmag), zredstr.mag_err_ratio_intercept, 'r.')
+            ax.plot(np.array([-0.5, self.config.nmag + 0.5]), [1.0, 1.0], 'k--')
+            ax.set_xlim(-0.5, self.config.nmag - 0.5)
+            ax.set_ylim(0.0, np.max(zredstr.mag_err_ratio_intercept) + 1.0)
+            ax.set_xlabel('Magnitude Index')
+            ax.set_ylabel('Error Ratio')
+
+            fig.tight_layout()
+            fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
+                                     '%s_err_ratios.png' % (self.config.d.outbase)))
+            plt.close(fig)
+
+        # Always make error plots; only do modified version if we fit it.
+
+        # And we make one pull plot per color
+        zindex = zredstr.zindex(gals.zred)
+        for j in range(self.config.nmag - 1):
+            # Make the raw plot (with intrinsic error)
+
+            delta = gals.galcol[:, j] - (zredstr.c[zindex, j] + zredstr.slope[zindex, j]*(gals.refmag - zredstr.pivotmag[zindex]))
+            delta_err = np.sqrt(gals.galcol_err[:, j]**2. + zredstr.sigma[j, j, zindex]**2.)
+            pulls = delta/delta_err
+
+            mags = gals.mag[:, j + 1]
+            st = np.argsort(mags)
+            magrange = [mags[st[int(0.01*mags.size)]], mags[st[int(0.99*mags.size)]]]
+
+            fig = plt.figure(figsize=(8, 6))
+            fig.clf()
+            ax = fig.add_subplot(111)
+
+            self._plot_pulls(ax, mags, pulls, self.config.bands[j + 1],
+                             self.config.bands[j] + ' - ' + self.config.bands[j + 1],
+                             magrange)
+            ax.set_title('Raw Error Ratio')
+
+            fig.tight_layout()
+            fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
+                                     '%s_raw_error_ratio_%s-%s.png' % (self.config.d.outbase,
+                                                                       self.config.bands[j],
+                                                                       self.config.bands[j + 1])))
+            plt.close(fig)
+
+            if not self.config.calib_fit_err_ratio:
+                continue
+
+            # Make the scaled plot (with intrinsic error)
+
+            delta = gals.galcol[:, j] - (zredstr.c[zindex, j] + zredstr.slope[zindex, j]*(gals.refmag - zredstr.pivotmag[zindex]))
+            err_ratios0 = zredstr.mag_err_ratio_intercept[j] + zredstr.mag_err_ratio_slope[j]*(gals.refmag - zredstr.mag_err_ratio_pivot)
+            err_ratios1 = zredstr.mag_err_ratio_intercept[j + 1] + zredstr.mag_err_ratio_slope[j + 1]*(gals.refmag - zredstr.mag_err_ratio_pivot)
+            delta_err = np.sqrt((err_ratios0*gals.mag_err[:, j])**2. +
+                                (err_ratios1*gals.mag_err[:, j + 1])**2. +
+                                zredstr.sigma[j, j, zindex]**2.)
+            pulls = delta/delta_err
+
+            mags = gals.mag[:, j + 1]
+            st = np.argsort(mags)
+            magrange = [mags[st[int(0.01*mags.size)]], mags[st[int(0.99*mags.size)]]]
+
+            fig = plt.figure(figsize=(8, 6))
+            fig.clf()
+            ax = fig.add_subplot(111)
+
+            self._plot_pulls(ax, mags, pulls, self.config.bands[j + 1],
+                             self.config.bands[j] + ' - ' + self.config.bands[j + 1],
+                             magrange)
+            ax.set_title('Scaled Error Ratio (r_err = %.3f/%.3f, %.3f/%.3f)' %
+                         (zredstr.mag_err_ratio_intercept[j], zredstr.mag_err_ratio_slope[j],
+                          zredstr.mag_err_ratio_intercept[j + 1], zredstr.mag_err_ratio_slope[j + 1]))
+
+            fig.tight_layout()
+            fig.savefig(os.path.join(self.config.outpath, self.config.plotpath,
+                                     '%s_scaled_error_ratio_%s-%s.png' % (self.config.d.outbase,
+                                                                          self.config.bands[j],
+                                                                          self.config.bands[j + 1])))
+            plt.close(fig)
+
+    def _plot_pulls(self, ax, mags, pulls, magname, colname, magrange, binsize=0.5, pullcut=10.0):
+        gd, = np.where((np.abs(pulls) < pullcut) & (mags > magrange[0]) & (mags < magrange[1]))
+
+        ax.hexbin(mags[gd], pulls[gd], bins='log', extent=[magrange[0], magrange[1],
+                                                           -pullcut, pullcut])
+
+        h, rev = esutil.stat.histogram(mags[gd], binsize=binsize, rev=True)
+
+        binmags = np.zeros(h.size)
+        sigs = np.zeros(h.size)
+        lo = np.zeros(h.size)
+        hi = np.zeros(h.size)
+        med = np.zeros(h.size)
+        u, = np.where(h > 0)
+        for i, ind in enumerate(u):
+            i1a = rev[rev[ind]: rev[ind + 1]]
+            sigs[i] = 1.4826*np.median(np.abs(pulls[gd[i1a]] - np.median(pulls[gd[i1a]])))
+            st = np.argsort(pulls[gd[i1a]])
+            lo[i] = pulls[gd[i1a[st[int(0.05*i1a.size)]]]]
+            hi[i] = pulls[gd[i1a[st[int(0.95*i1a.size)]]]]
+            med[i] = pulls[gd[i1a[st[int(0.50*i1a.size)]]]]
+            binmags[i] = np.median(mags[gd[i1a]])
+
+        ok, = np.where(sigs > 0.0)
+
+        ax.plot(binmags[ok], sigs[ok], 'r-', label='Width of Pulls')
+        ax.plot(binmags[ok], lo[ok], 'k--', label='5/95th percentiles')
+        ax.plot(binmags[ok], hi[ok], 'k--')
+        ax.plot(binmags[ok], med[ok], 'r--', label='Median Pull')
+        ax.plot(magrange, [1.0, 1.0], 'k:')
+
+        ax.set_xlabel(magname)
+        ax.set_ylabel('delta ' + colname)

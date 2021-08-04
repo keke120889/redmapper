@@ -12,7 +12,7 @@ from ..configuration import Configuration
 from ..volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 from ..catalog import Catalog, Entry
 from ..utilities import read_members, astro_to_sphere
-from ..plotting import SpecPlot, NzPlot
+from ..plotting import SpecPlot, NzPlot, NLambdaPlot, PositionPlot
 from ..galaxy import GalaxyCatalog
 
 class RedmapperConsolidateTask(object):
@@ -280,6 +280,12 @@ class RedmapperConsolidateTask(object):
 
                     nzplot = NzPlot(self.config)
                     nzplot.plot_cluster_catalog(cat, vlim_areas[j])
+
+                    nlamplot = NLambdaPlot(self.config)
+                    nlamplot.plot_cluster_catalog(cat)
+
+                    posplot = PositionPlot(self.config)
+                    posplot.plot_cluster_catalog(cat)
 
 
 class RuncatConsolidateTask(object):

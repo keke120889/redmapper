@@ -166,7 +166,8 @@ class SelectSpecRedGalaxies(object):
             # Here we don't do the scatter prior for consistency with old code.
             # This maybe should be changed in the future.
             trunc = nsig * width[u]
-            rsfitter = RedSequenceFitter(nodes, gals.z[u], galcolor[u, j], galcolor_err[u, j],
+            mag_err = gals.mag_err[u, j: j + 2]
+            rsfitter = RedSequenceFitter(nodes, gals.z[u], galcolor[u, j], mag_err,
                                          trunc=trunc, use_scatter_prior=False)
 
             # fit just the mean...

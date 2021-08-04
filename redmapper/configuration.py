@@ -271,14 +271,13 @@ class Configuration(object):
     calib_color_maxnodes = ConfigField(isArray=True, default=np.array([-1.0]))
     calib_covmat_maxnodes = ConfigField(isArray=True, default=np.array([-1.0]))
     calib_covmat_nodesize = ConfigField(default=0.15)
-    # calib_covmat_min_eigenvalue = ConfigField(default=0.0001)
-    # calib_covmat_prior = ConfigField(default=0.45)
     calib_covmat_constant = ConfigField(default=0.9)
     calib_corr_nodesize = ConfigField(default=0.05)
     calib_corr_slope_nodesize = ConfigField(default=0.1)
     calib_corr_nocorrslope = ConfigField(default=True)
     calib_corr_pcut = ConfigField(default=0.9)
-    # calib_color_order = ConfigField(isArray=True, default=np.array([-1]))
+    calib_fit_err_ratio = ConfigField(default=False)
+    calib_err_ratio_pivot = ConfigField(default=20.0)
 
     calib_color_nsig = ConfigField(default=1.5)
     calib_redspec_nsig = ConfigField(default=2.0)
@@ -400,6 +399,8 @@ class Configuration(object):
     redmagic_etas = ConfigField(default=[], required=True, isArray=True)
     redmagic_names = ConfigField(default=[], required=True, isList=True)
     redmagic_zmaxes = ConfigField(default=[], required=True, isArray=True)
+    redmagic_constchis = ConfigField(default=[], required=True, isArray=True)
+    redmagic_use_constchi = ConfigField(default=False, required=True)
 
     def __init__(self, configfile, outpath=None):
         """

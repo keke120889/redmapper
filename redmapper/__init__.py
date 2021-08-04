@@ -33,11 +33,11 @@ from .zred_color import ZredColor
 from .centering import Centering, CenteringWcenZred, CenteringBCG, CenteringRandom, CenteringRandomSatellite
 from .depthmap import DepthMap
 from .color_background import ColorBackground, ColorBackgroundGenerator
-from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter
+from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter, ErrorBinFitter
 from .zred_runner import ZredRunCatalog, ZredRunPixels
 from .redmapper_run import RedmapperRun
 from .depth_fitting import DepthLim, applyErrorModel
-from .plotting import SpecPlot, NzPlot
+from .plotting import SpecPlot, NzPlot, NLambdaPlot, PositionPlot
 from .volumelimit import VolumeLimitMask, VolumeLimitMaskFixed
 from .utilities import read_members
 from .randoms import GenerateRandoms, RandomCatalog, RandomCatalogMaker, RandomWeigher

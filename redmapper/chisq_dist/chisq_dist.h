@@ -18,6 +18,7 @@ struct chisq_dist {
     double *refmagerr;
     double *magerr;
     double *color;
+    double *col_err_ratio;
     double *lupcorr;
     int ncalc;
     int ngal;

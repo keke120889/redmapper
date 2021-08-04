@@ -57,13 +57,13 @@ class RedSequenceCalTestCase(unittest.TestCase):
         testing.assert_almost_equal(pars[0]['pivotmag'], np.array([17.111357, 18.587465]), 4)
         testing.assert_almost_equal(pars[0]['medcol'], np.array([[1.890542, 0.9216751, 0.40069848, 0.33520406],
                                                                  [2.003969, 1.237295, 0.47768143, 0.32698348]]), 4)
-        testing.assert_almost_equal(pars[0]['c01'], np.array([0.9241, 1.079, 1.2387]), 4)
-        testing.assert_almost_equal(pars[0]['slope01'], np.array([-0.0049, -0.024]), 4)
+        testing.assert_almost_equal(pars[0]['c01'], np.array([0.9255, 1.0797, 1.2406]), 4)
+        testing.assert_almost_equal(pars[0]['slope01'], np.array([-0.0057, -0.0246]), 4)
         testing.assert_almost_equal(pars[0]['covmat_amp'][1: 3, 1: 3, :],
-                                    np.array([[[0.00125995, 0.00301231],
-                                               [0.00055501, 0.00100034]],
-                                              [[0.00055501, 0.00100034],
-                                               [0.00030183, 0.00041012]]]), 4)
+                                    np.array([[[0.00075412, 0.00230764],
+                                               [0.00039248, 0.00081501]],
+                                              [[0.00039248, 0.00081501],
+                                               [0.00025219, 0.00035536]]]), 4)
 
     def setUp(self):
         self.test_dir = None

@@ -223,6 +223,14 @@ class RedSequenceColorPar(object):
             self.sigma = np.zeros((ncol,ncol,nz),dtype=np.float64)
             self.covmat = np.zeros((ncol,ncol,nz),dtype=np.float64)
 
+            self.mag_err_ratio_intercept = np.ones(nmag, dtype=np.float64)
+            self.mag_err_ratio_slope = np.zeros(nmag, dtype=np.float64)
+            self.mag_err_ratio_pivot = 20.0  # arbitrary, with zero slope.
+            if 'MAG_ERR_RATIO_INT' in pars.dtype.names:
+                self.mag_err_ratio_intercept[:] = pars[0]['MAG_ERR_RATIO_INT'][:]
+                self.mag_err_ratio_slope[:] = pars[0]['MAG_ERR_RATIO_SLOPE'][:]
+                self.mag_err_ratio_pivot = pars[0]['MAG_ERR_RATIO_PIVOT']
+
             # diagonals
             for j in range(ncol):
                 spl=CubicSpline(pars[0]['COVMAT_Z'],pars[0]['SIGMA'][j,j,:])
@@ -488,10 +496,15 @@ class RedSequenceColorPar(object):
         magind = self.refmagindex(galaxy.refmag)
         galcolor = galaxy.galcol
 
+        mag_err = galaxy.mag_err.copy()
+        dmag = galaxy.refmag - self.mag_err_ratio_pivot
+        mag_err *= (self.mag_err_ratio_intercept[:] + self.mag_err_ratio_slope[:]*dmag)
+
         return compute_chisq(self.covmat[:,:,zinds], self.c[zinds,:],
                              self.slope[zinds,:], self.pivotmag[zinds],
-                             np.array(galaxy.refmag), galaxy.mag_err,
-                             galcolor, refmagerr=np.array(galaxy.refmag_err),
+                             np.array(galaxy.refmag), mag_err,
+                             galcolor,
+                             refmagerr=np.array(galaxy.refmag_err),
                              lupcorr=self.lupcorr[magind,zinds,:],
                              calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)
 
@@ -535,10 +548,16 @@ class RedSequenceColorPar(object):
             zind = np.atleast_1d(zind)
             magind = np.atleast_1d(magind)
 
+        mag_err = galaxies.mag_err.copy()
+        dmags = galaxies.refmag - self.mag_err_ratio_pivot
+        for j in range(self.nmag):
+            mag_err[:, j] *= self.mag_err_ratio_intercept[j] + self.mag_err_ratio_slope[j]*dmags
+
         return compute_chisq(self.covmat[:,:,zind], self.c[zind,:],
                              self.slope[zind,:], self.pivotmag[zind],
-                             galaxies.refmag, galaxies.mag_err,
-                             galcolor, refmagerr=galaxies.refmag_err,
+                             galaxies.refmag, mag_err,
+                             galcolor,
+                             refmagerr=galaxies.refmag_err,
                              lupcorr=self.lupcorr[magind,zind,:],
                              calc_chisq=calc_chisq, calc_lkhd=calc_lkhd)
 

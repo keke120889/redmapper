@@ -13,7 +13,8 @@
 int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol, 
 	       double *covmat, double *c, double *slope,
 	       double *pivotmag, double *refmag, double *refmagerr, double *magerr, 
-	       double *color, double *lupcorr, double *dist, double sigint) {
+	       double *color,
+               double *lupcorr, double *dist, double sigint) {
 
   //int i,j,k;
   int i,j,k;
@@ -42,7 +43,7 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
   int use_refmagerr=0;
 
   norm = 1.0;
-  
+
   covmat_stride = ncol*ncol; //*sizeof(double);
 
   mrotmat = gsl_matrix_alloc(ncol,nmag);
@@ -80,7 +81,7 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
     //
     // // covmat[ncol,ncol,ncalc]: (k*ncol+j)*ncol + i
     // covmat[ncol,ncol]: k*ncol + j
-    // c[ncol]: j  
+    // c[ncol]: j
     // slope[ncol]: j
     // pivotmag[0]
     // refmag[ncalc]: i
@@ -93,18 +94,18 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
     if ((covmat_temp = (double *)calloc(ncol*ncol, sizeof(double))) == NULL) {
 	return -1;
     }
-    
+
     for (i=0;i<ncalc;i++) {
 
       memcpy(covmat_temp,covmat,sizeof(double)*ncol*ncol);
-	
+
       gsl_matrix_set_identity(cobs);
       for (j=0;j<nmag;j++) {
 	gsl_matrix_set(cobs, j, j, magerr[i*nmag+j]*magerr[i*nmag+j]);
       }
 
       gsl_matrix_set_zero(cobstemp);
-      
+
       gsl_blas_dgemm(CblasNoTrans, CblasTrans,
 		     1.0, mrotmat, cobs,
 		     0.0, cobstemp);
@@ -112,8 +113,6 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 		     1.0, mrotmat, cobstemp,
 		     0.0, cobsmat);
 
-
-      //mvcovmat = gsl_matrix_view_array(&covmat[covmat_stride*i], ncol, ncol);
       mvcovmat = gsl_matrix_view_array(covmat_temp, ncol, ncol);
 
       // and the ci matrix
@@ -155,36 +154,34 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 	    gsl_matrix_add(&mvcovmat.matrix, cimat);
 	}
 
-
 	// check and fix the matrix if necessary
 	check_and_fix_covmat(&mvcovmat.matrix);
 
-
 	gsl_linalg_LU_decomp(&mvcovmat.matrix, pp, &s);
 	gsl_linalg_LU_invert(&mvcovmat.matrix, pp, mmetric);
-	
+
 	if (!do_chisq) {
 	  // need the determinant
 	  norm = gsl_linalg_LU_det(&mvcovmat.matrix, s);
 	}
-	
+
 	// now need the slope, etc.
 	for (j=0;j<ncol;j++) {
 	  gsl_vector_set(vdc,j,
 			 (c[j]+slope[j]*(refmag[i]-pivotmag[0])) + lupcorr[i*ncol+j] -
 			 color[i*ncol+j]);
 	}
-	
+
 	gsl_blas_dgemv(CblasNoTrans, 1.0, mmetric, vdc, 0.0, vdcm);
 	gsl_blas_ddot(vdcm, vdc, &chisq);
-	
+
 	if (do_chisq) {
 	  dist[i] = chisq;
 	} else {
 	  dist[i]=-0.5*chisq-0.5*log(norm);
 	}
       }
-    
+
     }
     free(covmat_temp);
 
@@ -248,7 +245,7 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 	      }
 	  }
       }
-      
+
       // check sigint
       test = 1;
       for (j=0;j<ncol;j++) {
@@ -274,7 +271,7 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 
 	// check and fix the matrix if necessary
 	check_and_fix_covmat(&mvcovmat.matrix);
-	
+
 	gsl_linalg_LU_decomp(&mvcovmat.matrix, pp, &s);
 	gsl_linalg_LU_invert(&mvcovmat.matrix, pp, mmetric);
 
@@ -290,7 +287,7 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 
 	gsl_blas_dgemv(CblasNoTrans, 1.0, mmetric, vdc, 0.0, vdcm);
 	gsl_blas_ddot(vdcm,vdc, &chisq);
-	
+
 	if (do_chisq) {
 	  dist[i] = chisq;
 	} else {
@@ -327,7 +324,6 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
       }
       memcpy(covmat_temp,covmat,sizeof(double)*ncol*ncol*ncalc);
 
-      
       for (i=0;i<ncalc;i++) {
 	  // copy from mode 0
 	  gsl_matrix_set_identity(cobs);
@@ -337,7 +333,7 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 	  }
 
 	  gsl_matrix_set_zero(cobstemp);
-      
+
 	  gsl_blas_dgemm(CblasNoTrans, CblasTrans,
 			 1.0, mrotmat, cobs,
 			 0.0, cobstemp);
@@ -396,7 +392,7 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 
 	      gsl_linalg_LU_decomp(&mvcovmat.matrix, pp, &s);
 	      gsl_linalg_LU_invert(&mvcovmat.matrix, pp, mmetric);
-	      
+
 	      if (!do_chisq) {
 		  // need the determinant
 		  norm = gsl_linalg_LU_det(&mvcovmat.matrix, s);
@@ -419,8 +415,6 @@ int chisq_dist(int mode, int do_chisq, int nophotoerr, int ncalc, int ncol,
 		  dist[i]=-0.5*chisq-0.5*log(norm);
 	      }
 	  }
-	  
-	  
       }
       free(covmat_temp);
   }
@@ -457,20 +451,17 @@ int check_and_fix_covmat(gsl_matrix *covmat) {
   gsl_permutation *pp;
 
   nelt = covmat->size1;
-  
+
   mat=gsl_matrix_alloc(nelt,nelt);
   wval = gsl_eigen_symm_alloc(nelt);
   wvec = gsl_eigen_symmv_alloc(nelt);
   eigenval = gsl_vector_alloc(nelt);
-  
-  
 
   // don't destroy the input matrix!
   gsl_matrix_memcpy(mat, covmat);
 
   // calculate eigenvalues...
   gsl_eigen_symm(mat, eigenval, wval);
-  
 
   // test if the eigenvalues are negative...
   test = 0;
@@ -496,12 +487,12 @@ int check_and_fix_covmat(gsl_matrix *covmat) {
 
     // calculate eigenvalues and eigenvector matrix Q
     gsl_eigen_symmv(mat, eigenval_temp, Q, wvec);
-   
+
     // invert eigenvector matrix Q-> Qinv (leaving Q in place)
     gsl_matrix_memcpy(temp,Q);
     gsl_linalg_LU_decomp(temp, pp, &s);
     gsl_linalg_LU_invert(temp, pp, Qinv);
-    
+
     // create a diagonal matrix Lambda
     diag = gsl_matrix_diagonal(Lambda);
     gsl_matrix_set_zero(Lambda);
