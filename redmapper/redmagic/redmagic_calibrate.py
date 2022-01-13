@@ -414,7 +414,7 @@ class RedmagicCalibrator(object):
             self.config.logger.info("Reading and matching spectra...")
 
             spec = Catalog.from_fits_file(self.config.specfile)
-            use, = np.where(spec.z_err < 0.001)
+            use, = np.where(spec.z_err < self.config.calib_spec_max_zerr)
             spec = spec[use]
 
             i0, i1, dists = gals.match_many(spec.ra, spec.dec, 3./3600., maxmatch=1)

@@ -66,7 +66,7 @@ class SelectSpecRedGalaxies(object):
         spec = Catalog.from_fits_file(self.config.specfile_train)
 
         # select good spectra
-        use, = np.where(spec.z_err < 0.001)
+        use, = np.where(spec.z_err < self.config.calib_spec_max_zerr)
         spec = spec[use]
 
         # Match spectra to galaxies

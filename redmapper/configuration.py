@@ -278,6 +278,7 @@ class Configuration(object):
     calib_corr_pcut = ConfigField(default=0.9)
     calib_fit_err_ratio = ConfigField(default=False)
     calib_err_ratio_pivot = ConfigField(default=20.0)
+    calib_spec_max_zerr = ConfigField(default=0.001, required=True)
 
     calib_color_nsig = ConfigField(default=1.5)
     calib_redspec_nsig = ConfigField(default=2.0)
