@@ -70,7 +70,7 @@ class SelectSpecSeeds(object):
         zrange = self.config.zrange_cushioned
 
         # select good spectra
-        use, = np.where((spec.z >= zrange[0]) & (spec.z <= zrange[1]) & (spec.z_err < 0.001))
+        use, = np.where((spec.z >= zrange[0]) & (spec.z <= zrange[1]) & (spec.z_err < self.config.calib_spec_max_zerr))
         spec = spec[use]
 
         # Match spectra to galaxies
