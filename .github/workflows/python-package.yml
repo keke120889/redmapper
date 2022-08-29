@@ -30,6 +30,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip uninstall -y esutil
+        pip install --no-cache esutil
         pip install .[full]
     - name: Test with pytest
       run: |
