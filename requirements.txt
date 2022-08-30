@@ -4,6 +4,6 @@ pyyaml
 fitsio
 esutil
 numpy
-healpy
 scipy
 healsparse
+hpgeom
