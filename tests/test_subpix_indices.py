@@ -1,7 +1,7 @@
 import unittest
 import numpy.testing as testing
 import numpy as np
-import healpy as hp
+import hpgeom as hpg
 import os
 import esutil
 
@@ -26,11 +26,11 @@ class SubpixIndexTestCase(unittest.TestCase):
         covpix = get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, coverage_nside)
 
         # Test that we have the right number
-        testing.assert_equal(covpix.size, int(hp.nside2npix(coverage_nside) / hp.nside2npix(subpix_nside)))
+        testing.assert_equal(covpix.size, hpg.nside_to_npixel(coverage_nside)//hpg.nside_to_npixel(subpix_nside))
 
         # Test that they are all in the correct pixel
-        theta, phi = hp.pix2ang(coverage_nside, covpix, nest=True)
-        ipring = hp.ang2pix(subpix_nside, theta, phi)
+        theta, phi = hpg.pixel_to_angle(coverage_nside, covpix, lonlat=False, nest=True)
+        ipring = hpg.angle_to_pixel(subpix_nside, theta, phi, lonlat=False, nest=False)
 
         testing.assert_equal(ipring, subpix_hpix[0])
 
@@ -42,8 +42,8 @@ class SubpixIndexTestCase(unittest.TestCase):
         covpix = get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, coverage_nside)
 
         # Test that they are all in the correct pixel
-        theta, phi = hp.pix2ang(coverage_nside, covpix, nest=True)
-        ipring = hp.ang2pix(subpix_nside, theta, phi)
+        theta, phi = hpg.pixel_to_angle(coverage_nside, covpix, lonlat=False)
+        ipring = hpg.angle_to_pixel(subpix_nside, theta, phi, lonlat=False, nest=False)
 
         testing.assert_equal(ipring[0: 256], subpix_hpix[0])
         testing.assert_equal(ipring[256: ], subpix_hpix[1])
@@ -57,10 +57,10 @@ class SubpixIndexTestCase(unittest.TestCase):
         # There should be more of these pixels
         self.assertTrue(covpix2.size > covpix_temp.size)
 
-        theta2, phi2 = hp.pix2ang(coverage_nside, covpix2, nest=True)
+        ra2, dec2 = hpg.pixel_to_angle(coverage_nside, covpix2)
 
         matcher = esutil.htm.Matcher(10, np.degrees(phi), 90.0 - np.degrees(theta))
-        m1, m2, dist = matcher.match(np.degrees(phi2), 90.0 - np.degrees(theta2), subpix_border*3.0, maxmatch=1)
+        m1, m2, dist = matcher.match(ra2, dec2, subpix_border*3.0, maxmatch=1)
 
         # This checks that they are all close
         self.assertTrue(dist.max() < subpix_border*2.0)
@@ -89,8 +89,8 @@ class SubpixIndexTestCase(unittest.TestCase):
         testing.assert_equal(covpix.size, 1)
 
         # Test that they are all in the correct pixel
-        theta, phi = hp.pix2ang(coverage_nside, covpix, nest=True)
-        ipring = hp.ang2pix(subpix_nside, theta, phi)
+        theta, phi = hpg.pixel_to_angle(coverage_nside, covpix, lonlat=False)
+        ipring = hpg.angle_to_pixel(subpix_nside, theta, phi, lonlat=False, nest=False)
 
         testing.assert_equal(ipring, subpix_hpix)
 
@@ -100,8 +100,8 @@ class SubpixIndexTestCase(unittest.TestCase):
         covpix = get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, coverage_nside)
 
         # Test that they are all in the correct pixel
-        theta, phi = hp.pix2ang(coverage_nside, covpix, nest=True)
-        ipring = hp.ang2pix(subpix_nside, theta, phi)
+        theta, phi = hpg.pixel_to_angle(coverage_nside, covpix, lonlat=False)
+        ipring = hpg.angle_to_pixel(subpix_nside, theta, phi, lonlat=False, nest=False)
 
         testing.assert_equal(ipring[0], subpix_hpix[0])
         testing.assert_equal(ipring[1], subpix_hpix[1])
@@ -115,10 +115,10 @@ class SubpixIndexTestCase(unittest.TestCase):
         # There should be more of these pixels
         self.assertTrue(covpix2.size > covpix.size)
 
-        theta2, phi2 = hp.pix2ang(coverage_nside, covpix2, nest=True)
+        ra2, dec2 = hpg.pixel_to_angle(coverage_nside, covpix2)
 
         matcher = esutil.htm.Matcher(10, np.degrees(phi), 90.0 - np.degrees(theta))
-        m1, m2, dist = matcher.match(np.degrees(phi2), 90.0 - np.degrees(theta2), subpix_border*3.0, maxmatch=1)
+        m1, m2, dist = matcher.match(ra2, dec2, subpix_border*3.0, maxmatch=1)
 
         # This checks that they are all close
         self.assertTrue(dist.max() < subpix_border*2.0)
@@ -145,8 +145,8 @@ class SubpixIndexTestCase(unittest.TestCase):
         testing.assert_equal(covpix.size, 1)
 
         # Test that they are all in the correct pixel
-        theta, phi = hp.pix2ang(subpix_nside, subpix_hpix)
-        ipnest = hp.ang2pix(coverage_nside, theta, phi, nest=True)
+        theta, phi = hpg.pixel_to_angle(subpix_nside, subpix_hpix, lonlat=False, nest=False)
+        ipnest = hpg.angle_to_pixel(coverage_nside, theta, phi, lonlat=False)
 
         testing.assert_equal(covpix, ipnest)
 
@@ -159,8 +159,8 @@ class SubpixIndexTestCase(unittest.TestCase):
         testing.assert_equal(covpix.size, 2)
 
         # Test that they are all in the correct pixel
-        theta, phi = hp.pix2ang(subpix_nside, subpix_hpix)
-        ipnest = hp.ang2pix(coverage_nside, theta, phi, nest=True)
+        theta, phi = hpg.pixel_to_angle(subpix_nside, subpix_hpix, lonlat=False, nest=False)
+        ipnest = hpg.angle_to_pixel(coverage_nside, theta, phi, lonlat=False)
 
         testing.assert_equal(covpix, ipnest)
 
@@ -173,10 +173,10 @@ class SubpixIndexTestCase(unittest.TestCase):
         # There should be more of these pixels
         self.assertTrue(covpix2.size > covpix.size)
 
-        theta2, phi2 = hp.pix2ang(coverage_nside, covpix2, nest=True)
+        ra2, dec2 = hpg.pixel_to_angle(coverage_nside, covpix2)
 
         matcher = esutil.htm.Matcher(10, np.degrees(phi), 90.0 - np.degrees(theta))
-        m1, m2, dist = matcher.match(np.degrees(phi2), 90.0 - np.degrees(theta2), subpix_border*3.0, maxmatch=1)
+        m1, m2, dist = matcher.match(ra2, dec2, subpix_border*3.0, maxmatch=1)
 
         # This checks that they are all close
         self.assertTrue(dist.max() < subpix_border*2.0)

@@ -7,7 +7,6 @@ import fitsio
 import time
 import scipy.optimize
 import esutil
-import healpy as hp
 
 from ..catalog import Entry, Catalog
 from ..galaxy import GalaxyCatalog

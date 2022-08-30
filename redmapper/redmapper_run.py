@@ -8,7 +8,7 @@ import fitsio
 import re
 import os
 import esutil
-import healpy as hp
+import hpgeom as hpg
 from esutil.cosmology import Cosmo
 
 import multiprocessing
@@ -229,18 +229,18 @@ class RedmapperRun(object):
         """
 
         # generate all the pixels
-        pixels = np.arange(hp.nside2npix(nside_test))
+        pixels = np.arange(hpg.nside_to_npixel(nside_test))
 
         # Which of these match the parent?
         if len(self.config.d.hpix) > 0:
-            theta, phi = hp.pix2ang(nside_test, pixels)
-            hpix_test = hp.ang2pix(self.config.d.nside, theta, phi)
+            theta, phi = hpg.pixel_to_angle(nside_test, pixels, lonlat=False, nest=False)
+            hpix_test = hpg.angle_to_pixel(self.config.d.nside, theta, phi, lonlat=False, nest=False)
             a, b = esutil.numpy_util.match(self.config.d.hpix, hpix_test)
             pixels = pixels[b]
 
         # And which match the galaxies?
-        theta, phi = hp.pix2ang(galtab.nside, galtab.hpix)
-        hpix_test = hp.ang2pix(nside_test, theta, phi)
+        theta, phi = hpg.pixel_to_angle(galtab.nside, galtab.hpix, lonlat=False, nest=False)
+        hpix_test = hpg.angle_to_pixel(nside_test, theta, phi, lonlat=False, nest=False)
         a, b = esutil.numpy_util.match(pixels, hpix_test)
 
         return np.unique(pixels[a])
@@ -300,11 +300,8 @@ class RedmapperRun(object):
             cat = Catalog.from_fits_file(f, ext=1)
 
             # Cut to minlambda, maxfrac, and within a pixel
-            theta = (90.0 - cat.dec) * np.pi / 180.
-            phi = cat.ra * np.pi / 180.
-
             if self.config.d.nside > 0:
-                ipring = hp.ang2pix(self.config.d.nside, theta, phi)
+                ipring = hpg.angle_to_pixel(self.config.d.nside, cat.ra, cat.dec, nest=False)
             else:
                 # Set all the pixels to 0
                 ipring = np.zeros(cat.size, dtype=np.int32)

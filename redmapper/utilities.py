@@ -11,7 +11,8 @@ import scipy.interpolate as interpolate
 import fitsio
 from scipy.special import erf
 from numpy import random
-import healpy as hp
+import hpgeom as hpg
+import hpgeom.healpy_compat as hpc
 import esutil
 import sys
 import os
@@ -1142,24 +1143,24 @@ def get_hpmask_subpix_indices(submask_nside, submask_hpix, submask_border, nside
     nside_cutref = np.clip(submask_nside * 4, 256, nside_mask)
 
     # Find out which cutref pixels are inside the main pixel
-    theta, phi = hp.pix2ang(nside_cutref, np.arange(hp.nside2npix(nside_cutref)))
-    ipring_coarse = hp.ang2pix(submask_nside, theta, phi)
+    theta, phi = hpg.pixel_to_angle(nside_cutref, np.arange(hp.nside2npix(nside_cutref)), lonlat=False, nest=False)
+    ipring_coarse = hpg.angle_to_pixel(submask_nside, theta, phi, lonlat=False, nest=False)
     inhpix, = np.where(ipring_coarse == submask_hpix)
 
     # If there is a border, we need to find the boundary pixels
     if submask_border > 0.0:
-        boundaries = hp.boundaries(submask_nside, submask_hpix, step=nside_cutref/submask_nside)
+        boundaries = hpc.boundaries(submask_nside, submask_hpix, step=nside_cutref//submask_nside)
         # These are all the pixels that touch the boundary
         for i in range(boundaries.shape[1]):
-            pixint = hp.query_disc(nside_cutref, boundaries[:, i],
-                                   np.radians(submask_border), inclusive=True, fact=8)
+            pixint = hpc.query_disc(nside_cutref, boundaries[:, i],
+                                    np.radians(submask_border), inclusive=True, fact=8)
             inhpix = np.append(inhpix, pixint)
             # Need to uniqify here because of overlapping pixels
             inhpix = np.unique(inhpix)
 
     # And now choose just those depthmap pixels that are in the inhpix region
-    theta, phi = hp.pix2ang(nside_mask, hpix)
-    ipring = hp.ang2pix(nside_cutref, theta, phi)
+    theta, phi = hpg.pixel_to_angle(nside_mask, hpix, lonlat=False, nest=False)
+    ipring = hpg.angle_to_pixel(nside_cutref, theta, phi, lonlat=False, nest=False)
 
     _, use = esutil.numpy_util.match(inhpix, ipring)
 
@@ -1193,15 +1194,15 @@ def get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, cove
         # Special case for the full sky
         return None
     elif subpix_nside == coverage_nside:
-        covpix = hp.ring2nest(subpix_nside, subpix_hpix)
+        covpix = hpg.ring_to_nest(subpix_nside, subpix_hpix)
     elif subpix_nside > coverage_nside:
         # what pixels are these contained in?
-        theta, phi = hp.pix2ang(subpix_nside, subpix_hpix, nest=False)
-        covpix = hp.ang2pix(coverage_nside, theta, phi, nest=True)
+        theta, phi = hpg.pixel_to_angle(subpix_nside, subpix_hpix, lonlat=False, nest=False)
+        covpix = hpg.angle_to_pixel(coverage_nside, theta, phi, lonlat=False, nest=True)
     else:
         # This is subpix_nside < coverage_nside
         # what coverage pixels are contained in subpix_hpix?
-        subpix_hpix_nest = hp.ring2nest(subpix_nside, subpix_hpix)
+        subpix_hpix_nest = hpg.ring_to_nest(subpix_nside, subpix_hpix)
         bit_shift = 2 * int(np.round(np.log(coverage_nside / subpix_nside) / np.log(2)))
         n_pix_per_pix = 2**bit_shift
         covpix = np.zeros(len(subpix_hpix_nest) * n_pix_per_pix, dtype=np.int64)
@@ -1211,19 +1212,19 @@ def get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, cove
     # And now if we have a border...(only if the length is 1)
     if subpix_border > 0.0:
         nside_testing = max([coverage_nside * 4, subpix_nside * 4])
-        boundaries = hp.boundaries(subpix_nside, subpix_hpix[0], step=nside_testing/subpix_nside)
+        boundaries = hpc.boundaries(subpix_nside, subpix_hpix[0], step=nside_testing//subpix_nside)
 
         extrapix = np.zeros(0, dtype=np.int64)
 
         # These are pixels that touch the boundary
         for i in range(boundaries.shape[1]):
-            pixint = hp.query_disc(nside_testing, boundaries[:, i],
-                                   np.radians(subpix_border), inclusive=True, fact=8)
+            pixint = hpc.query_disc(nside_testing, boundaries[:, i],
+                                    np.radians(subpix_border), inclusive=True, fact=8)
             extrapix = np.append(extrapix, pixint)
 
         extrapix = np.unique(extrapix)
-        theta, phi = hp.pix2ang(nside_testing, extrapix)
-        covpix = np.unique(np.append(covpix, hp.ang2pix(coverage_nside, theta, phi, nest=True)))
+        theta, phi = hpg.pixel_to_angle(nside_testing, extrapix, lonlat=False, nest=False)
+        covpix = np.unique(np.append(covpix, hpg.angle_to_pixel(coverage_nside, theta, phi, lonlat=False)))
 
     return covpix
 

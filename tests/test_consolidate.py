@@ -2,7 +2,7 @@ import unittest
 import numpy.testing as testing
 import numpy as np
 from numpy import random
-import healpy as hp
+import hpgeom as hpg
 import tempfile
 import shutil
 import fitsio
@@ -42,7 +42,7 @@ class ConsolidateTestCase(unittest.TestCase):
                                       ('lnlamlike', 'f4')])
 
         # Do cat0, pixel 0
-        theta, phi = hp.pix2ang(nside, 0)
+        theta, phi = hpg.pixel_to_angle(nside, 0, lonlat=False, nest=False)
         test_arr['mem_match_id'] = np.arange(test_arr.size) + 1
         test_arr['lambda'][:] = 100.0
         test_arr['lnlamlike'] = random.random(size=test_arr.size) * 100
@@ -53,7 +53,7 @@ class ConsolidateTestCase(unittest.TestCase):
         cat0.to_fits_file(config.redmapper_filename('cat_4_00000_final_catalog_members'))
 
         # Do cat1, pixel 1
-        theta, phi = hp.pix2ang(nside, 1)
+        theta, phi = hpg.pixel_to_angle(nside, 1, lonlat=False, nest=False)
         test_arr['mem_match_id'] = np.arange(test_arr.size) + 1
         test_arr['lambda'][:] = 100.0
         test_arr['lnlamlike'] = random.random(size=test_arr.size) * 100
@@ -64,7 +64,7 @@ class ConsolidateTestCase(unittest.TestCase):
         cat1.to_fits_file(config.redmapper_filename('cat_4_00001_final_catalog_members'))
 
         # Do cat2, pixel 2
-        theta, phi = hp.pix2ang(nside, 2)
+        theta, phi = hpg.pixel_to_angle(nside, 2, lonlat=False, nest=False)
         test_arr['mem_match_id'] = np.arange(test_arr.size) + 1
         test_arr['lambda'][:] = 100.0
         test_arr['lnlamlike'] = random.random(size=test_arr.size) * 100

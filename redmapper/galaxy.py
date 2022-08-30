@@ -7,7 +7,8 @@ import esutil
 from esutil.htm import Matcher
 import numpy as np
 import itertools
-import healpy as hp
+import hpgeom as hpg
+import hpgeom.healpy_compat as hpc
 import os
 import glob
 import re
@@ -132,11 +133,9 @@ class GalaxyCatalog(Catalog):
             raise ValueError("Border must be >= 0.0.")
         # ensure that nside is valid, and hpix is within range (if necessary)
         if nside > 0:
-            if not hp.isnsideok(nside):
-                raise ValueError("Nside not valid")
             if len(_hpix) > 0:
                 for _hp in _hpix:
-                    if _hp < 0 or _hp >= hp.nside2npix(nside):
+                    if _hp < 0 or _hp >= hpg.nside_to_npixel(nside):
                         raise ValueError("hpix %d is out of range." % (hp))
 
         if border > 0.0 and len(_hpix) > 0:
@@ -215,15 +214,15 @@ class GalaxyCatalog(Catalog):
         if len(_hpix) == 1 and nside > 0 and border > 0.0:
             trim_border = True
             nside_cutref = 512
-            boundaries = hp.boundaries(nside, _hpix[0], step=nside_cutref//nside)
+            boundaries = hpc.boundaries(nside, _hpix[0], step=nside_cutref//nside)
 
             # Need to get the sub-pixels, use nest and bit-shifting.
             bit_shift = 2*int(np.round(np.log2(nside_cutref/nside)))
-            inhpix_nest = np.arange(2**bit_shift, dtype=np.int32) + np.left_shift(hp.ring2nest(nside, _hpix[0]), bit_shift)
-            inhpix = hp.nest2ring(nside_cutref, inhpix_nest)
+            inhpix_nest = np.arange(2**bit_shift, dtype=np.int32) + np.left_shift(hpg.ring_to_nest(nside, _hpix[0]), bit_shift)
+            inhpix = hpg.nest_to_ring(nside_cutref, inhpix_nest)
 
             for i in range(boundaries.shape[1]):
-                pixint = hp.query_disc(nside_cutref, boundaries[:, i], np.radians(border), inclusive=True, fact=8)
+                pixint = hpc.query_disc(nside_cutref, boundaries[:, i], np.radians(border), inclusive=True, fact=8)
                 inhpix = np.append(inhpix, pixint)
             inhpix = np.unique(inhpix)
 
@@ -315,7 +314,7 @@ class GalaxyCatalog(Catalog):
                 if guse.sum() > 0:
                     # cut down the tempcat if necessary and spool to tempfile
                     if trim_border:
-                        ipring = hp.ang2pix(nside_cutref, tempcat['ra'], tempcat['dec'], lonlat=True)
+                        ipring = hpg.angle_to_pixel(nside_cutref, tempcat['ra'], tempcat['dec'], nest=False)
                         _, indices = esutil.numpy_util.match(inhpix, ipring[guse])
 
                         tempfits[1].append(tempcat[guse][indices])
@@ -337,7 +336,7 @@ class GalaxyCatalog(Catalog):
             return(cls(cat))
         else:
             if trim_border:
-                ipring = hp.ang2pix(nside_cutref, cat['ra'], cat['dec'], lonlat=True)
+                ipring = hpg.angle_to_pixel(nside_cutref, cat['ra'], cat['dec'], nest=False)
                 _, indices = esutil.numpy_util.match(inhpix, ipring)
 
                 return cls(cat[indices])
@@ -478,8 +477,8 @@ def get_subpixel_indices(galtable, hpix=[], border=0.0, nside=0):
     if len(hpix) == 0 or nside == 0:
         return np.arange(galtable.filenames.size)
 
-    theta, phi = hp.pix2ang(galtable.nside, galtable.hpix)
-    ipring_big = hp.ang2pix(nside, theta, phi)
+    theta, phi = hpg.pixel_to_angle(galtable.nside, galtable.hpix, lonlat=False, nest=False)
+    ipring_big = hpg.angle_to_pixel(nside, theta, phi, lonlat=False, nest=False)
 
     _, indices = esutil.numpy_util.match(hpix, ipring_big)
 
@@ -489,11 +488,11 @@ def get_subpixel_indices(galtable, hpix=[], border=0.0, nside=0):
             raise NotImplementedError("Cannot do boundary around a pixel list.")
 
         # now we need to find the extra boundary...
-        boundaries = hp.boundaries(nside, hpix[0], step=galtable.nside // nside)
+        boundaries = hpc.boundaries(nside, hpix[0], step=galtable.nside // nside)
         inhpix = galtable.hpix[indices]
         for i in range(boundaries.shape[1]):
-            pixint = hp.query_disc(galtable.nside, boundaries[:, i],
-                                   border*np.pi/180., inclusive=True, fact=8)
+            pixint = hpc.query_disc(galtable.nside, boundaries[:, i],
+                                    border*np.pi/180., inclusive=True, fact=8)
             inhpix = np.append(inhpix, pixint)
         inhpix = np.unique(inhpix)
         _, indices = esutil.numpy_util.match(inhpix, galtable.hpix)
@@ -658,7 +657,7 @@ class GalaxyCatalogMaker(object):
             raise RuntimeError("Cannot split galaxies when final file %s already exists." % (self.filename))
 
         # create a table
-        self.ngals = np.zeros(hp.nside2npix(self.nside), dtype=np.int32)
+        self.ngals = np.zeros(hpg.nside_to_npixel(self.nside), dtype=np.int32)
 
         # And read in mask if necessary
         self.mask = None
@@ -706,10 +705,7 @@ class GalaxyCatalogMaker(object):
             good = self.mask.compute_radmask(gals['ra'], gals['dec'])
             gals = gals[good]
 
-        theta = (90.0 - gals['dec']) * np.pi / 180.
-        phi = gals['ra'] * np.pi / 180.
-
-        ipring = hp.ang2pix(self.nside, theta, phi)
+        ipring = hpg.angle_to_pixel(self.nside, gals['ra'], gals['dec'], nest=False)
 
         h, rev = esutil.stat.histogram(ipring, min=0, max=self.ngals.size-1, rev=True)
 
@@ -827,9 +823,7 @@ class GalaxyCatalogMaker(object):
         tab.nside = self.nside
         tab.hpix = hpix
 
-        theta, phi = hp.pix2ang(self.nside, hpix)
-        tab.ra_pix = phi * 180. / np.pi
-        tab.dec_pix = 90.0 - theta * 180. / np.pi
+        tab.ra_pix, tab.dec_pix = hpg.pixel_to_angle(self.nside, hpix, nest=False)
 
         tab.ngals = self.ngals[hpix]
         for i, pix in enumerate(hpix):
