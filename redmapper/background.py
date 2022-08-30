@@ -5,7 +5,7 @@ richness and other redmapper likelihoods.
 """
 import fitsio
 import numpy as np
-import healpy as hp
+import hpgeom as hpg
 import time
 import copy
 import os
@@ -454,8 +454,8 @@ class BackgroundGenerator(object):
 
             if len(self.config.d.hpix) > 0:
                 # We need to take a sub-region
-                theta, phi = hp.pix2ang(master.nside, master.hpix)
-                ipring_big = hp.ang2pix(self.config.d.nside, theta, phi)
+                theta, phi = hpg.pixel_to_angle(master.nside, master.hpix, lonlat=False, nest=False)
+                ipring_big = hpg.angle_to_pixel(self.config.d.nside, theta, phi, lonlat=False, nest=False)
 
                 _, subreg_indices = esutil.numpy_util.match(self.config.d.hpix, ipring_big)
                 subreg_indices = np.unique(subreg_indices)
@@ -641,14 +641,11 @@ class ZredBackgroundGenerator(object):
 
         if len(self.config.d.hpix) > 0:
             # We need to take a sub-region
-            theta, phi = hp.pix2ang(master.nside, master.hpix)
-            ipring_big = hp.ang2pix(self.config.d.nside, theta, phi)
+            theta, phi = hpg.pixel_to_angle(master.nside, master.hpix, lonlat=False, nest=False)
+            ipring_big = hpg.angle_to_pixel(self.config.d.nside, theta, phi, lonlat=False, nest=False)
 
             _, subreg_indices = esutil.numpy_util.match(self.config.d.hpix, ipring_big)
             subreg_indices = np.unique(subreg_indices)
-
-            #ipring_bin = hp.ang2pix(self.config.d.nside, theta, phi)
-            #subreg_indices, = np.where(ipring_bin == self.config.d.hpix[0])
         else:
             subreg_indices = np.arange(master.hpix.size)
 

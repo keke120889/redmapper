@@ -2,7 +2,7 @@
 """
 import os
 import numpy as np
-import healpy as hp
+import hpgeom as hpg
 import esutil
 import fitsio
 
@@ -89,9 +89,9 @@ class MemPredict(object):
                                               ('max_memory_mb', 'f4')])
         retstr['nside'] = nsides
 
-        theta, phi = hp.pix2ang(tab.nside, tab.hpix)
+        theta, phi = hpg.pixel_to_angle(tab.nside, tab.hpix, lonlat=False, nest=False)
         for i, nside in enumerate(nsides):
-            hpix_run = hp.ang2pix(nside, theta, phi)
+            hpix_run = hpg.pixel_to_angle(nside, theta, phi, lonlat=False, nest=False)
 
             h, rev = esutil.stat.histogram(hpix_run, rev=True)
 

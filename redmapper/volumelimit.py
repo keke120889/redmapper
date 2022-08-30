@@ -1,7 +1,7 @@
 """Classes to describe the volume limit mask.
 """
 import fitsio
-import healpy as hp
+import hpgeom as hpg
 import numpy as np
 import esutil
 import os
@@ -263,7 +263,7 @@ class VolumeLimitMask(object):
         values = self.sparse_vlimmap.get_values_pos(ras, decs, lonlat=True)
 
         bad, = np.where(np.abs(decs) > 90.0)
-        values['zmax'][bad] = hp.UNSEEN
+        values['zmax'][bad] = hpg.UNSEEN
         values['fracgood'][bad] = 0.0
 
         if not get_fracgood:
@@ -289,7 +289,7 @@ class VolumeLimitMask(object):
                                                    ('area', 'f4')]))
         astr.z = zbins
 
-        pixsize = hp.nside2pixarea(self.nside, degrees=True)
+        pixsize = hpg.nside_to_pixel_area(self.nside, degrees=True)
 
         validPixels = self.sparse_vlimmap.valid_pixels
         zmax = self.sparse_vlimmap.get_values_pix(validPixels)['zmax']

@@ -4,7 +4,6 @@ This file contains classes for reading and using geometry masks.
 """
 import esutil
 import fitsio
-import healpy as hp
 import numpy as np
 import os
 from scipy.special import erf

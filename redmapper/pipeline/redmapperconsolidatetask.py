@@ -5,7 +5,7 @@ import numpy as np
 import glob
 import fitsio
 import re
-import healpy as hp
+import hpgeom as hpg
 import esutil
 
 from ..configuration import Configuration
@@ -167,7 +167,7 @@ class RedmapperConsolidateTask(object):
             # scale)
 
             theta, phi = astro_to_sphere(cat.ra, cat.dec)
-            ipring = hp.ang2pix(nside, theta, phi)
+            ipring = hpg.angle_to_pixel(nside, theta, phi, lonlat=False, nest=False)
 
             use, = np.where((ipring == hpix) &
                             (cat.maskfrac < self.config.max_maskfrac) &
@@ -391,8 +391,7 @@ class RuncatConsolidateTask(object):
 
             # Figure out which clusters are in the pixel
 
-            theta, phi = astro_to_sphere(cat.ra, cat.dec)
-            ipring = hp.ang2pix(nside, theta, phi)
+            ipring = hpg.angle_to_pixel(nside, cat.ra, cat.dec, nest=False)
 
             use, = np.where(ipring == hpix)
             if use.size == 0:

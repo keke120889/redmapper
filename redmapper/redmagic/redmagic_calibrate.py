@@ -6,7 +6,6 @@ import fitsio
 import time
 import scipy.optimize
 import esutil
-import healpy as hp
 import copy
 
 from ..configuration import Configuration

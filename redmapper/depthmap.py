@@ -2,9 +2,8 @@
 
 """
 import fitsio
-import healpy as hp
+import hpgeom as hpg
 import numpy as np
-from healpy import pixelfunc
 import esutil
 import scipy.optimize
 import healsparse
@@ -100,9 +99,9 @@ class DepthMap(object):
         values = self.sparse_depthmap.get_values_pos(ras, np.clip(decs, -90.0, 90.0), lonlat=True)
 
         bad, = np.where(np.abs(decs) > 90.0)
-        values['limmag'][bad] = hp.UNSEEN
-        values['exptime'][bad] = hp.UNSEEN
-        values['m50'][bad] = hp.UNSEEN
+        values['limmag'][bad] = hpg.UNSEEN
+        values['exptime'][bad] = hpg.UNSEEN
+        values['m50'][bad] = hpg.UNSEEN
 
         return (values['limmag'],
                 values['exptime'],
@@ -153,7 +152,7 @@ class DepthMap(object):
         mpc_scale: `float`
            Scaling in Mpc / degree at cluster redshift
         """
-        unseen = hp.pixelfunc.UNSEEN
+        unseen = hpg.UNSEEN
 
         # compute ra and dec based on maskgals
         ras = ra + (maskgals.x/mpc_scale)/np.cos(dec*np.pi/180.)
@@ -210,7 +209,7 @@ class DepthMap(object):
            Float array of total areas for each of the mags
         """
 
-        pixsize = hp.nside2pixarea(self.nside, degrees=True)
+        pixsize = hpg.nside_to_pixel_area(self.nside, degrees=True)
 
         if (self.w < 0.0):
             # This is just constant area
@@ -228,7 +227,7 @@ class DepthMap(object):
             nFinePerSub = 2**bitShift
             ipnest = np.zeros(0, dtype=np.int64)
             for hpix in self.subpix_hpix:
-                ipnest_temp = np.left_shift(hp.ring2nest(self.subpix_nside, hpix), bitShift) + np.arange(nFinePerSub)
+                ipnest_temp = np.left_shift(hpg.ring_to_nest(self.subpix_nside, hpix), bitShift) + np.arange(nFinePerSub)
                 ipnest = np.append(ipnest, ipnest_temp)
         else:
             ipnest = self.sparse_depthmap.valid_pixels
