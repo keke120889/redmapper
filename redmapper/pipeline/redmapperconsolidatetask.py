@@ -88,7 +88,7 @@ class RedmapperConsolidateTask(object):
 
         if match_spec and not self.config.has_truth:
             spec = GalaxyCatalog.from_fits_file(self.config.specfile)
-            use, = np.where(spec.z_err < 0.001)
+            use, = np.where(spec.z_err < self.config.calib_spec_max_zerr)
             spec = spec[use]
 
         # Add check for the number of files that are here
@@ -342,7 +342,7 @@ class RuncatConsolidateTask(object):
 
         if match_spec and not self.config.has_truth:
             spec = GalaxyCatalog.from_fits_file(self.config.specfile)
-            use, = np.where(spec.z_err < 0.001)
+            use, = np.where(spec.z_err < self.config.calib_spec_max_zerr)
             spec = spec[use]
 
         started = False

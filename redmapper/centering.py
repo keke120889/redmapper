@@ -86,9 +86,16 @@ class CenteringBCG(Centering):
         # This is somewhat arbitrary, and is not yet configurable
         pmem_cut = 0.8
 
+        z_neighbors = self.cluster.neighbors.zred
+        z_neighbors_e = self.cluster.neighbors.zred_e
+        if self.config.centering_use_zspec:
+            has_zspec, = np.where(self.cluster.neighbors.zspec > 0.0)
+            z_neighbors[has_zspec] = self.cluster.neighbors.zspec[has_zspec]
+            z_neighbors_e[has_zspec] = self.cluster.neighbors.zspec_err[has_zspec]
+
         use, = np.where((self.cluster.neighbors.r < self.cluster.r_lambda) &
                         ((self.cluster.neighbors.pmem > pmem_cut) |
-                         (np.abs(self.cluster.neighbors.zred - self.cluster.redshift) < 2.0 * self.cluster.neighbors.zred_e)))
+                         (np.abs(z_neighbors - self.cluster.redshift) < 2.0 * z_neighbors_e)))
 
         if use.size == 0:
             return False
@@ -134,12 +141,22 @@ class CenteringWcenZred(Centering):
         success: `bool`
            True when a center is successfully found. (Always True).
         """
+
+        z_neighbors = self.cluster.neighbors.zred
+        z_neighbors_e = self.cluster.neighbors.zred_e
+        chisq_neighbors = self.cluster.neighbors.zred_chisq
+        if self.config.centering_use_zspec:
+            has_zspec, = np.where(self.cluster.neighbors.zspec > 0.0)
+            z_neighbors[has_zspec] = self.cluster.neighbors.zspec[has_zspec]
+            z_neighbors_e[has_zspec] = self.cluster.neighbors.zspec_err[has_zspec]
+            chisq_neighbors[has_zspec] = 1.0
+
         # These are the galaxies considered as candidate centers
         use, = np.where((self.cluster.neighbors.r < self.cluster.r_lambda) &
                         (self.cluster.neighbors.pfree >= self.config.percolation_pbcg_cut) &
-                        (self.cluster.neighbors.zred_chisq < self.config.wcen_zred_chisq_max) &
+                        (chisq_neighbors < self.config.wcen_zred_chisq_max) &
                         ((self.cluster.neighbors.pmem > 0.0) |
-                         (np.abs(self.cluster.redshift - self.cluster.neighbors.zred) < 5.0 * self.cluster.neighbors.zred_e)))
+                         (np.abs(self.cluster.redshift - z_neighbors) < 5.0 * z_neighbors_e)))
 
         # Do the phi_cen filter
         mbar = self.cluster.mstar + self.config.wcen_Delta0 + self.config.wcen_Delta1 * np.log(self.cluster.Lambda / self.config.wcen_pivot)
@@ -150,15 +167,15 @@ class CenteringWcenZred(Centering):
 
         if self.zlambda_corr is not None:
             zrmod = interpol(self.zlambda_corr.zred_uncorr, self.zlambda_corr.z, self.cluster.redshift)
-            gz = gaussFunction(self.cluster.neighbors.zred[use],
-                               1. / (np.sqrt(2. * np.pi) * self.cluster.neighbors.zred_e[use]),
+            gz = gaussFunction(z_neighbors[use],
+                               1. / (np.sqrt(2. * np.pi) * z_neighbors_e[use]),
                                zrmod,
-                               self.cluster.neighbors.zred_e[use])
+                               z_neighbors_e[use])
         else:
-            gz = gaussFunction(self.cluster.neighbors.zred[use],
-                               1. / (np.sqrt(2. * np.pi) * self.cluster.neighbors.zred_e[use]),
+            gz = gaussFunction(z_neighbors[use],
+                               1. / (np.sqrt(2. * np.pi) * z_neighbors_e[use]),
                                self.cluster.redshift,
-                               self.cluster.neighbors.zred_e[use])
+                               z_neighbors_e[use])
 
         # and the w filter.  We need w for each galaxy that is considered a candidate center.
         # Note that in order to calculate w we need to know all the galaxies that are
@@ -246,7 +263,7 @@ class CenteringWcenZred(Centering):
         rtest = np.zeros(use.size) + 0.1
 
         bcounts = ffg * (self.cluster.calc_zred_bkg_density(rtest,
-                                                            self.cluster.neighbors.zred[use],
+                                                            z_neighbors[use],
                                                             self.cluster.neighbors.refmag[use]) /
                          (2. * np.pi * rtest)) * np.pi * self.cluster.r_lambda**2.
 

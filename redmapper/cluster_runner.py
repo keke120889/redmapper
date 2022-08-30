@@ -73,6 +73,7 @@ class ClusterRunner(object):
         self.use_parfile = True
         self.use_maxmag_in_matching = True
         self.use_rmask_settings = True
+        self.cutgals_chisqmax = False
         self._filename = None
 
         # Will want to add stuff to check that everything needed is present?
@@ -216,7 +217,8 @@ class ClusterRunner(object):
                                                        zredfile=zredfile,
                                                        use_tempfile=True,
                                                        refmag_range=[refmag_low, refmag_high],
-                                                       chisq_max=chisq_max)
+                                                       chisq_max=chisq_max,
+                                                       zspec=self.config.centering_use_zspec)
 
                 if zredfile is not None:
                     self.did_read_zreds = True
@@ -225,7 +227,8 @@ class ClusterRunner(object):
                                                        nside=self.config.d.nside,
                                                        hpix=self.config.d.hpix,
                                                        border=self.config.border,
-                                                       zredfile=zredfile)
+                                                       zredfile=zredfile,
+                                                       zspec=self.config.centering_use_zspec)
 
                 # If the zredfile is not None and we didn't raise an exception,
                 # then we successfully read in the zreds
