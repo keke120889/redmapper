@@ -229,6 +229,8 @@ class Configuration(object):
     galfile_nside = ConfigField(required=True)
     bands = ConfigField(required=True)
     has_truth = ConfigField(default=False)
+    galfile_has_truth = ConfigField(default=False)
+    galfile_has_zspec = ConfigField(default=False)
 
     area_finebin = ConfigField(default=0.001, required=True)
     area_coarsebin = ConfigField(default=0.005, required=True)
@@ -324,6 +326,7 @@ class Configuration(object):
     zlambda_parab_step = ConfigField(default=0.001, required=True)
 
     centerclass = ConfigField(default='CenteringBCG', required=True)
+    centering_use_zspec = ConfigField(default=False)
     wcen_rsoft = ConfigField(default=0.05, required=True)
     wcen_zred_chisq_max = ConfigField(default=100.0, required=True)
     wcen_minlambda = ConfigField(default=10.0, required=True)
@@ -460,6 +463,11 @@ class Configuration(object):
             if self.depthfile is None and self.nside > 0 and len(self.hpix) > 0:
                 raise RuntimeError("You must set a config file area if no depthfile is present and you are running a sub-region")
         self._set_vars_from_dict(gal_stats, check_none=True)
+
+        if self.has_truth and not gal_stats['galfile_has_truth']:
+            raise RuntimeError("Configuration set with has_truth, but galaxy catalog does not have truth data.")
+        if self.centering_use_zspec and not gal_stats['galfile_has_zspec']:
+            raise RuntimeError("Configuration set with centering_use_zspec, but galaxy catalog does not have zspec data.")
 
         if self.limmag_catalog is None:
             self.limmag_catalog = self.limmag_ref
@@ -708,17 +716,22 @@ class Configuration(object):
                 band = m.groups()[0].lower()
                 gal_stats['bands'][hdr[name]] = band
 
+            # Check for truth/zspec
+            elt = fitsio.read(self.galfile, ext=1, rows=0, lower=True)
+            gal_stats['galfile_has_truth'] = 'ztrue' in elt.dtype.names
+            gal_stats['galfile_has_zspec'] = 'zspec' in elt.dtype.names
+
         else:
             # statistics are from the master table file
             gal_stats['galfile_pixelized'] = True
 
-            master=fitsio.read(self.galfile, ext=1, upper=True)
+            main = fitsio.read(self.galfile, ext=1, lower=True)
 
             try:
                 # Support for old fits reading
-                mode = master['MODE'][0].rstrip().decode()
+                mode = main['mode'][0].rstrip().decode()
             except AttributeError:
-                mode = master['MODE'][0].rstrip()
+                mode = main['mode'][0].rstrip()
             if (mode == 'SDSS'):
                 gal_stats['survey_mode'] = 0
             elif (mode == 'DES'):
@@ -728,27 +741,40 @@ class Configuration(object):
             else:
                 raise ValueError("Input galaxy file with unknown mode: %s" % (mode))
 
-            gal_stats['area'] = master['AREA'][0]
-            gal_stats['limmag_ref'] = master['LIM_REF'][0]
-            gal_stats['nmag'] = master['NMAG'][0]
-            if ('B' in master.dtype.names):
-                gal_stats['b'] = master['B'][0]
+            gal_stats['area'] = main['area'][0]
+            gal_stats['limmag_ref'] = main['lim_ref'][0]
+            gal_stats['nmag'] = main['nmag'][0]
+            if ('b' in main.dtype.names):
+                gal_stats['b'] = main['b'][0]
             else:
                 gal_stats['b'] = None
-            gal_stats['zeropoint'] = master['ZEROPOINT'][0]
-            gal_stats['ref_ind'] = master[self.refmag.upper()+'_IND'][0]
-            gal_stats['galfile_nside'] = master['NSIDE'][0]
+            gal_stats['zeropoint'] = main['zeropoint'][0]
+            gal_stats['ref_ind'] = main[self.refmag.lower()+'_ind'][0]
+            gal_stats['galfile_nside'] = main['nside'][0]
             gal_stats['bands'] = [None]*gal_stats['nmag']
 
             # Figure out the bands...
-            for name in master.dtype.names:
-                m = re.search('(.*)_IND', name)
+            for name in main.dtype.names:
+                m = re.search('(.*)_ind', name)
                 if m is None:
                     continue
-                if m.groups()[0] == 'REF':
+                if m.groups()[0] == 'ref':
                     continue
                 band = m.groups()[0].lower()
-                gal_stats['bands'][master[name][0]] = band
+                gal_stats['bands'][main[name][0]] = band
+
+            try:
+                gal_stats['galfile_has_truth'] = main['has_truth'][0]
+                gal_stats['galfile_has_zspec'] = main['has_zspec'][0]
+            except:
+                path = os.path.dirname(os.path.abspath(self.galfile))
+                try:
+                    first_fname = os.path.join(path, main['filenames'][0][0].decode())
+                except AttributeError:
+                    first_fname = os.path.join(path, main['filenames'][0][0])
+                elt = fitsio.read(first_fname, ext=1, rows=0, lower=True)
+                gal_stats['galfile_has_truth'] = 'ztrue' in elt.dtype.names
+                gal_stats['galfile_has_zspec'] = 'zspec' in elt.dtype.names
 
         if any(x is None for x in gal_stats['bands']):
             # Remove this, and use config values

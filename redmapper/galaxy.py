@@ -88,7 +88,7 @@ class GalaxyCatalog(Catalog):
 
     @classmethod
     def from_galfile(cls, filename, zredfile=None, nside=0, hpix=[], border=0.0, truth=False,
-                     use_tempfile=False, refmag_range=[-1000.0, 1000.0], chisq_max=1e100):
+                     use_tempfile=False, refmag_range=[-1000.0, 1000.0], chisq_max=1e100, zspec=False):
         """
         Generate a GalaxyCatalog from a redmapper "galfile."
 
@@ -115,6 +115,8 @@ class GalaxyCatalog(Catalog):
             Refmag min, max to cut if using tempfile.
         chisq_max : `float`, optional
             Maximum chisq to cut if reading zreds and if using tempfile.
+        zspec : `bool`, optional
+            Read in zspec information if available?  Default is False.
         """
         if zredfile is not None:
             use_zred = True
@@ -236,6 +238,7 @@ class GalaxyCatalog(Catalog):
         elt = fitsio.read(first_fname, ext=1, rows=0, lower=True)
         dtype_in = elt.dtype.descr
         if not truth:
+            # Filter out any truth columns.
             mark = []
             for dt in dtype_in:
                 if (dt[0] != 'ztrue' and dt[0] != 'm200' and dt[0] != 'central' and
@@ -249,6 +252,24 @@ class GalaxyCatalog(Catalog):
         else:
             dtype = dtype_in
             columns = None
+
+        # Confirm we have the columns
+        if truth:
+            # We need this check for backwards compatibility.
+            try:
+                cat_has_truth = tab.has_truth
+            except:
+                cat_has_truth = 'ztrue' in elt.dtype.names
+            if not cat_has_truth:
+                raise RuntimeError("Ingested catalog does not have truth data.")
+
+        if zspec:
+            try:
+                cat_has_zspec = tab.has_spec
+            except:
+                cat_has_zspec = 'zspec' in elt.dtype.names
+            if not cat_has_zspec:
+                raise RuntimeError("Ingested catalog does not have zspec data")
 
         cat_fields = [dt[0] for dt in dtype]
 
@@ -543,6 +564,8 @@ class GalaxyCatalogMaker(object):
     'm200': m200 of halo from a simulated catalog (optional) ('f4')
     'central': central? 1 if yes (from simulated catalog) (optional) ('i2')
     'halo_id': Unique halo identifier from a simulated catalog (optional) ('i8')
+    'zspec': Spectroscopic redshift of galaxy (optional) ('f4')
+    'zspec_err': Error on spectroscopic redshift of galaxy (optional) ('f4')
 
     The typical usage will be:
 
@@ -554,7 +577,7 @@ class GalaxyCatalogMaker(object):
     """
 
     def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0,
-                 parallel=False, generate_unique_ids=False):
+                 parallel=False, generate_unique_ids=False, ingest_truth=False, ingest_zspec=False):
         """
         Instantiate a GalaxyCatalogMaker
 
@@ -587,6 +610,10 @@ class GalaxyCatalogMaker(object):
            This is part of a parallel job of writing files.
         generate_unique_ids: `bool`, optional
            Make new unique galaxy ids
+        ingest_truth : `bool`, optional
+            Ingest truth data?
+        ingest_zspec : `bool`, optional
+            Ingest zspec data?
         """
 
         self.parallel = parallel
@@ -666,6 +693,8 @@ class GalaxyCatalogMaker(object):
             self.mask = get_mask(fake_config, include_maskgals=False)
 
         self.is_finalized = False
+        self.ingest_truth = ingest_truth
+        self.ingest_zspec = ingest_zspec
 
     def split_galaxies(self, gals):
         """
@@ -804,7 +833,9 @@ class GalaxyCatalogMaker(object):
                  ('nmag', 'i4'),
                  ('mode', 'a10'),
                  ('b', 'f8', (np.clip(self.nmag, 2, None), )),
-                 ('zeropoint', 'f4')]
+                 ('zeropoint', 'f4'),
+                 ('has_truth', 'i2'),
+                 ('has_zspec', 'i2')]
         if self.u_ind is not None:
             dtype.append(('u_ind', 'i2'))
         if self.g_ind is not None:
@@ -835,6 +866,8 @@ class GalaxyCatalogMaker(object):
         tab.mode = self.mode
         tab.b[: self.b.size] = self.b
         tab.zeropoint = self.zeropoint
+        tab.has_truth = self.ingest_truth
+        tab.has_zspec = self.ingest_zspec
 
         if self.u_ind is not None:
             tab.u_ind = self.u_ind
@@ -909,7 +942,7 @@ class GalaxyCatalogMaker(object):
         """
 
         dtype = gals.dtype.descr
-        dtype_required = self.get_galaxy_dtype(self.nmag)
+        dtype_required = self.get_galaxy_dtype(self.nmag, truth=self.ingest_truth, zspec=self.ingest_zspec)
 
         dtype_names = [d[0].lower() for d in dtype]
         dtype_types = [d[1] for d in dtype]
@@ -966,7 +999,7 @@ class GalaxyCatalogMaker(object):
                 raise RuntimeError("Input galaxy IDs must be unique.  Fix input catalog or use generate_unique_ids")
 
     @staticmethod
-    def get_galaxy_dtype(nmag, truth=False):
+    def get_galaxy_dtype(nmag, truth=False, zspec=False):
         """
         Get the recommended galaxy dtype.
 
@@ -997,5 +1030,9 @@ class GalaxyCatalogMaker(object):
                           ('m200', 'f4'),
                           ('central', 'i2'),
                           ('halo_id', 'i8')])
+
+        if zspec:
+            dtype.extend([('zspec', 'f4'),
+                          ('zspec_err', 'f4')])
 
         return dtype

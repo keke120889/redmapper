@@ -61,7 +61,7 @@ class RedSequenceCalibrator(object):
            Default is True. Can be set to False for certain testing.
         """
 
-        gals = GalaxyCatalog.from_galfile(self._galfile)
+        gals = GalaxyCatalog.from_galfile(self._galfile, zspec=self.config.centering_use_zspec)
 
         if self.config.calib_use_pcol:
             use, = np.where((gals.z > self.config.zrange[0]) &

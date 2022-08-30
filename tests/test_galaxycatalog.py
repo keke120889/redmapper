@@ -127,6 +127,8 @@ class GalaxyCatalogTestCase(unittest.TestCase):
         tab2 = Entry.from_fits_file(os.path.join(self.test_dir, 'test_working_master_table.fit'))
         self.assertEqual(tab.nside, tab2.nside)
         self.assertEqual(tab.filenames.size, tab2.filenames.size)
+        self.assertEqual(tab2.has_truth, 0)
+        self.assertEqual(tab2.has_zspec, 0)
 
         for filename in tab2.filenames:
             try:
@@ -226,6 +228,90 @@ class GalaxyCatalogTestCase(unittest.TestCase):
             except AttributeError:
                 fname = os.path.join(self.test_dir, filename)
             self.assertTrue(os.path.isfile(fname))
+
+    def test_galaxycatalog_create_with_truth(self):
+        # Make a test directory
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+
+        info_dict = {'LIM_REF': 21.0,
+                     'REF_IND': 3,
+                     'AREA': 25.0,
+                     'NMAG': 5,
+                     'MODE': 'SDSS',
+                     'ZP': 22.5,
+                     'U_IND': 0,
+                     'G_IND': 1,
+                     'R_IND': 2,
+                     'I_IND': 3,
+                     'Z_IND': 3}
+
+        configfile = os.path.join('data_for_tests', 'testconfig.yaml')
+        config = Configuration(configfile)
+        gals = GalaxyCatalog.from_galfile(config.galfile)
+        tab = Entry.from_fits_file(config.galfile)
+
+        # Raise if we try to create a truth catalog here
+        maker = GalaxyCatalogMaker(os.path.join(self.test_dir, 'test_working'), info_dict, nside=tab.nside, ingest_truth=True)
+        self.assertRaises(RuntimeError, maker.append_galaxies, gals._ndarray)
+
+        new_dtype = [('ztrue', 'f4'),
+                     ('m200', 'f4'),
+                     ('central', 'i2'),
+                     ('halo_id', 'i8')]
+
+        gals.add_fields(new_dtype)
+
+        maker = GalaxyCatalogMaker(os.path.join(self.test_dir, 'test_working'), info_dict, nside=tab.nside, ingest_truth=True)
+        maker.append_galaxies(gals._ndarray)
+        maker.finalize_catalog()
+
+        tab2 = Entry.from_fits_file(os.path.join(self.test_dir, 'test_working_master_table.fit'))
+        self.assertEqual(tab.nside, tab2.nside)
+        self.assertEqual(tab.filenames.size, tab2.filenames.size)
+
+        self.assertEqual(tab2.has_truth, 1)
+        self.assertEqual(tab2.has_zspec, 0)
+
+    def test_galaxycatalog_create_with_zspec(self):
+        # Make a test directory
+        self.test_dir = tempfile.mkdtemp(dir='./', prefix='TestRedmapper-')
+
+        info_dict = {'LIM_REF': 21.0,
+                     'REF_IND': 3,
+                     'AREA': 25.0,
+                     'NMAG': 5,
+                     'MODE': 'SDSS',
+                     'ZP': 22.5,
+                     'U_IND': 0,
+                     'G_IND': 1,
+                     'R_IND': 2,
+                     'I_IND': 3,
+                     'Z_IND': 3}
+
+        configfile = os.path.join('data_for_tests', 'testconfig.yaml')
+        config = Configuration(configfile)
+        gals = GalaxyCatalog.from_galfile(config.galfile)
+        tab = Entry.from_fits_file(config.galfile)
+
+        # Raise if we try to create a truth catalog here
+        maker = GalaxyCatalogMaker(os.path.join(self.test_dir, 'test_working'), info_dict, nside=tab.nside, ingest_zspec=True)
+        self.assertRaises(RuntimeError, maker.append_galaxies, gals._ndarray)
+
+        new_dtype = [('zspec', 'f4'),
+                     ('zspec_err', 'f4')]
+
+        gals.add_fields(new_dtype)
+
+        maker = GalaxyCatalogMaker(os.path.join(self.test_dir, 'test_working'), info_dict, nside=tab.nside, ingest_zspec=True)
+        maker.append_galaxies(gals._ndarray)
+        maker.finalize_catalog()
+
+        tab2 = Entry.from_fits_file(os.path.join(self.test_dir, 'test_working_master_table.fit'))
+        self.assertEqual(tab.nside, tab2.nside)
+        self.assertEqual(tab.filenames.size, tab2.filenames.size)
+
+        self.assertEqual(tab2.has_truth, 0)
+        self.assertEqual(tab2.has_zspec, 1)
 
     def setUp(self):
         self.test_dir = None
