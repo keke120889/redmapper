@@ -3,7 +3,7 @@ import numpy.testing as testing
 import numpy as np
 import fitsio
 from numpy import random
-import healpy as hp
+import hpgeom as hpg
 import healsparse
 import os
 import tempfile
@@ -32,7 +32,7 @@ class HealsparseConversionsTestCase(unittest.TestCase):
         RAs = np.array([142.10934, 142.04090, 142.09242, 142.11448, 50.0])
         Decs = np.array([65.022666, 65.133844, 65.084844, 65.109541, 50.0])
 
-        comp = np.array([1.0, 1.0, 1.0, 1.0, hp.UNSEEN], dtype=np.float32)
+        comp = np.array([1.0, 1.0, 1.0, 1.0, hpg.UNSEEN], dtype=np.float32)
 
         testing.assert_almost_equal(sparsemask.get_values_pos(RAs, Decs, lonlat=True), comp)
 

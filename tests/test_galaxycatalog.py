@@ -3,7 +3,7 @@ import numpy.testing as testing
 import numpy as np
 import fitsio
 from numpy import random
-import healpy as hp
+import hpgeom as hpg
 import tempfile
 import shutil
 import os
@@ -39,7 +39,7 @@ class GalaxyCatalogTestCase(unittest.TestCase):
         gals_sub = GalaxyCatalog.from_galfile(os.path.join(file_path, galfile),
                                               hpix=hpix, nside=64)
 
-        ipring_all = hp.ang2pix(64, gals_all.ra, gals_all.dec, lonlat=True)
+        ipring_all = hpg.angle_to_pixel(64, gals_all.ra, gals_all.dec, nest=False)
         use, = np.where(ipring_all == hpix)
         testing.assert_equal(gals_sub.size, use.size)
 

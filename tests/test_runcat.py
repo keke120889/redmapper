@@ -3,7 +3,6 @@ import numpy.testing as testing
 import numpy as np
 import fitsio
 from numpy import random
-import healpy as hp
 
 from redmapper import Cluster
 from redmapper import ClusterCatalog

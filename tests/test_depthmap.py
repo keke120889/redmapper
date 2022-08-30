@@ -1,7 +1,7 @@
 import unittest
 import numpy.testing as testing
 import numpy as np
-import healpy as hp
+import hpgeom as hpg
 import fitsio
 
 from redmapper import DepthMap
@@ -48,9 +48,9 @@ class DepthMapTestCase(unittest.TestCase):
         depthstr2 = DepthMap(config2)
 
         limmag2, exptime2, m502 = depthstr2.get_depth_values(RAs, Decs)
-        comp_limmag[0] = hp.UNSEEN
-        comp_exptime[0] = hp.UNSEEN
-        comp_m50[0] = hp.UNSEEN
+        comp_limmag[0] = hpg.UNSEEN
+        comp_exptime[0] = hpg.UNSEEN
+        comp_m50[0] = hpg.UNSEEN
 
         testing.assert_almost_equal(limmag2, comp_limmag, 4)
         testing.assert_almost_equal(exptime2, comp_exptime, 4)
