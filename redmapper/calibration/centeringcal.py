@@ -5,6 +5,7 @@ import numpy as np
 import fitsio
 import time
 import scipy.optimize
+import warnings
 
 from ..configuration import Configuration
 from ..utilities import sample_from_pdf, histoGauss, chisq_pdf
@@ -156,8 +157,8 @@ class WcenCFitter(object):
         """
         mbar = self._mstar + pars[0] + pars[1] * self._lamscale
 
-        with np.warnings.catch_warnings():
-            np.warnings.simplefilter("ignore")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
 
             phicen = (1./(np.sqrt(2.*np.pi) * pars[2])) * np.exp(-0.5*(self._refmag - mbar)**2. / (pars[2]**2.))
             rho = self._pcen * phicen * self._cwt + self._psat * self._phi1 * self._cwt + (1. - self._pcen - self._psat) * self._bcounts

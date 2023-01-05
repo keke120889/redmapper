@@ -972,8 +972,8 @@ def histoGauss(ax, array):
         np.std(array)]
 
     try:
-        with np.warnings.catch_warnings():
-            np.warnings.simplefilter("ignore")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
 
             # This fit might throw a warning, which we don't need now.
             # Note that in the future if we use the output from this fit in an

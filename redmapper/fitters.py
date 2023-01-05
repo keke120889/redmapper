@@ -439,21 +439,21 @@ class RedSequenceFitter(object):
 
         phi = (1. / self._gsig) * (1. / np.sqrt(2. * np.pi)) * np.exp(-0.5 * xi**2.)
 
-        with np.warnings.catch_warnings():
-            np.warnings.simplefilter("ignore")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
             # This might have a divide-by-zero, that's okay, we check later.
             gci = phi / phi_bma
 
         if self._has_probs:
             # Use probabilities and bkgs
-            with np.warnings.catch_warnings():
-                np.warnings.simplefilter("ignore")
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
 
                 vals = np.log(self._probs * gci + (1.0 - self._probs) * self._bkgs)
         else:
             # No probabilities or bkgs
-            with np.warnings.catch_warnings():
-                np.warnings.simplefilter("ignore")
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
 
                 vals = np.log(gci)
 

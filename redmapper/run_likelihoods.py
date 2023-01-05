@@ -4,6 +4,7 @@ import fitsio
 import numpy as np
 import esutil
 import copy
+import warnings
 
 from .cluster import ClusterCatalog
 from .catalog import Catalog
@@ -228,8 +229,8 @@ class RunLikelihoods(ClusterRunner):
             sig = self.config.lnw_cen_sigma / np.sqrt(((np.clip(cluster.Lambda, None, self.config.wcen_maxlambda)) / cluster.scaleval) / self.config.wcen_pivot)
             fw = (1. / (np.sqrt(2. * np.pi) * sig)) * np.exp(-0.5 * (np.log(w) - self.config.lnw_cen_mean)**2. / (sig**2.))
 
-            with np.warnings.catch_warnings():
-                np.warnings.simplefilter("error")
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
 
                 cluster.lnbcglike = np.log(phi_cen * np.clip(g, 1e-10, None) * fw)
 
