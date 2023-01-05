@@ -7,6 +7,7 @@ import esutil
 import scipy.optimize
 import scipy.ndimage
 import copy
+import warnings
 
 from .configuration import Configuration
 from .utilities import gaussFunction, CubicSpline, interpol
@@ -329,8 +330,8 @@ class SpecPlot(object):
 
             p0 = [use.size, np.median(dzvec), np.std(dzvec)]
             try:
-                with np.warnings.catch_warnings():
-                    np.warnings.simplefilter('error')
+                with warnings.catch_warnings():
+                    warnings.simplefilter('error')
                     coeff, varMatrix = scipy.optimize.curve_fit(gaussFunction, dz, spl[i, :], p0=p0)
             except (RuntimeError, RuntimeWarning, scipy.optimize.OptimizeWarning):
                 # set to the default?

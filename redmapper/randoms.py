@@ -7,6 +7,7 @@ import re
 import copy
 import numpy as np
 import healsparse
+import warnings
 
 from .catalog import Catalog, Entry
 from .galaxy import GalaxyCatalog, GalaxyCatalogMaker
@@ -389,8 +390,8 @@ class RandomWeigher(object):
         ind2 = np.searchsorted(self.randcat.z[alluse[st[gd]]], zbins)
 
         xvals = (zbins[0: -2] + zbins[1: -1])/2.
-        with np.warnings.catch_warnings():
-            np.warnings.simplefilter("ignore")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
             yvals = np.nan_to_num(ind2[1: -1].astype(np.float64) / ind1[1: -1].astype(np.float64))
 
         fitter = MedZFitter(nodes, xvals, yvals)
