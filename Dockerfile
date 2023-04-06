@@ -23,8 +23,8 @@ RUN curl -L -o ~/mambaforge.sh https://github.com/conda-forge/miniforge/releases
     /bin/bash ~/mambaforge.sh -b -p /opt/conda && \
     rm ~/mambaforge.sh
 RUN . /opt/conda/etc/profile.d/conda.sh && conda create --yes --name redmapper-env
-RUN echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
-    echo "conda activate redmapper-env" >> ~/.bashrc
+RUN echo ". /opt/conda/etc/profile.d/conda.sh" > /opt/redmapper/startup.sh && \
+    echo "conda activate redmapper-env" >> /opt/redmapper/startup.sh
 
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate redmapper-env && \
     mamba install --yes python=3.10 numpy scipy astropy matplotlib pyyaml gsl c-compiler fitsio esutil healpy healsparse hpgeom && \
