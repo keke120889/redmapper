@@ -12,7 +12,11 @@ RUN apt-get clean
 RUN /usr/sbin/groupadd -g 1000 user && \
     /usr/sbin/useradd -u 1000 -g 1000 -d /opt/redmapper redmapper && \
     mkdir /opt/redmapper && chown redmapper.user /opt/redmapper && \
-    chown redmapper.user /opt
+    chown -R redmapper.user /opt
+
+COPY . /opt/redmapper/workdir
+RUN chown -R redmapper.user /opt/redmapper/workdir
+
 USER redmapper
 
 RUN curl -L -o ~/mambaforge.sh https://github.com/conda-forge/miniforge/releases/download/23.1.0-1/Mambaforge-23.1.0-1-Linux-x86_64.sh && \
@@ -27,6 +31,7 @@ RUN . /opt/conda/etc/profile.d/conda.sh && conda activate redmapper-env && \
     conda clean -af --yes
 
 RUN . /opt/conda/etc/profile.d/conda.sh && conda activate redmapper-env && \
+    cd /opt/redmapper/workdir && \
     python setup.py install
 
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
