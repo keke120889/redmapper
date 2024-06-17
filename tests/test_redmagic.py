@@ -153,7 +153,7 @@ class RedmagicCalTestCase(unittest.TestCase):
         except AttributeError:
             vmaskfile = cal['vmaskfile'][0].rstrip()
         os.remove(vmaskfile)
-        mask = VolumeLimitMask(config, cal['etamin'], use_geometry=True)
+        mask = VolumeLimitMask(config, cal['etamin'][0], use_geometry=True)
 
         rng = random.RandomState(12345)
 
