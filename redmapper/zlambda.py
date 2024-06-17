@@ -542,7 +542,7 @@ class Zlambda(object):
         pz = np.exp(ln_lkhd) * self.zredstr.volume_factor[self.zredstr.zindex(pzbins)]
 
         # now normalize
-        n = scipy.integrate.simps(pz, pzbins)
+        n = scipy.integrate.simpson(pz, pzbins)
         pz = pz / n
 
         self.pzbins = pzbins
@@ -723,7 +723,7 @@ class ZlambdaCorrectionPar(object):
 
                 pzbins = pdz * np.arange(npzbins) + zlam - pdz * (npzbins - 1)/2. + offset
 
-                n = scipy.integrate.simps(pzvals, pzbins)
+                n = scipy.integrate.simpson(pzvals, pzbins)
                 pzvals /= n
 
                 zlam_e = np.sqrt(zlam_e**2. + extra_err**2.)
