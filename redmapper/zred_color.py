@@ -223,7 +223,7 @@ class ZredColor(object):
             zred_samp = np.zeros(galaxy.zred_samp.size) + zred
         else:
             pz = dist.copy()
-            n = scipy.integrate.simpson(pz[gdzbins], self.zredstr.z[gdzbins])
+            n = scipy.integrate.simpson(y=pz[gdzbins], x=self.zredstr.z[gdzbins])
             pz /= n
 
             pdf = scipy.interpolate.interp1d(self.zredstr.z[gdzbins], pz[gdzbins], kind='quadratic',
