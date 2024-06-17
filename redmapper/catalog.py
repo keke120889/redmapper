@@ -91,7 +91,14 @@ class DataObject(object):
         if attr == '_ndarray':
             object.__setattr__(self, attr, val)
         elif attr.lower() in self._ndarray.dtype.names:
-            self._ndarray[attr.lower()] = val
+            if hasattr(val, "__len__"):
+                if len(val) == 1:
+                    _val = val[0]
+                else:
+                    _val = val
+            else:
+                _val = val
+            self._ndarray[attr.lower()] = _val
         else:
             object.__setattr__(self, attr, val)
 
