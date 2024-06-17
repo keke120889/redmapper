@@ -3,7 +3,7 @@ matplotlib
 pyyaml
 fitsio
 esutil
-numpy
+numpy <2
 scipy
 healsparse
 hpgeom
