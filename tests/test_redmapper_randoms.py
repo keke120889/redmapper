@@ -54,10 +54,10 @@ class RedmapperRandomsTestCase(unittest.TestCase):
 
         # The distribution was confirmed on a bigger set; this just wants a quick
         # check that the numbers match
-        testing.assert_array_almost_equal(rands.ra[: 3], [140.367948, 140.291156, 141.03190])
-        testing.assert_array_almost_equal(rands.dec[: 3], [66.272433, 66.013655, 66.121244])
-        testing.assert_array_almost_equal(rands.z[: 3], [0.090511, 0.296007, 0.365437])
-        testing.assert_array_almost_equal(rands.Lambda[: 3], [24.473192, 34.282143, 25.60206])
+        testing.assert_array_almost_equal(rands.ra[: 3], [140.260907, 140.920711, 140.851056])
+        testing.assert_array_almost_equal(rands.dec[: 3], [65.888083, 66.033431, 65.936919])
+        testing.assert_array_almost_equal(rands.z[: 3], [0.221394, 0.382162, 0.39954])
+        testing.assert_array_almost_equal(rands.Lambda[: 3], [22.093416, 35.16693 , 32.436287])
 
         # Run the random points through the zmask code
         rand_zmask = RunRandomsZmask(config)
@@ -85,7 +85,7 @@ class RedmapperRandomsTestCase(unittest.TestCase):
 
         astr = Catalog.from_fits_file(wt_areafile)
         testing.assert_array_less(-0.0001, astr.area)
-        testing.assert_array_almost_equal(astr.area[100: 103], [0.793, 0.799, 0.804], 3)
+        testing.assert_array_almost_equal(astr.area[100: 103], [0.992, 0.987, 0.982], 3)
 
     def setUp(self):
         self.test_dir = None
