@@ -140,10 +140,10 @@ class ZredColor(object):
         calcinds, = np.where(dist > 1e-5)
 
         if calcinds.size >= 3:
-            tdist = scipy.integrate.trapz(dist[calcinds], self.zredstr.z[calcinds])
-            zred_temp = scipy.integrate.trapz(dist[calcinds] * self.zredstr.z[calcinds],
+            tdist = scipy.integrate.trapezoid(dist[calcinds], self.zredstr.z[calcinds])
+            zred_temp = scipy.integrate.trapezoid(dist[calcinds] * self.zredstr.z[calcinds],
                                               self.zredstr.z[calcinds]) / tdist
-            zred_e = scipy.integrate.trapz(dist[calcinds] * self.zredstr.z[calcinds]**2.,
+            zred_e = scipy.integrate.trapezoid(dist[calcinds] * self.zredstr.z[calcinds]**2.,
                                            self.zredstr.z[calcinds]) / tdist - zred_temp**2.
         else:
             tdist = np.sum(dist[calcinds])
@@ -203,7 +203,7 @@ class ZredColor(object):
         if calcinds.size >= 3:
             # Note there maybe should be a distcorr here, but this is not
             #  actually computed in the IDL code (bug?)
-            lkhd = scipy.integrate.trapz(newdist[calcinds] * (lndist[calcinds]), self.zredstr.z[calcinds]) / scipy.integrate.trapz(newdist[calcinds], self.zredstr.z[calcinds])
+            lkhd = scipy.integrate.trapezoid(newdist[calcinds] * (lndist[calcinds]), self.zredstr.z[calcinds]) / scipy.integrate.trapezoid(newdist[calcinds], self.zredstr.z[calcinds])
         else:
             lkhd = np.sum(newdist[calcinds] * lndist[calcinds]) / np.sum(newdist[calcinds])
 
@@ -223,7 +223,7 @@ class ZredColor(object):
             zred_samp = np.zeros(galaxy.zred_samp.size) + zred
         else:
             pz = dist.copy()
-            n = scipy.integrate.simps(pz[gdzbins], self.zredstr.z[gdzbins])
+            n = scipy.integrate.simpson(y=pz[gdzbins], x=self.zredstr.z[gdzbins])
             pz /= n
 
             pdf = scipy.interpolate.interp1d(self.zredstr.z[gdzbins], pz[gdzbins], kind='quadratic',

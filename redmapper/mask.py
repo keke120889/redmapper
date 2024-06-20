@@ -217,7 +217,7 @@ class Mask(object):
         normmag = mstar - 2.5 * np.log10(self.config.lval_reference)
         steps = np.arange(10.0, normmag, 0.01)
         f = schechter_pdf(steps, alpha=self.config.calib_lumfunc_alpha, mstar=mstar)
-        n = scipy.integrate.simps(f, steps)
+        n = scipy.integrate.simpson(y=f, x=steps)
         maskgals.lum_pdf = schechter_pdf(maskgals.m + mstar, mstar=mstar, alpha=self.config.calib_lumfunc_alpha)
         maskgals.lumwt = maskgals.lum_pdf / n
 
