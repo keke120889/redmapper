@@ -38,7 +38,7 @@ solver_nfw_ext = Extension(
 chisq_dist_ext = Extension(
     "redmapper.chisq_dist._chisq_dist_pywrap",
     extra_compile_args=["-std=gnu99", os.path.expandvars("-I${GSLI}")],
-    extra_link_args=[os.path.expandbars("-L${GSLL}")],
+    extra_link_args=[os.path.expandvars("-L${GSLL}")],
     libraries=["gsl", "gslcblas"],
     sources=[
         "redmapper/chisq_dist/chisq_dist.c",
