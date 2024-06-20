@@ -4,7 +4,7 @@ os.environ['MKL_NUM_THREADS'] = '1'
 os.environ['NUMEXPR_NUM_THREADS'] = '1'
 os.environ['OMP_NUM_THREADS'] = '1'
 
-from ._version import __version__, __version_info__
+from ._version import __version__, __version_tuple__
 
 version = __version__
 
