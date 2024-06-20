@@ -3,8 +3,6 @@ import numpy
 import os
 
 
-exec(open('redmapper/_version.py').read())
-
 scripts = ['bin/redmapper_run_zred_pixel.py',
            'bin/redmapper_run_redmapper_pixel.py',
            'bin/redmapper_batch.py',
@@ -49,6 +47,5 @@ chisq_dist_ext = Extension(
 setup(
     ext_modules=[solver_nfw_ext, chisq_dist_ext],
     include_dirs=numpy.get_include(),
-    version=__version__,
     scripts=scripts,
 )
