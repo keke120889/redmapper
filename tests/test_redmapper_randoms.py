@@ -54,8 +54,8 @@ class RedmapperRandomsTestCase(unittest.TestCase):
 
         # The distribution was confirmed on a bigger set; this just wants a quick
         # check that the numbers match
-        testing.assert_array_almost_equal(rands.ra[: 3], [140.260907, 140.920711])
-        testing.assert_array_almost_equal(rands.dec[: 3], [65.888083, 66.033431])
+        testing.assert_array_almost_equal(rands.ra[: 2], [140.260907, 140.920711])
+        testing.assert_array_almost_equal(rands.dec[: 2], [65.888083, 66.033431])
         testing.assert_array_almost_equal(rands.z[: 2], [0.221394, 0.382162])
         testing.assert_array_almost_equal(rands.Lambda[: 2], [22.093416, 35.16693])
 
