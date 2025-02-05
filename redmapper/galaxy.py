@@ -667,7 +667,6 @@ class GalaxyCatalogMaker(object):
             self.j_ind = info_dict['J_IND']
         except KeyError:
             self.j_ind = None
-            assert(0)
         try:
             self.h_ind = info_dict['H_IND']
         except KeyError:
