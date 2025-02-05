@@ -655,10 +655,27 @@ class GalaxyCatalogMaker(object):
             self.z_ind = info_dict['Z_IND']
         except KeyError:
             self.z_ind = None
+        #try:
+        #    self.y_ind = info_dict['Y_IND']
+        #except KeyError:
+        #    self.y_ind = None
         try:
             self.y_ind = info_dict['Y_IND']
         except KeyError:
             self.y_ind = None
+        try:
+            self.j_ind = info_dict['J_IND']
+        except KeyError:
+            self.j_ind = None
+            assert(0)
+        try:
+            self.h_ind = info_dict['H_IND']
+        except KeyError:
+            self.h_ind = None
+        try:
+            self.f_ind = info_dict['F_IND']
+        except KeyError:
+            self.f_ind = None
 
         self.filename = '%s_master_table.fit' % (self.outbase)
 
@@ -846,8 +863,16 @@ class GalaxyCatalogMaker(object):
             dtype.append(('i_ind', 'i2'))
         if self.z_ind is not None:
             dtype.append(('z_ind', 'i2'))
+        #if self.y_ind is not None:
+        #    dtype.append(('y_ind', 'i2'))
         if self.y_ind is not None:
             dtype.append(('y_ind', 'i2'))
+        if self.j_ind is not None:
+            dtype.append(('j_ind', 'i2'))
+        if self.h_ind is not None:
+            dtype.append(('h_ind', 'i2'))
+        if self.f_ind is not None:
+            dtype.append(('f_ind', 'i2'))
 
         tab = Entry(np.zeros(1, dtype=dtype))
 
@@ -879,8 +904,16 @@ class GalaxyCatalogMaker(object):
             tab.i_ind = self.i_ind
         if self.z_ind is not None:
             tab.z_ind = self.z_ind
+        #if self.y_ind is not None:
+        #    tab.y_ind = self.y_ind
         if self.y_ind is not None:
             tab.y_ind = self.y_ind
+        if self.j_ind is not None:
+            tab.j_ind = self.j_ind
+        if self.h_ind is not None:
+            tab.h_ind = self.h_ind
+        if self.f_ind is not None:
+            tab.f_ind = self.f_ind
 
         hdr = fitsio.FITSHDR()
         hdr['PIXELS'] = 1
