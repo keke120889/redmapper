@@ -170,8 +170,12 @@ class RedSequenceColorPar(object):
         else:
             refmagrange=np.array([12.0,limmag],dtype='f4')
             lumrefmagrange=np.array([12.0,ms(zrange[1])-2.5*np.log10(0.1)])
+            print(lumrefmagrange)
         self.refmagbins = np.arange(refmagrange[0], refmagrange[1], refmagbinsize, dtype='f8')
+        print(self.refmagbins)
+        #self.lumrefmagbins=np.arange(lumrefmagrange[0],lumrefmagrange[1],refmagbinsize,dtype='f8')
         self.lumrefmagbins=np.arange(lumrefmagrange[0],lumrefmagrange[1],refmagbinsize,dtype='f8')
+        print(self.lumrefmagbins)
 
         # and for fast look-ups...
         self.refmagbins = np.append(self.refmagbins,self.refmagbins[self.refmagbins.size-1])
