@@ -43,14 +43,15 @@ class ZredColor(object):
 
         self.nz = self.zredstr.z.size - 1
         
-        print('zredstr.z: ', self.zredstr.z)
-        print('zredstr.z.size: ', self.zredstr.z.size)
+        #print('zredstr.z: ', self.zredstr.z)
+        #print('zredstr.z.size: ', self.zredstr.z.size)
 
         self.notextrap, = np.where(~self.zredstr.extrapolated)
-
-        #print('zredstr.extrapolated: ', self.zredstr.extrapolated)
-        print('zredstr.extrapolated shape: ', np.shape(self.zredstr.extrapolated))
         
+        print('zredstr: ', self.zredstr)
+        #print('zredstr.extrapolated: ', self.zredstr.extrapolated)
+        #print('zredstr.extrapolated shape: ', np.shape(self.zredstr.extrapolated))
+
         if self.zrange is None:
             self.zbinstart = 0
             self.zbinstop = self.nz - 1
@@ -114,9 +115,9 @@ class ZredColor(object):
 
         lndist = np.zeros(self.nz) - 1e12
         
-        print('nz: ', self.nz)
-        print('nz shape: ', np.shape(self.nz))
-        print('lndist shape: ', np.shape(lndist))
+        #print('nz: ', self.nz)
+        #print('nz shape: ', np.shape(self.nz))
+        #print('lndist shape: ', np.shape(lndist))
 
         chisq = np.zeros(self.nz) + 1e12
 
@@ -149,6 +150,10 @@ class ZredColor(object):
         #print('notextrap: ', self.notextrap)
         #print('dist: ', dist)
         #print('notextrap shape: ', np.shape(self.notextrap))
+        #print('dist shape: ', np.shape(dist))
+        #print('notextrap: ', self.notextrap)
+        #print('notextrap shape: ', np.shape(self.notextrap))
+        #print('dist: ', dist)
         #print('dist shape: ', np.shape(dist))
 
         ind_temp = np.argmax(dist[self.notextrap])
