@@ -48,7 +48,7 @@ class ZredColor(object):
 
         self.notextrap, = np.where(~self.zredstr.extrapolated)
         
-        print('zredstr: ', self.zredstr)
+        #print('zredstr: ', self.zredstr)
         #print('zredstr.extrapolated: ', self.zredstr.extrapolated)
         #print('zredstr.extrapolated shape: ', np.shape(self.zredstr.extrapolated))
 
@@ -148,13 +148,10 @@ class ZredColor(object):
 
         # take the maximum where not extrapolated
         #print('notextrap: ', self.notextrap)
-        #print('dist: ', dist)
-        #print('notextrap shape: ', np.shape(self.notextrap))
-        #print('dist shape: ', np.shape(dist))
-        #print('notextrap: ', self.notextrap)
         #print('notextrap shape: ', np.shape(self.notextrap))
         #print('dist: ', dist)
         #print('dist shape: ', np.shape(dist))
+        #print('dist: ', dist)
 
         ind_temp = np.argmax(dist[self.notextrap])
         ind = self.notextrap[ind_temp]
