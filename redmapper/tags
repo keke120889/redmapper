@@ -1,0 +1,1056 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Background	__init__.py	/^from .background import Background, ZredBackground, BackgroundGenerator, ZredBackgroundGenerator$/;"	i
+Background	background.py	/^class Background(object):$/;"	c
+Background	cluster_runner.py	/^from .background import Background, ZredBackground$/;"	i
+Background	run_firstpass.py	/^from .background import Background$/;"	i
+Background	run_likelihoods.py	/^from .background import Background$/;"	i
+Background	run_percolation.py	/^from .background import Background$/;"	i
+Background	run_randoms_zmask.py	/^from .background import Background$/;"	i
+Background	run_zscan.py	/^from .background import Background$/;"	i
+Background	runcat.py	/^from .background import Background$/;"	i
+BackgroundGenerator	__init__.py	/^from .background import Background, ZredBackground, BackgroundGenerator, ZredBackgroundGenerator$/;"	i
+BackgroundGenerator	background.py	/^class BackgroundGenerator(object):$/;"	c
+CURRENT_MASKGAL_VERSION	mask.py	/^CURRENT_MASKGAL_VERSION = 7$/;"	v
+Catalog	__init__.py	/^from .catalog import DataObject, Entry, Catalog$/;"	i
+Catalog	catalog.py	/^class Catalog(DataObject):$/;"	c
+Catalog	cluster.py	/^from .catalog import Catalog, Entry$/;"	i
+Catalog	cluster_runner.py	/^from .catalog import Catalog$/;"	i
+Catalog	depthmap.py	/^from .catalog import Catalog, Entry$/;"	i
+Catalog	galaxy.py	/^from .catalog import Catalog, Entry$/;"	i
+Catalog	mask.py	/^from .catalog import Catalog,Entry$/;"	i
+Catalog	randoms.py	/^from .catalog import Catalog, Entry$/;"	i
+Catalog	redmapper_run.py	/^from .catalog import Catalog, Entry$/;"	i
+Catalog	redsequence.py	/^from .catalog import Catalog$/;"	i
+Catalog	run_colormem.py	/^from .catalog import Catalog, Entry$/;"	i
+Catalog	run_firstpass.py	/^from .catalog import Catalog$/;"	i
+Catalog	run_likelihoods.py	/^from .catalog import Catalog$/;"	i
+Catalog	run_randoms_zmask.py	/^from .catalog import Catalog$/;"	i
+Catalog	utilities.py	/^        from . import Catalog$/;"	i
+Catalog	volumelimit.py	/^from .catalog import Catalog, Entry$/;"	i
+Catalog	zred_runner.py	/^from .catalog import Catalog, Entry$/;"	i
+Centering	__init__.py	/^from .centering import Centering, CenteringWcenZred, CenteringBCG, CenteringRandom, CenteringRandomSatellite$/;"	i
+Centering	centering.py	/^class Centering(object):$/;"	c
+CenteringBCG	__init__.py	/^from .centering import Centering, CenteringWcenZred, CenteringBCG, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringBCG	centering.py	/^class CenteringBCG(Centering):$/;"	c
+CenteringBCG	run_percolation.py	/^from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringBCG	run_zscan.py	/^from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringRandom	__init__.py	/^from .centering import Centering, CenteringWcenZred, CenteringBCG, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringRandom	centering.py	/^class CenteringRandom(Centering):$/;"	c
+CenteringRandom	run_percolation.py	/^from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringRandom	run_zscan.py	/^from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringRandomSatellite	__init__.py	/^from .centering import Centering, CenteringWcenZred, CenteringBCG, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringRandomSatellite	centering.py	/^class CenteringRandomSatellite(Centering):$/;"	c
+CenteringRandomSatellite	run_percolation.py	/^from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringRandomSatellite	run_zscan.py	/^from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringWcenZred	__init__.py	/^from .centering import Centering, CenteringWcenZred, CenteringBCG, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringWcenZred	centering.py	/^class CenteringWcenZred(Centering):$/;"	c
+CenteringWcenZred	run_percolation.py	/^from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite$/;"	i
+CenteringWcenZred	run_zscan.py	/^from .centering import CenteringBCG, CenteringWcenZred, CenteringRandom, CenteringRandomSatellite$/;"	i
+Cluster	__init__.py	/^from .cluster import Cluster, ClusterCatalog$/;"	i
+Cluster	cluster.py	/^class Cluster(Entry):$/;"	c
+Cluster	cluster_runner.py	/^from .cluster import Cluster$/;"	i
+Cluster	run_colormem.py	/^from .cluster import Cluster$/;"	i
+Cluster	run_firstpass.py	/^from .cluster import Cluster$/;"	i
+Cluster	run_likelihoods.py	/^from .cluster import Cluster$/;"	i
+Cluster	run_percolation.py	/^from .cluster import Cluster$/;"	i
+Cluster	run_randoms_zmask.py	/^from .cluster import Cluster$/;"	i
+Cluster	run_zscan.py	/^from .cluster import Cluster$/;"	i
+Cluster	runcat.py	/^from .cluster import Cluster$/;"	i
+ClusterCatalog	__init__.py	/^from .cluster import Cluster, ClusterCatalog$/;"	i
+ClusterCatalog	cluster.py	/^class ClusterCatalog(Catalog):$/;"	c
+ClusterCatalog	cluster_runner.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterCatalog	randoms.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterCatalog	run_colormem.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterCatalog	run_firstpass.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterCatalog	run_likelihoods.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterCatalog	run_percolation.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterCatalog	run_randoms_zmask.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterCatalog	run_zscan.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterCatalog	runcat.py	/^from .cluster import ClusterCatalog$/;"	i
+ClusterRunner	__init__.py	/^from .cluster_runner import ClusterRunner$/;"	i
+ClusterRunner	cluster_runner.py	/^class ClusterRunner(object):$/;"	c
+ClusterRunner	run_colormem.py	/^from .cluster_runner import ClusterRunner$/;"	i
+ClusterRunner	run_firstpass.py	/^from .cluster_runner import ClusterRunner$/;"	i
+ClusterRunner	run_likelihoods.py	/^from .cluster_runner import ClusterRunner$/;"	i
+ClusterRunner	run_percolation.py	/^from .cluster_runner import ClusterRunner$/;"	i
+ClusterRunner	run_randoms_zmask.py	/^from .cluster_runner import ClusterRunner$/;"	i
+ClusterRunner	run_zscan.py	/^from .cluster_runner import ClusterRunner$/;"	i
+ClusterRunner	runcat.py	/^from .cluster_runner import ClusterRunner$/;"	i
+ColorBackground	__init__.py	/^from .color_background import ColorBackground, ColorBackgroundGenerator$/;"	i
+ColorBackground	cluster_runner.py	/^from .color_background import ColorBackground$/;"	i
+ColorBackground	color_background.py	/^class ColorBackground(object):$/;"	c
+ColorBackground	run_colormem.py	/^from .color_background import ColorBackground$/;"	i
+ColorBackgroundGenerator	__init__.py	/^from .color_background import ColorBackground, ColorBackgroundGenerator$/;"	i
+ColorBackgroundGenerator	color_background.py	/^class ColorBackgroundGenerator(object):$/;"	c
+ConfigField	configuration.py	/^class ConfigField(object):$/;"	c
+Configuration	__init__.py	/^from .configuration import Configuration$/;"	i
+Configuration	cluster_runner.py	/^from .configuration import Configuration$/;"	i
+Configuration	configuration.py	/^class Configuration(object):$/;"	c
+Configuration	plotting.py	/^from .configuration import Configuration$/;"	i
+CorrectionFitter	__init__.py	/^from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter, ErrorBinFitter$/;"	i
+CorrectionFitter	fitters.py	/^class CorrectionFitter(object):$/;"	c
+Cosmo	cluster.py	/^from esutil.cosmology import Cosmo$/;"	i
+Cosmo	cluster_runner.py	/^from esutil.cosmology import Cosmo$/;"	i
+Cosmo	configuration.py	/^from esutil.cosmology import Cosmo$/;"	i
+Cosmo	redmapper_run.py	/^from esutil.cosmology import Cosmo$/;"	i
+CubicSpline	fitters.py	/^from .utilities import CubicSpline, interpol$/;"	i
+CubicSpline	plotting.py	/^from .utilities import gaussFunction, CubicSpline, interpol$/;"	i
+CubicSpline	randoms.py	/^from .utilities import make_nodes, CubicSpline$/;"	i
+CubicSpline	redsequence.py	/^from .utilities import CubicSpline, MStar$/;"	i
+CubicSpline	run_colormem.py	/^from .utilities import CubicSpline$/;"	i
+CubicSpline	utilities.py	/^class CubicSpline(object):$/;"	c
+CubicSpline	zlambda.py	/^from .utilities import CubicSpline$/;"	i
+DataObject	__init__.py	/^from .catalog import DataObject, Entry, Catalog$/;"	i
+DataObject	catalog.py	/^class DataObject(object):$/;"	c
+DepthFunction	depth_fitting.py	/^class DepthFunction(object):$/;"	c
+DepthLim	__init__.py	/^from .depth_fitting import DepthLim, applyErrorModel$/;"	i
+DepthLim	cluster_runner.py	/^from .depth_fitting import DepthLim$/;"	i
+DepthLim	depth_fitting.py	/^class DepthLim(object):$/;"	c
+DepthMap	__init__.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	background.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	cluster_runner.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	color_background.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	depthmap.py	/^class DepthMap(object):$/;"	c
+DepthMap	run_colormem.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	run_firstpass.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	run_likelihoods.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	run_percolation.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	run_randoms_zmask.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	run_zscan.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	runcat.py	/^from .depthmap import DepthMap$/;"	i
+DepthMap	volumelimit.py	/^from .depthmap import DepthMap$/;"	i
+DuplicatableConfig	configuration.py	/^class DuplicatableConfig(object):$/;"	c
+EcgmmFitter	__init__.py	/^from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter, ErrorBinFitter$/;"	i
+EcgmmFitter	fitters.py	/^class EcgmmFitter(object):$/;"	c
+Entry	__init__.py	/^from .catalog import DataObject, Entry, Catalog$/;"	i
+Entry	background.py	/^from .catalog import Entry$/;"	i
+Entry	catalog.py	/^class Entry(DataObject):$/;"	c
+Entry	cluster.py	/^from .catalog import Catalog, Entry$/;"	i
+Entry	color_background.py	/^from .catalog import Entry$/;"	i
+Entry	depthmap.py	/^from .catalog import Catalog, Entry$/;"	i
+Entry	galaxy.py	/^from .catalog import Catalog, Entry$/;"	i
+Entry	mask.py	/^from .catalog import Catalog,Entry$/;"	i
+Entry	randoms.py	/^from .catalog import Catalog, Entry$/;"	i
+Entry	redmapper_run.py	/^from .catalog import Catalog, Entry$/;"	i
+Entry	run_colormem.py	/^from .catalog import Catalog, Entry$/;"	i
+Entry	volumelimit.py	/^from .catalog import Catalog, Entry$/;"	i
+Entry	zlambda.py	/^from .catalog import Entry$/;"	i
+Entry	zred_runner.py	/^from .catalog import Catalog, Entry$/;"	i
+ErrorBinFitter	__init__.py	/^from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter, ErrorBinFitter$/;"	i
+ErrorBinFitter	fitters.py	/^class ErrorBinFitter(object):$/;"	c
+FakeMaskConfig	galaxy.py	/^class FakeMaskConfig(object):$/;"	c
+Galaxy	__init__.py	/^from .galaxy import Galaxy, GalaxyCatalog, GalaxyCatalogMaker$/;"	i
+Galaxy	galaxy.py	/^class Galaxy(Entry):$/;"	c
+GalaxyCatalog	__init__.py	/^from .galaxy import Galaxy, GalaxyCatalog, GalaxyCatalogMaker$/;"	i
+GalaxyCatalog	background.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	cluster.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	cluster_runner.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	color_background.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	galaxy.py	/^class GalaxyCatalog(Catalog):$/;"	c
+GalaxyCatalog	randoms.py	/^from .galaxy import GalaxyCatalog, GalaxyCatalogMaker$/;"	i
+GalaxyCatalog	run_colormem.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	run_firstpass.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	run_likelihoods.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	run_percolation.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	run_randoms_zmask.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	run_zscan.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	runcat.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	utilities.py	/^    from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	zred_color.py	/^from .galaxy import GalaxyCatalog$/;"	i
+GalaxyCatalog	zred_runner.py	/^from .galaxy import GalaxyCatalog, get_subpixel_indices, zred_extra_dtype$/;"	i
+GalaxyCatalogMaker	__init__.py	/^from .galaxy import Galaxy, GalaxyCatalog, GalaxyCatalogMaker$/;"	i
+GalaxyCatalogMaker	galaxy.py	/^class GalaxyCatalogMaker(object):$/;"	c
+GalaxyCatalogMaker	randoms.py	/^from .galaxy import GalaxyCatalog, GalaxyCatalogMaker$/;"	i
+GenerateRandoms	__init__.py	/^from .randoms import GenerateRandoms, RandomCatalog, RandomCatalogMaker, RandomWeigher$/;"	i
+GenerateRandoms	randoms.py	/^class GenerateRandoms(object):$/;"	c
+HPMask	__init__.py	/^from .mask import Mask, HPMask, get_mask$/;"	i
+HPMask	cluster.py	/^from .mask import HPMask$/;"	i
+HPMask	mask.py	/^class HPMask(Mask):$/;"	c
+HPMask	run_colormem.py	/^from .mask import HPMask$/;"	i
+HPMask	run_firstpass.py	/^from .mask import HPMask$/;"	i
+HPMask	run_likelihoods.py	/^from .mask import HPMask$/;"	i
+HPMask	run_percolation.py	/^from .mask import HPMask$/;"	i
+HPMask	run_randoms_zmask.py	/^from .mask import HPMask$/;"	i
+HPMask	run_zscan.py	/^from .mask import HPMask$/;"	i
+HPMask	runcat.py	/^from .mask import HPMask$/;"	i
+Iterable	galaxy.py	/^from collections.abc import Iterable$/;"	i
+MStar	cluster.py	/^from .utilities import chisq_pdf, calc_theta_i, MStar, schechter_pdf, nfw_pdf$/;"	i
+MStar	redsequence.py	/^from .utilities import CubicSpline, MStar$/;"	i
+MStar	utilities.py	/^class MStar(object):$/;"	c
+Mask	__init__.py	/^from .mask import Mask, HPMask, get_mask$/;"	i
+Mask	mask.py	/^class Mask(object):$/;"	c
+Matcher	galaxy.py	/^from esutil.htm import Matcher$/;"	i
+MedZFitter	__init__.py	/^from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter, ErrorBinFitter$/;"	i
+MedZFitter	fitters.py	/^class MedZFitter(object):$/;"	c
+MedZFitter	randoms.py	/^from .fitters import MedZFitter$/;"	i
+MultipleLocator	plotting.py	/^        from matplotlib.ticker import MultipleLocator$/;"	i
+NLambdaPlot	__init__.py	/^from .plotting import SpecPlot, NzPlot, NLambdaPlot, PositionPlot$/;"	i
+NLambdaPlot	plotting.py	/^class NLambdaPlot(object):$/;"	c
+NzPlot	__init__.py	/^from .plotting import SpecPlot, NzPlot, NLambdaPlot, PositionPlot$/;"	i
+NzPlot	plotting.py	/^class NzPlot(object):$/;"	c
+PositionPlot	__init__.py	/^from .plotting import SpecPlot, NzPlot, NLambdaPlot, PositionPlot$/;"	i
+PositionPlot	plotting.py	/^class PositionPlot(object):$/;"	c
+RandomCatalog	__init__.py	/^from .randoms import GenerateRandoms, RandomCatalog, RandomCatalogMaker, RandomWeigher$/;"	i
+RandomCatalog	randoms.py	/^class RandomCatalog(GalaxyCatalog):$/;"	c
+RandomCatalog	run_randoms_zmask.py	/^from .randoms import RandomCatalog$/;"	i
+RandomCatalogMaker	__init__.py	/^from .randoms import GenerateRandoms, RandomCatalog, RandomCatalogMaker, RandomWeigher$/;"	i
+RandomCatalogMaker	randoms.py	/^class RandomCatalogMaker(GalaxyCatalogMaker):$/;"	c
+RandomWeigher	__init__.py	/^from .randoms import GenerateRandoms, RandomCatalog, RandomCatalogMaker, RandomWeigher$/;"	i
+RandomWeigher	randoms.py	/^class RandomWeigher(object):$/;"	c
+RedGalInitialColors	redsequence.py	/^from .utilities import schechter_pdf, RedGalInitialColors$/;"	i
+RedGalInitialColors	utilities.py	/^class RedGalInitialColors(object):$/;"	c
+RedSequenceColorPar	__init__.py	/^from .redsequence import RedSequenceColorPar$/;"	i
+RedSequenceColorPar	background.py	/^from .redsequence import RedSequenceColorPar$/;"	i
+RedSequenceColorPar	cluster.py	/^from .redsequence import RedSequenceColorPar$/;"	i
+RedSequenceColorPar	cluster_runner.py	/^from .redsequence import RedSequenceColorPar$/;"	i
+RedSequenceColorPar	redsequence.py	/^class RedSequenceColorPar(object):$/;"	c
+RedSequenceColorPar	volumelimit.py	/^from .redsequence import RedSequenceColorPar$/;"	i
+RedSequenceColorPar	zred_runner.py	/^from .redsequence import RedSequenceColorPar$/;"	i
+RedSequenceFitter	__init__.py	/^from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter, ErrorBinFitter$/;"	i
+RedSequenceFitter	fitters.py	/^class RedSequenceFitter(object):$/;"	c
+RedSequenceOffDiagonalFitter	__init__.py	/^from .fitters import MedZFitter, RedSequenceFitter, RedSequenceOffDiagonalFitter, CorrectionFitter, EcgmmFitter, ErrorBinFitter$/;"	i
+RedSequenceOffDiagonalFitter	fitters.py	/^class RedSequenceOffDiagonalFitter(object):$/;"	c
+RedmapperRun	__init__.py	/^from .redmapper_run import RedmapperRun$/;"	i
+RedmapperRun	redmapper_run.py	/^class RedmapperRun(object):$/;"	c
+RunCatalog	__init__.py	/^from .runcat import RunCatalog$/;"	i
+RunCatalog	runcat.py	/^class RunCatalog(ClusterRunner):$/;"	c
+RunColormem	__init__.py	/^from .run_colormem import RunColormem$/;"	i
+RunColormem	run_colormem.py	/^class RunColormem(ClusterRunner):$/;"	c
+RunFirstPass	__init__.py	/^from .run_firstpass import RunFirstPass$/;"	i
+RunFirstPass	redmapper_run.py	/^from .run_firstpass import RunFirstPass$/;"	i
+RunFirstPass	run_firstpass.py	/^class RunFirstPass(ClusterRunner):$/;"	c
+RunLikelihoods	__init__.py	/^from .run_likelihoods import RunLikelihoods$/;"	i
+RunLikelihoods	redmapper_run.py	/^from .run_likelihoods import RunLikelihoods$/;"	i
+RunLikelihoods	run_likelihoods.py	/^class RunLikelihoods(ClusterRunner):$/;"	c
+RunPercolation	__init__.py	/^from .run_percolation import RunPercolation$/;"	i
+RunPercolation	redmapper_run.py	/^from .run_percolation import RunPercolation$/;"	i
+RunPercolation	run_percolation.py	/^class RunPercolation(ClusterRunner):$/;"	c
+RunRandomsZmask	__init__.py	/^from .run_randoms_zmask import RunRandomsZmask$/;"	i
+RunRandomsZmask	run_randoms_zmask.py	/^class RunRandomsZmask(ClusterRunner):$/;"	c
+RunZScan	__init__.py	/^from .run_zscan import RunZScan$/;"	i
+RunZScan	run_zscan.py	/^class RunZScan(ClusterRunner):$/;"	c
+SEC_PER_DEG	mask.py	/^from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels$/;"	i
+SEC_PER_DEG	utilities.py	/^SEC_PER_DEG = 3600$/;"	v
+Solver	__init__.py	/^from .solver_nfw import Solver$/;"	i
+Solver	cluster.py	/^from .solver_nfw import Solver$/;"	i
+SpecPlot	__init__.py	/^from .plotting import SpecPlot, NzPlot, NLambdaPlot, PositionPlot$/;"	i
+SpecPlot	plotting.py	/^class SpecPlot(object):$/;"	c
+TOTAL_SQDEG	mask.py	/^from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels$/;"	i
+TOTAL_SQDEG	utilities.py	/^TOTAL_SQDEG = 4 * 180**2 \/ np.pi$/;"	v
+TYPE_CHECKING	_version.py	/^TYPE_CHECKING = False$/;"	v
+TempD	galaxy.py	/^        class TempD(object):$/;"	c	function:FakeMaskConfig.__init__
+Tuple	_version.py	/^    from typing import Tuple, Union$/;"	i
+Union	_version.py	/^    from typing import Tuple, Union$/;"	i
+VERSION_TUPLE	_version.py	/^    VERSION_TUPLE = Tuple[Union[int, str], ...]$/;"	v
+VERSION_TUPLE	_version.py	/^    VERSION_TUPLE = object$/;"	v
+VolumeLimitMask	__init__.py	/^from .volumelimit import VolumeLimitMask, VolumeLimitMaskFixed$/;"	i
+VolumeLimitMask	randoms.py	/^from .volumelimit import VolumeLimitMask$/;"	i
+VolumeLimitMask	volumelimit.py	/^class VolumeLimitMask(object):$/;"	c
+VolumeLimitMaskFixed	__init__.py	/^from .volumelimit import VolumeLimitMask, VolumeLimitMaskFixed$/;"	i
+VolumeLimitMaskFixed	volumelimit.py	/^class VolumeLimitMaskFixed(object):$/;"	c
+Zlambda	__init__.py	/^from .zlambda import Zlambda, ZlambdaCorrectionPar$/;"	i
+Zlambda	cluster_runner.py	/^from .zlambda import Zlambda$/;"	i
+Zlambda	run_firstpass.py	/^from .zlambda import Zlambda$/;"	i
+Zlambda	run_likelihoods.py	/^from .zlambda import Zlambda$/;"	i
+Zlambda	run_percolation.py	/^from .zlambda import Zlambda$/;"	i
+Zlambda	run_zscan.py	/^from .zlambda import Zlambda$/;"	i
+Zlambda	runcat.py	/^from .zlambda import Zlambda$/;"	i
+Zlambda	zlambda.py	/^class Zlambda(object):$/;"	c
+ZlambdaCorrectionPar	__init__.py	/^from .zlambda import Zlambda, ZlambdaCorrectionPar$/;"	i
+ZlambdaCorrectionPar	cluster_runner.py	/^from .zlambda import ZlambdaCorrectionPar$/;"	i
+ZlambdaCorrectionPar	run_firstpass.py	/^from .zlambda import ZlambdaCorrectionPar$/;"	i
+ZlambdaCorrectionPar	run_likelihoods.py	/^from .zlambda import ZlambdaCorrectionPar$/;"	i
+ZlambdaCorrectionPar	run_percolation.py	/^from .zlambda import ZlambdaCorrectionPar$/;"	i
+ZlambdaCorrectionPar	run_zscan.py	/^from .zlambda import ZlambdaCorrectionPar$/;"	i
+ZlambdaCorrectionPar	runcat.py	/^from .zlambda import ZlambdaCorrectionPar$/;"	i
+ZlambdaCorrectionPar	zlambda.py	/^class ZlambdaCorrectionPar(object):$/;"	c
+ZredBackground	__init__.py	/^from .background import Background, ZredBackground, BackgroundGenerator, ZredBackgroundGenerator$/;"	i
+ZredBackground	background.py	/^class ZredBackground(object):$/;"	c
+ZredBackground	cluster_runner.py	/^from .background import Background, ZredBackground$/;"	i
+ZredBackgroundGenerator	__init__.py	/^from .background import Background, ZredBackground, BackgroundGenerator, ZredBackgroundGenerator$/;"	i
+ZredBackgroundGenerator	background.py	/^class ZredBackgroundGenerator(object):$/;"	c
+ZredColor	__init__.py	/^from .zred_color import ZredColor$/;"	i
+ZredColor	zred_color.py	/^class ZredColor(object):$/;"	c
+ZredColor	zred_runner.py	/^from .zred_color import ZredColor$/;"	i
+ZredRunCatalog	__init__.py	/^from .zred_runner import ZredRunCatalog, ZredRunPixels$/;"	i
+ZredRunCatalog	zred_runner.py	/^class ZredRunCatalog(object):$/;"	c
+ZredRunPixels	__init__.py	/^from .zred_runner import ZredRunCatalog, ZredRunPixels$/;"	i
+ZredRunPixels	zred_runner.py	/^class ZredRunPixels(object):$/;"	c
+__call__	depth_fitting.py	/^    def __call__(self, x):$/;"	m	class:DepthFunction	file:
+__call__	fitters.py	/^    def __call__(self, pars):$/;"	m	class:CorrectionFitter	file:
+__call__	fitters.py	/^    def __call__(self, pars):$/;"	m	class:EcgmmFitter	file:
+__call__	fitters.py	/^    def __call__(self, pars):$/;"	m	class:ErrorBinFitter	file:
+__call__	fitters.py	/^    def __call__(self, pars):$/;"	m	class:MedZFitter	file:
+__call__	fitters.py	/^    def __call__(self, pars):$/;"	m	class:RedSequenceFitter	file:
+__call__	fitters.py	/^    def __call__(self, pars):$/;"	m	class:RedSequenceOffDiagonalFitter	file:
+__call__	utilities.py	/^    def __call__(self, band1, band2, z):$/;"	m	class:RedGalInitialColors	file:
+__call__	utilities.py	/^    def __call__(self, x):$/;"	m	class:CubicSpline	file:
+__call__	utilities.py	/^    def __call__(self, z):$/;"	m	class:MStar	file:
+__copy__	cluster.py	/^    def __copy__(self):$/;"	m	class:Cluster	file:
+__dir__	catalog.py	/^    def __dir__(self):$/;"	m	class:DataObject	file:
+__get__	configuration.py	/^    def __get__(self, obj, type=None):$/;"	m	class:ConfigField	file:
+__getattr__	catalog.py	/^    def __getattr__(self, attr):$/;"	m	class:DataObject	file:
+__getattr__	catalog.py	/^    def __getattr__(self, attr):$/;"	m	class:Entry	file:
+__getitem__	catalog.py	/^    def __getitem__(self, key):$/;"	m	class:Catalog	file:
+__getitem__	cluster.py	/^    def __getitem__(self, key):$/;"	m	class:ClusterCatalog	file:
+__init__	background.py	/^    def __init__(self, config):$/;"	m	class:BackgroundGenerator
+__init__	background.py	/^    def __init__(self, config):$/;"	m	class:ZredBackgroundGenerator
+__init__	background.py	/^    def __init__(self, filename):$/;"	m	class:Background
+__init__	background.py	/^    def __init__(self, filename):$/;"	m	class:ZredBackground
+__init__	catalog.py	/^    def __init__(self, *arrays):$/;"	m	class:DataObject
+__init__	catalog.py	/^    def __init__(self, array):$/;"	m	class:Entry
+__init__	centering.py	/^    def __init__(self, cluster, zlambda_corr=None):$/;"	m	class:Centering
+__init__	cluster.py	/^    def __init__(self, array, **kwargs):$/;"	m	class:ClusterCatalog
+__init__	cluster.py	/^    def __init__(self, cat_vals=None, r0=None, beta=None, config=None, zredstr=None, bkg=None, cbkg=None, neighbors=None, zredbkg=None, dtype=None):$/;"	m	class:Cluster
+__init__	cluster_runner.py	/^    def __init__(self, conf, **kwargs):$/;"	m	class:ClusterRunner
+__init__	color_background.py	/^    def __init__(self, config, minrangecheck=1000):$/;"	m	class:ColorBackgroundGenerator
+__init__	color_background.py	/^    def __init__(self, filename, usehdrarea=False):$/;"	m	class:ColorBackground
+__init__	configuration.py	/^    def __init__(self, config):$/;"	m	class:DuplicatableConfig
+__init__	configuration.py	/^    def __init__(self, configfile, outpath=None):$/;"	m	class:Configuration
+__init__	configuration.py	/^    def __init__(self, value=None, default=None, isArray=False, required=False, array_length=None, isList=False):$/;"	m	class:ConfigField
+__init__	depth_fitting.py	/^    def __init__(self, mag, mag_err, max_gals=100000):$/;"	m	class:DepthLim
+__init__	depth_fitting.py	/^    def __init__(self,mag,magErr,zp,nSig):$/;"	m	class:DepthFunction
+__init__	depthmap.py	/^    def __init__(self, config, depthfile=None):$/;"	m	class:DepthMap
+__init__	fitters.py	/^    def __init__(self, delta_col, delta_mag, err_0, err_1, sigint2, binsize=0.5, ntrial=100):$/;"	m	class:ErrorBinFitter
+__init__	fitters.py	/^    def __init__(self, mean_nodes, redshifts, dzs, dz_errs,$/;"	m	class:CorrectionFitter
+__init__	fitters.py	/^    def __init__(self, mean_nodes,$/;"	m	class:RedSequenceFitter
+__init__	fitters.py	/^    def __init__(self, nodes, redshifts, d1, d2, s1, s2, mag_errs, j, k, probs, bkgs, covmat_prior, min_eigenvalue=0.0):$/;"	m	class:RedSequenceOffDiagonalFitter
+__init__	fitters.py	/^    def __init__(self, y, y_err):$/;"	m	class:EcgmmFitter
+__init__	fitters.py	/^    def __init__(self, z_nodes, redshifts, values):$/;"	m	class:MedZFitter
+__init__	galaxy.py	/^            def __init__(self):$/;"	m	class:FakeMaskConfig.__init__.TempD
+__init__	galaxy.py	/^    def __init__(self, *arrays, **kwargs):$/;"	m	class:GalaxyCatalog
+__init__	galaxy.py	/^    def __init__(self, maskfile, mask_mode):$/;"	m	class:FakeMaskConfig
+__init__	galaxy.py	/^    def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0,$/;"	m	class:GalaxyCatalogMaker
+__init__	mask.py	/^    def __init__(self, config, **kwargs):$/;"	m	class:HPMask
+__init__	mask.py	/^    def __init__(self, config, include_maskgals=True):$/;"	m	class:Mask
+__init__	plotting.py	/^    def __init__(self, conf):$/;"	m	class:PositionPlot
+__init__	plotting.py	/^    def __init__(self, conf, binsize=0.02):$/;"	m	class:NzPlot
+__init__	plotting.py	/^    def __init__(self, conf, binsize=0.02, nsig=4.0):$/;"	m	class:SpecPlot
+__init__	plotting.py	/^    def __init__(self, conf, binsize=1.0):$/;"	m	class:NLambdaPlot
+__init__	randoms.py	/^    def __init__(self, config, randcatfile, vlim_mask=None, vlim_lstar=None, redmapper_cat=None):$/;"	m	class:RandomWeigher
+__init__	randoms.py	/^    def __init__(self, config, vlim_mask=None, vlim_lstar=None, redmapper_cat=None):$/;"	m	class:GenerateRandoms
+__init__	randoms.py	/^    def __init__(self, outbase, info_dict, nside=32, maskfile=None, mask_mode=0, parallel=False):$/;"	m	class:RandomCatalogMaker
+__init__	redmapper_run.py	/^    def __init__(self, config):$/;"	m	class:RedmapperRun
+__init__	redsequence.py	/^    def __init__(self, filename, zbinsize=None, minsig=0.01, fine=False, zrange=None, config=None, limmag=None):$/;"	m	class:RedSequenceColorPar
+__init__	utilities.py	/^    def __init__(self, redgal_template):$/;"	m	class:RedGalInitialColors
+__init__	utilities.py	/^    def __init__(self, survey, band):$/;"	m	class:MStar
+__init__	utilities.py	/^    def __init__(self, x, y, yp=None, fixextrap=False):$/;"	m	class:CubicSpline
+__init__	volumelimit.py	/^    def __init__(self, config):$/;"	m	class:VolumeLimitMaskFixed
+__init__	volumelimit.py	/^    def __init__(self, config, vlim_lstar, vlimfile=None, use_geometry=False, withversion=True):$/;"	m	class:VolumeLimitMask
+__init__	zlambda.py	/^    def __init__(self, cluster):$/;"	m	class:Zlambda
+__init__	zlambda.py	/^    def __init__(self, parfile=None, pars=None, zrange=None, zbinsize=None, zlambda_pivot=None):$/;"	m	class:ZlambdaCorrectionPar
+__init__	zred_color.py	/^    def __init__(self, zredstr, sigint=0.001, do_correction=True,$/;"	m	class:ZredColor
+__init__	zred_runner.py	/^    def __init__(self, config):$/;"	m	class:ZredRunCatalog
+__init__	zred_runner.py	/^    def __init__(self, config):$/;"	m	class:ZredRunPixels
+__len__	catalog.py	/^    def __len__(self): return self.size$/;"	m	class:Catalog	file:
+__repr__	catalog.py	/^    def __repr__(self):$/;"	m	class:DataObject	file:
+__repr__	redsequence.py	/^    def __repr__(self):$/;"	m	class:RedSequenceColorPar	file:
+__set__	configuration.py	/^    def __set__(self, obj, value):$/;"	m	class:ConfigField	file:
+__setattr__	catalog.py	/^    def __setattr__(self, attr, val):$/;"	m	class:DataObject	file:
+__setitem__	catalog.py	/^    def __setitem__(self, key, val):$/;"	m	class:Catalog	file:
+__str__	catalog.py	/^    def __str__(self):$/;"	m	class:DataObject	file:
+__version__	__init__.py	/^from ._version import __version__, __version_tuple__$/;"	i
+__version__	configuration.py	/^from ._version import __version__$/;"	i
+__version_tuple__	__init__.py	/^from ._version import __version__, __version_tuple__$/;"	i
+_additional_initialization	cluster_runner.py	/^    def _additional_initialization(self, **kwargs):$/;"	m	class:ClusterRunner
+_additional_initialization	run_colormem.py	/^    def _additional_initialization(self, **kwargs):$/;"	m	class:RunColormem
+_additional_initialization	run_firstpass.py	/^    def _additional_initialization(self, specmode=False):$/;"	m	class:RunFirstPass
+_additional_initialization	run_likelihoods.py	/^    def _additional_initialization(self):$/;"	m	class:RunLikelihoods
+_additional_initialization	run_percolation.py	/^    def _additional_initialization(self, **kwargs):$/;"	m	class:RunPercolation
+_additional_initialization	run_randoms_zmask.py	/^    def _additional_initialization(self):$/;"	m	class:RunRandomsZmask
+_additional_initialization	run_zscan.py	/^    def _additional_initialization(self, **kwargs):$/;"	m	class:RunZScan
+_additional_initialization	runcat.py	/^    def _additional_initialization(self, **kwargs):$/;"	m	class:RunCatalog
+_bracket_fn	zlambda.py	/^    def _bracket_fn(self, z):$/;"	m	class:Zlambda
+_build_geometry_mask	volumelimit.py	/^    def _build_geometry_mask(self):$/;"	m	class:VolumeLimitMask
+_build_mask	volumelimit.py	/^    def _build_mask(self):$/;"	m	class:VolumeLimitMask
+_calc_luminosity	cluster.py	/^    def _calc_luminosity(self, normmag, idx=None):$/;"	m	class:Cluster
+_calc_radial_profile	cluster.py	/^    def _calc_radial_profile(self, idx=None, rscale=0.15):$/;"	m	class:Cluster
+_calculate_lndist	zred_color.py	/^    def _calculate_lndist(self, galaxy, zbins):$/;"	m	class:ZredColor
+_check_galaxies	galaxy.py	/^    def _check_galaxies(self, gals):$/;"	m	class:GalaxyCatalogMaker
+_check_galaxies	randoms.py	/^    def _check_galaxies(self, rands):$/;"	m	class:RandomCatalogMaker
+_cleanup	cluster_runner.py	/^    def _cleanup(self):$/;"	m	class:ClusterRunner
+_color_name	utilities.py	/^    def _color_name(self, band1, band2):$/;"	m	class:RedGalInitialColors
+_compute_neighbor_r	cluster.py	/^    def _compute_neighbor_r(self):$/;"	m	class:Cluster
+_consolidate	redmapper_run.py	/^    def _consolidate(self, hpixels, filenames, filetype, members=False, check=True):$/;"	m	class:RedmapperRun
+_delta_bracket_fn	zlambda.py	/^    def _delta_bracket_fn(self, z):$/;"	m	class:Zlambda
+_doublerun_sort	run_colormem.py	/^    def _doublerun_sort(self):$/;"	m	class:RunColormem
+_galfile_stats	configuration.py	/^    def _galfile_stats(self):$/;"	m	class:Configuration
+_generate_mem_match_ids	cluster_runner.py	/^    def _generate_mem_match_ids(self):$/;"	m	class:ClusterRunner
+_get_pixel_splits	redmapper_run.py	/^    def _get_pixel_splits(self):$/;"	m	class:RedmapperRun
+_get_subpixels	redmapper_run.py	/^    def _get_subpixels(self, nside_test, galtab):$/;"	m	class:RedmapperRun
+_lower_array	catalog.py	/^    def _lower_array(self, array):$/;"	m	class:DataObject
+_make_photoz_map	plotting.py	/^    def _make_photoz_map(self, z_spec, z_photo,$/;"	m	class:SpecPlot
+_merge_arrays	catalog.py	/^    def _merge_arrays(self, arrays):$/;"	m	class:DataObject
+_more_setup	cluster_runner.py	/^    def _more_setup(self, *args, **kwargs):$/;"	m	class:ClusterRunner
+_more_setup	run_colormem.py	/^    def _more_setup(self, *args, **kwargs):$/;"	m	class:RunColormem
+_more_setup	run_firstpass.py	/^    def _more_setup(self, *args, **kwargs):$/;"	m	class:RunFirstPass
+_more_setup	run_likelihoods.py	/^    def _more_setup(self, *args, **kwargs):$/;"	m	class:RunLikelihoods
+_more_setup	run_percolation.py	/^    def _more_setup(self, *args, **kwargs):$/;"	m	class:RunPercolation
+_more_setup	run_randoms_zmask.py	/^    def _more_setup(self, *args, **kwargs):$/;"	m	class:RunRandomsZmask
+_more_setup	run_zscan.py	/^    def _more_setup(self, *args, **kwargs):$/;"	m	class:RunZScan
+_more_setup	runcat.py	/^    def _more_setup(self, *args, **kwargs):$/;"	m	class:RunCatalog
+_percolation_only_worker	redmapper_run.py	/^    def _percolation_only_worker(self, hpix):$/;"	m	class:RedmapperRun
+_pickle_method	background.py	/^from .utilities import _pickle_method$/;"	i
+_pickle_method	redmapper_run.py	/^from .utilities import _pickle_method$/;"	i
+_pickle_method	utilities.py	/^def _pickle_method(m):$/;"	f
+_pickle_method	zred_runner.py	/^from .utilities import _pickle_method$/;"	i
+_postprocess	cluster_runner.py	/^    def _postprocess(self):$/;"	m	class:ClusterRunner
+_postprocess	run_colormem.py	/^    def _postprocess(self):$/;"	m	class:RunColormem
+_postprocess	run_likelihoods.py	/^    def _postprocess(self):$/;"	m	class:RunLikelihoods
+_process_cluster	cluster_runner.py	/^    def _process_cluster(self, cluster):$/;"	m	class:ClusterRunner
+_process_cluster	run_colormem.py	/^    def _process_cluster(self, cluster):$/;"	m	class:RunColormem
+_process_cluster	run_firstpass.py	/^    def _process_cluster(self, cluster):$/;"	m	class:RunFirstPass
+_process_cluster	run_likelihoods.py	/^    def _process_cluster(self, cluster):$/;"	m	class:RunLikelihoods
+_process_cluster	run_percolation.py	/^    def _process_cluster(self, cluster):$/;"	m	class:RunPercolation
+_process_cluster	run_randoms_zmask.py	/^    def _process_cluster(self, cluster):$/;"	m	class:RunRandomsZmask
+_process_cluster	run_zscan.py	/^    def _process_cluster(self, cluster):$/;"	m	class:RunZScan
+_process_cluster	runcat.py	/^    def _process_cluster(self, cluster):$/;"	m	class:RunCatalog
+_read_mask	volumelimit.py	/^    def _read_mask(self):$/;"	m	class:VolumeLimitMask
+_reset_bad_values	cluster_runner.py	/^    def _reset_bad_values(self, cluster):$/;"	m	class:ClusterRunner
+_reset_bad_values	run_likelihoods.py	/^    def _reset_bad_values(self, cluster):$/;"	m	class:RunLikelihoods
+_reset_bad_values	zred_color.py	/^    def _reset_bad_values(self, galaxy):$/;"	m	class:ZredColor
+_reset_vars	configuration.py	/^    def _reset_vars(self):$/;"	m	class:Configuration
+_set_lengths	configuration.py	/^    def _set_lengths(self, l, length):$/;"	m	class:Configuration
+_set_vars_from_dict	configuration.py	/^    def _set_vars_from_dict(self, d, check_none=False):$/;"	m	class:Configuration
+_setup	cluster_runner.py	/^    def _setup(self):$/;"	m	class:ClusterRunner
+_update_mpc_scale	cluster.py	/^    def _update_mpc_scale(self):$/;"	m	class:Cluster
+_update_mstar	cluster.py	/^    def _update_mstar(self):$/;"	m	class:Cluster
+_wcen_vals	configuration.py	/^    def _wcen_vals(self):$/;"	m	class:Configuration
+_worker	background.py	/^    def _worker(self, zbinmark):$/;"	m	class:BackgroundGenerator
+_worker	redmapper_run.py	/^    def _worker(self, hpix):$/;"	m	class:RedmapperRun
+_worker	zred_runner.py	/^    def _worker(self, ind_range):$/;"	m	class:ZredRunCatalog
+_worker	zred_runner.py	/^    def _worker(self, index):$/;"	m	class:ZredRunPixels
+_zlambda_calc_gaussian_err	zlambda.py	/^    def _zlambda_calc_gaussian_err(self, z_lambda):$/;"	m	class:Zlambda
+_zlambda_calc_pz	zlambda.py	/^    def _zlambda_calc_pz(self, z_lambda, wtvals, maxrad, maxmag, slow=False):$/;"	m	class:Zlambda
+_zlambda_calc_pz_and_check	zlambda.py	/^    def _zlambda_calc_pz_and_check(self, z_lambda, wtvals, maxrad, maxmag, convergence_warning=False):$/;"	m	class:Zlambda
+_zlambda_calcz	zlambda.py	/^    def _zlambda_calcz(self, z_lambda):$/;"	m	class:Zlambda
+_zlambda_select_neighbors	zlambda.py	/^    def _zlambda_select_neighbors(self, wtvals, maxrad, maxmag):$/;"	m	class:Zlambda
+add_fields	catalog.py	/^    def add_fields(self, newdtype):$/;"	m	class:DataObject
+add_fields	catalog.py	/^    def add_fields(self, newdtype):$/;"	m	class:Entry
+add_zred_fields	galaxy.py	/^    def add_zred_fields(self, nsamp):$/;"	m	class:GalaxyCatalog
+add_zred_fields	randoms.py	/^    def add_zred_fields(self):$/;"	m	class:RandomCatalog
+append	catalog.py	/^    def append(self, append_cat):$/;"	m	class:Catalog
+append_galaxies	galaxy.py	/^    def append_galaxies(self, gals):$/;"	m	class:GalaxyCatalogMaker
+append_randoms	randoms.py	/^    def append_randoms(self, rands):$/;"	m	class:RandomCatalogMaker
+applyErrorModel	__init__.py	/^from .depth_fitting import DepthLim, applyErrorModel$/;"	i
+applyErrorModel	depth_fitting.py	/^def applyErrorModel(pars, magIn, noNoise=False, lnscat=None):$/;"	f
+apply_correction	zlambda.py	/^    def apply_correction(self, lam, zlam, zlam_e, pzbins=None, pzvals=None, noerr=False):$/;"	m	class:ZlambdaCorrectionPar
+apply_errormodels	mask.py	/^from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels$/;"	i
+apply_errormodels	utilities.py	/^def apply_errormodels(maskgals, mag_in, b=None, err_ratio=1.0, fluxmode=False,$/;"	f
+area	configuration.py	/^    area = ConfigField(required=True)$/;"	v	class:Configuration
+area_coarsebin	configuration.py	/^    area_coarsebin = ConfigField(default=0.005, required=True)$/;"	v	class:Configuration
+area_finebin	configuration.py	/^    area_finebin = ConfigField(default=0.001, required=True)$/;"	v	class:Configuration
+area_nodesize	configuration.py	/^    area_nodesize = ConfigField(default=0.05, required=True)$/;"	v	class:Configuration
+astro_to_sphere	depthmap.py	/^from .utilities import astro_to_sphere, get_healsparse_subpix_indices$/;"	i
+astro_to_sphere	mask.py	/^from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels$/;"	i
+astro_to_sphere	utilities.py	/^def astro_to_sphere(ra, dec):$/;"	f
+astro_to_sphere	volumelimit.py	/^from .utilities import astro_to_sphere, get_healsparse_subpix_indices$/;"	i
+b	configuration.py	/^    b = ConfigField(isArray=True)$/;"	v	class:Configuration
+bands	configuration.py	/^    bands = ConfigField(required=True)$/;"	v	class:Configuration
+bkg_chisqbinsize	configuration.py	/^    bkg_chisqbinsize = ConfigField(default=0.5)$/;"	v	class:Configuration
+bkg_deepmode	configuration.py	/^    bkg_deepmode = ConfigField(default=False)$/;"	v	class:Configuration
+bkg_local_annuli	configuration.py	/^    bkg_local_annuli = ConfigField(isArray=True, array_length=2,$/;"	v	class:Configuration
+bkg_local_compute	configuration.py	/^    bkg_local_compute = ConfigField(default=False)$/;"	v	class:Configuration
+bkg_local_use	configuration.py	/^    bkg_local_use = ConfigField(default=False)$/;"	v	class:Configuration
+bkg_refmagbinsize	configuration.py	/^    bkg_refmagbinsize = ConfigField(default=0.2)$/;"	v	class:Configuration
+bkg_zbinsize	configuration.py	/^    bkg_zbinsize = ConfigField(default=0.02)$/;"	v	class:Configuration
+bkg_zredbinsize	configuration.py	/^    bkg_zredbinsize = ConfigField(default=0.01)$/;"	v	class:Configuration
+bkgfile	configuration.py	/^    bkgfile = ConfigField()$/;"	v	class:Configuration
+bkgfile_color	configuration.py	/^    bkgfile_color = ConfigField()$/;"	v	class:Configuration
+border	configuration.py	/^    border = ConfigField(default=0.0, required=True)$/;"	v	class:Configuration
+calcErrorModel	cluster.py	/^from .depth_fitting import calcErrorModel$/;"	i
+calcErrorModel	depth_fitting.py	/^def calcErrorModel(_mag, _magErr, nSig=10.0, doPlot=False, nTrial=100, calcErr=False,$/;"	f
+calc_areas	depthmap.py	/^    def calc_areas(self, mags):$/;"	m	class:DepthMap
+calc_bkg_density	cluster.py	/^    def calc_bkg_density(self, r, chisq, refmag):$/;"	m	class:Cluster
+calc_cbkg_density	cluster.py	/^    def calc_cbkg_density(self, r, col_index, col, refmag):$/;"	m	class:Cluster
+calc_lambdacerr	cluster.py	/^    def calc_lambdacerr(self, maskgals, mstar, lam, rlam, pmem, cval, gamma):$/;"	m	class:Cluster
+calc_maskcorr	mask.py	/^    def calc_maskcorr(self, mstar, maxmag, limmag):$/;"	m	class:Mask
+calc_maskdepth	depth_fitting.py	/^    def calc_maskdepth(self, maskgals, mag, mag_err):$/;"	m	class:DepthLim
+calc_maskdepth	depthmap.py	/^    def calc_maskdepth(self, maskgals, ra, dec, mpc_scale):$/;"	m	class:DepthMap
+calc_richness	cluster.py	/^    def calc_richness(self, mask, calc_err=True, index=None):$/;"	m	class:Cluster
+calc_richness_fit	cluster.py	/^    def calc_richness_fit(self, mask, col_index, centcolor_in=None, rcut=0.5, mingal=5, sigint=0.05, calc_err=False):$/;"	m	class:Cluster
+calc_theta_i	cluster.py	/^from .utilities import chisq_pdf, calc_theta_i, MStar, schechter_pdf, nfw_pdf$/;"	i
+calc_theta_i	mask.py	/^from .utilities import TOTAL_SQDEG, SEC_PER_DEG, astro_to_sphere, calc_theta_i, apply_errormodels$/;"	i
+calc_theta_i	utilities.py	/^def calc_theta_i(mag, mag_err, maxmag, limmag):$/;"	f
+calc_zlambda	zlambda.py	/^    def calc_zlambda(self, zin, mask, maxmag_in=None, calcpz=False, calc_err=True,$/;"	m	class:Zlambda
+calc_zmax	volumelimit.py	/^    def calc_zmax(self, ra, dec):$/;"	m	class:VolumeLimitMaskFixed
+calc_zmax	volumelimit.py	/^    def calc_zmax(self, ras, decs, get_fracgood=False):$/;"	m	class:VolumeLimitMask
+calc_zred_bkg_density	cluster.py	/^    def calc_zred_bkg_density(self, r, zred, refmag):$/;"	m	class:Cluster
+calculate_chisq	redsequence.py	/^    def calculate_chisq(self, galaxies, z, calc_lkhd=False, z_is_index=False):$/;"	m	class:RedSequenceColorPar
+calculate_chisq_redshifts	redsequence.py	/^    def calculate_chisq_redshifts(self, galaxy, zs, calc_lkhd=False, z_is_index=False):$/;"	m	class:RedSequenceColorPar
+calib_color_maxnodes	configuration.py	/^    calib_color_maxnodes = ConfigField(isArray=True, default=np.array([-1.0]))$/;"	v	class:Configuration
+calib_color_nodesizes	configuration.py	/^    calib_color_nodesizes = ConfigField(isArray=True, default=np.array([0.05]))$/;"	v	class:Configuration
+calib_color_nsig	configuration.py	/^    calib_color_nsig = ConfigField(default=1.5)$/;"	v	class:Configuration
+calib_color_pcut	configuration.py	/^    calib_color_pcut = ConfigField(default=0.7)$/;"	v	class:Configuration
+calib_colormem_beta	configuration.py	/^    calib_colormem_beta = ConfigField(default=0.0)$/;"	v	class:Configuration
+calib_colormem_colormodes	configuration.py	/^    calib_colormem_colormodes = ConfigField(isArray=True, default=np.array([1, 2]))$/;"	v	class:Configuration
+calib_colormem_minlambda	configuration.py	/^    calib_colormem_minlambda = ConfigField(default=10.0)$/;"	v	class:Configuration
+calib_colormem_r0	configuration.py	/^    calib_colormem_r0 = ConfigField(default=0.5)$/;"	v	class:Configuration
+calib_colormem_sigint	configuration.py	/^    calib_colormem_sigint = ConfigField(isArray=True, default=np.array([0.05, 0.03]))$/;"	v	class:Configuration
+calib_colormem_smooth	configuration.py	/^    calib_colormem_smooth = ConfigField(default=0.003)$/;"	v	class:Configuration
+calib_colormem_zbounds	configuration.py	/^    calib_colormem_zbounds = ConfigField(isArray=True, default=np.array([0.4]))$/;"	v	class:Configuration
+calib_corr_nocorrslope	configuration.py	/^    calib_corr_nocorrslope = ConfigField(default=True)$/;"	v	class:Configuration
+calib_corr_nodesize	configuration.py	/^    calib_corr_nodesize = ConfigField(default=0.05)$/;"	v	class:Configuration
+calib_corr_pcut	configuration.py	/^    calib_corr_pcut = ConfigField(default=0.9)$/;"	v	class:Configuration
+calib_corr_slope_nodesize	configuration.py	/^    calib_corr_slope_nodesize = ConfigField(default=0.1)$/;"	v	class:Configuration
+calib_covmat_constant	configuration.py	/^    calib_covmat_constant = ConfigField(default=0.9)$/;"	v	class:Configuration
+calib_covmat_maxnodes	configuration.py	/^    calib_covmat_maxnodes = ConfigField(isArray=True, default=np.array([-1.0]))$/;"	v	class:Configuration
+calib_covmat_nodesize	configuration.py	/^    calib_covmat_nodesize = ConfigField(default=0.15)$/;"	v	class:Configuration
+calib_err_ratio_pivot	configuration.py	/^    calib_err_ratio_pivot = ConfigField(default=20.0)$/;"	v	class:Configuration
+calib_fit_err_ratio	configuration.py	/^    calib_fit_err_ratio = ConfigField(default=False)$/;"	v	class:Configuration
+calib_lumfunc_alpha	configuration.py	/^    calib_lumfunc_alpha = ConfigField(default=-1.0, required=True)$/;"	v	class:Configuration
+calib_make_full_bkg	configuration.py	/^    calib_make_full_bkg = ConfigField(default=True)$/;"	v	class:Configuration
+calib_minlambda	configuration.py	/^    calib_minlambda = ConfigField(default=5.0)$/;"	v	class:Configuration
+calib_niter	configuration.py	/^    calib_niter = ConfigField(default=3)$/;"	v	class:Configuration
+calib_nproc	configuration.py	/^    calib_nproc = ConfigField(default=1, required=True)$/;"	v	class:Configuration
+calib_pcut	configuration.py	/^    calib_pcut = ConfigField(default=0.3)$/;"	v	class:Configuration
+calib_pivotmag_nodesize	configuration.py	/^    calib_pivotmag_nodesize = ConfigField(default=0.1)$/;"	v	class:Configuration
+calib_redgal_template	configuration.py	/^    calib_redgal_template = ConfigField()$/;"	v	class:Configuration
+calib_redspec_nsig	configuration.py	/^    calib_redspec_nsig = ConfigField(default=2.0)$/;"	v	class:Configuration
+calib_run_min_nside	configuration.py	/^    calib_run_min_nside = ConfigField(default=1, required=True)$/;"	v	class:Configuration
+calib_run_nproc	configuration.py	/^    calib_run_nproc = ConfigField(default=1, required=True)$/;"	v	class:Configuration
+calib_slope_nodesizes	configuration.py	/^    calib_slope_nodesizes = ConfigField(isArray=True, default=np.array([0.1]))$/;"	v	class:Configuration
+calib_smooth	configuration.py	/^    calib_smooth = ConfigField(default=0.003)$/;"	v	class:Configuration
+calib_spec_max_zerr	configuration.py	/^    calib_spec_max_zerr = ConfigField(default=0.001, required=True)$/;"	v	class:Configuration
+calib_use_pcol	configuration.py	/^    calib_use_pcol = ConfigField(default=True)$/;"	v	class:Configuration
+calib_zlambda_clean_nsig	configuration.py	/^    calib_zlambda_clean_nsig = ConfigField(default=5.0)$/;"	v	class:Configuration
+calib_zlambda_correct_niter	configuration.py	/^    calib_zlambda_correct_niter = ConfigField(default=3)$/;"	v	class:Configuration
+calib_zlambda_minlambda	configuration.py	/^    calib_zlambda_minlambda = ConfigField(default=20.0)$/;"	v	class:Configuration
+calib_zlambda_nodesize	configuration.py	/^    calib_zlambda_nodesize = ConfigField(default=0.04)$/;"	v	class:Configuration
+calib_zlambda_slope_nodesize	configuration.py	/^    calib_zlambda_slope_nodesize = ConfigField(default=0.1)$/;"	v	class:Configuration
+calib_zrange_cushion	configuration.py	/^    calib_zrange_cushion = ConfigField(default=0.05)$/;"	v	class:Configuration
+calibration	__init__.py	/^from . import calibration$/;"	i
+catfile	configuration.py	/^    catfile = ConfigField()$/;"	v	class:Configuration
+centerclass	configuration.py	/^    centerclass = ConfigField(default='CenteringBCG', required=True)$/;"	v	class:Configuration
+centering_use_zspec	configuration.py	/^    centering_use_zspec = ConfigField(default=False)$/;"	v	class:Configuration
+check_files	configuration.py	/^    def check_files(self, check_zredfile=False, check_bkgfile=False, check_bkgfile_components=False,$/;"	m	class:Configuration
+chisq_max	configuration.py	/^    chisq_max = ConfigField(default=20.0, required=True)$/;"	v	class:Configuration
+chisq_pdf	cluster.py	/^from .utilities import chisq_pdf, calc_theta_i, MStar, schechter_pdf, nfw_pdf$/;"	i
+chisq_pdf	mask.py	/^from .utilities import make_lockfile, sample_from_pdf, chisq_pdf, schechter_pdf, nfw_pdf$/;"	i
+chisq_pdf	run_likelihoods.py	/^from .utilities import chisq_pdf, interpol$/;"	i
+chisq_pdf	utilities.py	/^def chisq_pdf(data, k):$/;"	f
+cic	background.py	/^from .utilities import interpol, cic$/;"	i
+cic	color_background.py	/^from .utilities import cic$/;"	i
+cic	utilities.py	/^def cic(value, posx=None, nx=None, posy=None, ny=None, posz=None, nz=None, average=False, isolated=True):$/;"	f
+clear_neighbors	cluster.py	/^    def clear_neighbors(self):$/;"	m	class:Cluster
+cluster_dtype_base	cluster.py	/^cluster_dtype_base = [('MEM_MATCH_ID', 'i4'),$/;"	v
+cluster_dtype_base	configuration.py	/^from .cluster import cluster_dtype_base, member_dtype_base$/;"	i
+compute_bkg_local	cluster.py	/^    def compute_bkg_local(self, mask, depth):$/;"	m	class:Cluster
+compute_border	configuration.py	/^    def compute_border(self):$/;"	m	class:Configuration
+compute_chisq	__init__.py	/^from .chisq_dist import compute_chisq$/;"	i
+compute_chisq	redsequence.py	/^from .chisq_dist import compute_chisq$/;"	i
+compute_radmask	mask.py	/^    def compute_radmask(self, ra, dec):$/;"	m	class:Mask
+compute_radmask	mask.py	/^    def compute_radmask(self, ras, decs):$/;"	m	class:HPMask
+compute_zred	zred_color.py	/^    def compute_zred(self, galaxy, no_corrections=False):$/;"	m	class:ZredColor
+compute_zreds	zred_color.py	/^    def compute_zreds(self, galaxies):$/;"	m	class:ZredColor
+consolidate_lambda_cuts	configuration.py	/^    consolidate_lambda_cuts = ConfigField(default=[5.0, 20.0], required=False, isArray=True)$/;"	v	class:Configuration
+consolidate_vlim_lstars	configuration.py	/^    consolidate_vlim_lstars = ConfigField(default=[0.2, 5.0], required=False, isList=True)$/;"	v	class:Configuration
+convert_depthfile_to_healsparse	depthmap.py	/^def convert_depthfile_to_healsparse(depthfile, healsparsefile, nsideCoverage, clobber=False):$/;"	f
+convert_maskfile_to_healsparse	mask.py	/^def convert_maskfile_to_healsparse(maskfile, healsparsefile, nsideCoverage, clobber=False):$/;"	f
+copy	background.py	/^import copy$/;"	i
+copy	cluster.py	/^    def copy(self):$/;"	m	class:Cluster
+copy	cluster.py	/^import copy$/;"	i
+copy	configuration.py	/^    def copy(self):$/;"	m	class:Configuration
+copy	configuration.py	/^import copy$/;"	i
+copy	plotting.py	/^import copy$/;"	i
+copy	randoms.py	/^import copy$/;"	i
+copy	redmapper_run.py	/^import copy$/;"	i
+copy	run_colormem.py	/^import copy$/;"	i
+copy	run_likelihoods.py	/^import copy$/;"	i
+copy	run_percolation.py	/^import copy$/;"	i
+copy	zlambda.py	/^import copy$/;"	i
+copy	zred_color.py	/^import copy$/;"	i
+copy	zred_runner.py	/^import copy$/;"	i
+copyreg	background.py	/^    import copy_reg as copyreg$/;"	i
+copyreg	background.py	/^    import copyreg$/;"	i
+copyreg	redmapper_run.py	/^    import copy_reg as copyreg$/;"	i
+copyreg	redmapper_run.py	/^    import copyreg$/;"	i
+copyreg	zred_runner.py	/^    import copy_reg as copyreg$/;"	i
+copyreg	zred_runner.py	/^    import copyreg$/;"	i
+covmask_nside_default	configuration.py	/^    covmask_nside_default = ConfigField(default=32, required=True)$/;"	v	class:Configuration
+default	configuration.py	/^                                   default=np.array([2.0, 3.0]))$/;"	v	class:Configuration
+depthfile	configuration.py	/^    depthfile = ConfigField()$/;"	v	class:Configuration
+dldr_gamma	configuration.py	/^    dldr_gamma = ConfigField(default=0.6, required=True)$/;"	v	class:Configuration
+dtype	catalog.py	/^    def dtype(self):$/;"	m	class:DataObject
+entry_class	catalog.py	/^    entry_class = Entry$/;"	v	class:Catalog
+entry_class	cluster.py	/^    entry_class = Cluster$/;"	v	class:ClusterCatalog
+entry_class	galaxy.py	/^    entry_class = Galaxy$/;"	v	class:GalaxyCatalog
+erf	mask.py	/^from scipy.special import erf$/;"	i
+erf	utilities.py	/^from scipy.special import erf$/;"	i
+esutil	background.py	/^import esutil$/;"	i
+esutil	centering.py	/^import esutil$/;"	i
+esutil	cluster.py	/^import esutil$/;"	i
+esutil	cluster_runner.py	/^import esutil$/;"	i
+esutil	color_background.py	/^import esutil$/;"	i
+esutil	depth_fitting.py	/^import esutil$/;"	i
+esutil	depthmap.py	/^import esutil$/;"	i
+esutil	fitters.py	/^import esutil$/;"	i
+esutil	galaxy.py	/^import esutil$/;"	i
+esutil	mask.py	/^import esutil$/;"	i
+esutil	plotting.py	/^import esutil$/;"	i
+esutil	randoms.py	/^import esutil$/;"	i
+esutil	redmapper_run.py	/^import esutil$/;"	i
+esutil	redsequence.py	/^import esutil$/;"	i
+esutil	run_colormem.py	/^import esutil$/;"	i
+esutil	run_firstpass.py	/^import esutil$/;"	i
+esutil	run_likelihoods.py	/^import esutil$/;"	i
+esutil	run_percolation.py	/^import esutil$/;"	i
+esutil	run_randoms_zmask.py	/^import esutil$/;"	i
+esutil	run_zscan.py	/^import esutil$/;"	i
+esutil	runcat.py	/^import esutil$/;"	i
+esutil	utilities.py	/^    import esutil$/;"	i
+esutil	utilities.py	/^import esutil$/;"	i
+esutil	volumelimit.py	/^import esutil$/;"	i
+esutil	zred_color.py	/^import esutil$/;"	i
+eu	catalog.py	/^import esutil as eu$/;"	i
+extend	catalog.py	/^    def extend(self, n_new):$/;"	m	class:Catalog
+filename	cluster_runner.py	/^    def filename(self):$/;"	m	class:ClusterRunner
+filename	plotting.py	/^    def filename(self):$/;"	m	class:NLambdaPlot
+filename	plotting.py	/^    def filename(self):$/;"	m	class:NzPlot
+filename	plotting.py	/^    def filename(self):$/;"	m	class:PositionPlot
+filename	plotting.py	/^    def filename(self):$/;"	m	class:SpecPlot
+finalize_catalog	galaxy.py	/^    def finalize_catalog(self):$/;"	m	class:GalaxyCatalogMaker
+find_center	centering.py	/^    def find_center(self):$/;"	m	class:Centering
+find_center	centering.py	/^    def find_center(self):$/;"	m	class:CenteringBCG
+find_center	centering.py	/^    def find_center(self):$/;"	m	class:CenteringRandom
+find_center	centering.py	/^    def find_center(self):$/;"	m	class:CenteringRandomSatellite
+find_center	centering.py	/^    def find_center(self):$/;"	m	class:CenteringWcenZred
+find_neighbors	cluster.py	/^    def find_neighbors(self, radius, galcat, megaparsec=False, maxmag=None):$/;"	m	class:Cluster
+firstpass_beta	configuration.py	/^    firstpass_beta = ConfigField(default=0.0, required=True)$/;"	v	class:Configuration
+firstpass_centerclass	configuration.py	/^    firstpass_centerclass = ConfigField(default='CenteringBCG', required=True)$/;"	v	class:Configuration
+firstpass_minlambda	configuration.py	/^    firstpass_minlambda = ConfigField(default=3.0, required=True)$/;"	v	class:Configuration
+firstpass_niter	configuration.py	/^    firstpass_niter = ConfigField(default=2, required=True)$/;"	v	class:Configuration
+firstpass_r0	configuration.py	/^    firstpass_r0 = ConfigField(default=0.5, required=True)$/;"	v	class:Configuration
+fit	fitters.py	/^    def fit(self, p0, full_covmats=None):$/;"	m	class:RedSequenceOffDiagonalFitter
+fit	fitters.py	/^    def fit(self, p0, min_val=-np.inf, max_val=np.inf):$/;"	m	class:MedZFitter
+fit	fitters.py	/^    def fit(self, p0, scale_indices=[0]):$/;"	m	class:ErrorBinFitter
+fit	fitters.py	/^    def fit(self, p0_mean, p0_slope, p0_r, p0_bkg, fit_mean=False, fit_slope=False, fit_r=False, fit_bkg=False):$/;"	m	class:CorrectionFitter
+fit	fitters.py	/^    def fit(self, p0_mean, p0_slope, p0_scatter,$/;"	m	class:RedSequenceFitter
+fit	fitters.py	/^    def fit(self, wt0, mu, sigma, bounds=None, offset=0.0):$/;"	m	class:EcgmmFitter
+fitsio	background.py	/^import fitsio$/;"	i
+fitsio	catalog.py	/^import fitsio$/;"	i
+fitsio	centering.py	/^import fitsio$/;"	i
+fitsio	cluster.py	/^import fitsio$/;"	i
+fitsio	cluster_runner.py	/^import fitsio$/;"	i
+fitsio	color_background.py	/^import fitsio$/;"	i
+fitsio	configuration.py	/^import fitsio$/;"	i
+fitsio	depth_fitting.py	/^import fitsio$/;"	i
+fitsio	depthmap.py	/^import fitsio$/;"	i
+fitsio	galaxy.py	/^import fitsio$/;"	i
+fitsio	mask.py	/^import fitsio$/;"	i
+fitsio	plotting.py	/^import fitsio$/;"	i
+fitsio	randoms.py	/^import fitsio$/;"	i
+fitsio	redmapper_run.py	/^import fitsio$/;"	i
+fitsio	redsequence.py	/^import fitsio$/;"	i
+fitsio	run_colormem.py	/^import fitsio$/;"	i
+fitsio	run_firstpass.py	/^import fitsio$/;"	i
+fitsio	run_likelihoods.py	/^import fitsio$/;"	i
+fitsio	run_percolation.py	/^import fitsio$/;"	i
+fitsio	run_randoms_zmask.py	/^import fitsio$/;"	i
+fitsio	run_zscan.py	/^import fitsio$/;"	i
+fitsio	runcat.py	/^import fitsio$/;"	i
+fitsio	utilities.py	/^import fitsio$/;"	i
+fitsio	volumelimit.py	/^import fitsio$/;"	i
+fitsio	zlambda.py	/^import fitsio$/;"	i
+fitsio	zred_runner.py	/^import fitsio$/;"	i
+from_catfile	cluster.py	/^    def from_catfile(cls, filename, **kwargs):$/;"	m	class:ClusterCatalog
+from_fits_ext	catalog.py	/^    def from_fits_ext(cls, fits_ext):$/;"	m	class:DataObject
+from_fits_file	catalog.py	/^    def from_fits_file(cls, filename, ext=1, rows=None):$/;"	m	class:DataObject
+from_galfile	galaxy.py	/^    def from_galfile(cls, filename, zredfile=None, nside=0, hpix=[], border=0.0, truth=False,$/;"	m	class:GalaxyCatalog
+from_galfile	randoms.py	/^    def from_galfile(cls, filename, zredfile=None, nside=0, hpix=[], border=0.0, truth=False):$/;"	m	class:RandomCatalog
+from_randfile	randoms.py	/^    def from_randfile(cls, filename, nside=0, hpix=[], border=0.0):$/;"	m	class:RandomCatalog
+galcol	galaxy.py	/^    def galcol(self):$/;"	m	class:Galaxy
+galcol	galaxy.py	/^    def galcol(self):$/;"	m	class:GalaxyCatalog
+galcol	randoms.py	/^    def galcol(self):$/;"	m	class:RandomCatalog
+galcol_err	galaxy.py	/^    def galcol_err(self):$/;"	m	class:GalaxyCatalog
+galcol_err	randoms.py	/^    def galcol_err(self):$/;"	m	class:RandomCatalog
+galfile	configuration.py	/^    galfile = ConfigField(required=True)$/;"	v	class:Configuration
+galfile_has_truth	configuration.py	/^    galfile_has_truth = ConfigField(default=False)$/;"	v	class:Configuration
+galfile_has_zspec	configuration.py	/^    galfile_has_zspec = ConfigField(default=False)$/;"	v	class:Configuration
+galfile_nside	configuration.py	/^    galfile_nside = ConfigField(required=True)$/;"	v	class:Configuration
+galfile_pixelized	configuration.py	/^    galfile_pixelized = ConfigField(required=True)$/;"	v	class:Configuration
+gaussFunction	centering.py	/^from .utilities import gaussFunction$/;"	i
+gaussFunction	plotting.py	/^from .utilities import gaussFunction, CubicSpline, interpol$/;"	i
+gaussFunction	utilities.py	/^def gaussFunction(x, *p):$/;"	f
+gaussFunction	zlambda.py	/^from .utilities import gaussFunction$/;"	i
+gc	cluster_runner.py	/^import gc$/;"	i
+gen_maskgals	mask.py	/^    def gen_maskgals(self, maskgalfile):$/;"	m	class:Mask
+generate_randoms	randoms.py	/^    def generate_randoms(self, nrandoms, rng=None):$/;"	m	class:GenerateRandoms
+getMemoryString	cluster_runner.py	/^from .utilities import getMemoryString$/;"	i
+getMemoryString	galaxy.py	/^from .utilities import getMemoryString$/;"	i
+getMemoryString	redmapper_run.py	/^from .utilities import getMemoryString$/;"	i
+getMemoryString	utilities.py	/^def getMemoryString(location):$/;"	f
+get_areas	volumelimit.py	/^    def get_areas(self):$/;"	m	class:VolumeLimitMask
+get_areas	volumelimit.py	/^    def get_areas(self):$/;"	m	class:VolumeLimitMaskFixed
+get_colrange	color_background.py	/^    def get_colrange(self, bkg_index):$/;"	m	class:ColorBackground
+get_depth_values	depthmap.py	/^    def get_depth_values(self, ras, decs):$/;"	m	class:DepthMap
+get_fracgoods	depthmap.py	/^    def get_fracgoods(self, ras, decs):$/;"	m	class:DepthMap
+get_galaxy_dtype	galaxy.py	/^    def get_galaxy_dtype(nmag, truth=False, zspec=False):$/;"	m	class:GalaxyCatalogMaker
+get_healsparse_subpix_indices	depthmap.py	/^from .utilities import astro_to_sphere, get_healsparse_subpix_indices$/;"	i
+get_healsparse_subpix_indices	mask.py	/^from .utilities import get_healsparse_subpix_indices$/;"	i
+get_healsparse_subpix_indices	utilities.py	/^def get_healsparse_subpix_indices(subpix_nside, subpix_hpix, subpix_border, coverage_nside):$/;"	f
+get_healsparse_subpix_indices	volumelimit.py	/^from .utilities import astro_to_sphere, get_healsparse_subpix_indices$/;"	i
+get_hpmask_subpix_indices	utilities.py	/^def get_hpmask_subpix_indices(submask_nside, submask_hpix, submask_border, nside_mask, hpix):$/;"	f
+get_mask	__init__.py	/^from .mask import Mask, HPMask, get_mask$/;"	i
+get_mask	cluster_runner.py	/^from .mask import get_mask$/;"	i
+get_mask	galaxy.py	/^from .mask import get_mask$/;"	i
+get_mask	mask.py	/^def get_mask(config, include_maskgals=True):$/;"	f
+get_subpixel_indices	galaxy.py	/^def get_subpixel_indices(galtable, hpix=[], border=0.0, nside=0):$/;"	f
+get_subpixel_indices	zred_runner.py	/^from .galaxy import GalaxyCatalog, get_subpixel_indices, zred_extra_dtype$/;"	i
+glob	galaxy.py	/^import glob$/;"	i
+halofile	configuration.py	/^    halofile = ConfigField()$/;"	v	class:Configuration
+has_truth	configuration.py	/^    has_truth = ConfigField(default=False)$/;"	v	class:Configuration
+healsparse	depthmap.py	/^import healsparse$/;"	i
+healsparse	mask.py	/^import healsparse$/;"	i
+healsparse	randoms.py	/^import healsparse$/;"	i
+healsparse	volumelimit.py	/^import healsparse$/;"	i
+histoGauss	utilities.py	/^def histoGauss(ax, array):$/;"	f
+hpc	galaxy.py	/^import hpgeom.healpy_compat as hpc$/;"	i
+hpc	utilities.py	/^import hpgeom.healpy_compat as hpc$/;"	i
+hpg	background.py	/^import hpgeom as hpg$/;"	i
+hpg	depthmap.py	/^import hpgeom as hpg$/;"	i
+hpg	galaxy.py	/^import hpgeom as hpg$/;"	i
+hpg	redmapper_run.py	/^import hpgeom as hpg$/;"	i
+hpg	utilities.py	/^import hpgeom as hpg$/;"	i
+hpg	volumelimit.py	/^import hpgeom as hpg$/;"	i
+hpgeom	galaxy.py	/^import hpgeom.healpy_compat as hpc$/;"	i
+hpgeom	utilities.py	/^import hpgeom.healpy_compat as hpc$/;"	i
+hpix	configuration.py	/^    hpix = ConfigField(default=[], required=True, isArray=True)$/;"	v	class:Configuration
+integrate	cluster.py	/^import scipy.integrate$/;"	i
+integrate	mask.py	/^import scipy.integrate$/;"	i
+integrate	zlambda.py	/^import scipy.integrate$/;"	i
+integrate	zred_color.py	/^import scipy.integrate$/;"	i
+interpol	background.py	/^from .utilities import interpol, cic$/;"	i
+interpol	centering.py	/^from .utilities import interpol$/;"	i
+interpol	color_background.py	/^from .utilities import interpol$/;"	i
+interpol	fitters.py	/^from .utilities import CubicSpline, interpol$/;"	i
+interpol	plotting.py	/^from .utilities import gaussFunction, CubicSpline, interpol$/;"	i
+interpol	run_likelihoods.py	/^from .utilities import chisq_pdf, interpol$/;"	i
+interpol	utilities.py	/^def interpol(v, x, xout):$/;"	f
+interpol	zred_color.py	/^from .utilities import interpol, sample_from_pdf$/;"	i
+interpolate	redsequence.py	/^from scipy import interpolate$/;"	i
+interpolate	utilities.py	/^import scipy.interpolate as interpolate$/;"	i
+interpolate	zred_color.py	/^import scipy.interpolate$/;"	i
+itertools	catalog.py	/^import itertools$/;"	i
+itertools	cluster.py	/^import itertools$/;"	i
+itertools	galaxy.py	/^import itertools$/;"	i
+likelihoods_beta	configuration.py	/^    likelihoods_beta = ConfigField(default=0.2, required=True)$/;"	v	class:Configuration
+likelihoods_minlambda	configuration.py	/^    likelihoods_minlambda = ConfigField(default=3.0, required=True)$/;"	v	class:Configuration
+likelihoods_r0	configuration.py	/^    likelihoods_r0 = ConfigField(default=1.0, required=True)$/;"	v	class:Configuration
+likelihoods_use_zred	configuration.py	/^    likelihoods_use_zred = ConfigField(default=True, required=True)$/;"	v	class:Configuration
+limmag_catalog	configuration.py	/^    limmag_catalog = ConfigField(required=True)$/;"	v	class:Configuration
+limmag_ref	configuration.py	/^    limmag_ref = ConfigField(required=True)$/;"	v	class:Configuration
+lnw_cen_mean	configuration.py	/^    lnw_cen_mean = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+lnw_cen_sigma	configuration.py	/^    lnw_cen_sigma = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+lnw_fg_mean	configuration.py	/^    lnw_fg_mean = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+lnw_fg_sigma	configuration.py	/^    lnw_fg_sigma = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+lnw_sat_mean	configuration.py	/^    lnw_sat_mean = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+lnw_sat_sigma	configuration.py	/^    lnw_sat_sigma = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+logging	configuration.py	/^import logging$/;"	i
+logpath	configuration.py	/^    logpath = ConfigField(default='logs', required=True)$/;"	v	class:Configuration
+lookup_diagonal	color_background.py	/^    def lookup_diagonal(self, bkg_index, colors, refmags, doRaise=True):$/;"	m	class:ColorBackground
+lookup_offdiag	color_background.py	/^    def lookup_offdiag(self, bkg_index1, bkg_index2, colors1, colors2, refmags, doRaise=True):$/;"	m	class:ColorBackground
+lumrefmagindex	redsequence.py	/^    def lumrefmagindex(self,lumrefmag):$/;"	m	class:RedSequenceColorPar
+lval_reference	configuration.py	/^    lval_reference = ConfigField(default=0.2, required=True)$/;"	v	class:Configuration
+make_lockfile	galaxy.py	/^from .utilities import make_lockfile$/;"	i
+make_lockfile	mask.py	/^from .utilities import make_lockfile, sample_from_pdf, chisq_pdf, schechter_pdf, nfw_pdf$/;"	i
+make_lockfile	utilities.py	/^def make_lockfile(lockfile, block=False, maxtry=300, waittime=2):$/;"	f
+make_nodes	randoms.py	/^from .utilities import make_nodes, CubicSpline$/;"	i
+make_nodes	utilities.py	/^def make_nodes(zrange, nodesize, maxnode=None):$/;"	f
+make_zred_table	zred_runner.py	/^    def make_zred_table(self, indices_and_filenames):$/;"	m	class:ZredRunPixels
+mask_mode	configuration.py	/^    mask_mode = ConfigField(default=0, required=True)$/;"	v	class:Configuration
+maskfile	configuration.py	/^    maskfile = ConfigField()$/;"	v	class:Configuration
+maskgal_dmag_extra	configuration.py	/^    maskgal_dmag_extra = ConfigField(default=0.3, required=True)$/;"	v	class:Configuration
+maskgal_ngals	configuration.py	/^    maskgal_ngals = ConfigField(default=6000, required=True)$/;"	v	class:Configuration
+maskgal_nsamples	configuration.py	/^    maskgal_nsamples = ConfigField(default=100, required=True)$/;"	v	class:Configuration
+maskgal_rad_stepsize	configuration.py	/^    maskgal_rad_stepsize = ConfigField(default=0.1, required=True)$/;"	v	class:Configuration
+maskgal_zred_err	configuration.py	/^    maskgal_zred_err = ConfigField(default=0.02, required=True)$/;"	v	class:Configuration
+maskgalfile	configuration.py	/^    maskgalfile = ConfigField(default='maskgals.fit', required=True)$/;"	v	class:Configuration
+match_many	galaxy.py	/^    def match_many(self, ras, decs, radius, maxmatch=0):$/;"	m	class:GalaxyCatalog
+match_one	galaxy.py	/^    def match_one(self, ra, dec, radius):$/;"	m	class:GalaxyCatalog
+matplotlib	plotting.py	/^        import matplotlib.pyplot as plt$/;"	i
+max_maskfrac	configuration.py	/^    max_maskfrac = ConfigField(default=0.2, required=True)$/;"	v	class:Configuration
+member_dtype_base	cluster.py	/^member_dtype_base = [('MEM_MATCH_ID', 'i4'),$/;"	v
+member_dtype_base	configuration.py	/^from .cluster import cluster_dtype_base, member_dtype_base$/;"	i
+mpc_scale	cluster.py	/^    def mpc_scale(self):$/;"	m	class:Cluster
+mstar	cluster.py	/^    def mstar(self):$/;"	m	class:Cluster
+mstar	redsequence.py	/^    def mstar(self,z):$/;"	m	class:RedSequenceColorPar
+mstar_band	configuration.py	/^    mstar_band = ConfigField(default='i03')$/;"	v	class:Configuration
+mstar_survey	configuration.py	/^    mstar_survey = ConfigField(default='sdss')$/;"	v	class:Configuration
+multiprocessing	background.py	/^import multiprocessing$/;"	i
+multiprocessing	redmapper_run.py	/^import multiprocessing$/;"	i
+multiprocessing	zred_runner.py	/^import multiprocessing$/;"	i
+ndimage	plotting.py	/^import scipy.ndimage$/;"	i
+nfw_pdf	cluster.py	/^from .utilities import chisq_pdf, calc_theta_i, MStar, schechter_pdf, nfw_pdf$/;"	i
+nfw_pdf	mask.py	/^from .utilities import make_lockfile, sample_from_pdf, chisq_pdf, schechter_pdf, nfw_pdf$/;"	i
+nfw_pdf	utilities.py	/^def nfw_pdf(x, rscale=0.15, corer=0.1, radfactor=False):$/;"	f
+nmag	configuration.py	/^    nmag = ConfigField(required=True)$/;"	v	class:Configuration
+np	background.py	/^import numpy as np$/;"	i
+np	catalog.py	/^import numpy as np$/;"	i
+np	centering.py	/^import numpy as np$/;"	i
+np	cluster.py	/^import numpy as np$/;"	i
+np	cluster_runner.py	/^import numpy as np$/;"	i
+np	color_background.py	/^import numpy as np$/;"	i
+np	configuration.py	/^import numpy as np$/;"	i
+np	depth_fitting.py	/^import numpy as np$/;"	i
+np	depthmap.py	/^import numpy as np$/;"	i
+np	fitters.py	/^import numpy as np$/;"	i
+np	galaxy.py	/^import numpy as np$/;"	i
+np	mask.py	/^import numpy as np$/;"	i
+np	plotting.py	/^import numpy as np$/;"	i
+np	randoms.py	/^import numpy as np$/;"	i
+np	redmapper_run.py	/^import numpy as np$/;"	i
+np	redsequence.py	/^import numpy as np$/;"	i
+np	run_colormem.py	/^import numpy as np$/;"	i
+np	run_firstpass.py	/^import numpy as np$/;"	i
+np	run_likelihoods.py	/^import numpy as np$/;"	i
+np	run_percolation.py	/^import numpy as np$/;"	i
+np	run_randoms_zmask.py	/^import numpy as np$/;"	i
+np	run_zscan.py	/^import numpy as np$/;"	i
+np	runcat.py	/^import numpy as np$/;"	i
+np	utilities.py	/^import numpy as np$/;"	i
+np	volumelimit.py	/^import numpy as np$/;"	i
+np	zlambda.py	/^import numpy as np$/;"	i
+np	zred_color.py	/^import numpy as np$/;"	i
+np	zred_runner.py	/^import numpy as np$/;"	i
+npzbins	configuration.py	/^    npzbins = ConfigField(default=21, required=True)$/;"	v	class:Configuration
+nside	configuration.py	/^    nside = ConfigField(default=0, required=True)$/;"	v	class:Configuration
+optimize	cluster.py	/^import scipy.optimize$/;"	i
+optimize	depth_fitting.py	/^import scipy.optimize$/;"	i
+optimize	depthmap.py	/^import scipy.optimize$/;"	i
+optimize	fitters.py	/^import scipy.optimize$/;"	i
+optimize	plotting.py	/^import scipy.optimize$/;"	i
+optimize	utilities.py	/^    import scipy.optimize$/;"	i
+optimize	zlambda.py	/^import scipy.optimize$/;"	i
+os	__init__.py	/^import os$/;"	i
+os	background.py	/^import os$/;"	i
+os	cluster_runner.py	/^import os$/;"	i
+os	color_background.py	/^import os$/;"	i
+os	configuration.py	/^import os$/;"	i
+os	galaxy.py	/^import os$/;"	i
+os	mask.py	/^import os$/;"	i
+os	plotting.py	/^import os$/;"	i
+os	redmapper_run.py	/^import os$/;"	i
+os	run_firstpass.py	/^import os$/;"	i
+os	run_randoms_zmask.py	/^import os$/;"	i
+os	utilities.py	/^    import os$/;"	i
+os	utilities.py	/^import os$/;"	i
+os	volumelimit.py	/^import os$/;"	i
+os	zlambda.py	/^import os$/;"	i
+os	zred_runner.py	/^import os$/;"	i
+outbase	configuration.py	/^    outbase = ConfigField(required=True)$/;"	v	class:Configuration
+outpath	configuration.py	/^    outpath = ConfigField(default='.\/', required=True)$/;"	v	class:Configuration
+output	cluster_runner.py	/^    def output(self, savemembers=True, withversion=True, clobber=False, outbase=None):$/;"	m	class:ClusterRunner
+output_training	run_colormem.py	/^    def output_training(self):$/;"	m	class:RunColormem
+output_yaml	configuration.py	/^    def output_yaml(self, filename):$/;"	m	class:Configuration
+parfile	configuration.py	/^    parfile = ConfigField()$/;"	v	class:Configuration
+percolation_beta	configuration.py	/^    percolation_beta = ConfigField(default=0.2, required=True)$/;"	v	class:Configuration
+percolation_lmask	configuration.py	/^    percolation_lmask = ConfigField()$/;"	v	class:Configuration
+percolation_maxcen	configuration.py	/^    percolation_maxcen = ConfigField(default=5, required=True)$/;"	v	class:Configuration
+percolation_memlum	configuration.py	/^    percolation_memlum = ConfigField()$/;"	v	class:Configuration
+percolation_memradius	configuration.py	/^    percolation_memradius = ConfigField()$/;"	v	class:Configuration
+percolation_minlambda	configuration.py	/^    percolation_minlambda = ConfigField(default=3.0, required=True)$/;"	v	class:Configuration
+percolation_niter	configuration.py	/^    percolation_niter = ConfigField(default=2, required=True)$/;"	v	class:Configuration
+percolation_pbcg_cut	configuration.py	/^    percolation_pbcg_cut = ConfigField(default=0.5, required=True)$/;"	v	class:Configuration
+percolation_r0	configuration.py	/^    percolation_r0 = ConfigField(default=1.0, required=True)$/;"	v	class:Configuration
+percolation_rmask_0	configuration.py	/^    percolation_rmask_0 = ConfigField(default=1.5, required=True)$/;"	v	class:Configuration
+percolation_rmask_beta	configuration.py	/^    percolation_rmask_beta = ConfigField(default=0.2, required=True)$/;"	v	class:Configuration
+percolation_rmask_gamma	configuration.py	/^    percolation_rmask_gamma = ConfigField(default=0.0, required=True)$/;"	v	class:Configuration
+percolation_rmask_zpivot	configuration.py	/^    percolation_rmask_zpivot = ConfigField(default=0.3, required=True)$/;"	v	class:Configuration
+phi1_mmstar_m	configuration.py	/^    phi1_mmstar_m = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+phi1_mmstar_slope	configuration.py	/^    phi1_mmstar_slope = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+phi1_msig_m	configuration.py	/^    phi1_msig_m = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+phi1_msig_slope	configuration.py	/^    phi1_msig_slope = ConfigField(required=False, default=-9999.0)$/;"	v	class:Configuration
+pipeline	__init__.py	/^from . import pipeline$/;"	i
+plot_cluster_catalog	plotting.py	/^    def plot_cluster_catalog(self, cat, areastr, nosamp=False, withversion=False):$/;"	m	class:NzPlot
+plot_cluster_catalog	plotting.py	/^    def plot_cluster_catalog(self, cat, title=None, figure_return=False, withversion=False):$/;"	m	class:SpecPlot
+plot_cluster_catalog	plotting.py	/^    def plot_cluster_catalog(self, cat, withversion=False):$/;"	m	class:NLambdaPlot
+plot_cluster_catalog	plotting.py	/^    def plot_cluster_catalog(self, cat, withversion=False):$/;"	m	class:PositionPlot
+plot_cluster_catalog_from_members	plotting.py	/^    def plot_cluster_catalog_from_members(self, cat, mem, title=None, figure_return=False,$/;"	m	class:SpecPlot
+plot_nlambda	plotting.py	/^    def plot_nlambda(self, lam, xlabel=None, ylabel=None,$/;"	m	class:NLambdaPlot
+plot_nz	plotting.py	/^    def plot_nz(self, z, areastr, zrange, xlabel=None, ylabel=None,$/;"	m	class:NzPlot
+plot_positions	plotting.py	/^    def plot_positions(self, ra, dec, title=None,$/;"	m	class:PositionPlot
+plot_redmagic_catalog	plotting.py	/^    def plot_redmagic_catalog(self, cat, name, eta, n0, areastr, sample=True,$/;"	m	class:NzPlot
+plot_redsequence_diag	redsequence.py	/^    def plot_redsequence_diag(self, fig, ind, bands):$/;"	m	class:RedSequenceColorPar
+plot_redsequence_offdiags	redsequence.py	/^    def plot_redsequence_offdiags(self, fig, bands):$/;"	m	class:RedSequenceColorPar
+plot_values	plotting.py	/^    def plot_values(self, z_spec, z_phot, z_phot_e, name=r'z_\\lambda', specname=r'z_{\\mathrm{spec}}',$/;"	m	class:SpecPlot
+plotpath	configuration.py	/^    plotpath = ConfigField(default='', required=True)$/;"	v	class:Configuration
+plt	plotting.py	/^        import matplotlib.pyplot as plt$/;"	i
+printlogging	configuration.py	/^    printlogging = ConfigField(default=True, required=True)$/;"	v	class:Configuration
+randfile	configuration.py	/^    randfile = ConfigField()$/;"	v	class:Configuration
+random	utilities.py	/^from numpy import random$/;"	i
+re	configuration.py	/^import re$/;"	i
+re	galaxy.py	/^import re$/;"	i
+re	randoms.py	/^import re$/;"	i
+re	redmapper_run.py	/^import re$/;"	i
+re	zred_runner.py	/^import re$/;"	i
+read_maskgals	mask.py	/^    def read_maskgals(self, maskgalfile):$/;"	m	class:Mask
+read_members	__init__.py	/^from .utilities import read_members$/;"	i
+read_members	utilities.py	/^def read_members(catfile):$/;"	f
+read_yaml	configuration.py	/^def read_yaml(filename):$/;"	f
+redgalfile	configuration.py	/^    redgalfile = ConfigField()$/;"	v	class:Configuration
+redgalmodelfile	configuration.py	/^    redgalmodelfile = ConfigField()$/;"	v	class:Configuration
+redmagic	__init__.py	/^from . import redmagic$/;"	i
+redmagic_apply_afterburner_zsamp	configuration.py	/^    redmagic_apply_afterburner_zsamp = ConfigField(default=True, required=True)$/;"	v	class:Configuration
+redmagic_calib_buffer	configuration.py	/^    redmagic_calib_buffer = ConfigField(default=0.05, required=True)$/;"	v	class:Configuration
+redmagic_calib_chisqcut	configuration.py	/^    redmagic_calib_chisqcut = ConfigField(default=20.0, required=True)$/;"	v	class:Configuration
+redmagic_calib_corr_nodesize	configuration.py	/^    redmagic_calib_corr_nodesize = ConfigField(default=0.05, required=True)$/;"	v	class:Configuration
+redmagic_calib_fractrain	configuration.py	/^    redmagic_calib_fractrain = ConfigField(default=0.5, required=True)$/;"	v	class:Configuration
+redmagic_calib_nodesize	configuration.py	/^    redmagic_calib_nodesize = ConfigField(default=0.05, required=True)$/;"	v	class:Configuration
+redmagic_calib_redshift_buffer	configuration.py	/^    redmagic_calib_redshift_buffer = ConfigField(default=0.05, required=True)$/;"	v	class:Configuration
+redmagic_calib_zbinsize	configuration.py	/^    redmagic_calib_zbinsize = ConfigField(default=0.02, required=True)$/;"	v	class:Configuration
+redmagic_constchis	configuration.py	/^    redmagic_constchis = ConfigField(default=[], required=True, isArray=True)$/;"	v	class:Configuration
+redmagic_etas	configuration.py	/^    redmagic_etas = ConfigField(default=[], required=True, isArray=True)$/;"	v	class:Configuration
+redmagic_maxlum	configuration.py	/^    redmagic_maxlum = ConfigField(default=100.0, required=True)$/;"	v	class:Configuration
+redmagic_mock_truthspec	configuration.py	/^    redmagic_mock_truthspec = ConfigField(default=False, required=True)$/;"	v	class:Configuration
+redmagic_n0s	configuration.py	/^    redmagic_n0s = ConfigField(default=[], required=True, isArray=True)$/;"	v	class:Configuration
+redmagic_names	configuration.py	/^    redmagic_names = ConfigField(default=[], required=True, isList=True)$/;"	v	class:Configuration
+redmagic_run_afterburner	configuration.py	/^    redmagic_run_afterburner = ConfigField(default=True, required=True)$/;"	v	class:Configuration
+redmagic_use_constchi	configuration.py	/^    redmagic_use_constchi = ConfigField(default=False, required=True)$/;"	v	class:Configuration
+redmagic_zmaxes	configuration.py	/^    redmagic_zmaxes = ConfigField(default=[], required=True, isArray=True)$/;"	v	class:Configuration
+redmagic_zrange	configuration.py	/^    redmagic_zrange = ConfigField(default=[], required=False, isArray=True)$/;"	v	class:Configuration
+redmagicfile	configuration.py	/^    redmagicfile = ConfigField()$/;"	v	class:Configuration
+redmapper_filename	configuration.py	/^    def redmapper_filename(self, redmapper_name, paths=None, filetype='fit',$/;"	m	class:Configuration
+redshift	cluster.py	/^    def redshift(self):$/;"	m	class:Cluster
+redshift	cluster.py	/^    def redshift(self, value):$/;"	m	class:Cluster
+reduce	run_percolation.py	/^from functools import reduce$/;"	i
+reduce	run_zscan.py	/^from functools import reduce$/;"	i
+ref_ind	configuration.py	/^    ref_ind = ConfigField(required=True)$/;"	v	class:Configuration
+refmag	configuration.py	/^    refmag = ConfigField(required=True)$/;"	v	class:Configuration
+refmagindex	redsequence.py	/^    def refmagindex(self,refmag):$/;"	m	class:RedSequenceColorPar
+reset	cluster.py	/^    def reset(self):$/;"	m	class:Cluster
+reset	configuration.py	/^    def reset(self):$/;"	m	class:ConfigField
+resource_exists	utilities.py	/^        from pkg_resources import resource_exists$/;"	i
+resource_filename	utilities.py	/^        from pkg_resources import resource_filename$/;"	i
+resource_filename	utilities.py	/^from pkg_resources import resource_filename$/;"	i
+rsig	configuration.py	/^    rsig = ConfigField(default=0.05, required=True)$/;"	v	class:Configuration
+run	background.py	/^    def run(self, clobber=False, natatime=100000):$/;"	m	class:ZredBackgroundGenerator
+run	background.py	/^    def run(self, clobber=False, natatime=100000, deepmode=False):$/;"	m	class:BackgroundGenerator
+run	cluster_runner.py	/^    def run(self, *args, **kwargs):$/;"	m	class:ClusterRunner
+run	color_background.py	/^    def run(self, clobber=False):$/;"	m	class:ColorBackgroundGenerator
+run	redmapper_run.py	/^    def run(self, specmode=False, seedfile=None, check=True,$/;"	m	class:RedmapperRun
+run	run_colormem.py	/^    def run(self, *args, **kwargs):$/;"	m	class:RunColormem
+run	run_firstpass.py	/^    def run(self, *args, **kwargs):$/;"	m	class:RunFirstPass
+run	run_likelihoods.py	/^    def run(self, *args, **kwargs):$/;"	m	class:RunLikelihoods
+run	run_percolation.py	/^    def run(self, *args, **kwargs):$/;"	m	class:RunPercolation
+run	run_randoms_zmask.py	/^    def run(self, *args, **kwargs):$/;"	m	class:RunRandomsZmask
+run	run_zscan.py	/^    def run(self, *args, **kwargs):$/;"	m	class:RunZScan
+run	runcat.py	/^    def run(self, *args, **kwargs):$/;"	m	class:RunCatalog
+run	zred_runner.py	/^    def run(self, galaxyfile, outfile, clobber=False, nperproc=None, maxperproc=500000):$/;"	m	class:ZredRunCatalog
+run	zred_runner.py	/^    def run(self, single_process=False, no_zred_table=False, verbose=False):$/;"	m	class:ZredRunPixels
+runcat_percolation_masking	configuration.py	/^    runcat_percolation_masking = ConfigField(default=True, required=False)$/;"	v	class:Configuration
+sample_from_pdf	mask.py	/^from .utilities import make_lockfile, sample_from_pdf, chisq_pdf, schechter_pdf, nfw_pdf$/;"	i
+sample_from_pdf	utilities.py	/^def sample_from_pdf(f, ran, step, nsamp, **kwargs):$/;"	f
+sample_from_pdf	zred_color.py	/^from .utilities import interpol, sample_from_pdf$/;"	i
+schechter_pdf	cluster.py	/^from .utilities import chisq_pdf, calc_theta_i, MStar, schechter_pdf, nfw_pdf$/;"	i
+schechter_pdf	mask.py	/^from .utilities import make_lockfile, sample_from_pdf, chisq_pdf, schechter_pdf, nfw_pdf$/;"	i
+schechter_pdf	redsequence.py	/^from .utilities import schechter_pdf, RedGalInitialColors$/;"	i
+schechter_pdf	utilities.py	/^def schechter_pdf(x, alpha=-1.0, mstar=0.0):$/;"	f
+scipy	cluster.py	/^import scipy.integrate$/;"	i
+scipy	cluster.py	/^import scipy.optimize$/;"	i
+scipy	depth_fitting.py	/^import scipy.optimize$/;"	i
+scipy	depthmap.py	/^import scipy.optimize$/;"	i
+scipy	fitters.py	/^import scipy.optimize$/;"	i
+scipy	mask.py	/^import scipy.integrate$/;"	i
+scipy	plotting.py	/^import scipy.ndimage$/;"	i
+scipy	plotting.py	/^import scipy.optimize$/;"	i
+scipy	utilities.py	/^    import scipy.optimize$/;"	i
+scipy	utilities.py	/^import scipy.interpolate as interpolate$/;"	i
+scipy	zlambda.py	/^import scipy.integrate$/;"	i
+scipy	zlambda.py	/^import scipy.optimize$/;"	i
+scipy	zred_color.py	/^import scipy.integrate$/;"	i
+scipy	zred_color.py	/^import scipy.interpolate$/;"	i
+seedfile	configuration.py	/^    seedfile = ConfigField()$/;"	v	class:Configuration
+select_maskgals_sample	mask.py	/^    def select_maskgals_sample(self, maskgal_index=None):$/;"	m	class:Mask
+select_scaleval	configuration.py	/^    select_scaleval = ConfigField(default=False, required=True)$/;"	v	class:Configuration
+set_length	configuration.py	/^    def set_length(self, length):$/;"	m	class:ConfigField
+set_neighbors	cluster.py	/^    def set_neighbors(self, neighbors):$/;"	m	class:Cluster
+set_radmask	mask.py	/^    def set_radmask(self, cluster):$/;"	m	class:Mask
+set_wcen_vals	configuration.py	/^    def set_wcen_vals(self):$/;"	m	class:Configuration
+sigma_g_diagonal	color_background.py	/^    def sigma_g_diagonal(self, bkg_index, colors, refmags):$/;"	m	class:ColorBackground
+sigma_g_lookup	background.py	/^    def sigma_g_lookup(self, z, chisq, refmag, allow0=False):$/;"	m	class:Background
+sigma_g_lookup	background.py	/^    def sigma_g_lookup(self, zred, refmag):$/;"	m	class:ZredBackground
+size	catalog.py	/^    def size(self):$/;"	m	class:Catalog
+solve_banded	utilities.py	/^from scipy.linalg import solve_banded$/;"	i
+specfile	configuration.py	/^    specfile = ConfigField()$/;"	v	class:Configuration
+specfile_train	configuration.py	/^    specfile_train = ConfigField()$/;"	v	class:Configuration
+special	fitters.py	/^from scipy import special$/;"	i
+special	utilities.py	/^from scipy import special$/;"	i
+splint	utilities.py	/^    def splint(self,x):$/;"	m	class:CubicSpline
+split_galaxies	galaxy.py	/^    def split_galaxies(self, gals):$/;"	m	class:GalaxyCatalogMaker
+split_randoms	randoms.py	/^    def split_randoms(self, rands):$/;"	m	class:RandomCatalogMaker
+start_file_logging	configuration.py	/^    def start_file_logging(self, filename=None):$/;"	m	class:Configuration
+stop_file_logging	configuration.py	/^    def stop_file_logging(self):$/;"	m	class:Configuration
+survey_mode	configuration.py	/^    survey_mode = ConfigField(required=True)$/;"	v	class:Configuration
+sys	run_colormem.py	/^import sys$/;"	i
+sys	run_percolation.py	/^import sys$/;"	i
+sys	run_zscan.py	/^import sys$/;"	i
+sys	utilities.py	/^import sys$/;"	i
+tempfile	galaxy.py	/^import tempfile$/;"	i
+tempfile	utilities.py	/^    import tempfile$/;"	i
+time	background.py	/^import time$/;"	i
+time	utilities.py	/^    import time$/;"	i
+time	zred_runner.py	/^import time$/;"	i
+to_fits_file	catalog.py	/^    def to_fits_file(self, filename, clobber=False, header=None, extname=None, indices=None):$/;"	m	class:DataObject
+types	background.py	/^import types$/;"	i
+types	redmapper_run.py	/^import types$/;"	i
+types	zred_runner.py	/^import types$/;"	i
+update_neighbors_dist	cluster.py	/^    def update_neighbors_dist(self):$/;"	m	class:Cluster
+use_tempfiles_to_conserve_memory	configuration.py	/^    use_tempfiles_to_conserve_memory = ConfigField(default=True, required=True)$/;"	v	class:Configuration
+validate	configuration.py	/^    def validate(self):$/;"	m	class:Configuration
+validate	configuration.py	/^    def validate(self, name):$/;"	m	class:ConfigField
+version	__init__.py	/^version = __version__$/;"	v
+version	configuration.py	/^    version = ConfigField(default=__version__, required=True)$/;"	v	class:Configuration
+vlim_bands	configuration.py	/^    vlim_bands = ConfigField(default=[], required=False, isList=True)$/;"	v	class:Configuration
+vlim_depthfiles	configuration.py	/^    vlim_depthfiles = ConfigField(default=[], required=False, isList=True)$/;"	v	class:Configuration
+vlim_lstar	configuration.py	/^    vlim_lstar = ConfigField(default=0.2, required=False)$/;"	v	class:Configuration
+vlim_nsigs	configuration.py	/^    vlim_nsigs = ConfigField(default=[], required=False, isArray=True)$/;"	v	class:Configuration
+warnings	fitters.py	/^import warnings$/;"	i
+warnings	plotting.py	/^import warnings$/;"	i
+warnings	randoms.py	/^import warnings$/;"	i
+warnings	run_likelihoods.py	/^import warnings$/;"	i
+warnings	utilities.py	/^import warnings$/;"	i
+wcen_Delta0	configuration.py	/^    wcen_Delta0 = ConfigField(required=False, default=0.0)$/;"	v	class:Configuration
+wcen_Delta1	configuration.py	/^    wcen_Delta1 = ConfigField(required=False, default=0.0)$/;"	v	class:Configuration
+wcen_cal_zrange	configuration.py	/^    wcen_cal_zrange = ConfigField(isArray=True, default=np.array([0.0,1.0]))$/;"	v	class:Configuration
+wcen_maxlambda	configuration.py	/^    wcen_maxlambda = ConfigField(default=100.0, required=True)$/;"	v	class:Configuration
+wcen_minlambda	configuration.py	/^    wcen_minlambda = ConfigField(default=10.0, required=True)$/;"	v	class:Configuration
+wcen_pivot	configuration.py	/^    wcen_pivot = ConfigField(default=30.0, required=True)$/;"	v	class:Configuration
+wcen_rsoft	configuration.py	/^    wcen_rsoft = ConfigField(default=0.05, required=True)$/;"	v	class:Configuration
+wcen_sigma_m	configuration.py	/^    wcen_sigma_m = ConfigField(required=False, default=0.0)$/;"	v	class:Configuration
+wcen_uselum	configuration.py	/^    wcen_uselum = ConfigField(default=True, required=True)$/;"	v	class:Configuration
+wcen_zred_chisq_max	configuration.py	/^    wcen_zred_chisq_max = ConfigField(default=100.0, required=True)$/;"	v	class:Configuration
+wcenfile	configuration.py	/^    wcenfile = ConfigField()$/;"	v	class:Configuration
+weight_randoms	randoms.py	/^    def weight_randoms(self, minlambda, zrange=None, lambdabin=None):$/;"	m	class:RandomWeigher
+yaml	configuration.py	/^import yaml$/;"	i
+zeropoint	configuration.py	/^    zeropoint = ConfigField(required=True)$/;"	v	class:Configuration
+zeros	catalog.py	/^    def zeros(cls, size, dtype):$/;"	m	class:DataObject
+zeros	cluster.py	/^    def zeros(cls, size, **kwargs):$/;"	m	class:ClusterCatalog
+zindex	redsequence.py	/^    def zindex(self,z):$/;"	m	class:RedSequenceColorPar
+zlambda_binsize	configuration.py	/^    zlambda_binsize = ConfigField(default=0.002, required=True)$/;"	v	class:Configuration
+zlambda_epsilon	configuration.py	/^    zlambda_epsilon = ConfigField(default=0.005, required=True)$/;"	v	class:Configuration
+zlambda_maxiter	configuration.py	/^    zlambda_maxiter = ConfigField(default=20, required=True)$/;"	v	class:Configuration
+zlambda_parab_step	configuration.py	/^    zlambda_parab_step = ConfigField(default=0.001, required=True)$/;"	v	class:Configuration
+zlambda_pivot	configuration.py	/^    zlambda_pivot = ConfigField(default=30.0, required=True)$/;"	v	class:Configuration
+zlambda_tol	configuration.py	/^    zlambda_tol = ConfigField(default=0.0002, required=True)$/;"	v	class:Configuration
+zlambda_topfrac	configuration.py	/^    zlambda_topfrac = ConfigField(default=0.7, required=True)$/;"	v	class:Configuration
+zlambdafile	configuration.py	/^    zlambdafile = ConfigField()$/;"	v	class:Configuration
+zmax	utilities.py	/^    def zmax(self):$/;"	m	class:RedGalInitialColors
+zmemfile	configuration.py	/^    zmemfile = ConfigField()$/;"	v	class:Configuration
+zrange	configuration.py	/^    zrange = ConfigField(isArray=True, array_length=2, required=True)$/;"	v	class:Configuration
+zrange_cushioned	configuration.py	/^    def zrange_cushioned(self):$/;"	m	class:Configuration
+zred_extra_dtype	galaxy.py	/^def zred_extra_dtype(nsamp):$/;"	f
+zred_extra_dtype	zred_runner.py	/^from .galaxy import GalaxyCatalog, get_subpixel_indices, zred_extra_dtype$/;"	i
+zred_nsamp	configuration.py	/^    zred_nsamp = ConfigField(default=4, required=True)$/;"	v	class:Configuration
+zredc_binsize_coarse	configuration.py	/^    zredc_binsize_coarse = ConfigField(default=0.005)$/;"	v	class:Configuration
+zredc_binsize_fine	configuration.py	/^    zredc_binsize_fine = ConfigField(default=0.0001)$/;"	v	class:Configuration
+zredfile	configuration.py	/^    zredfile = ConfigField()$/;"	v	class:Configuration
+zscan_beta	configuration.py	/^    zscan_beta = ConfigField(default=0.0, required=True)$/;"	v	class:Configuration
+zscan_minlambda	configuration.py	/^    zscan_minlambda = ConfigField(default=3.0, required=True)$/;"	v	class:Configuration
+zscan_r0	configuration.py	/^    zscan_r0 = ConfigField(default=0.5, required=True)$/;"	v	class:Configuration
+zscan_zstep	configuration.py	/^    zscan_zstep = ConfigField(default=0.005, required=True)$/;"	v	class:Configuration
