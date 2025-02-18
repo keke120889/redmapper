@@ -44,7 +44,8 @@ class ZredColor(object):
         self.nz = self.zredstr.z.size - 1
         
         #print('zredstr.z: ', self.zredstr.z)
-        #print('zredstr.z.size: ', self.zredstr.z.size)
+        print('zredstr.z.size: ', self.zredstr.z.size)
+        print(len(self.zredstr.extrapolated))
 
         self.notextrap, = np.where(~self.zredstr.extrapolated)
         
@@ -153,7 +154,7 @@ class ZredColor(object):
         #print('dist shape: ', np.shape(dist))
         #print('dist: ', dist)
 
-        ind_temp = np.argmax(dist[self.notextrap])
+        ind_temp = np.argmax(dist[self.notextrap[:-1]])
         ind = self.notextrap[ind_temp]
 
         calcinds, = np.where(dist > 1e-5)
@@ -177,7 +178,7 @@ class ZredColor(object):
         zred_e = zred_e if zred_e > 0.005 else 0.005
 
         # Now fit a parabola to get the perfect zred
-        ind_temp = np.argmax(dist[self.notextrap])
+        ind_temp = np.argmax(dist[self.notextrap[:-1]])
         ind = self.notextrap[ind_temp]
 
         zred = zred_temp.copy()
