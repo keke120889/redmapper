@@ -119,19 +119,31 @@ class RedmapperRun(object):
             retvals = pool.map(self._percolation_only_worker, pixels_split, chunksize=1)
             #retvals = list(map(self._percolation_only_worker, pixels_split))
         else:
+
+            print(len(pixels_split))
+
             retvals = pool.map(self._worker, pixels_split, chunksize=1)
+
+            print(1)
+            #print(list(map(self._worker, pixels_split)))
+
             #retvals = list(map(self._worker, pixels_split))
+        
         pool.close()
         pool.join()
 
         # Reset the seedfile
         self.config.seedfile = orig_seedfile
 
+        print(retvals)
+
         # Consolidate (adds additional mask cuts)
         hpixels_like = [x[0] for x in retvals if x[2] is not None]
         likefiles = [x[2] for x in retvals if x[2] is not None]
         hpixels_perc = [x[0] for x in retvals if x[3] is not None]
         percfiles = [x[3] for x in retvals if x[3] is not None]
+
+        #print(percfiles)
 
         # Allow for runs without consolidation
         if consolidate:
@@ -287,6 +299,8 @@ class RedmapperRun(object):
         for f in filenames:
             hdr = fitsio.read_header(f, ext=1)
             ncluster += hdr['NAXIS2']
+         
+        #print(filenames)
 
         element = Entry.from_fits_file(filenames[0], ext=1, rows=0)
         dtype = element._ndarray.dtype
