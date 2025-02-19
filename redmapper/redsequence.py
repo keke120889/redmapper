@@ -170,8 +170,23 @@ class RedSequenceColorPar(object):
         else:
             refmagrange=np.array([12.0,limmag],dtype='f4')
             lumrefmagrange=np.array([12.0,ms(zrange[1])-2.5*np.log10(0.1)])
+
+            print('zrange: ', zrange[0], zrange[1])
+            print('ms: ', ms(zrange[0]), ms(zrange[0] + (zrange[1] - zrange[0])/3), ms(zrange[0] + (zrange[1] - zrange[0])/3 * 2), ms(zrange[1]))
+            aaa = np.arange(0.01, 2.5, 0.05)
+            print('zrange: ', aaa)
+            print('ms: ', [ms(aaa[i]) for i in range(len(aaa))])
+            print('lumrefmagrange: ', [(ms(aaa[i]) - 2.5*np.log10(0.1)) for i in range(len(aaa))])
+            print('lumrefmagrange: ', lumrefmagrange)
+
         self.refmagbins = np.arange(refmagrange[0], refmagrange[1], refmagbinsize, dtype='f8')
+        
+        print(self.refmagbins)
+        
         self.lumrefmagbins=np.arange(lumrefmagrange[0],lumrefmagrange[1],refmagbinsize,dtype='f8')
+        #self.lumrefmagbins=np.arange(lumrefmagrange[1],lumrefmagrange[0],refmagbinsize,dtype='f8')
+        
+        print(self.lumrefmagbins)
 
         # and for fast look-ups...
         self.refmagbins = np.append(self.refmagbins,self.refmagbins[self.refmagbins.size-1])
@@ -197,6 +212,8 @@ class RedSequenceColorPar(object):
             hiz,=np.where(self.z > np.max(pars[pivotmag_name+'_Z']))
             if (loz.size > 0) : self.extrapolated[loz] = True
             if (hiz.size > 0) : self.extrapolated[hiz] = True
+            print("redsequence nz", nz)
+
 
             # set the pivotmag
             self.pivotmag = np.zeros(self.z.size, dtype=np.float64)

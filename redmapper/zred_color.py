@@ -41,8 +41,17 @@ class ZredColor(object):
         self.use_photoerr = use_photoerr
         self.zrange = zrange
 
-        self.nz = self.zredstr.z.size
+        self.nz = self.zredstr.z.size - 1
+        
+        #print('zredstr.z: ', self.zredstr.z)
+        print('zredstr.z.size: ', self.zredstr.z.size)
+        print(len(self.zredstr.extrapolated))
+
         self.notextrap, = np.where(~self.zredstr.extrapolated)
+        
+        #print('zredstr: ', self.zredstr)
+        #print('zredstr.extrapolated: ', self.zredstr.extrapolated)
+        #print('zredstr.extrapolated shape: ', np.shape(self.zredstr.extrapolated))
 
         if self.zrange is None:
             self.zbinstart = 0
@@ -106,6 +115,11 @@ class ZredColor(object):
         """
 
         lndist = np.zeros(self.nz) - 1e12
+        
+        #print('nz: ', self.nz)
+        #print('nz shape: ', np.shape(self.nz))
+        #print('lndist shape: ', np.shape(lndist))
+
         chisq = np.zeros(self.nz) + 1e12
 
         zbins_limited, = np.where((galaxy.refmag < self.zredstr.maxrefmag) &
@@ -134,7 +148,13 @@ class ZredColor(object):
         dist[bad] = 0.0
 
         # take the maximum where not extrapolated
-        ind_temp = np.argmax(dist[self.notextrap])
+        #print('notextrap: ', self.notextrap)
+        #print('notextrap shape: ', np.shape(self.notextrap))
+        #print('dist: ', dist)
+        #print('dist shape: ', np.shape(dist))
+        #print('dist: ', dist)
+
+        ind_temp = np.argmax(dist[self.notextrap[:-1]])
         ind = self.notextrap[ind_temp]
 
         calcinds, = np.where(dist > 1e-5)
@@ -158,7 +178,7 @@ class ZredColor(object):
         zred_e = zred_e if zred_e > 0.005 else 0.005
 
         # Now fit a parabola to get the perfect zred
-        ind_temp = np.argmax(dist[self.notextrap])
+        ind_temp = np.argmax(dist[self.notextrap[:-1]])
         ind = self.notextrap[ind_temp]
 
         zred = zred_temp.copy()

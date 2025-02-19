@@ -17,6 +17,7 @@ import esutil
 import sys
 import os
 import warnings
+from scipy import interpolate
 
 ###################################
 ## Useful constants/conversions ##
@@ -206,7 +207,7 @@ class MStar(object):
         except:
             raise IOError("Could not find mstar file mstar_%s_%s.fit" % (self.survey, self.band))
 
-        self._f = CubicSpline(self._mstar_arr['Z'],self._mstar_arr['MSTAR'])
+        self._f = interpolate.interp1d(self._mstar_arr['Z'],self._mstar_arr['MSTAR'], fill_value='extrapolate')
 
     def __call__(self, z):
         """
