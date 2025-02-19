@@ -41,7 +41,7 @@ class ZredColor(object):
         self.use_photoerr = use_photoerr
         self.zrange = zrange
 
-        self.nz = self.zredstr.z.size - 1
+        self.nz = self.zredstr.z.size
         self.notextrap, = np.where(~self.zredstr.extrapolated)
 
         if self.zrange is None:

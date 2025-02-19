@@ -33,17 +33,17 @@ for i in range(len(RedshiftBin) - 2):
     Filter = np.logical_and(RedshiftBin[i] <= ztrue, ztrue < RedshiftBin[i + 1])
     FilterIndex = np.where(Filter)[0]
     # These need not be complete, but for adequate performance you want at least 40 clusters per 0.05 redshift bin.
-    RandomSample = random.sample(list(FilterIndex), 5000)
+    RandomSample = random.sample(list(FilterIndex), 50)
     FinalSample.append(RandomSample)
 
-FinalSample = np.reshape(FinalSample, (len(FinalSample * 5000), ))
+FinalSample = np.reshape(FinalSample, (len(FinalSample * 50), ))
 FinalSample = np.sort(FinalSample)
 
 ra        = np.array(cat['catalog/gold/ra'][:][catselect][FilterRegion][FinalSample],  dtype='f8')
 dec       = np.array(cat['catalog/gold/dec'][:][catselect][FilterRegion][FinalSample], dtype='f8')
 z_err     = np.ones(np.shape(dec)) * 0.00001
 
-np.save('/project/chihway/ihsuan/Roman/Data/Create_redMaPPer_Spectroscopic_Input_Catalog_Test100deg2.npy', FinalSample)
+np.save('/project/chihway/ihsuan/Roman/Data/Create_redMaPPer_Spectroscopic_Input_Catalog_Test100deg2_try.npy', FinalSample)
 
 # Save the data
 table = Table()
@@ -52,4 +52,4 @@ table['dec'] = dec
 table['z'] = ztrue[FinalSample]
 table['z_err'] = z_err
 
-table.write('/project/chihway/ihsuan/Roman/Data/Create_redMaPPer_Spectroscopic_Input_Catalog_Test100deg2.fits', format='fits', overwrite=True)
+table.write('/project/chihway/ihsuan/Roman/Data/Create_redMaPPer_Spectroscopic_Input_Catalog_Test100deg2_try.fits', format='fits', overwrite=True)
